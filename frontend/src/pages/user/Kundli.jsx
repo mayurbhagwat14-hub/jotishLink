@@ -1,0 +1,172 @@
+import { useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { FiArrowLeft } from 'react-icons/fi';
+import { useSelector, useDispatch } from 'react-redux';
+import { updateUser } from '../../store/slices/authSlice';
+import { getKundli } from '../../api/userApis';
+
+const Kundli = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { openSidebar } = useOutletContext();
+  const user = useSelector((state) => state.auth.user);
+
+  // Helper to safely format ISO date to YYYY-MM-DD for the input
+  const formattedDob = user?.dob ? new Date(user.dob).toISOString().split('T')[0] : '';
+
+  const [formData, setFormData] = useState({
+    name: user?.name && user.name !== 'Guest User' ? user.name : '',
+    dob: formattedDob,
+    timeOfBirth: user?.timeOfBirth || '',
+    placeOfBirth: user?.placeOfBirth || ''
+  });
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await getKundli(formData);
+      setResult(response.data);
+
+      // Persist the newly entered details into our Redux store
+      dispatch(updateUser({
+        dob: formData.dob,
+        timeOfBirth: formData.timeOfBirth,
+        placeOfBirth: formData.placeOfBirth,
+      }));
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      // Dummy data for demo
+      setTimeout(() => {
+        setResult({
+          name: formData.name,
+          ascendant: 'Aries',
+          moonSign: 'Taurus',
+          nakshatra: 'Rohini',
+          isManglik: false,
+          summary: 'You have a strong placement of Mars which indicates high energy and leadership qualities. Your moon sign suggests emotional stability.'
+        });
+        setLoading(false);
+      }, 1500);
+    }
+  };
+
+  return (
+    <div className="w-full bg-white min-h-screen font-sans pb-24">
+      {/* ═══ HEADER ═══ */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-orange-50">
+        <div className="flex items-center">
+          <button onClick={() => navigate(-1)} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors mr-3">
+            <FiArrowLeft size={20} />
+          </button>
+          <span className="text-gray-800 font-semibold text-[17px]">Free Kundli</span>
+        </div>
+        <div 
+          onClick={openSidebar}
+          className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200 cursor-pointer shrink-0"
+        >
+          {user?.avatar ? (
+            <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-orange-500 font-bold text-xs">{(user?.name || 'G')[0]}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 pt-8">
+        <div className="text-center mb-10">
+          <h1 className="text-[28px] font-bold text-gray-900 mb-2">Generate Your Kundli</h1>
+          <p className="text-gray-500 text-[14px]">Discover your cosmic blueprint based on Vedic Astrology.</p>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-card border border-orange-100 p-6 md:p-8 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-50 rounded-full blur-[40px] opacity-60 -z-10" />
+          
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-[13px] font-semibold text-gray-600 mb-1.5">Full Name</label>
+              <input 
+                required type="text" 
+                placeholder="Enter your full name"
+                value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                className="w-full border-2 border-gray-100 rounded-xl py-3 px-4 outline-none focus:border-orange-400 focus:bg-orange-50/30 transition-all text-[15px]" 
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-semibold text-gray-600 mb-1.5">Date of Birth</label>
+              <input 
+                required type="date" 
+                value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})}
+                className="w-full border-2 border-gray-100 rounded-xl py-3 px-4 outline-none focus:border-orange-400 focus:bg-orange-50/30 transition-all text-[15px]" 
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-semibold text-gray-600 mb-1.5">Time of Birth</label>
+              <input 
+                required type="time" 
+                value={formData.timeOfBirth} onChange={e => setFormData({...formData, timeOfBirth: e.target.value})}
+                className="w-full border-2 border-gray-100 rounded-xl py-3 px-4 outline-none focus:border-orange-400 focus:bg-orange-50/30 transition-all text-[15px]" 
+              />
+            </div>
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-[13px] font-semibold text-gray-600 mb-1.5">Place of Birth</label>
+              <input 
+                required type="text" 
+                placeholder="Enter city"
+                value={formData.placeOfBirth} onChange={e => setFormData({...formData, placeOfBirth: e.target.value})}
+                className="w-full border-2 border-gray-100 rounded-xl py-3 px-4 outline-none focus:border-orange-400 focus:bg-orange-50/30 transition-all text-[15px]" 
+              />
+            </div>
+            
+            <div className="col-span-1 md:col-span-2 mt-4">
+              <button 
+                type="submit" disabled={loading}
+                className={`w-full py-4 rounded-xl font-bold text-[15px] transition-all shadow-lg ${loading ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'}`}
+              >
+                {loading ? 'GENERATING...' : 'GENERATE KUNDLI'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {result && (
+          <div className="bg-gradient-to-br from-orange-50 to-white rounded-3xl p-6 md:p-8 border border-orange-100 shadow-card animate-fade-in">
+            <h2 className="text-[20px] font-bold text-gray-900 mb-6 text-center border-b border-orange-100 pb-4">Kundli for {result.name}</h2>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-orange-50 text-center">
+                <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-1">Ascendant</p>
+                <p className="font-bold text-orange-600 text-[16px]">{result.ascendant}</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-orange-50 text-center">
+                <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-1">Moon Sign</p>
+                <p className="font-bold text-orange-600 text-[16px]">{result.moonSign}</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-orange-50 text-center">
+                <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-1">Nakshatra</p>
+                <p className="font-bold text-orange-600 text-[16px]">{result.nakshatra}</p>
+              </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-orange-50 text-center">
+                <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-1">Manglik Dosh</p>
+                <p className={`font-bold text-[16px] ${result.isManglik ? 'text-red-500' : 'text-green-500'}`}>{result.isManglik ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-orange-50">
+              <h3 className="font-bold text-gray-800 text-[15px] mb-2 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-[12px]">✨</span>
+                Astrological Summary
+              </h3>
+              <p className="text-gray-600 text-[14px] leading-relaxed">{result.summary}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Kundli;
