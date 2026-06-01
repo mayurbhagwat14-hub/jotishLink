@@ -53,7 +53,7 @@ const AdminDashboard = () => {
         <div className="relative z-10">
           <p className="text-orange-100 text-xs font-bold uppercase tracking-widest mb-1">Admin Dashboard</p>
           <h1 className="text-2xl lg:text-3xl font-black mb-2">Welcome back, Super Admin 👋</h1>
-          <p className="text-orange-100 text-sm font-medium max-w-xl">Here's what's happening on your platform today. You have <span className="text-white font-bold">2 pending approvals</span> and <span className="text-white font-bold">{dbData.metrics?.pendingOrders || 0} new orders</span> to review.</p>
+          <p className="text-orange-100 text-sm font-medium max-w-xl">Here's what's happening on your platform today. You have <span className="text-white font-bold">{dbData.metrics?.pendingApprovals || 0} pending approvals</span> and <span className="text-white font-bold">{dbData.metrics?.pendingOrders || 0} new orders</span> to review.</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ const AdminDashboard = () => {
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total Revenue</p>
             <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiDollarSign size={16} /></div>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.totalRevenue || '₹0'}</h3>
+          <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.totalRevenue || 0}</h3>
           <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +14.5% vs last month</span>
         </div>
 
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Store Revenue</p>
             <div className="w-9 h-9 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiPackage size={16} /></div>
           </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.storeRevenue || '₹0'}</h3>
+          <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.storeRevenue || 0}</h3>
           <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +18% vs last month</span>
         </div>
       </div>

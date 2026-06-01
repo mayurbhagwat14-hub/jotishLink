@@ -1,16 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiMessageCircle } from 'react-icons/fi';
+import { FiSearch, FiMessageCircle, FiBell } from 'react-icons/fi';
 
 const DesktopNavbar = () => {
   const navigate = useNavigate();
 
   const navLinks = [
-    { name: 'Chat with Astrologer', path: '/login' },
-    { name: 'Call with Astrologer', path: '/login' },
-    { name: 'Horoscope', path: '/login' },
-    { name: 'Free Kundli', path: '/login' },
-    { name: 'Kundli Matching', path: '/login' },
-    { name: 'JyotishLink Services', path: '/login' },
+    { name: 'Chat with Astrologer', path: '/user/login' },
+    { name: 'Call with Astrologer', path: '/user/login' },
+    { name: 'Horoscope', path: '/user/login' },
+    { name: 'Free Kundli', path: '/user/login' },
+    { name: 'Kundli Matching', path: '/user/login' },
+    { name: 'JyotishLink Services', path: '/user/login' },
   ];
 
   return (
@@ -41,11 +41,14 @@ const DesktopNavbar = () => {
 
       {/* Right Actions */}
       <div className="flex items-center gap-3 shrink-0">
+        <button onClick={() => navigate('/user/notifications')} className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
+          <FiBell size={18} className="text-orange-500" />
+        </button>
         <button className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
           <FiSearch size={18} className="text-orange-500" />
         </button>
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/user/login')}
           className="bg-orange-500 text-white font-bold text-[13px] px-6 py-2.5 rounded-full shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all flex items-center gap-2"
         >
           <FiMessageCircle size={16} /> Sign In

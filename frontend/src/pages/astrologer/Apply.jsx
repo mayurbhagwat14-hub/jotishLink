@@ -1,26 +1,41 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera } from 'react-icons/fi';
 import { useDispatch } from 'react-redux';
-import { login } from '../../store/slices/authSlice';
+import { login, astrologerSignupThunk } from '../../store/slices/authSlice';
+import { checkAstrologerPhone, requestOtp } from '../../api/astrologerApis';
+
+const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career'];
+const SPECIALITIES = ['Vedic Astrology', 'Tarot Reading', 'Numerology', 'Palmistry', 'Vastu Shastra'];
 
 const ApplyAstrologer = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [profilePic, setProfilePic] = useState(null);
+  const [identityProof, setIdentityProof] = useState('');
+  const [apiError, setApiError] = useState('');
+  const [tempAuthData, setTempAuthData] = useState(null);
+  
+  const prefilledPhone = location.state?.phone || '';
   
   // Form Data
   const [formData, setFormData] = useState({
-    mobile: '',
+    mobile: prefilledPhone,
     fullName: '',
     email: '',
+    password: '',
     gender: '',
-    speciality: '',
+    specialities: [],
+    categories: [],
     experience: '',
-    description: ''
+    description: '',
+    chatPrice: 5,
+    callPrice: 5,
+    videoPrice: 10
   });
 
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -32,27 +47,107 @@ const ApplyAstrologer = () => {
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setProfilePic(url);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePic(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const handleSendOtp = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setStep(2);
-    }, 1000);
+  const handleDocumentUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setIdentityProof(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleCategoryToggle = (category) => {
+    setFormData(prev => {
+      const isSelected = prev.categories.includes(category);
+      if (isSelected) {
+        return { ...prev, categories: prev.categories.filter(c => c !== category) };
+      } else {
+        return { ...prev, categories: [...prev.categories, category] };
+      }
+    });
+  };
+
+  const handleSpecialityToggle = (speciality) => {
+    setFormData(prev => {
+      const isSelected = prev.specialities.includes(speciality);
+      if (isSelected) {
+        return { ...prev, specialities: prev.specialities.filter(s => s !== speciality) };
+      } else {
+        return { ...prev, specialities: [...prev.specialities, speciality] };
+      }
+    });
+  };
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setApiError('');
+    setOtp(['', '', '', '']); // Clear the OTP blocks
+    try {
+      // Pre-flight check: see if they are already an astrologer
+      const checkRes = await checkAstrologerPhone({ phone: formData.mobile });
+      const checkData = checkRes.data?.data || checkRes.data;
+      
+      if (checkData?.exists) {
+        setApiError('This phone number is already registered as an astrologer. Please login instead.');
+        setLoading(false);
+        return;
+      }
+
+      await requestOtp(formData.mobile);
+      setLoading(false);
+      setStep(2);
+    } catch (err) {
+      console.error(err);
+      setApiError(err.response?.data?.message || err.message || 'Failed to send OTP');
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setApiError('');
+    try {
+      const payload = {
+        name: formData.fullName,
+        phone: formData.mobile,
+        password: formData.password,
+        otp: otp.join(''),
+        skills: formData.specialities,
+        categories: formData.categories,
+        experience: Number(formData.experience),
+        about: formData.description,
+        identityProof: identityProof,
+        avatar: profilePic,
+        pricing: {
+          chat: Number(formData.chatPrice) || 5,
+          audioCall: Number(formData.callPrice) || 5,
+          videoCall: Number(formData.videoPrice) || 10
+        }
+      };
+      const res = await dispatch(astrologerSignupThunk(payload)).unwrap();
+      const data = res?.data || res;
+      if (data?.accessToken) {
+        setTempAuthData({ user: data.user, token: data.accessToken });
+      }
       setLoading(false);
       setStep(3); // Pending screen
-    }, 1500);
+    } catch (err) {
+      console.error(err);
+      setApiError(err.message || 'Signup failed');
+      setLoading(false);
+    }
   };
 
   const handleOtpChange = (index, value) => {
@@ -67,14 +162,32 @@ const ApplyAstrologer = () => {
     }
   };
 
-  // Demo function to simulate admin approval
-  const simulateAdminApproval = () => {
-    setIsApproved(true);
-    setTimeout(() => {
-      dispatch(login({ user: { name: formData.fullName, role: 'astrologer' }, token: 'astro-token-123' }));
-      navigate('/astrologer/dashboard');
-    }, 2000);
-  };
+  useEffect(() => {
+    let interval;
+    if (step === 3 && !isApproved) {
+      interval = setInterval(async () => {
+        try {
+          const res = await checkAstrologerPhone({ phone: formData.mobile });
+          const data = res.data?.data || res.data;
+          if (data?.approvalStatus === 'approved') {
+            setIsApproved(true);
+            clearInterval(interval);
+            setTimeout(() => {
+              if (tempAuthData) {
+                dispatch(login(tempAuthData));
+                navigate('/astrologer/dashboard');
+              } else {
+                navigate('/astrologer/login');
+              }
+            }, 2000);
+          }
+        } catch (e) {
+          // ignore polling errors
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [step, isApproved, formData.mobile, tempAuthData, dispatch, navigate]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FC] font-sans flex flex-col items-center py-10 px-4">
@@ -85,9 +198,9 @@ const ApplyAstrologer = () => {
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-10 text-white relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
           <div className="relative z-10">
-            <Link to="/" className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm font-bold mb-6">
-              <FiArrowLeft size={16} /> Back to Home
-            </Link>
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm font-bold mb-6 cursor-pointer bg-transparent border-none p-0">
+              <FiArrowLeft size={16} /> Back
+            </button>
             <h1 className="text-3xl font-black mb-2">Join as an Astrologer</h1>
             <p className="text-orange-100 font-medium">Partner with JyotishLink and guide millions of users worldwide.</p>
           </div>
@@ -138,15 +251,16 @@ const ApplyAstrologer = () => {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mobile Number <span className="text-red-500">*</span></label>
                   <div className="flex rounded-xl bg-gray-50 border border-gray-200 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all overflow-hidden">
-                    <span className="px-4 py-3 bg-gray-100 border-r border-gray-200 text-gray-500 font-bold text-sm">+91</span>
+                    <span className={`px-4 py-3 border-r border-gray-200 font-bold text-sm ${prefilledPhone ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-500'}`}>+91</span>
                     <input 
                       type="tel" 
                       name="mobile"
                       required
                       value={formData.mobile}
                       onChange={handleChange}
+                      readOnly={!!prefilledPhone}
                       placeholder="10-digit mobile number" 
-                      className="w-full px-4 py-3 bg-transparent border-0 focus:outline-none font-medium text-gray-800"
+                      className={`w-full px-4 py-3 border-0 focus:outline-none font-medium text-gray-800 ${prefilledPhone ? 'bg-gray-100 cursor-not-allowed' : 'bg-transparent'}`}
                     />
                   </div>
                 </div>
@@ -161,6 +275,20 @@ const ApplyAstrologer = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="name@example.com" 
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Password <span className="text-red-500">*</span></label>
+                  <input 
+                    type="password" 
+                    name="password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Create a password" 
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
                   />
                 </div>
@@ -183,22 +311,39 @@ const ApplyAstrologer = () => {
                 </div>
 
                 {/* Speciality */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Primary Speciality <span className="text-red-500">*</span></label>
-                  <select 
-                    name="speciality"
-                    required
-                    value={formData.speciality}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
-                  >
-                    <option value="" disabled>Select Speciality</option>
-                    <option value="Vedic Astrology">Vedic Astrology</option>
-                    <option value="Tarot Reading">Tarot Reading</option>
-                    <option value="Numerology">Numerology</option>
-                    <option value="Palmistry">Palmistry</option>
-                    <option value="Vastu">Vastu Shastra</option>
-                  </select>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Primary Specialities <span className="text-red-500">*</span></label>
+                  <div className="flex flex-wrap gap-3">
+                    {SPECIALITIES.map(spec => (
+                      <label key={spec} className="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 hover:border-orange-300 transition-all">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.specialities.includes(spec)}
+                          onChange={() => handleSpecialityToggle(spec)}
+                          className="accent-orange-500 w-4 h-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{spec}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Categories */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Expertise Categories <span className="text-red-500">*</span></label>
+                  <div className="flex flex-wrap gap-3">
+                    {CATEGORIES.map(cat => (
+                      <label key={cat} className="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 hover:border-orange-300 transition-all">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.categories.includes(cat)}
+                          onChange={() => handleCategoryToggle(cat)}
+                          className="accent-orange-500 w-4 h-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{cat}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Experience */}
@@ -214,6 +359,52 @@ const ApplyAstrologer = () => {
                     placeholder="e.g. 5" 
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
                   />
+                </div>
+                
+                {/* Pricing Details */}
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Chat Price */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Chat Price/min (₹) <span className="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      name="chatPrice"
+                      min="5"
+                      required
+                      value={formData.chatPrice}
+                      onChange={handleChange}
+                      placeholder="Min 5" 
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    />
+                  </div>
+                  {/* Call Price */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Audio Call Price/min (₹) <span className="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      name="callPrice"
+                      min="5"
+                      required
+                      value={formData.callPrice}
+                      onChange={handleChange}
+                      placeholder="Min 5" 
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    />
+                  </div>
+                  {/* Video Price */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Video Call Price/min (₹) <span className="text-red-500">*</span></label>
+                    <input 
+                      type="number" 
+                      name="videoPrice"
+                      min="5"
+                      required
+                      value={formData.videoPrice}
+                      onChange={handleChange}
+                      placeholder="Min 5" 
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -231,13 +422,26 @@ const ApplyAstrologer = () => {
                 ></textarea>
               </div>
 
-              {/* Document Upload Mock */}
-              <div className="border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-orange-300 transition-colors cursor-pointer bg-gray-50">
-                <FiUploadCloud size={28} className="text-gray-400 mx-auto mb-2" />
-                <p className="text-sm font-bold text-gray-700">Upload Identity Proof (Aadhar/PAN)</p>
-                <p className="text-xs text-gray-400 mt-1">Required for verification</p>
+              {/* Document Upload */}
+              <div>
+                <label className="relative cursor-pointer block border-2 border-dashed border-gray-200 rounded-2xl p-6 text-center hover:border-orange-300 transition-colors bg-gray-50">
+                  <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleDocumentUpload} required />
+                  {identityProof ? (
+                    <div className="text-green-500">
+                      <FiCheckCircle size={28} className="mx-auto mb-2" />
+                      <p className="text-sm font-bold">Document Uploaded Successfully</p>
+                    </div>
+                  ) : (
+                    <>
+                      <FiUploadCloud size={28} className="text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-gray-700">Upload Identity Proof (Aadhar/PAN) <span className="text-red-500">*</span></p>
+                      <p className="text-xs text-gray-400 mt-1">Required for verification</p>
+                    </>
+                  )}
+                </label>
               </div>
 
+              {apiError && <p className="text-xs font-bold text-red-500 text-center mb-4">{apiError}</p>}
               <button 
                 type="submit"
                 disabled={loading}
@@ -257,6 +461,7 @@ const ApplyAstrologer = () => {
               <h2 className="text-2xl font-black text-gray-900 mb-2">Verify Mobile Number</h2>
               <p className="text-sm text-gray-500 font-medium mb-8">We've sent a 4-digit OTP to <span className="font-bold text-gray-800">+91 {formData.mobile}</span></p>
               
+              {apiError && <p className="text-xs font-bold text-red-500 text-center mb-4">{apiError}</p>}
               <form onSubmit={handleVerifyOtp}>
                 <div className="flex justify-center gap-3 mb-8">
                   {[0, 1, 2, 3].map((index) => (
@@ -281,7 +486,7 @@ const ApplyAstrologer = () => {
                 </button>
               </form>
               
-              <p className="text-xs font-bold text-gray-400 mt-6">Didn't receive code? <button className="text-orange-500 hover:underline">Resend OTP</button></p>
+              <p className="text-xs font-bold text-gray-400 mt-6">Didn't receive code? <button type="button" onClick={handleSendOtp} className="text-orange-500 hover:underline">Resend OTP</button></p>
             </div>
           )}
 
@@ -315,14 +520,6 @@ const ApplyAstrologer = () => {
                       <p className="text-sm font-bold text-gray-500">Final Approval</p>
                     </div>
                   </div>
-
-                  {/* Development Only button to simulate admin approval */}
-                  <button 
-                    onClick={simulateAdminApproval}
-                    className="text-xs font-bold text-gray-400 hover:text-orange-500 underline decoration-dotted transition-colors"
-                  >
-                    [Demo Only] Simulate Admin Approval
-                  </button>
                 </>
               ) : (
                 <div className="animate-scale-in">

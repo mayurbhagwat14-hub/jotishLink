@@ -41,13 +41,13 @@ const LandingPage = () => {
 
           <div className="flex w-full gap-3 mb-10 px-2 justify-center">
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/user/login')}
               className="flex-1 bg-orange-500 text-white font-bold py-4 px-4 rounded-2xl flex items-center justify-center gap-2 transition shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-95"
             >
               <FiMessageCircle size={18} /> Chat now
             </button>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/user/login')}
               className="flex-1 bg-white text-gray-800 font-bold py-4 px-4 rounded-2xl flex items-center justify-center gap-2 border-2 border-orange-200 hover:bg-orange-50 transition shadow-sm active:scale-95"
             >
               <FiPhone size={18} /> Call now
@@ -99,7 +99,7 @@ const LandingPage = () => {
               <p className="text-gray-400 text-[12px]">Chat with Astrologer</p>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-white font-bold text-[13px]">@INR 5/min</p>
-                <button onClick={() => navigate('/login')} className="bg-orange-500 text-white text-[11px] font-bold px-4 py-1.5 rounded-full hover:bg-orange-600 transition shadow-sm">
+                <button onClick={() => navigate('/user/login')} className="bg-orange-500 text-white text-[11px] font-bold px-4 py-1.5 rounded-full hover:bg-orange-600 transition shadow-sm">
                   Chat Now
                 </button>
               </div>
@@ -109,10 +109,10 @@ const LandingPage = () => {
 
         {/* Quick Actions */}
         <div className="px-4 py-3 flex gap-3">
-          <button onClick={() => navigate('/login')} className="flex-1 bg-orange-500 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] shadow-lg shadow-orange-200 transition hover:bg-orange-600">
+          <button onClick={() => navigate('/user/login')} className="flex-1 bg-orange-500 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] shadow-lg shadow-orange-200 transition hover:bg-orange-600">
             <FiMessageCircle size={16} /> Chat with Astrologer
           </button>
-          <button onClick={() => navigate('/login')} className="flex-1 bg-orange-500 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] shadow-lg shadow-orange-200 transition hover:bg-orange-600">
+          <button onClick={() => navigate('/user/login')} className="flex-1 bg-orange-500 text-white font-bold py-3.5 rounded-2xl flex items-center justify-center gap-2 text-[13px] shadow-lg shadow-orange-200 transition hover:bg-orange-600">
             <FiPhone size={16} /> Call with Astrologer
           </button>
         </div>
@@ -133,7 +133,7 @@ const LandingPage = () => {
               India's most-loved astrology platform. <strong className="text-gray-900">48,726+ verified astrologers</strong> in 13 languages. Instant chat, free kundli, honest answers.
             </p>
             <div className="flex gap-4">
-              <button onClick={() => navigate('/login')} className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-2xl flex items-center gap-2 transition shadow-lg shadow-orange-200">
+              <button onClick={() => navigate('/user/login')} className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-2xl flex items-center gap-2 transition shadow-lg shadow-orange-200">
                 <FiMessageCircle size={20} /> Get Free Chat
               </button>
               <button className="bg-white hover:bg-orange-50 text-gray-800 font-bold py-4 px-8 rounded-2xl flex items-center gap-2 border-2 border-orange-200 transition shadow-sm">
@@ -198,7 +198,7 @@ const LandingPage = () => {
                 </div>
                 <div className="flex justify-between items-center relative z-10 mt-2">
                   <span className="font-bold text-gray-900 text-[20px]">₹{astro.price}<span className="text-[13px] text-gray-400 font-normal">/min</span></span>
-                  <button onClick={() => navigate('/login')} className="bg-orange-500 text-white font-bold px-8 py-2.5 rounded-xl hover:bg-orange-600 transition shadow-sm text-[14px]">
+                  <button onClick={() => navigate('/user/login')} className="bg-orange-500 text-white font-bold px-8 py-2.5 rounded-xl hover:bg-orange-600 transition shadow-sm text-[14px]">
                     Chat
                   </button>
                 </div>
@@ -207,7 +207,7 @@ const LandingPage = () => {
           </div>
 
           <div className="flex justify-center mt-12">
-            <button onClick={() => navigate('/login')} className="bg-orange-50 text-orange-600 font-bold px-8 py-3.5 rounded-full hover:bg-orange-100 transition border border-orange-200 flex items-center gap-2">
+            <button onClick={() => navigate('/user/login')} className="bg-orange-50 text-orange-600 font-bold px-8 py-3.5 rounded-full hover:bg-orange-100 transition border border-orange-200 flex items-center gap-2">
               More Astrologers <span className="text-lg leading-none">→</span>
             </button>
           </div>

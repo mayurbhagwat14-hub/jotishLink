@@ -1,17 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiArrowUpRight, FiArrowDownLeft, FiRefreshCcw, FiSearch, FiChevronDown, FiCalendar, FiDownload } from 'react-icons/fi';
+import { getAdminTransactions } from '../../api/adminApis';
 
 const AdminFinance = () => {
   const [typeFilter, setTypeFilter] = useState('All');
+  const [transactions, setTransactions] = useState([]);
+  const [inflow, setInflow] = useState(0);
+  const [outflow, setOutflow] = useState(0);
 
-  const transactions = [
-    { id: 'TXN-9821', user: 'Rahul Khanna', type: 'Wallet Recharge', amount: 2000, status: 'Success', date: 'May 27, 5:30 PM', isCredit: true },
-    { id: 'TXN-9820', user: 'Ast. Sanjay Sharma', type: 'Payout', amount: 5500, status: 'Processing', date: 'May 27, 10:00 AM', isCredit: false },
-    { id: 'TXN-9819', user: 'Simran K.', type: 'Refund', amount: 300, status: 'Success', date: 'May 26, 6:45 PM', isCredit: false },
-    { id: 'TXN-9818', user: 'Ankita Verma', type: 'Session Deduction', amount: 150, status: 'Success', date: 'May 26, 4:20 PM', isCredit: true },
-    { id: 'TXN-9817', user: 'Vikram Singh', type: 'Wallet Recharge', amount: 5000, status: 'Success', date: 'May 26, 2:10 PM', isCredit: true },
-    { id: 'TXN-9816', user: 'Ast. Neeta Joshi', type: 'Payout', amount: 3200, status: 'Success', date: 'May 26, 10:00 AM', isCredit: false },
-  ];
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const fetchTransactions = async () => {
+    try {
+      const res = await getAdminTransactions();
+      const txns = res.data?.data?.transactions || res.data?.transactions || [];
+      
+      const formatted = txns.map(t => {
+        const isCredit = t.type === 'recharge'; // only recharge is inflow to wallet, but wait...
+        // For Admin Ledger: Wallet Recharge is inflow to system. Payout is outflow. Deduction from wallet (for sessions) is already in the system, but we can treat it as internal. 
+        // Let's just track recharge as Inflow, and refund/payout as Outflow.
+        return {
+          id: t._id.slice(-6).toUpperCase(),
+          user: t.userId?.name || 'Unknown',
+          type: t.type === 'recharge' ? 'Wallet Recharge' : t.type === 'deduction' ? 'Session Deduction' : 'Refund/Payout',
+          amount: t.amount,
+          status: 'Success',
+          date: new Date(t.createdAt).toLocaleString(),
+          isCredit: t.type === 'recharge',
+          rawType: t.type
+        };
+      });
+
+      setTransactions(formatted);
+      
+      const totalIn = formatted.filter(t => t.rawType === 'recharge').reduce((s, t) => s + t.amount, 0);
+      const totalOut = formatted.filter(t => t.rawType === 'refund').reduce((s, t) => s + t.amount, 0);
+      
+      setInflow(totalIn);
+      setOutflow(totalOut);
+    } catch (err) {
+      console.error('Failed to fetch transactions', err);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -34,8 +66,8 @@ const AdminFinance = () => {
             <FiArrowDownLeft size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Inflow (Today)</p>
-            <h3 className="text-2xl font-black text-gray-900">₹45,200</h3>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Inflow (Total)</p>
+            <h3 className="text-2xl font-black text-gray-900">₹{inflow.toLocaleString()}</h3>
           </div>
         </div>
 
@@ -44,8 +76,8 @@ const AdminFinance = () => {
             <FiArrowUpRight size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Outflow (Today)</p>
-            <h3 className="text-2xl font-black text-gray-900">₹12,400</h3>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Outflow (Total)</p>
+            <h3 className="text-2xl font-black text-gray-900">₹{outflow.toLocaleString()}</h3>
           </div>
         </div>
 
@@ -54,8 +86,8 @@ const AdminFinance = () => {
             <FiRefreshCcw size={22} />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Pending Refunds</p>
-            <h3 className="text-2xl font-black text-gray-900">14</h3>
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Total Transactions</p>
+            <h3 className="text-2xl font-black text-gray-900">{transactions.length}</h3>
           </div>
         </div>
       </div>
@@ -94,8 +126,10 @@ const AdminFinance = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {transactions.map((txn) => (
-                <tr key={txn.id} className="hover:bg-gray-50/50 transition-colors">
+              {transactions
+                .filter(t => typeFilter === 'All' || t.type.includes(typeFilter))
+                .map((txn, i) => (
+                <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3.5 px-6 font-bold text-sm text-gray-800 font-mono">{txn.id}</td>
                   <td className="py-3.5 px-6 text-sm font-bold text-gray-600">{txn.user}</td>
                   <td className="py-3.5 px-6 text-xs text-gray-500 font-medium">{txn.type}</td>
@@ -107,10 +141,7 @@ const AdminFinance = () => {
                   </td>
                   <td className="py-3.5 px-6 text-xs text-gray-400 font-medium">{txn.date}</td>
                   <td className="py-3.5 px-6">
-                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                      txn.status === 'Success' ? 'bg-green-50 text-green-600' :
-                      txn.status === 'Processing' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'
-                    }`}>
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-green-50 text-green-600`}>
                       {txn.status}
                     </span>
                   </td>

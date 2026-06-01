@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiCalendar, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiVideo } from 'react-icons/fi';
+import api from '../../api/axios';
 
 const PoojaBookingForm = () => {
   // const { panditId } = useParams();
@@ -12,8 +13,10 @@ const PoojaBookingForm = () => {
   const [formData, setFormData] = useState({
     date: '',
     time: '',
-    address: ''
+    address: '',
+    mode: 'offline', // 'online' or 'offline'
   });
+  const [loading, setLoading] = useState(false);
 
   if (!pandit) {
     return (
@@ -26,13 +29,28 @@ const PoojaBookingForm = () => {
     );
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // After collecting the details, redirect to the chat page to communicate with the pandit
-    navigate(`/user/chat?astrologer=${pandit.id || pandit._id}`, { state: { bookingDetails: { ...formData, pooja, pandit } } });
+    setLoading(true);
+    try {
+      await api.post('/pooja/book', {
+        poojaName: pooja,
+        astrologerId: pandit.id || pandit._id,
+        date: formData.date,
+        time: formData.time,
+        address: formData.mode === 'online' ? 'Online Video Call' : formData.address,
+        mode: formData.mode,
+      });
+      alert('Pooja booked successfully!');
+      navigate('/user/history'); // Navigate to history to see the booking
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to book pooja');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const isFormValid = formData.date && formData.time && formData.address.length > 5;
+  const isFormValid = formData.date && formData.time && (formData.mode === 'online' || formData.address.length > 5);
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans pb-6">
@@ -63,6 +81,35 @@ const PoojaBookingForm = () => {
         <h3 className="text-[18px] font-bold text-gray-800 mb-5 leading-snug">When & Where should the Pooja happen?</h3>
         
         <form onSubmit={handleSubmit} className="space-y-5">
+          
+          {/* Mode Selection */}
+          <div>
+            <label className="block text-gray-700 text-[13px] font-bold mb-2">Pooja Mode</label>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, mode: 'offline' })}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
+                  formData.mode === 'offline' 
+                    ? 'border-orange-500 bg-orange-50 text-orange-600' 
+                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <FiMapPin /> In-Person
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, mode: 'online' })}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
+                  formData.mode === 'online' 
+                    ? 'border-orange-500 bg-orange-50 text-orange-600' 
+                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <FiVideo /> Live Stream
+              </button>
+            </div>
+          </div>
           
           {/* Date Picker */}
           <div>
@@ -99,22 +146,24 @@ const PoojaBookingForm = () => {
           </div>
 
           {/* Address */}
-          <div>
-            <label className="block text-gray-700 text-[13px] font-bold mb-2">Full Address</label>
-            <div className="relative">
-              <div className="absolute left-4 top-4 text-orange-400">
-                <FiMapPin size={18} />
+          {formData.mode === 'offline' && (
+            <div>
+              <label className="block text-gray-700 text-[13px] font-bold mb-2">Full Address</label>
+              <div className="relative">
+                <div className="absolute left-4 top-4 text-orange-400">
+                  <FiMapPin size={18} />
+                </div>
+                <textarea
+                  required
+                  rows="3"
+                  placeholder="Enter complete address for the pooja..."
+                  className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white resize-none"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
               </div>
-              <textarea
-                required
-                rows="3"
-                placeholder="Enter complete address for the pooja..."
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white resize-none"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
             </div>
-          </div>
+          )}
 
         </form>
       </div>
@@ -123,14 +172,14 @@ const PoojaBookingForm = () => {
       <div className="px-5 mt-auto pt-6">
         <button
           onClick={handleSubmit}
-          disabled={!isFormValid}
+          disabled={!isFormValid || loading}
           className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm ${
-            isFormValid
+            isFormValid && !loading
               ? 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >
-          CONFIRM & CHAT WITH PANDIT
+          {loading ? 'BOOKING...' : 'CONFIRM POOJA BOOKING'}
         </button>
         <p className="text-center text-gray-400 text-[12px] font-medium mt-3">You won't be charged yet</p>
       </div>

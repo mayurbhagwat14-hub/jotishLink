@@ -9,6 +9,7 @@ import {
   FiPackage, FiGrid, FiTruck, FiDatabase, FiX
 } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
+import NotificationDropdown from '../components/NotificationDropdown';
 
 const AdminLayout = () => {
   const dispatch = useDispatch();
@@ -97,9 +98,11 @@ const AdminLayout = () => {
       children: [
         { path: '/admin/content', name: 'Content & CMS', icon: <FiLayout size={16} /> },
         { path: '/admin/reports', name: 'Reports', icon: <FiBarChart2 size={16} /> },
+        { path: '/admin/audit-logs', name: 'Audit Logs', icon: <FiShield size={16} /> },
         { path: '/admin/settings', name: 'Settings', icon: <FiSettings size={16} /> },
       ],
     },
+
   ];
 
   // Get current page name for breadcrumb
@@ -329,10 +332,9 @@ const AdminLayout = () => {
             </button>
 
             {/* Notifications */}
-            <button className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all relative">
-              <FiBell size={17} />
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all relative">
+              <NotificationDropdown iconSize={17} iconClassName="text-gray-400 hover:text-gray-600" />
+            </div>
 
             <div className="w-px h-8 bg-gray-100 hidden sm:block"></div>
 

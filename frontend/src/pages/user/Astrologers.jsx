@@ -6,7 +6,8 @@ import { BiCategoryAlt, BiHeart, BiBookHeart } from 'react-icons/bi';
 import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
-import { addWalletCash } from '../../store/slices/authSlice';
+import LowBalanceModal from '../../components/LowBalanceModal';
+import { io } from 'socket.io-client';
 
 const categories = [
   { name: 'All', icon: <BiCategoryAlt />, active: true },
@@ -32,52 +33,98 @@ const Astrologers = () => {
   const [showSearch, setShowSearch] = useState(false);
   
   const [showBalanceModal, setShowBalanceModal] = useState(false);
-  const [shortBalanceInfo, setShortBalanceInfo] = useState({ required: 0, current: 0 });
+  const [shortBalanceInfo, setShortBalanceInfo] = useState({ required: 0, current: 0, name: '' });
+  
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingAstroName, setConnectingAstroName] = useState('');
+  const [connectingAstroId, setConnectingAstroId] = useState('');
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('type') || 'chat';
   const setActiveTab = (tab) => setSearchParams({ type: tab });
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     dispatch(fetchAstrologersThunk());
+    const token = localStorage.getItem('accessToken');
+    const s = io('http://localhost:5000', { auth: { token } });
+    setSocket(s);
+    return () => { s.disconnect(); };
   }, [dispatch]);
 
   const handleActionClick = (astro) => {
     if (!isAuthenticated || user?.name === 'Guest User') {
-      navigate('/login');
+      navigate('/user/login', { state: { redirectTo: `/user/astrologers?type=${activeTab}` } });
       return;
     }
     if (!user?.name || user?.name.trim() === '') {
-      navigate('/user/details');
+      navigate('/user/details', { state: { redirectTo: `/user/astrologers?type=${activeTab}` } });
       return;
     }
 
-    const rate = activeTab === 'call' 
+    const rate = activeTab === 'video call'
+      ? (astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10))
+      : activeTab === 'call' 
       ? (astro.pricing?.audioCall || astro.rate || 5) 
       : (astro.pricing?.chat || astro.rate || 5);
 
+    // Minimum 5 minutes required
+    const requiredAmount = rate * 5;
     const walletBalance = user?.wallet || 0;
+    const astroName = astro.name || astro.userId?.name || 'Astrologer';
 
-    if (walletBalance < rate) {
-      setShortBalanceInfo({ required: rate, current: walletBalance });
+    // Free Chat Offer eligibility (no wallet check needed for free chat)
+    const isFreeChatEligible = activeTab === 'chat' && user?.hasUsedFreeChat === false;
+
+    if (walletBalance < requiredAmount && !isFreeChatEligible) {
+      setShortBalanceInfo({ required: requiredAmount, current: walletBalance, name: astroName });
       setShowBalanceModal(true);
     } else {
-      if (activeTab === 'call') {
-        navigate(`/user/video-room/${astro._id}`, { state: { astrologer: astro } });
-      } else {
-        navigate(`/user/chat`, { state: { astrologer: astro } });
+      if (isFreeChatEligible) {
+        navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: true, roomId: `room_${user._id}_bot_${Date.now()}` } });
+        return;
       }
+
+      if (!socket) return;
+      setIsConnecting(true);
+      setConnectingAstroName(astroName);
+
+      const targetAstroId = astro.userId?._id || astro.userId || astro._id;
+      setConnectingAstroId(targetAstroId);
+      
+      let emitType = activeTab;
+      if (activeTab === 'call') emitType = 'audio';
+      if (activeTab === 'video call') emitType = 'video';
+
+      socket.emit('request_session', {
+        astrologerId: targetAstroId,
+        userId: user._id,
+        userName: user.name,
+        type: emitType,
+      });
+
+      socket.once('session_accepted', ({ roomId }) => {
+        setIsConnecting(false);
+        socket.off('session_rejected'); // cleanup the other listener
+        if (activeTab === 'chat') {
+          navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: false, roomId } });
+        } else {
+          navigate(`/user/video-room/${roomId}?type=${activeTab === 'video call' ? 'video' : 'audio'}`, { state: { astrologer: astro } });
+        }
+      });
+
+      socket.once('session_rejected', ({ reason }) => {
+        setIsConnecting(false);
+        socket.off('session_accepted'); // cleanup
+        alert(`Request declined: ${reason}`);
+      });
     }
   };
 
-  const handleRecharge = () => {
-    dispatch(addWalletCash(500));
-    setShowBalanceModal(false);
-  };
-
   const filteredAstrologers = astrologers.filter(a => {
-    const astroName = a.name || a.user?.name || '';
-    return astroName.toLowerCase().includes(searchQuery.toLowerCase());
+    const isOnline = a.onlineStatus === 'online';
+    const astroName = a.name || a.userId?.name || '';
+    return isOnline && astroName.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -169,14 +216,17 @@ const Astrologers = () => {
 
       {/* ═══ ASTROLOGER LIST ═══ */}
       <div className="px-4 py-3 space-y-3">
-        {filteredAstrologers.map((astro, idx) => (
+        {filteredAstrologers.map((astro, idx) => {
+          const astroName = astro.name || astro.userId?.name || 'Astrologer';
+          const avatarUrl = astro.avatar || astro.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
+          return (
           <div key={astro._id || idx} className="bg-white rounded-2xl shadow-card border border-gray-100 relative overflow-hidden hover:shadow-card-hover transition-shadow duration-300">
             <div className="p-4">
               <div className="flex gap-3">
                 {/* Avatar & rating */}
                 <div className="flex flex-col items-center gap-1.5 shrink-0">
-                  <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-200">
-                    <img src={astro.avatar || astro.user?.avatar} alt={astro.name} className="w-full h-full object-cover" />
+                  <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-200 bg-orange-50">
+                    <img src={avatarUrl} alt={astroName} className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`; }} />
                   </div>
                   <div className="flex text-[13px] tracking-[-1px]">
                     {Array(5).fill(0).map((_, i) => (
@@ -189,23 +239,20 @@ const Astrologers = () => {
                 {/* Details */}
                 <div className="flex-1 flex flex-col pt-0.5">
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    <h3 className="font-bold text-gray-900 text-[16px]">{astro.name || astro.user?.name}</h3>
+                    <h3 className="font-bold text-gray-900 text-[16px]">{astroName}</h3>
                     {astro.isVerified !== false && (
                       <span className="w-[14px] h-[14px] bg-green-500 rounded-full flex items-center justify-center text-white text-[9px]">✓</span>
                     )}
                   </div>
-                  <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{astro.skills?.join(', ')}</p>
-                  <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{astro.languages?.join(', ')}</p>
+                  <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{(astro.skills || []).join(', ')}</p>
+                  <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{(astro.languages || []).join(', ')}</p>
                   <p className="text-gray-500 text-[12px] mb-1.5">Exp: {astro.experience} Years</p>
 
                   <div className="flex items-center gap-1.5">
-                    {astro.pricing?.chat ? (
-                      <>
-                        <span className="text-[14px] font-bold text-gray-800">₹{activeTab === 'call' ? astro.pricing.audioCall : astro.pricing.chat}<span className="text-[12px] text-gray-400 font-normal">/min</span></span>
-                      </>
-                    ) : (
-                      <span className="text-[14px] font-bold text-gray-800">₹{astro.rate || 5}<span className="text-[12px] text-gray-400 font-normal">/min</span></span>
-                    )}
+                    <span className="text-[14px] font-bold text-gray-800">
+                      ₹{activeTab === 'video call' ? (astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10)) : activeTab === 'call' ? (astro.pricing?.audioCall || astro.rate || 5) : (astro.pricing?.chat || astro.rate || 5)}
+                      <span className="text-[12px] text-gray-400 font-normal">/min</span>
+                    </span>
                   </div>
                 </div>
 
@@ -213,9 +260,9 @@ const Astrologers = () => {
                 <div className="flex flex-col items-end justify-center">
                   <button
                     onClick={() => handleActionClick(astro)}
-                    className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
+                    className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
                   >
-                    {activeTab === 'call' ? 'Call' : 'Chat'}
+                    {activeTab}
                   </button>
                 </div>
               </div>
@@ -229,32 +276,44 @@ const Astrologers = () => {
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
 
-      {/* ═══ INSUFFICIENT BALANCE MODAL ═══ */}
-      {showBalanceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowBalanceModal(false)} />
-          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 overflow-hidden animate-scale-in text-center">
-            <button onClick={() => setShowBalanceModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-              <FiX size={20} />
-            </button>
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👛</span>
+      <LowBalanceModal 
+        isOpen={showBalanceModal} 
+        onClose={() => setShowBalanceModal(false)}
+        requiredAmount={shortBalanceInfo.required}
+        currentBalance={shortBalanceInfo.current}
+        targetName={shortBalanceInfo.name}
+      />
+
+      {/* ═══ CONNECTING MODAL (ASTROLOGER REQUEST) ═══ */}
+      {isConnecting && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
+            <div className="relative w-20 h-20 mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
             </div>
-            <h3 className="font-bold text-gray-900 text-[18px] mb-2">Insufficient Balance</h3>
-            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Your wallet balance is <strong>₹{shortBalanceInfo.current}</strong>, but this session requires at least <strong>₹{shortBalanceInfo.required}</strong>. Please recharge to connect.
+            <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your {activeTab} request...
             </p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowBalanceModal(false)} className="flex-1 py-3 border border-gray-200 text-gray-700 font-bold rounded-xl text-[13px] hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleRecharge} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl text-[13px] hover:bg-orange-600 shadow-md shadow-orange-200 transition-colors">
-                Recharge (₹500)
-              </button>
-            </div>
+            <button 
+              onClick={() => {
+                setIsConnecting(false);
+                if (socket && user && connectingAstroId) {
+                  socket.emit('cancel_session_request', { 
+                    astrologerId: connectingAstroId, 
+                    userId: user._id 
+                  });
+                }
+              }}
+              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors"
+            >
+              Cancel Request
+            </button>
           </div>
         </div>
       )}

@@ -51,14 +51,14 @@ const Onboarding = () => {
   }, []);
 
   const handleSkip = () => {
-    navigate('/login');
+    navigate('/user/login');
   };
 
   const handleNext = () => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      navigate('/login');
+      navigate('/user/login');
     }
   };
 

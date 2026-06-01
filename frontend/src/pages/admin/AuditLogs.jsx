@@ -1,0 +1,158 @@
+import { useState, useEffect } from 'react';
+import { FiShield, FiFileText, FiRefreshCcw, FiX, FiClock } from 'react-icons/fi';
+import * as adminApis from '../../api/adminApis';
+
+const AdminAuditLogs = () => {
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const res = await adminApis.getAdminAuditLogs(100);
+      setLogs(res.data.data.logs || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const getActionColor = (action) => {
+    switch (action) {
+      case 'CREATE': return 'text-green-600 bg-green-50';
+      case 'UPDATE': return 'text-blue-600 bg-blue-50';
+      case 'DELETE': return 'text-red-600 bg-red-50';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in relative">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <FiShield className="text-orange-500" /> Audit Logs
+          </h1>
+          <p className="text-sm text-gray-400 font-medium mt-1">Track all system changes and administrative actions</p>
+        </div>
+        <button onClick={fetchLogs} className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-500 hover:text-orange-500 hover:border-orange-200 transition-colors shadow-sm">
+          <FiRefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Timestamp</th>
+                <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Admin</th>
+                <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Action</th>
+                <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Resource</th>
+                <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">IP Address</th>
+                <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading && logs.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-sm text-gray-500 font-medium">Loading audit logs...</td>
+                </tr>
+              )}
+              {!loading && logs.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-sm text-gray-500 font-medium">No audit logs found.</td>
+                </tr>
+              )}
+              {logs.map((log) => (
+                <tr key={log._id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="py-4 px-6">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                      <FiClock size={12} className="text-gray-400" />
+                      {new Date(log.createdAt).toLocaleString()}
+                    </div>
+                  </td>
+                  <td className="py-4 px-6">
+                    <p className="font-bold text-sm text-gray-800">{log.adminId?.name || 'Unknown'}</p>
+                    <p className="text-[10px] text-gray-400">{log.adminId?.email}</p>
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getActionColor(log.action)}`}>
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-sm font-bold text-gray-700 capitalize">
+                    {log.resource}
+                  </td>
+                  <td className="py-4 px-6 text-xs font-mono text-gray-400">
+                    {log.ipAddress || 'N/A'}
+                  </td>
+                  <td className="py-4 px-6 text-right">
+                    <button onClick={() => setSelectedLog(log)} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
+                      <FiFileText size={14} /> View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Details Modal */}
+      {selectedLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm" onClick={() => setSelectedLog(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <FiFileText className="text-orange-500" /> Audit Log Details
+              </h3>
+              <button onClick={() => setSelectedLog(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+                <FiX size={16}/>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Admin</p>
+                  <p className="text-sm font-bold text-gray-800 truncate">{selectedLog.adminId?.name || 'Unknown'}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Action</p>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getActionColor(selectedLog.action)}`}>
+                    {selectedLog.action}
+                  </span>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Resource</p>
+                  <p className="text-sm font-bold text-gray-800 capitalize">{selectedLog.resource}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Time</p>
+                  <p className="text-xs font-medium text-gray-600">{new Date(selectedLog.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Request Payload / Data</p>
+                <div className="bg-[#1e1e1e] rounded-xl p-4 overflow-x-auto max-h-[300px] overflow-y-auto">
+                  <pre className="text-xs text-green-400 font-mono leading-relaxed">
+                    {JSON.stringify(selectedLog.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminAuditLogs;

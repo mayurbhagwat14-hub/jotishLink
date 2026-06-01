@@ -1,6 +1,10 @@
 import axios from 'axios';
-import store from '../store/store';
-import { logout, login } from '../store/slices/authSlice';
+
+let store;
+
+export const injectStore = (_store) => {
+  store = _store;
+};
 
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
@@ -9,9 +13,11 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   (config) => {
-    const token = store.getState().auth.token;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (store) {
+      const token = store.getState().auth.token;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -31,11 +37,15 @@ instance.interceptors.response.use(
           { withCredentials: true }
         );
         const newAccessToken = res.data.accessToken;
-        store.dispatch(login({ user: store.getState().auth.user, token: newAccessToken }));
+        if (store) {
+          store.dispatch({ type: 'auth/login', payload: { user: store.getState().auth.user, token: newAccessToken } });
+        }
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return instance(originalRequest);
       } catch (refreshError) {
-        store.dispatch(logout());
+        if (store) {
+          store.dispatch({ type: 'auth/logout' });
+        }
         return Promise.reject(refreshError);
       }
     }
@@ -44,3 +54,4 @@ instance.interceptors.response.use(
 );
 
 export default instance;
+

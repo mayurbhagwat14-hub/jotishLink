@@ -1,13 +1,19 @@
 import axios from './axios';
 
+export const checkAstrologerPhone = (data) => axios.post('/astrologer/auth/check-phone', data);
+export const requestOtp = (phone) => axios.post('/astrologer/auth/request-otp', { phone });
 export const astrologerLogin = (data) => axios.post('/astrologer/auth/login', data);
 export const astrologerSignup = (data) => axios.post('/astrologer/auth/signup', data);
 export const astrologerChangePassword = (data) => axios.post('/astrologer/auth/change-password', data);
 export const astrologerDeleteAccount = () => axios.delete('/astrologer/profile');
 export const getAstrologerDashboard = () => axios.get('/astrologer/dashboard');
 export const getAstrologerProfile = () => axios.get('/astrologer/profile');
-export const updateAstrologerProfile = (data) => axios.put('/astrologer/profile', data);
+export const updateAstrologerProfile = (data) => axios.put('/astrologer/profile/update', data);
 export const getAstrologerEarnings = () => axios.get('/astrologer/earnings');
 export const getAstrologerPoojaRequests = () => axios.get('/astrologer/pooja-requests');
+export const updatePoojaStatus = (id, status) => axios.put(`/astrologer/poojas/${id}/status`, { status });
 export const getAstrologerChats = () => axios.get('/astrologer/chats');
 export const getAstrologerCalls = () => axios.get('/astrologer/calls');
+export const deleteAstrologerAccount = () => axios.delete('/astrologer/profile/delete');
+export const updateAstrologerOnlineStatus = (status) => axios.put('/astrologer/status', { status });
+export const getAstrologerHistory = () => axios.get('/astrologer/history');

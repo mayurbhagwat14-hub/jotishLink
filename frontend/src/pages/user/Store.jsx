@@ -1,89 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiClock, FiShoppingBag } from 'react-icons/fi';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { getStoreProducts, getStorePandits } from '../../api/userApis';
+import { fetchCartThunk, updateCartThunk } from '../../store/slices/cartSlice';
 
 const tabs = ['Astro Mall', 'Pandit Booking'];
 
-const poojaTypes = [
-  'Navagraha Shanti', 'Vastu Shanti', 'Satyanarayan', 'Marriage Pooja', 'Maha Mrityunjaya'
-];
-
-const availablePandits = [
-  { id: 1, name: 'Pandit Ravi Sharma', img: 'https://i.pravatar.cc/150?u=pandit1', experience: '15 Years', rating: 4.9, price: 1100, poojas: ['Navagraha Shanti', 'Vastu Shanti', 'Satyanarayan'] },
-  { id: 2, name: 'Acharya Vinod', img: 'https://i.pravatar.cc/150?u=pandit2', experience: '8 Years', rating: 4.7, price: 800, poojas: ['Satyanarayan', 'Marriage Pooja'] },
-  { id: 3, name: 'Pandit Kedar Nath', img: 'https://i.pravatar.cc/150?u=pandit3', experience: '20 Years', rating: 5.0, price: 2100, poojas: ['Navagraha Shanti', 'Maha Mrityunjaya'] },
-  { id: 4, name: 'Shastri Ramdas', img: 'https://i.pravatar.cc/150?u=pandit4', experience: '12 Years', rating: 4.8, price: 1500, poojas: ['Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya'] },
-  { id: 5, name: 'Pandit Dinesh', img: 'https://i.pravatar.cc/150?u=pandit5', experience: '5 Years', rating: 4.5, price: 500, poojas: ['Satyanarayan', 'Navagraha Shanti'] },
-];
-
-const storeCategories = [
-  { name: 'Bracelets', img: '/store_bracelet.png' },
-  { name: 'Rudraksha', img: '/store_rudraksha.png' },
-  { name: 'Gemstones', img: '/store_gemstone.png' },
-  { name: 'Lal Kitab', img: '/store_spell.png' },
-];
-
-const topSellingProducts = [
-  { name: 'VIP Pooja', img: '/store_puja.png', badge: 'VIP' },
-  { name: 'Palmistry', img: '/store_palmistry.png' },
-  { name: 'Spell', img: '/store_spell.png' },
-  { name: 'Love Sp...', img: '/store_healing.png' },
-];
-
-const newLaunchProducts = [
-  { name: 'Gemstone', img: '/store_gemstone.png' },
-  { name: 'Reiki Healing', img: '/store_reiki.png' },
-  { name: 'Evil Eye', img: '/store_evileye.png' },
-  { name: 'Love Sp...', img: '/store_healing.png' },
-];
-
-const allProducts = [
-  { name: 'Raw Pyrite Bracelet', rating: 4.5, reviews: 2756, price: 399, originalPrice: 899, discount: '56% Off', img: '/store_bracelet.png' },
-  { name: 'Pyrite Bracelet', rating: 4.6, reviews: 1890, price: 499, originalPrice: 1299, discount: '62% Off', img: '/store_rudraksha.png' },
-  { name: 'Raw Pyrite Bracelet', rating: 4.3, reviews: 3120, price: 399, originalPrice: 899, discount: '56% Off', img: '/store_gemstone.png' },
-  { name: 'Raw Pyrite Bracelet', rating: 4.8, reviews: 980, price: 299, originalPrice: 799, discount: '63% Off', img: '/store_bracelet.png' },
-];
-
-// poojaItems is commented out to satisfy ESLint rules
-/*
-const poojaItems = [
-  { name: 'Palmistry', price: 'Starts at ₹ 499', color: 'bg-orange-500' },
-  { name: 'Spell', price: 'Starts at ₹ 199', color: 'bg-orange-500' },
-  { name: 'Reiki Healing', price: 'Starts at ₹ 799', color: 'bg-orange-400' },
-  { name: 'E Pooja', price: 'Starts at ₹ 599', color: 'bg-orange-500' },
-  { name: 'VIP E Pooja', price: 'Starts at ₹ 1199', color: 'bg-orange-400' },
-  { name: 'Free Gemstone Consultation', price: 'Starts at ₹ 199', color: 'bg-orange-500' },
-  { name: 'Relationship', price: 'Starts at ₹ 499', color: 'bg-orange-400' },
-  { name: 'Evil Eye Removal (Buri Nazar Nivaran)', price: 'Starts at ₹ 399', color: 'bg-orange-500' },
-];
-*/
-
 const Store = () => {
   const [activeTab, setActiveTab] = useState(tabs[0]);
-  const [selectedPooja, setSelectedPooja] = useState(poojaTypes[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [panditSearchQuery, setPanditSearchQuery] = useState('');
   const { user } = useSelector((state) => state.auth);
+  const { cart } = useSelector((state) => state.cart);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Local state for products, pandits and loading state
-  const reduxProducts = useSelector((state) => state.payment?.products) || [];
-  const [products, setProducts] = useState(() => {
-    // Merge allProducts with Redux products, deduplicated by name
-    const merged = [...allProducts];
-    reduxProducts.forEach(rp => {
-      if (!merged.some(p => p.name === rp.name)) {
-        merged.push(rp);
-      }
-    });
-    return merged;
-  });
-  const [pandits, setPandits] = useState(availablePandits);
+  const [products, setProducts] = useState([]);
+  const [topSellingProducts, setTopSellingProducts] = useState([]);
+  const [newLaunchProducts, setNewLaunchProducts] = useState([]);
+  const [storeCategories, setStoreCategories] = useState([]);
+  const [banners, setBanners] = useState([]);
+  
+  const [pandits, setPandits] = useState([]);
+  const [poojaTypes, setPoojaTypes] = useState(['General Pooja']);
+  const [selectedPooja, setSelectedPooja] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    dispatch(fetchCartThunk());
     let active = true;
     const loadStoreData = async () => {
       try {
@@ -95,17 +41,24 @@ const Store = () => {
 
         if (active) {
           if (productsRes.status === 'fulfilled' && productsRes.value?.data) {
-            const data = productsRes.value.data;
+            const rawData = productsRes.value.data;
+            const data = rawData.data || rawData; // Handle ApiResponse wrapper
             const fetchedProducts = Array.isArray(data) ? data : (data.products || []);
-            if (fetchedProducts.length > 0) {
-              setProducts(fetchedProducts);
-            }
+            setProducts(fetchedProducts);
+            if (data.categories) setStoreCategories(data.categories);
+            if (data.topSelling) setTopSellingProducts(data.topSelling);
+            if (data.newLaunch) setNewLaunchProducts(data.newLaunch);
+            if (data.banners) setBanners(data.banners);
           }
           if (panditsRes.status === 'fulfilled' && panditsRes.value?.data) {
             const data = panditsRes.value.data;
             const fetchedPandits = Array.isArray(data) ? data : (data.pandits || []);
             if (fetchedPandits.length > 0) {
               setPandits(fetchedPandits);
+            }
+            if (data.poojaTypes && data.poojaTypes.length > 0) {
+              setPoojaTypes(data.poojaTypes);
+              if (!selectedPooja) setSelectedPooja(data.poojaTypes[0]);
             }
           }
         }
@@ -125,13 +78,26 @@ const Store = () => {
 
   const filteredPandits = (pandits || []).filter(p => 
     p &&
-    Array.isArray(p.poojas) && p.poojas.includes(selectedPooja) && 
+    Array.isArray(p.skills) && p.skills.includes(selectedPooja) && 
     typeof p.name === 'string' && p.name.toLowerCase().includes(panditSearchQuery.toLowerCase())
   );
   const filteredProducts = (products || []).filter(p => 
     p &&
     typeof p.name === 'string' && p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleAddToCart = async (product) => {
+    try {
+      const existingItem = cart?.items?.find(item => item.productId?._id === product._id || item.productId === product._id);
+      const newQty = existingItem ? existingItem.quantity + 1 : 1;
+      await dispatch(updateCartThunk({ productId: product._id, quantity: newQty })).unwrap();
+      // Optional: show toast notification
+    } catch (err) {
+      alert(err.message || 'Failed to add to cart');
+    }
+  };
+
+  const cartItemCount = cart?.items?.reduce((acc, item) => acc + item.quantity, 0) || 0;
 
   return (
     <div className="w-full bg-white min-h-screen pb-24 font-sans relative">
@@ -151,8 +117,13 @@ const Store = () => {
           <button className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
             <FiClock size={16} className="text-orange-500" />
           </button>
-          <button className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
+          <button onClick={() => navigate('/user/cart')} className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors relative">
             <FiShoppingBag size={16} className="text-orange-500" />
+            {cartItemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                {cartItemCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -195,7 +166,11 @@ const Store = () => {
               {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3">
                   {filteredProducts.map((product, i) => (
-                    <div key={product.id || product._id || i} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow">
+                    <div 
+                      key={product.id || product._id || i} 
+                      onClick={() => navigate(`/user/product/${product._id || product.id}`)}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow"
+                    >
                       <div className="h-[140px] bg-orange-50 overflow-hidden">
                         <img src={product.image || product.img} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                       </div>
@@ -210,7 +185,10 @@ const Store = () => {
                           <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span>
                           <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>
                         </div>
-                        <button className="w-full border-2 border-orange-500 text-orange-500 font-bold text-[12px] py-1.5 rounded-xl hover:bg-orange-50 active:scale-95 transition-all">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
+                          className="w-full border-2 border-orange-500 text-orange-500 font-bold text-[12px] py-1.5 rounded-xl hover:bg-orange-50 active:scale-95 transition-all"
+                        >
                           Add to cart
                         </button>
                       </div>
@@ -236,15 +214,17 @@ const Store = () => {
               </div>
 
               {/* ═══ BANNER ═══ */}
-              <div className="px-4 py-3">
-                <div className="w-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-2xl p-5 relative overflow-hidden shadow-lg">
-                  <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-                  <p className="text-white/80 text-[11px] font-bold tracking-widest mb-1">2025</p>
-                  <h3 className="text-white font-bold text-[18px] leading-tight mb-1">Navya Mahakundali</h3>
-                  <p className="text-white/80 text-[12px] mb-3">Premium Collection</p>
-                  <button className="bg-white text-orange-600 text-[12px] font-bold px-4 py-1.5 rounded-full shadow-sm">Book Now</button>
+              {banners.length > 0 && (
+                <div className="px-4 py-3 flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+                  {banners.map((banner, i) => (
+                    <div key={banner._id || i} className="w-full shrink-0 snap-center">
+                      <div className="w-full h-36 bg-gray-100 rounded-2xl relative overflow-hidden shadow-sm">
+                        <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
 
               {/* ═══ TOP SELLING ═══ */}
               <div className="px-4 py-4">
@@ -254,11 +234,19 @@ const Store = () => {
                 </div>
                 <div className="flex gap-3 overflow-x-auto no-scrollbar">
                   {topSellingProducts.map((p, i) => (
-                    <div key={i} className="shrink-0 flex flex-col items-center gap-1.5 w-[72px] cursor-pointer group">
-                      <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors">
-                        <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+                    <div 
+                      key={i} 
+                      onClick={() => navigate(`/user/product/${p._id || p.id}`)}
+                      className="shrink-0 flex flex-col items-center gap-1.5 w-[72px] cursor-pointer group"
+                    >
+                      <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors flex items-center justify-center text-orange-300">
+                        {p.image || p.img ? (
+                          <img src={p.image || p.img} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold text-gray-400">No Img</span>
+                        )}
                       </div>
-                      <span className="text-[10px] text-gray-600 font-semibold text-center leading-tight">{p.name}</span>
+                      <span className="text-[10px] text-gray-600 font-semibold text-center leading-tight truncate w-full px-1">{p.name}</span>
                     </div>
                   ))}
                 </div>
@@ -272,11 +260,19 @@ const Store = () => {
                 </div>
                 <div className="flex gap-3 overflow-x-auto no-scrollbar">
                   {newLaunchProducts.map((p, i) => (
-                    <div key={i} className="shrink-0 flex flex-col items-center gap-1.5 w-[72px] cursor-pointer group">
-                      <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors">
-                        <img src={p.img} alt={p.name} className="w-full h-full object-cover" />
+                    <div 
+                      key={i} 
+                      onClick={() => navigate(`/user/product/${p._id || p.id}`)}
+                      className="shrink-0 flex flex-col items-center gap-1.5 w-[72px] cursor-pointer group"
+                    >
+                      <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors flex items-center justify-center text-orange-300">
+                        {p.image || p.img ? (
+                          <img src={p.image || p.img} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-bold text-gray-400">No Img</span>
+                        )}
                       </div>
-                      <span className="text-[10px] text-gray-600 font-semibold text-center leading-tight">{p.name}</span>
+                      <span className="text-[10px] text-gray-600 font-semibold text-center leading-tight truncate w-full px-1">{p.name}</span>
                     </div>
                   ))}
                 </div>
@@ -290,9 +286,17 @@ const Store = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {products.map((product, i) => (
-                    <div key={product.id || product._id || i} className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow">
-                      <div className="h-[140px] bg-orange-50 overflow-hidden">
-                        <img src={product.image || product.img} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                    <div 
+                      key={product.id || product._id || i} 
+                      onClick={() => navigate(`/user/product/${product._id || product.id}`)}
+                      className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow"
+                    >
+                      <div className="h-[140px] bg-orange-50 overflow-hidden flex items-center justify-center text-orange-300">
+                        {product.image || product.img ? (
+                          <img src={product.image || product.img} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <span className="text-sm font-bold text-gray-400">No Img</span>
+                        )}
                       </div>
                       <div className="p-3">
                         <h4 className="text-[13px] font-semibold text-gray-800 line-clamp-1 mb-1">{product.name}</h4>
@@ -302,10 +306,13 @@ const Store = () => {
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-[15px] font-bold text-gray-900">₹{product.price}</span>
-                          <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span>
-                          <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>
+                          {product.originalPrice && <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span>}
+                          {product.discount && <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>}
                         </div>
-                        <button className="w-full border-2 border-orange-500 text-orange-500 font-bold text-[12px] py-1.5 rounded-xl hover:bg-orange-50 active:scale-95 transition-all">
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
+                          className="w-full border-2 border-orange-500 text-orange-500 font-bold text-[12px] py-1.5 rounded-xl hover:bg-orange-50 active:scale-95 transition-all"
+                        >
                           Add to cart
                         </button>
                       </div>
@@ -365,7 +372,7 @@ const Store = () => {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-[16px] font-bold text-gray-900 leading-tight">{pandit.name}</h3>
-                    <p className="text-[13px] text-gray-500 font-medium mb-1">Exp: {pandit.experience}</p>
+                    <p className="text-[13px] text-gray-500 font-medium mb-1">Exp: {pandit.experience || 0} Years</p>
                     <div className="flex items-center gap-1">
                       <span className="text-orange-500 text-[12px]">★</span>
                       <span className="text-[12px] font-bold text-gray-700">{pandit.rating}</span>
@@ -373,7 +380,7 @@ const Store = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] text-gray-400 font-semibold mb-0.5">Starting at</p>
-                    <p className="text-[18px] font-bold text-gray-900 leading-none">₹{pandit.price}</p>
+                    <p className="text-[18px] font-bold text-gray-900 leading-none">₹{pandit.pricing?.chat || pandit.price || 500}</p>
                   </div>
                 </div>
                 

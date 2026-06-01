@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiSearch, FiAlertTriangle, FiBox, FiPackage, FiChevronDown, FiChevronLeft, FiChevronRight, FiRefreshCcw, FiPlus, FiMinus, FiX, FiTrendingDown, FiDatabase } from 'react-icons/fi';
+import { getAdminProducts, updateAdminProduct } from '../../api/adminApis';
 
 const AdminInventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,18 +11,58 @@ const AdminInventory = () => {
   const [restockQty, setRestockQty] = useState('');
   const itemsPerPage = 10;
 
-  const inventory = [
-    { id: 1, name: 'Raw Pyrite Bracelet', sku: 'BRC-001', category: 'Bracelets', stock: 45, minStock: 20, sold: 312, lastUpdated: 'May 27, 2026', status: 'In Stock' },
-    { id: 2, name: 'Pyrite Premium Bracelet', sku: 'BRC-002', category: 'Bracelets', stock: 22, minStock: 15, sold: 189, lastUpdated: 'May 26, 2026', status: 'In Stock' },
-    { id: 3, name: '5 Mukhi Rudraksha Mala', sku: 'RUD-001', category: 'Rudraksha', stock: 8, minStock: 10, sold: 98, lastUpdated: 'May 25, 2026', status: 'Low Stock' },
-    { id: 4, name: 'Yellow Sapphire Ring', sku: 'GEM-001', category: 'Gemstones', stock: 3, minStock: 5, sold: 45, lastUpdated: 'May 27, 2026', status: 'Low Stock' },
-    { id: 5, name: 'Tiger Eye Bracelet', sku: 'BRC-003', category: 'Bracelets', stock: 0, minStock: 20, sold: 412, lastUpdated: 'May 20, 2026', status: 'Out of Stock' },
-    { id: 6, name: 'Neelam Stone (Blue Sapphire)', sku: 'GEM-002', category: 'Gemstones', stock: 12, minStock: 5, sold: 23, lastUpdated: 'May 24, 2026', status: 'In Stock' },
-    { id: 7, name: 'Rudraksha Pendant 7 Mukhi', sku: 'RUD-002', category: 'Rudraksha', stock: 15, minStock: 10, sold: 0, lastUpdated: 'May 22, 2026', status: 'In Stock' },
-    { id: 8, name: 'Evil Eye Protection Bracelet', sku: 'LKB-001', category: 'Lal Kitab', stock: 60, minStock: 25, sold: 156, lastUpdated: 'May 27, 2026', status: 'In Stock' },
-    { id: 9, name: 'Reiki Healing Stones Set', sku: 'LKB-002', category: 'Lal Kitab', stock: 18, minStock: 15, sold: 89, lastUpdated: 'May 26, 2026', status: 'In Stock' },
-    { id: 10, name: 'Emerald (Panna) Natural', sku: 'GEM-003', category: 'Gemstones', stock: 5, minStock: 5, sold: 14, lastUpdated: 'May 23, 2026', status: 'Low Stock' },
-  ];
+  const [inventory, setInventory] = useState([]);
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const fetchInventory = async () => {
+    try {
+      const response = await getAdminProducts();
+      const products = response.data?.data?.products || response.data?.products || [];
+      const mapped = products.map(p => ({
+        id: p._id,
+        name: p.name,
+        sku: p.sku || p._id.slice(-6).toUpperCase(),
+        category: p.category || 'General',
+        stock: p.stock || 0,
+        minStock: p.minStock || 10,
+        sold: p.sold || 0,
+        lastUpdated: new Date(p.updatedAt).toLocaleDateString(),
+        status: p.stock === 0 ? 'Out of Stock' : (p.stock <= (p.minStock || 10) ? 'Low Stock' : 'In Stock')
+      }));
+      setInventory(mapped);
+    } catch (err) {
+      console.error('Failed to fetch inventory', err);
+    }
+  };
+
+  const handleRestock = async () => {
+    if (!restockModal || !restockQty || parseInt(restockQty) <= 0) return;
+    try {
+      const newStock = restockModal.stock + parseInt(restockQty);
+      await updateAdminProduct(restockModal.id, { stock: newStock });
+      
+      // Update local state
+      setInventory(prev => prev.map(item => {
+        if (item.id === restockModal.id) {
+          return {
+            ...item,
+            stock: newStock,
+            status: newStock === 0 ? 'Out of Stock' : (newStock <= item.minStock ? 'Low Stock' : 'In Stock'),
+            lastUpdated: new Date().toLocaleDateString()
+          };
+        }
+        return item;
+      }));
+      
+      setRestockModal(null);
+      setRestockQty('');
+    } catch (err) {
+      console.error('Failed to restock product', err);
+    }
+  };
 
   const categories = ['All', 'Bracelets', 'Rudraksha', 'Gemstones', 'Lal Kitab'];
   const statuses = ['All', 'In Stock', 'Low Stock', 'Out of Stock'];
@@ -265,7 +306,7 @@ const AdminInventory = () => {
               )}
 
               <button
-                onClick={() => setRestockModal(null)}
+                onClick={handleRestock}
                 disabled={!restockQty || parseInt(restockQty) <= 0}
                 className="w-full px-6 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm disabled:opacity-50"
               >

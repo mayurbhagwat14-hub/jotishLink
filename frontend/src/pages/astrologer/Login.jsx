@@ -1,133 +1,241 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { login, astrologerLoginThunk } from '../../store/slices/authSlice';
-import { FiMoon, FiPhone, FiLock } from 'react-icons/fi';
+import { checkAstrologerPhone, requestOtp } from '../../api/astrologerApis';
+import { FiMoon, FiPhone, FiCheckCircle } from 'react-icons/fi';
 
 const AstrologerLogin = () => {
-  const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
-  const [step, setStep] = useState(1); // 1 = Mobile, 2 = OTP
+  const [step, setStep] = useState(1);
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const handleSendOtp = (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (mobile.length >= 10) {
-      setStep(2);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await checkAstrologerPhone({ phone });
+      const data = res.data?.data || res.data;
+      
+      if (data?.exists) {
+        // Astrologer exists, proceed to OTP login
+        await requestOtp(phone);
+        setLoading(false);
+        setStep(2);
+      } else {
+        // Not an astrologer, redirect to apply page with prefilled phone
+        navigate('/astrologer/apply', { state: { phone } });
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to check phone number');
+      setLoading(false);
     }
   };
 
-  const handleVerifyOtp = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (otp.length === 4) {
-      try {
-        // Try calling actual API endpoint
-        await dispatch(astrologerLoginThunk({ mobile, otp })).unwrap();
-        navigate('/astrologer/dashboard');
-      } catch (err) {
-        // Fallback for mock environment
-        dispatch(login({
-          user: { name: 'Astro Jane', role: 'astrologer', mobile: mobile },
-          token: 'mock-astro-token'
-        }));
-        navigate('/astrologer/dashboard');
+    setLoading(true);
+    setError('');
+    try {
+      const res = await dispatch(astrologerLoginThunk({ phone, otp: otp.join('') })).unwrap();
+      const data = res?.data || res;
+      if (data?.accessToken) {
+        dispatch(login({ user: data.user, token: data.accessToken }));
       }
+      navigate('/astrologer/dashboard');
+    } catch (err) {
+      const status = err?.status;
+      const message = err?.message || 'Invalid OTP';
+      
+      if (status === 404) {
+        // Not registered
+        navigate('/astrologer/apply');
+      } else if (status === 403) {
+        // Pending or rejected
+        setError(message);
+        setStep(3); // Pending / Rejected screen
+      } else {
+        setError(message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    let interval;
+    if (step === 3) {
+      interval = setInterval(async () => {
+        try {
+          const res = await checkAstrologerPhone({ phone });
+          const data = res.data?.data || res.data;
+          if (data?.approvalStatus === 'approved') {
+            clearInterval(interval);
+            setError('Your application has been approved! You can now log in.');
+            setTimeout(() => {
+              setStep(1);
+            }, 3000);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [step, phone]);
+
+  const handleOtpChange = (index, value) => {
+    if (value.length > 1) value = value.slice(-1);
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 3) {
+      document.getElementById(`otp-${index + 1}`)?.focus();
+    }
+  };
+
+  const resendOtp = async () => {
+    setLoading(true);
+    setError('');
+    setOtp(['', '', '', '']);
+    try {
+      await requestOtp(phone);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 flex flex-col justify-center items-center p-4">
-      
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-orange-500/10 overflow-hidden relative">
-        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-yellow-400"></div>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans p-4 relative overflow-hidden">
+      {/* Decorative floating dots */}
+      <div className="absolute top-[15%] right-[15%] w-3 h-3 bg-orange-200 rounded-full animate-float opacity-50" />
+      <div className="absolute top-[35%] left-[10%] w-2 h-2 bg-orange-300 rounded-full animate-float opacity-40" style={{ animationDelay: '1s' }} />
+      <div className="absolute bottom-[20%] right-[20%] w-2 h-2 bg-orange-200 rounded-full animate-float opacity-30" style={{ animationDelay: '0.5s' }} />
+      <div className="absolute bottom-[30%] left-[15%] w-4 h-4 bg-orange-100 rounded-full animate-float opacity-60" style={{ animationDelay: '1.5s' }} />
+
+      <div className="w-full max-w-sm z-10">
         
-        <div className="p-8">
-          <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-             <FiMoon size={32} />
+        <div className="flex flex-col items-center">
+          <div className="w-[80px] h-[80px] bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative">
+            <FiMoon size={36} className="text-white" />
           </div>
           
-          <h1 className="text-2xl font-black text-center text-gray-800 mb-1">Astrologer Portal</h1>
-          <p className="text-center text-gray-500 text-sm font-medium mb-8">Login to manage your sessions and earnings.</p>
+          <h1 className="text-[32px] font-bold text-gray-900 mb-2 tracking-tight">Astrologer Portal</h1>
+          <p className="text-center text-gray-500 text-[14px] font-medium mb-10">Login to manage your sessions and earnings.</p>
 
-          {step === 1 ? (
-            <form onSubmit={handleSendOtp} className="space-y-6 animate-fade-in">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
-                <div className="flex border-2 border-gray-100 rounded-xl overflow-hidden focus-within:border-orange-400 transition-colors bg-gray-50">
-                  <div className="px-4 flex items-center justify-center border-r border-gray-100 bg-white">
-                    <span className="text-gray-500 font-bold text-sm">🇮🇳 +91</span>
-                  </div>
-                  <input 
-                    type="tel" 
-                    required
-                    maxLength={10}
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter your 10 digit number" 
-                    className="flex-1 px-4 py-3 outline-none text-gray-800 font-medium bg-transparent"
-                  />
+          {error && (
+            <div className="w-full mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 font-medium text-center shadow-sm">
+              {error}
+            </div>
+          )}
+
+          {step === 1 && (
+            <form onSubmit={handleSendOtp} className="w-full space-y-6 animate-fade-in">
+              <div className="flex gap-2 sm:gap-3">
+                <div className="flex items-center gap-1 border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-3.5 bg-gray-50 shrink-0 transition-colors">
+                  <span className="text-gray-800 font-bold text-[15px]">+91</span>
                 </div>
+                <input 
+                  type="tel" 
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="Enter phone number" 
+                  className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-3.5 bg-gray-50 text-[15px] text-gray-900 outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
+                />
               </div>
               <button 
                 type="submit"
-                disabled={mobile.length < 10}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-3.5 rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2"
+                disabled={loading || phone.length < 10}
+                className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 flex justify-center items-center ${
+                  loading || phone.length < 10
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+                }`}
               >
-                Send OTP
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-6 animate-fade-in">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Enter OTP</label>
-                <div className="flex border-2 border-gray-100 rounded-xl overflow-hidden focus-within:border-orange-400 transition-colors bg-gray-50">
-                  <div className="px-4 flex items-center justify-center border-r border-gray-100 bg-white">
-                    <FiLock className="text-gray-400" />
-                  </div>
-                  <input 
-                    type="text" 
-                    required
-                    maxLength={4}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="4 digit OTP (e.g. 1234)" 
-                    className="flex-1 px-4 py-3 outline-none text-gray-800 font-medium bg-transparent tracking-widest text-center text-lg"
-                  />
-                </div>
-              </div>
-              <button 
-                type="submit"
-                disabled={otp.length < 4}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-400 text-white font-bold py-3.5 rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg disabled:opacity-50 disabled:shadow-none transition-all"
-              >
-                Verify & Login
-              </button>
-              <button 
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-full text-center text-sm font-bold text-gray-500 hover:text-orange-500 transition-colors"
-              >
-                Edit Mobile Number
+                {loading ? <span className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" /> : 'GET OTP'}
               </button>
             </form>
           )}
 
+          {step === 2 && (
+            <div className="w-full text-center animate-fade-in">
+              <p className="text-gray-600 text-[15px] font-medium mb-8">
+                OTP Sent to +91 {phone}
+              </p>
+              <form onSubmit={handleLogin} className="flex flex-col items-center">
+                <div className="flex gap-4 mb-10 justify-center w-full">
+                  {[0, 1, 2, 3].map((index) => (
+                    <input
+                      key={index}
+                      id={`otp-${index}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={otp[index]}
+                      onChange={(e) => handleOtpChange(index, e.target.value)}
+                      className="w-14 h-14 bg-white border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all duration-200"
+                    />
+                  ))}
+                </div>
+                
+                <button 
+                  type="submit"
+                  disabled={loading || otp.join('').length < 4}
+                  className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 flex justify-center items-center ${
+                    loading || otp.join('').length < 4
+                      ? 'bg-orange-200 text-orange-400 cursor-not-allowed'
+                      : 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+                  }`}
+                >
+                  {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'VERIFY & LOGIN'}
+                </button>
+              </form>
+              <div className="flex flex-col items-center mt-8 gap-2">
+                <p className="text-gray-400 text-xs font-medium">
+                  Didn't receive code? <button type="button" onClick={resendOtp} className="text-orange-500 hover:underline">Resend OTP</button>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="w-full text-center py-6 animate-fade-in">
+              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 relative shadow-inner">
+                <FiCheckCircle size={32} className="text-blue-500" />
+                <span className="absolute top-0 right-0 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center animate-pulse" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Access Denied</h2>
+              <p className="text-gray-500 font-medium leading-relaxed mb-8">
+                {error || "Your application is currently pending admin approval."}
+              </p>
+              <button 
+                onClick={() => setStep(1)}
+                className="px-8 py-3 border-2 border-orange-500 text-orange-500 font-bold rounded-xl hover:bg-orange-50 transition-colors active:scale-[0.98]"
+              >
+                Go Back
+              </button>
+            </div>
+          )}
+
         </div>
         
-        <div className="bg-gray-50 p-6 text-center border-t border-gray-100 flex flex-col gap-4">
-          <p className="text-sm font-medium text-gray-600">
+        <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-3 w-full">
+          <p className="text-[13px] font-medium text-gray-500">
             Not an astrologer yet?{' '}
-            <Link to="/astrologer/apply" className="text-orange-500 font-bold hover:underline">
+            <Link to="/astrologer/apply" className="text-orange-500 font-bold hover:underline transition-colors">
               Apply Here
             </Link>
           </p>
-          <button 
-             onClick={() => navigate('/login')}
-             className="text-xs font-bold text-gray-400 hover:text-gray-700 transition-colors"
-          >
-             Back to User Login
-          </button>
         </div>
 
       </div>

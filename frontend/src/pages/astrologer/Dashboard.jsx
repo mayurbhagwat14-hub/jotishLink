@@ -23,7 +23,7 @@ const Dashboard = () => {
         <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/20 rounded-full blur-2xl"></div>
         <p className="text-orange-50 font-medium mb-1 text-sm">Today's Earnings</p>
         <div className="flex items-end justify-between relative z-10">
-          <h2 className="text-3xl font-black">₹{dbData.todayEarnings?.toLocaleString() || '0'}</h2>
+          <h2 className="text-3xl font-black">₹{dbData.totalEarnings?.toLocaleString() || '0'}</h2>
           <Link to="/astrologer/earnings" className="bg-white/20 hover:bg-white/30 transition-colors backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1">
             <FiTrendingUp /> Details
           </Link>
@@ -106,15 +106,19 @@ const Dashboard = () => {
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
         <h2 className="font-bold text-gray-800 text-sm mb-3 border-b border-gray-50 pb-2">Recent Sessions</h2>
         <div className="space-y-3">
-           {(dbData.recentSessions || []).map((session, i) => (
+           {dbData.recentSessions && dbData.recentSessions.length > 0 ? dbData.recentSessions.map((session, i) => (
              <div key={i} className="flex justify-between items-center">
                 <div>
-                  <p className="font-bold text-gray-800 text-sm">{session.user}</p>
-                  <p className="text-xs text-gray-500 flex items-center gap-1 font-medium"><span className="text-orange-500 font-bold">{session.type}</span> • {session.duration}</p>
+                  <p className="font-bold text-gray-800 text-sm">{session.userId?.name || 'Unknown User'}</p>
+                  <p className="text-xs text-gray-500 flex items-center gap-1 font-medium">
+                    <span className="text-orange-500 font-bold">Chat</span> • {Math.floor((session.durationSeconds || 0) / 60)}m {(session.durationSeconds || 0) % 60}s
+                  </p>
                 </div>
-                <span className="font-black text-gray-800 text-sm">₹{session.earning}</span>
+                <span className="font-black text-gray-800 text-sm">₹{((session.amountDeducted || 0) * 0.7).toFixed(2)}</span>
              </div>
-           ))}
+           )) : (
+             <p className="text-sm text-gray-500">No recent sessions.</p>
+           )}
         </div>
       </div>
 

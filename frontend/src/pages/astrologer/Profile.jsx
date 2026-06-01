@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiSave, FiPlus, FiX } from 'react-icons/fi';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { profile } = useSelector((state) => state.astrologer);
+
   const [languages, setLanguages] = useState(['Hindi', 'English']);
   const [newLanguage, setNewLanguage] = useState('');
   
@@ -9,11 +16,30 @@ const Profile = () => {
   const [newExpertise, setNewExpertise] = useState('');
 
   const [formData, setFormData] = useState({
-    bio: 'Experienced Vedic astrologer with over 10 years of practice...',
-    chatPrice: '15',
-    audioPrice: '20',
-    videoPrice: '50'
+    bio: '',
+    chatPrice: '',
+    audioPrice: '',
+    videoPrice: '',
+    avatar: ''
   });
+
+  useEffect(() => {
+    dispatch(fetchAstrologerProfileThunk());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (profile?.astrologer) {
+       setFormData({
+         bio: profile.astrologer.about || '',
+         chatPrice: profile.astrologer.pricing?.chat?.toString() || '15',
+         audioPrice: profile.astrologer.pricing?.audioCall?.toString() || '20',
+         videoPrice: profile.astrologer.pricing?.videoCall?.toString() || '50',
+         avatar: profile.astrologer.avatar || ''
+       });
+       setLanguages(profile.astrologer.languages || []);
+       setExpertise(profile.astrologer.skills || []);
+    }
+  }, [profile]);
 
   const handleAddLanguage = (e) => {
     e.preventDefault();
@@ -39,6 +65,45 @@ const Profile = () => {
     setExpertise(expertise.filter(e => e !== exp));
   };
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, avatar: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = async () => {
+    const cPrice = Number(formData.chatPrice);
+    const aPrice = Number(formData.audioPrice);
+    const vPrice = Number(formData.videoPrice);
+
+    if (cPrice < 5 || aPrice < 5 || vPrice < 5) {
+      alert("Minimum price for any service must be at least ₹5/min");
+      return;
+    }
+
+    try {
+      await dispatch(updateAstrologerProfileThunk({
+        about: formData.bio,
+        languages,
+        skills: expertise,
+        avatar: formData.avatar,
+        pricing: {
+          chat: cPrice,
+          audioCall: aPrice,
+          videoCall: vPrice
+        }
+      })).unwrap();
+      navigate('/astrologer/dashboard');
+    } catch (err) {
+      alert('Failed to save profile: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 animate-fade-in max-w-5xl mx-auto space-y-8">
       
@@ -47,7 +112,10 @@ const Profile = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-1">Profile & Settings</h1>
           <p className="text-gray-500 font-medium">Manage your public presence and pricing</p>
         </div>
-        <button className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-all">
+        <button 
+          onClick={handleSave}
+          className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-all"
+        >
           <FiSave /> Save Changes
         </button>
       </div>
@@ -56,6 +124,26 @@ const Profile = () => {
         
         {/* Left Column: Basic Info & Tags */}
         <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row gap-6 items-center">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full border-2 border-orange-200 overflow-hidden bg-orange-50 flex items-center justify-center text-orange-400 text-3xl font-bold">
+                {formData.avatar ? (
+                  <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  profile?.astrologer?.name?.[0] || 'A'
+                )}
+              </div>
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-orange-600 transition-colors">
+                <FiPlus />
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              </label>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">Profile Photo</h2>
+              <p className="text-sm text-gray-500 font-medium">Update your profile picture to build trust with users.</p>
+            </div>
+          </div>
+
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
             <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Public Biography</h2>
             <textarea
@@ -125,6 +213,7 @@ const Profile = () => {
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Chat Price</label>
                 <input 
                   type="number" 
+                  min="5"
                   value={formData.chatPrice}
                   onChange={(e) => setFormData({...formData, chatPrice: e.target.value})}
                   className="w-full border-2 border-gray-100 rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-bold text-gray-800"
@@ -134,6 +223,7 @@ const Profile = () => {
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Audio Call Price</label>
                 <input 
                   type="number" 
+                  min="5"
                   value={formData.audioPrice}
                   onChange={(e) => setFormData({...formData, audioPrice: e.target.value})}
                   className="w-full border-2 border-gray-100 rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-bold text-gray-800"
@@ -143,6 +233,7 @@ const Profile = () => {
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Video Call Price</label>
                 <input 
                   type="number" 
+                  min="5"
                   value={formData.videoPrice}
                   onChange={(e) => setFormData({...formData, videoPrice: e.target.value})}
                   className="w-full border-2 border-gray-100 rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-bold text-gray-800"

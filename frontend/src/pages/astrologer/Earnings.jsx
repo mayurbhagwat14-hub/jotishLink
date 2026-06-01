@@ -1,8 +1,16 @@
-import { useState } from 'react';
-import { FiTrendingUp, FiDownload, FiCreditCard } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiTrendingUp, FiDownload, FiCreditCard, FiClock } from 'react-icons/fi';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAstrologerEarningsThunk } from '../../store/slices/astrologerSlice';
 
 const Earnings = () => {
+  const dispatch = useDispatch();
+  const { earnings: { earnings = [], total = 0 }, loading } = useSelector((state) => state.astrologer);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+
+  useEffect(() => {
+    dispatch(fetchAstrologerEarningsThunk());
+  }, [dispatch]);
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-fade-in">
@@ -21,7 +29,7 @@ const Earnings = () => {
         <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl p-6 text-white shadow-lg shadow-orange-500/20 relative overflow-hidden">
           <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
           <p className="text-orange-100 font-medium mb-1">Available Balance</p>
-          <h2 className="text-4xl font-black mb-6">₹12,450</h2>
+          <h2 className="text-4xl font-black mb-6">₹{total.toLocaleString()}</h2>
           
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex gap-3">
             <input 
@@ -65,60 +73,36 @@ const Earnings = () => {
         </div>
       </div>
 
-      {/* Revenue Breakdown */}
+      {/* Recent Earnings List */}
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">Revenue Breakdown</h2>
+          <h2 className="text-xl font-bold text-gray-800">Recent Session Earnings</h2>
         </div>
         
         <div className="bg-orange-50/50 border border-orange-100 p-3 rounded-xl mb-6">
           <p className="text-xs text-orange-700 font-medium text-center">
-            *All amounts shown below are your <strong className="font-bold">net earnings (90%)</strong> after the standard 10% platform commission is automatically deducted per session.
+            *All amounts shown below are your <strong className="font-bold">net earnings (70%)</strong> after the platform commission is automatically deducted.
           </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-bold text-gray-800">Chat Sessions</p>
-              <p className="text-sm text-gray-500">45 sessions</p>
+        <div className="space-y-4 max-h-[400px] overflow-y-auto">
+          {earnings.length > 0 ? earnings.map((earn, idx) => (
+            <div key={idx} className="flex items-center justify-between p-3 border border-gray-50 rounded-xl hover:bg-gray-50">
+              <div>
+                <p className="font-bold text-gray-800 flex items-center gap-2">Session <span className="text-xs font-normal text-gray-400">({earn.sessionId.slice(-6)})</span></p>
+                <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <FiClock size={12} />
+                  {Math.floor((earn.durationSeconds || 0) / 60)}m {(earn.durationSeconds || 0) % 60}s
+                  <span className="ml-2 text-xs text-gray-400">{new Date(earn.date).toLocaleDateString()}</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-black text-green-600">₹{earn.amount}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="font-bold text-gray-800">₹8,500</p>
-              <p className="text-sm text-green-500">65%</p>
-            </div>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-orange-500 rounded-full" style={{ width: '65%' }}></div>
-          </div>
-
-          <div className="flex items-center justify-between mt-6">
-            <div>
-              <p className="font-bold text-gray-800">Audio Calls</p>
-              <p className="text-sm text-gray-500">12 sessions</p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-gray-800">₹2,450</p>
-              <p className="text-sm text-blue-500">20%</p>
-            </div>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-blue-500 rounded-full" style={{ width: '20%' }}></div>
-          </div>
-
-          <div className="flex items-center justify-between mt-6">
-            <div>
-              <p className="font-bold text-gray-800">Video Calls</p>
-              <p className="text-sm text-gray-500">5 sessions</p>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-gray-800">₹1,500</p>
-              <p className="text-sm text-purple-500">15%</p>
-            </div>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-purple-500 rounded-full" style={{ width: '15%' }}></div>
-          </div>
+          )) : (
+            <p className="text-gray-500 text-center py-4">No recent earnings available.</p>
+          )}
         </div>
       </div>
 

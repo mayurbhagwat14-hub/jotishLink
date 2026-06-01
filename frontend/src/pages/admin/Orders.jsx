@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiDollarSign, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import axios from '../../utils/axios';
+import { getAdminOrders, updateAdminOrderStatus } from '../../api/adminApis';
 
 const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
@@ -29,19 +29,21 @@ const AdminOrders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await axios.get('/orders');
+        const res = await getAdminOrders();
+        const fetchedOrders = res.data?.data?.orders || res.data?.orders || [];
+        
         // Map backend Order models to frontend UI schema
-        const formattedOrders = res.data.map(o => ({
+        const formattedOrders = fetchedOrders.map(o => ({
           id: o._id.slice(-6).toUpperCase(), // Short ID
           dbId: o._id,
-          customer: o.user?.name || 'Unknown',
-          phone: o.user?.phoneNumber || 'N/A',
-          email: o.user?.email || 'N/A',
-          address: `${o.shippingAddress?.address}, ${o.shippingAddress?.city}, ${o.shippingAddress?.state} ${o.shippingAddress?.postalCode}`,
-          products: o.orderItems || [],
-          total: o.totalPrice,
-          payment: o.isPaid ? 'Paid' : 'Pending',
-          status: o.isDelivered ? 'Delivered' : 'Pending',
+          customer: o.userId?.name || 'Unknown',
+          phone: o.userId?.phoneNumber || 'N/A',
+          email: o.userId?.email || 'N/A',
+          address: o.shippingAddress ? `${o.shippingAddress.city}, ${o.shippingAddress.state}` : 'N/A',
+          products: o.items.map(item => ({ name: item.productId?.name || 'Product', qty: item.quantity, price: item.price })),
+          total: o.totalAmount || 0,
+          payment: o.paymentStatus || 'Paid',
+          status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending',
           date: new Date(o.createdAt).toLocaleDateString(),
           time: new Date(o.createdAt).toLocaleTimeString(),
           timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }]
@@ -61,94 +63,97 @@ const AdminOrders = () => {
 
   // ═══ ACCEPT ORDER ═══
   const acceptOrder = async (orderId, dbId) => {
-    // In a full implementation, you would have an endpoint like PUT /api/orders/:id/accept
-    // For now, we update local UI state to reflect processing
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId && o.status === 'Pending') {
-        return {
-          ...o,
-          status: 'Processing',
-          timeline: [...o.timeline, { label: 'Accepted by Admin', time: now(), icon: 'check' }]
-        };
-      }
-      return o;
-    }));
-    showToast(`${orderId} accepted! Ready to ship.`);
-    setSelectedOrder(prev => {
-      if (prev && prev.id === orderId) {
-        const updated = orders.find(o => o.id === orderId);
-        if (updated) return { ...updated, status: 'Processing', timeline: [...updated.timeline, { label: 'Accepted by Admin', time: now(), icon: 'check' }] };
-      }
-      return prev;
-    });
+    try {
+      await updateAdminOrderStatus(dbId, 'Processing');
+      setOrders(prev => prev.map(o => {
+        if (o.id === orderId && o.status === 'Pending') {
+          return {
+            ...o,
+            status: 'Processing',
+            timeline: [...o.timeline, { label: 'Accepted by Admin', time: now(), icon: 'check' }]
+          };
+        }
+        return o;
+      }));
+      showToast(`${orderId} accepted! Ready to ship.`);
+      setSelectedOrder(null);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to accept order');
+    }
   };
 
   // ═══ SHIP ORDER ═══
   const confirmShipping = async () => {
     if (!trackingNumber) return;
     
-    // Call the actual DB deliver route to complete the order lifecycle
     try {
-      await axios.put(`/orders/${showShipModal.dbId}/deliver`);
+      await updateAdminOrderStatus(showShipModal.dbId, 'Shipped');
+      setOrders(prev => prev.map(o => {
+        if (o.id === showShipModal.id) {
+          return {
+            ...o,
+            status: 'Shipped',
+            tracking: trackingNumber,
+            shippingProvider: shippingProvider,
+            timeline: [...o.timeline, { label: 'Shipped', time: now(), icon: 'truck', detail: `Tracking: ${trackingNumber} via ${shippingProvider}` }]
+          };
+        }
+        return o;
+      }));
+      const orderId = showShipModal.id;
+      setShowShipModal(null);
+      setTrackingNumber('');
+      showToast(`${orderId} shipped! Tracking: ${trackingNumber}`);
     } catch (err) {
       console.error(err);
+      showToast('Failed to ship order');
     }
-
-    setOrders(prev => prev.map(o => {
-      if (o.id === showShipModal.id) {
-        return {
-          ...o,
-          status: 'Shipped',
-          tracking: trackingNumber,
-          shippingProvider: shippingProvider,
-          timeline: [...o.timeline, { label: 'Shipped', time: now(), icon: 'truck', detail: `Tracking: ${trackingNumber} via ${shippingProvider}` }]
-        };
-      }
-      return o;
-    }));
-    const orderId = showShipModal.id;
-    setShowShipModal(null);
-    setTrackingNumber('');
-    showToast(`${orderId} shipped! Tracking: ${trackingNumber}`);
   };
 
   // ═══ MARK DELIVERED ═══
-  const markDelivered = (orderId) => {
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId && o.status === 'Shipped') {
-        return {
-          ...o,
-          status: 'Delivered',
-          timeline: [...o.timeline, { label: 'Delivered', time: now(), icon: 'delivered' }]
-        };
-      }
-      return o;
-    }));
-    showToast(`${orderId} marked as delivered! ✅`);
-    setSelectedOrder(prev => {
-      if (prev && prev.id === orderId) {
-        const updated = orders.find(o => o.id === orderId);
-        if (updated) return { ...updated, status: 'Delivered', timeline: [...updated.timeline, { label: 'Delivered', time: now(), icon: 'delivered' }] };
-      }
-      return prev;
-    });
+  const markDelivered = async (orderId, dbId) => {
+    try {
+      await updateAdminOrderStatus(dbId, 'Delivered');
+      setOrders(prev => prev.map(o => {
+        if (o.id === orderId && o.status === 'Shipped') {
+          return {
+            ...o,
+            status: 'Delivered',
+            timeline: [...o.timeline, { label: 'Delivered', time: now(), icon: 'delivered' }]
+          };
+        }
+        return o;
+      }));
+      showToast(`${orderId} marked as delivered! ✅`);
+      setSelectedOrder(null);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update status');
+    }
   };
 
   // ═══ CANCEL ORDER ═══
-  const cancelOrder = (orderId) => {
-    setOrders(prev => prev.map(o => {
-      if (o.id === orderId && (o.status === 'Pending' || o.status === 'Processing')) {
-        return {
-          ...o,
-          status: 'Cancelled',
-          payment: 'Refunded',
-          timeline: [...o.timeline, { label: 'Cancelled', time: now(), icon: 'cancel', detail: 'Cancelled by Admin' }]
-        };
-      }
-      return o;
-    }));
-    showToast(`${orderId} cancelled and refund initiated.`);
-    setSelectedOrder(null);
+  const cancelOrder = async (orderId, dbId) => {
+    try {
+      await updateAdminOrderStatus(dbId, 'Cancelled');
+      setOrders(prev => prev.map(o => {
+        if (o.id === orderId && (o.status === 'Pending' || o.status === 'Processing')) {
+          return {
+            ...o,
+            status: 'Cancelled',
+            payment: 'Refunded',
+            timeline: [...o.timeline, { label: 'Cancelled', time: now(), icon: 'cancel', detail: 'Cancelled by Admin' }]
+          };
+        }
+        return o;
+      }));
+      showToast(`${orderId} cancelled and refund initiated.`);
+      setSelectedOrder(null);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to cancel order');
+    }
   };
 
   const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
@@ -403,7 +408,7 @@ const AdminOrders = () => {
 
                       {order.status === 'Pending' && (
                         <button
-                          onClick={() => acceptOrder(order.id)}
+                          onClick={() => acceptOrder(order.id, order.dbId)}
                           className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
                         >
                           <FiCheck size={12} /> Accept
@@ -419,7 +424,7 @@ const AdminOrders = () => {
 
                       {order.status === 'Shipped' && (
                         <button
-                          onClick={() => markDelivered(order.id)}
+                          onClick={() => markDelivered(order.id, order.dbId)}
                           className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
                         >
                           <FiCheckCircle size={12} /> Delivered
@@ -570,11 +575,11 @@ const AdminOrders = () => {
                       {order.status === 'Pending' && (
                         <>
                           <button
-                            onClick={() => { acceptOrder(order.id); setSelectedOrder(null); }}
+                            onClick={() => { acceptOrder(order.id, order.dbId); }}
                             className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-green-600/20 active:scale-[0.98]"
                           ><FiCheck size={14} /> Accept Order</button>
                           <button
-                            onClick={() => cancelOrder(order.id)}
+                            onClick={() => cancelOrder(order.id, order.dbId)}
                             className="flex-1 px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
                           ><FiX size={14} /> Cancel</button>
                         </>
@@ -587,7 +592,7 @@ const AdminOrders = () => {
                       )}
                       {order.status === 'Shipped' && (
                         <button
-                          onClick={() => { markDelivered(order.id); setSelectedOrder(null); }}
+                          onClick={() => { markDelivered(order.id, order.dbId); }}
                           className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-green-600/20 active:scale-[0.98]"
                         ><FiCheckCircle size={14} /> Mark as Delivered</button>
                       )}

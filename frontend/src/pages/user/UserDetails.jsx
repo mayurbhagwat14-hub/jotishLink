@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiUser, FiCalendar, FiClock, FiMapPin } from 'react-icons/fi';
-import { updateUser, updateProfileThunk } from '../../store/slices/authSlice';
+import { updateUser, registerUserThunk } from '../../store/slices/authSlice';
 
 const ScrollWheel = ({ options, value, onChange, className }) => {
   const containerRef = useRef(null);
@@ -209,11 +209,11 @@ const UserDetails = () => {
         gender: formData.gender,
         dob: `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay}`,
         timeOfBirth: knowsTime && formData.birthHour ? `${formData.birthHour}:${formData.birthMin} ${formData.birthPeriod}` : 'Not provided',
-        birthplace: formData.birthplace,
+        placeOfBirth: formData.birthplace,
       };
 
       try {
-        await dispatch(updateProfileThunk(payload)).unwrap();
+        await dispatch(registerUserThunk(payload)).unwrap();
       } catch (err) {
         console.error("API registration failed, updating local state", err);
       }

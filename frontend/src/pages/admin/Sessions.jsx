@@ -1,18 +1,53 @@
+import { useState, useEffect } from 'react';
 import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle } from 'react-icons/fi';
+import { getAdminSessions } from '../../api/adminApis';
 
 const AdminSessions = () => {
-  const liveSessions = [
-    { id: 1, user: 'Rahul Khanna', astrologer: 'Sanjay Sharma', type: 'Video Call', typeIcon: <FiVideo />, duration: '05:23', rate: 85, started: '5:12 PM', billed: 459 },
-    { id: 2, user: 'Simran Devi', astrologer: 'Neeta Joshi', type: 'Chat', typeIcon: <FiMessageSquare />, duration: '12:45', rate: 25, started: '4:55 PM', billed: 319 },
-    { id: 3, user: 'Amit Patel', astrologer: 'Ramesh Gupta', type: 'Audio Call', typeIcon: <FiPhoneCall />, duration: '08:10', rate: 40, started: '5:08 PM', billed: 328 },
-  ];
+  const [liveSessions, setLiveSessions] = useState([]);
+  const [recentSessions, setRecentSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentSessions = [
-    { id: 4, user: 'Karan D.', astrologer: 'Vinod Acharya', type: 'Chat', duration: '25m 10s', rate: 25, total: 628, status: 'Completed', time: '4:30 PM' },
-    { id: 5, user: 'Priya K.', astrologer: 'Sanjay Sharma', type: 'Video Call', duration: '15m 00s', rate: 85, total: 1275, status: 'Completed', time: '3:45 PM' },
-    { id: 6, user: 'Neha G.', astrologer: 'Neeta Joshi', type: 'Audio Call', duration: '10m 45s', rate: 40, total: 430, status: 'Completed', time: '2:15 PM' },
-    { id: 7, user: 'Arjun M.', astrologer: 'Ramesh Gupta', type: 'Chat', duration: '30m 00s', rate: 65, total: 1950, status: 'Refund Requested', time: '1:00 PM' },
-  ];
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      setLoading(true);
+      const res = await getAdminSessions();
+      const allSessions = res.data?.data?.sessions || [];
+      
+      const live = allSessions.filter(s => s.status === 'ongoing').map(s => ({
+        id: s._id,
+        user: s.userId?.name || 'Unknown User',
+        astrologer: s.astrologerId?.name || 'Unknown Astrologer',
+        type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
+        typeIcon: <FiMessageSquare />,
+        duration: 'Ongoing',
+        rate: s.isFreeChat ? 0 : 'Paid',
+        started: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        billed: s.amountDeducted || 0
+      }));
+
+      const recent = allSessions.filter(s => s.status === 'completed' || s.status === 'missed').map(s => ({
+        id: s._id,
+        user: s.userId?.name || 'Unknown User',
+        astrologer: s.astrologerId?.name || 'Unknown Astrologer',
+        type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
+        duration: `${Math.floor((s.durationSeconds || 0) / 60)}m ${(s.durationSeconds || 0) % 60}s`,
+        total: s.amountDeducted || 0,
+        status: s.status === 'completed' ? 'Completed' : 'Missed',
+        time: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }));
+
+      setLiveSessions(live);
+      setRecentSessions(recent);
+    } catch (err) {
+      console.error('Failed to fetch sessions', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTypeColor = (type) => {
     if (type === 'Chat') return 'text-blue-500 bg-blue-50';
@@ -32,10 +67,10 @@ const AdminSessions = () => {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Live Now', value: '3', color: 'red' },
-          { label: 'Chats Active', value: '1', color: 'blue' },
-          { label: 'Audio Active', value: '1', color: 'green' },
-          { label: 'Video Active', value: '1', color: 'purple' },
+          { label: 'Live Now', value: liveSessions.length, color: 'red' },
+          { label: 'Chats Active', value: liveSessions.filter(s => s.type.includes('Chat')).length, color: 'blue' },
+          { label: 'Audio Active', value: liveSessions.filter(s => s.type.includes('Audio')).length, color: 'green' },
+          { label: 'Video Active', value: liveSessions.filter(s => s.type.includes('Video')).length, color: 'purple' },
         ].map((s, i) => (
           <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100">
             <div className="flex items-center gap-2 mb-2">
@@ -54,12 +89,16 @@ const AdminSessions = () => {
           <h2 className="font-bold text-gray-900">Currently Active</h2>
         </div>
         <div className="divide-y divide-gray-50">
-          {liveSessions.map((s) => (
+          {loading ? (
+            <div className="p-8 text-center text-gray-400 text-sm font-medium">Loading sessions...</div>
+          ) : liveSessions.length === 0 ? (
+            <div className="p-8 text-center text-gray-400 text-sm font-medium">No live sessions currently</div>
+          ) : liveSessions.map((s) => (
             <div key={s.id} className="px-6 py-5 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
               <div className="flex items-center gap-5">
                 <div className="flex -space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 border-2 border-white flex items-center justify-center text-xs font-black text-blue-600 shadow-sm">{s.user[0]}</div>
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border-2 border-white flex items-center justify-center text-xs font-black text-orange-600 shadow-sm">{s.astrologer[0]}</div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border-2 border-white flex items-center justify-center text-xs font-black text-blue-600 shadow-sm">{s.user?.[0] || 'U'}</div>
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 border-2 border-white flex items-center justify-center text-xs font-black text-orange-600 shadow-sm">{s.astrologer?.[0] || 'A'}</div>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-gray-800">{s.user} <span className="text-gray-300 mx-1">↔</span> {s.astrologer}</p>
@@ -96,14 +135,18 @@ const AdminSessions = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {recentSessions.map((s) => (
+              {loading ? (
+                <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">Loading recent sessions...</td></tr>
+              ) : recentSessions.length === 0 ? (
+                <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">No recent sessions found</td></tr>
+              ) : recentSessions.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3.5 px-6 text-sm font-bold text-gray-800">{s.user} → {s.astrologer}</td>
                   <td className="py-3.5 px-6">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getTypeColor(s.type)}`}>{s.type}</span>
                   </td>
                   <td className="py-3.5 px-6 text-sm font-medium text-gray-600">{s.duration}</td>
-                  <td className="py-3.5 px-6 text-sm font-black text-gray-900">₹{s.total.toLocaleString()}</td>
+                  <td className="py-3.5 px-6 text-sm font-black text-gray-900">₹{s.total?.toLocaleString() || 0}</td>
                   <td className="py-3.5 px-6 text-xs text-gray-400 font-medium">{s.time}</td>
                   <td className="py-3.5 px-6">
                     <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 ${

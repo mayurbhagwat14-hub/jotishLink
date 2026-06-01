@@ -11,24 +11,29 @@ const AdminLogin = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const otpRefs = useRef([]);
 
-  const handleCredentialsSubmit = (e) => {
+  const handleCredentialsSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
-    if (username === 'admin' && password === 'admin123') {
-      setIsLoading(true);
-      // Simulate network delay
-      setTimeout(() => {
-        setIsLoading(false);
-        setStep(2);
-      }, 1000);
-    } else {
-      setError('Invalid admin credentials. (Hint: admin / admin123)');
+    try {
+      // Call real backend: POST /api/admin/auth/login with { email, password }
+      const res = await dispatch(adminLoginThunk({ email: username, password })).unwrap();
+      const data = res?.data || res;
+      if (data?.accessToken) {
+        dispatch(login({ user: data.user, token: data.accessToken }));
+      }
+      navigate('/admin/dashboard');
+    } catch (err) {
+      setError(err?.message || 'Invalid admin credentials');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -54,30 +59,10 @@ const AdminLogin = () => {
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    
-    const enteredOtp = otp.join('');
-    if (enteredOtp === '123456') {
-      setIsLoading(true);
-      try {
-        await dispatch(adminLoginThunk({ username, password, otp: enteredOtp })).unwrap();
-        setIsLoading(false);
-        navigate('/admin/dashboard');
-      } catch (err) {
-        // Fallback for visual testing if API fails
-        dispatch(login({
-          user: { name: 'Super Admin', role: 'admin', phone: '0000000000' },
-          token: 'admin-token-secure-123'
-        }));
-        setIsLoading(false);
-        navigate('/admin/dashboard');
-      }
-    } else {
-      setError('Invalid OTP. Please enter 123456.');
-      setOtp(['', '', '', '', '', '']);
-      otpRefs.current[0].focus();
-    }
+    // OTP step is now optional — direct login on step 1
+    navigate('/admin/dashboard');
   };
+
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white flex overflow-hidden font-sans">
@@ -176,13 +161,24 @@ const AdminLogin = () => {
                   <div className="relative group">
                     <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-orange-500 transition-colors" size={18} />
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 rounded-xl bg-black border border-gray-800 focus:bg-gray-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-semibold text-white placeholder-gray-600"
+                      className="w-full pl-12 pr-12 py-4 rounded-xl bg-black border border-gray-800 focus:bg-gray-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all font-semibold text-white placeholder-gray-600"
                       placeholder="••••••••"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-500 transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"></path></svg>
+                      ) : (
+                        <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -246,7 +242,7 @@ const AdminLogin = () => {
 
           <div className="mt-12 text-center">
             <button 
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/user/login')}
               className="text-xs font-bold text-gray-500 hover:text-orange-500 transition-colors uppercase tracking-wider"
             >
               Back to User Login

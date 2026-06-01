@@ -7,6 +7,7 @@ import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 import { addWalletCash } from '../../store/slices/authSlice';
+import { io } from 'socket.io-client';
 
 const categories = [
   { name: 'All', icon: <BiCategoryAlt />, active: true },
@@ -30,14 +31,22 @@ const VideoCallList = () => {
   
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [shortBalanceInfo, setShortBalanceInfo] = useState({ required: 0, current: 0 });
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingAstroName, setConnectingAstroName] = useState('');
+  const [connectingAstroId, setConnectingAstroId] = useState('');
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
     dispatch(fetchAstrologersThunk());
+    const token = localStorage.getItem('accessToken');
+    const s = io('http://localhost:5000', { auth: { token } });
+    setSocket(s);
+    return () => { s.disconnect(); };
   }, [dispatch]);
 
   const handleCallClick = (astro) => {
     if (!isAuthenticated || user?.name === 'Guest User') {
-      navigate('/login');
+      navigate('/user/login');
       return;
     }
     if (!user?.name || user?.name.trim() === '') {
@@ -45,15 +54,38 @@ const VideoCallList = () => {
       return;
     }
 
-    const rate = astro.videoPrice || astro.rate || 50;
+    const rate = astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10);
     const walletBalance = user?.wallet || 0;
 
     if (walletBalance < rate) {
       setShortBalanceInfo({ required: rate, current: walletBalance });
       setShowBalanceModal(true);
     } else {
-      // Connect directly to live video call room (bypassing schedule booking)
-      navigate(`/user/video-room/${astro._id}`, { state: { astrologer: astro } });
+      if (!socket) return;
+      setIsConnecting(true);
+      setConnectingAstroName(astro.name);
+
+      const targetAstroId = astro.userId?._id || astro.userId || astro._id;
+      setConnectingAstroId(targetAstroId);
+
+      socket.emit('request_session', {
+        astrologerId: targetAstroId,
+        userId: user._id,
+        userName: user.name,
+        type: 'video',
+      });
+
+      socket.once('session_accepted', ({ roomId }) => {
+        setIsConnecting(false);
+        socket.off('session_rejected');
+        navigate(`/user/video-room/${roomId}?type=video`, { state: { astrologer: astro } });
+      });
+
+      socket.once('session_rejected', ({ reason }) => {
+        setIsConnecting(false);
+        socket.off('session_accepted');
+        alert(`Request declined: ${reason}`);
+      });
     }
   };
 
@@ -136,7 +168,7 @@ const VideoCallList = () => {
             </div>
 
             <div className="flex flex-col items-end gap-2 shrink-0">
-              <span className="text-[14px] font-bold text-gray-900">₹{astro.videoPrice}/min</span>
+              <span className="text-[14px] font-bold text-gray-900">₹{astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10)}/min</span>
               <button 
                 onClick={() => handleCallClick(astro)}
                 className="bg-orange-500 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm hover:bg-orange-600 active:scale-95 transition-all"
@@ -178,6 +210,37 @@ const VideoCallList = () => {
                 Recharge (₹500)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CONNECTING MODAL ═══ */}
+      {isConnecting && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
+            <div className="relative w-20 h-20 mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your video call request...
+            </p>
+            <button 
+              onClick={() => {
+                setIsConnecting(false);
+                if (socket && user && connectingAstroId) {
+                  socket.emit('cancel_session_request', { 
+                    astrologerId: connectingAstroId, 
+                    userId: user._id 
+                  });
+                }
+              }}
+              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors"
+            >
+              Cancel Request
+            </button>
           </div>
         </div>
       )}

@@ -1,18 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiCalendar, FiClock, FiVideo } from 'react-icons/fi';
+import { io } from 'socket.io-client';
 
 const VideoCallBookingForm = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
   const { astrologer } = location.state || {};
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
     date: '',
     time: ''
   });
+
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectingAstroName, setConnectingAstroName] = useState('');
+  const [connectingAstroId, setConnectingAstroId] = useState('');
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    const s = io('http://localhost:5000', { auth: { token } });
+    setSocket(s);
+    return () => { s.disconnect(); };
+  }, []);
 
   if (!astrologer) {
     return (
@@ -27,8 +43,36 @@ const VideoCallBookingForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // After collecting the details, for this mock we just jump into the video room
-    navigate(`/user/video-room/${astrologer._id}`, { state: { astrologer, scheduled: formData } });
+    if (!isAuthenticated || user?.name === 'Guest User') {
+      navigate('/user/login');
+      return;
+    }
+    
+    if (!socket) return;
+    setIsConnecting(true);
+    setConnectingAstroName(astrologer.name);
+
+    const targetAstroId = astrologer.userId?._id || astrologer.userId || astrologer._id;
+    setConnectingAstroId(targetAstroId);
+
+    socket.emit('request_session', {
+      astrologerId: targetAstroId,
+      userId: user._id,
+      userName: user.name,
+      type: 'video',
+    });
+
+    socket.once('session_accepted', ({ roomId }) => {
+      setIsConnecting(false);
+      socket.off('session_rejected');
+      navigate(`/user/video-room/${roomId}?type=video`, { state: { astrologer, scheduled: formData } });
+    });
+
+    socket.once('session_rejected', ({ reason }) => {
+      setIsConnecting(false);
+      socket.off('session_accepted');
+      alert(`Request declined: ${reason}`);
+    });
   };
 
   const isFormValid = formData.date && formData.time;
@@ -52,7 +96,7 @@ const VideoCallBookingForm = () => {
           </div>
           <div>
             <h2 className="text-[16px] font-bold text-gray-900 leading-tight">{astrologer.name}</h2>
-            <p className="text-[13px] text-gray-600 font-medium">Price: ₹{astrologer.videoPrice}/min</p>
+            <p className="text-[13px] text-gray-600 font-medium">Price: ₹{astrologer.pricing?.videoCall || (astrologer.rate ? astrologer.rate * 2 : 10)}/min</p>
           </div>
         </div>
       </div>
@@ -116,6 +160,37 @@ const VideoCallBookingForm = () => {
         </button>
         <p className="text-center text-gray-400 text-[12px] font-medium mt-3">You won't be charged yet</p>
       </div>
+      
+      {/* ═══ CONNECTING MODAL ═══ */}
+      {isConnecting && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
+            <div className="relative w-20 h-20 mb-4">
+              <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your scheduled video call request...
+            </p>
+            <button 
+              onClick={() => {
+                setIsConnecting(false);
+                if (socket && user && connectingAstroId) {
+                  socket.emit('cancel_session_request', { 
+                    astrologerId: connectingAstroId, 
+                    userId: user._id 
+                  });
+                }
+              }}
+              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors"
+            >
+              Cancel Request
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

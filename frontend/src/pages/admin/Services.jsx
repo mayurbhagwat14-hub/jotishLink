@@ -1,22 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiClock, FiBox, FiTruck, FiCheck, FiMoreHorizontal } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
+import { getAdminPoojas, getAdminOrders } from '../../api/adminApis';
 
 const AdminServices = () => {
   const [activeTab, setActiveTab] = useState('Poojas');
+  const [poojas, setPoojas] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const poojas = [
-    { id: 'PJ-102', user: 'Amit K.', pandit: 'Pandit Ravi Sharma', type: 'Grah Shanti Pooja', date: 'May 28, 2026 • 9:00 AM', amount: 1100, status: 'Scheduled' },
-    { id: 'PJ-101', user: 'Sneha R.', pandit: 'Acharya Vinod', type: 'Navgrah Pooja', date: 'May 27, 2026 • 6:30 AM', amount: 800, status: 'Completed' },
-    { id: 'PJ-100', user: 'Vikram S.', pandit: 'Pandit Kedar Nath', type: 'Maha Mrityunjaya', date: 'May 26, 2026 • 7:00 AM', amount: 2100, status: 'Completed' },
-  ];
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const orders = [
-    { id: 'ORD-554', user: 'Vikram S.', product: 'Rudraksha Mala (5 Mukhi)', amount: 399, date: 'May 27, 2026', status: 'Processing' },
-    { id: 'ORD-553', user: 'Ankita V.', product: 'Yellow Sapphire Ring', amount: 1299, date: 'May 25, 2026', status: 'Shipped' },
-    { id: 'ORD-552', user: 'Priya M.', product: 'Raw Pyrite Bracelet', amount: 499, date: 'May 24, 2026', status: 'Delivered' },
-  ];
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [poojasRes, ordersRes] = await Promise.all([
+        getAdminPoojas(),
+        getAdminOrders()
+      ]);
+      
+      const poojasData = poojasRes.data?.data?.poojas || [];
+      const ordersData = ordersRes.data?.data?.orders || ordersRes.data?.orders || [];
+
+      setPoojas(poojasData.map(p => ({
+        id: p._id.toString().slice(-6).toUpperCase(),
+        user: p.userId?.name || 'Unknown User',
+        pandit: p.astrologerId?.name || 'Unknown Pandit',
+        type: p.poojaName || 'General Pooja',
+        date: `${p.date} • ${p.time}`,
+        amount: p.price || 0,
+        status: p.status === 'completed' ? 'Completed' : p.status === 'confirmed' ? 'Scheduled' : 'Pending'
+      })));
+
+      setOrders(ordersData.map(o => ({
+        id: `#${o._id.toString().slice(-6).toUpperCase()}`,
+        user: o.userId?.name || 'Unknown User',
+        product: 'E-commerce Item(s)',
+        amount: o.totalAmount || 0,
+        date: new Date(o.createdAt).toLocaleDateString(),
+        status: o.orderStatus === 'delivered' ? 'Delivered' : o.orderStatus === 'shipped' ? 'Shipped' : 'Processing'
+      })));
+    } catch (err) {
+      console.error('Failed to fetch services data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -31,19 +63,19 @@ const AdminServices = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Active Poojas</p>
-          <h3 className="text-2xl font-black text-gray-900">1</h3>
+          <h3 className="text-2xl font-black text-gray-900">{poojas.filter(p => p.status === 'Scheduled').length}</h3>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Completed Poojas</p>
-          <h3 className="text-2xl font-black text-gray-900">2</h3>
+          <h3 className="text-2xl font-black text-gray-900">{poojas.filter(p => p.status === 'Completed').length}</h3>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Orders In Transit</p>
-          <h3 className="text-2xl font-black text-gray-900">1</h3>
+          <h3 className="text-2xl font-black text-gray-900">{orders.filter(o => o.status === 'Shipped').length}</h3>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Store Revenue</p>
-          <h3 className="text-2xl font-black text-gray-900">₹2,197</h3>
+          <h3 className="text-2xl font-black text-gray-900">₹{orders.reduce((acc, o) => acc + o.amount, 0).toLocaleString()}</h3>
         </div>
       </div>
 
@@ -72,10 +104,14 @@ const AdminServices = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {poojas.map((p) => (
+                {loading ? (
+                  <tr><td colSpan="5" className="py-8 text-center text-gray-400 text-sm">Loading poojas...</td></tr>
+                ) : poojas.length === 0 ? (
+                  <tr><td colSpan="5" className="py-8 text-center text-gray-400 text-sm">No poojas found</td></tr>
+                ) : poojas.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="py-4 px-6">
-                      <p className="font-bold text-sm text-gray-800 font-mono">{p.id}</p>
+                      <p className="font-bold text-sm text-gray-800 font-mono">PJ-{p.id}</p>
                       <p className="text-xs text-orange-500 font-bold mt-0.5 flex items-center gap-1"><GiFlowerPot size={12} /> {p.type}</p>
                     </td>
                     <td className="py-4 px-6">
@@ -116,12 +152,16 @@ const AdminServices = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {orders.map((order) => (
+                {loading ? (
+                  <tr><td colSpan="7" className="py-8 text-center text-gray-400 text-sm">Loading orders...</td></tr>
+                ) : orders.length === 0 ? (
+                  <tr><td colSpan="7" className="py-8 text-center text-gray-400 text-sm">No orders found</td></tr>
+                ) : orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="py-4 px-6 font-bold text-sm text-gray-800 font-mono">{order.id}</td>
                     <td className="py-4 px-6 text-sm font-bold text-gray-700 flex items-center gap-2"><FiBox size={12} className="text-gray-400" /> {order.product}</td>
                     <td className="py-4 px-6 text-sm font-bold text-gray-600">{order.user}</td>
-                    <td className="py-4 px-6 text-sm font-black text-gray-900">₹{order.amount}</td>
+                    <td className="py-4 px-6 text-sm font-black text-gray-900">₹{order.amount.toLocaleString()}</td>
                     <td className="py-4 px-6 text-xs font-medium text-gray-400">{order.date}</td>
                     <td className="py-4 px-6">
                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 ${

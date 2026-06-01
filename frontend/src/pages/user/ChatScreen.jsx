@@ -7,12 +7,7 @@ import { FaRupeeSign, FaStar } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 
-const mockAstrologers = [
-  { _id: '1', name: 'Shivika', skills: ['Numerology', 'Tarot', 'Psychic'], languages: ['Hindi', 'English', 'Bhojpuri'], experience: 9, price: 31, discountedPrice: 5, rating: 5, orders: '5k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=shivika', isFree: false },
-  { _id: '2', name: 'Bruti', skills: ['Vedic', 'AI Powered'], languages: ['Hindi', 'English', 'Bhojpuri'], experience: 9, price: 32, discountedPrice: 5, rating: 5, orders: '10k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=bruti', isFree: false },
-  { _id: '3', name: 'Abhilaya', skills: ['Nadi', 'Face Reading'], languages: ['Hindi', 'English', 'Bhojpuri'], experience: 5, price: 31, discountedPrice: 5, rating: 5, orders: '10k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=abhilaya', isFree: false },
-  { _id: '4', name: 'Vinay', skills: ['Vedic', 'Vastu'], languages: ['Hindi', 'English', 'Bhojpuri'], experience: 6, price: 64, discountedPrice: null, rating: 5, orders: '50k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=vinay', isFree: false },
-];
+// No mock data
 
 const categories = [
   { name: 'All', icon: <BiCategoryAlt /> },
@@ -42,17 +37,17 @@ const ChatScreen = () => {
     dispatch(fetchAstrologersThunk());
   }, [dispatch]);
 
-  const astrologers = reduxAstrologers.length > 0 ? reduxAstrologers.map(astro => ({
+  const astrologers = reduxAstrologers.map(astro => ({
     ...astro,
     price: astro.rate || astro.pricing?.chat || 5,
     discountedPrice: astro.discountedPrice || null,
     languages: astro.languages || ['Hindi', 'English'],
     avatar: astro.avatar || 'https://i.pravatar.cc/150?u=' + astro.name
-  })) : mockAstrologers;
+  }));
 
   const handleChatClick = (astro) => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate('/user/login');
     } else {
       setSelectedAstrologer(astro);
       setShowRateModal(true);

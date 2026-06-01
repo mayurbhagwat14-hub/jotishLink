@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiSearch, FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronLeft, FiChevronRight, FiBox, FiImage, FiToggleLeft, FiToggleRight, FiX, FiFilter, FiMoreHorizontal } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
+import { getAdminProducts, createAdminProduct, deleteAdminProduct } from '../../api/adminApis';
 
 const AdminProducts = () => {
   const [activeTab, setActiveTab] = useState('All Products');
@@ -9,20 +10,78 @@ const AdminProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [formData, setFormData] = useState({
+    name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none'
+  });
   const itemsPerPage = 8;
 
-  const products = [
-    { id: 1, name: 'Raw Pyrite Bracelet', category: 'Bracelets', price: 399, originalPrice: 899, discount: '56%', stock: 45, status: 'Active', img: '/store_bracelet.png', rating: 4.5, reviews: 2756, sku: 'BRC-001' },
-    { id: 2, name: 'Pyrite Premium Bracelet', category: 'Bracelets', price: 499, originalPrice: 1299, discount: '62%', stock: 22, status: 'Active', img: '/store_rudraksha.png', rating: 4.6, reviews: 1890, sku: 'BRC-002' },
-    { id: 3, name: '5 Mukhi Rudraksha Mala', category: 'Rudraksha', price: 799, originalPrice: 1499, discount: '47%', stock: 8, status: 'Active', img: '/store_rudraksha.png', rating: 4.8, reviews: 980, sku: 'RUD-001' },
-    { id: 4, name: 'Yellow Sapphire Ring', category: 'Gemstones', price: 1299, originalPrice: 2999, discount: '57%', stock: 3, status: 'Active', img: '/store_gemstone.png', rating: 4.9, reviews: 456, sku: 'GEM-001' },
-    { id: 5, name: 'Tiger Eye Bracelet', category: 'Bracelets', price: 349, originalPrice: 699, discount: '50%', stock: 0, status: 'Out of Stock', img: '/store_bracelet.png', rating: 4.3, reviews: 3120, sku: 'BRC-003' },
-    { id: 6, name: 'Neelam Stone (Blue Sapphire)', category: 'Gemstones', price: 2499, originalPrice: 4999, discount: '50%', stock: 12, status: 'Active', img: '/store_gemstone.png', rating: 4.7, reviews: 234, sku: 'GEM-002' },
-    { id: 7, name: 'Rudraksha Pendant 7 Mukhi', category: 'Rudraksha', price: 1199, originalPrice: 2299, discount: '48%', stock: 15, status: 'Draft', img: '/store_rudraksha.png', rating: 0, reviews: 0, sku: 'RUD-002' },
-    { id: 8, name: 'Evil Eye Protection Bracelet', category: 'Lal Kitab', price: 299, originalPrice: 599, discount: '50%', stock: 60, status: 'Active', img: '/store_evileye.png', rating: 4.4, reviews: 1567, sku: 'LKB-001' },
-    { id: 9, name: 'Reiki Healing Stones Set', category: 'Lal Kitab', price: 599, originalPrice: 1199, discount: '50%', stock: 18, status: 'Active', img: '/store_reiki.png', rating: 4.2, reviews: 890, sku: 'LKB-002' },
-    { id: 10, name: 'Emerald (Panna) Natural', category: 'Gemstones', price: 3499, originalPrice: 6999, discount: '50%', stock: 5, status: 'Active', img: '/store_gemstone.png', rating: 4.8, reviews: 145, sku: 'GEM-003' },
-  ];
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await getAdminProducts();
+      const fetchedProducts = response.data?.data?.products || response.data?.products || [];
+      
+      const mapped = fetchedProducts.map(p => ({
+        id: p._id,
+        name: p.name,
+        category: p.category || 'General',
+        price: p.price,
+        originalPrice: p.mrp || Math.round(p.price * 1.5), // fallback if mrp not present
+        discount: p.mrp ? Math.round(((p.mrp - p.price) / p.mrp) * 100) + '%' : '0%',
+        stock: p.stock || 0,
+        status: p.isActive === false || p.stock === 0 ? (p.stock === 0 ? 'Out of Stock' : 'Draft') : 'Active',
+        img: p.image || '/store_bracelet.png',
+        rating: p.rating || 0,
+        reviews: p.reviews?.length || 0,
+        sku: p.sku || p._id.toString().slice(-6).toUpperCase()
+      }));
+      setProducts(mapped);
+    } catch (err) {
+      console.error('Failed to fetch products', err);
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, image: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddProduct = async () => {
+    try {
+      if (!formData.name || !formData.price || !formData.category) return;
+      await createAdminProduct({
+        ...formData,
+        price: Number(formData.price),
+        originalPrice: Number(formData.originalPrice),
+        stock: Number(formData.stock)
+      });
+      setShowAddModal(false);
+      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '' });
+      fetchProducts();
+    } catch (err) {
+      console.error('Failed to add product', err);
+    }
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await deleteAdminProduct(id);
+      fetchProducts();
+    } catch (err) {
+      console.error('Failed to delete product', err);
+    }
+  };
 
   const categories = ['All', 'Bracelets', 'Rudraksha', 'Gemstones', 'Lal Kitab'];
 
@@ -199,7 +258,7 @@ const AdminProducts = () => {
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><FiEdit size={14} /></button>
-                      <button className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><FiTrash2 size={14} /></button>
+                      <button onClick={() => handleDeleteProduct(product.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><FiTrash2 size={14} /></button>
                       <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><FiMoreHorizontal size={14} /></button>
                     </div>
                   </td>
@@ -235,51 +294,72 @@ const AdminProducts = () => {
             </div>
             <div className="p-6 space-y-5">
               {/* Image Upload */}
-              <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer">
-                <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
-                <p className="text-sm font-bold text-gray-600">Click to upload product images</p>
-                <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-              </div>
+              <label className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer block relative overflow-hidden group">
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                {formData.image ? (
+                  <div className="absolute inset-0 w-full h-full">
+                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-white font-bold text-sm">Change Image</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm font-bold text-gray-600">Click to upload product image</p>
+                    <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                  </>
+                )}
+              </label>
 
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Product Name</label>
-                <input type="text" placeholder="e.g., Raw Pyrite Bracelet" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g., Raw Pyrite Bracelet" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
               </div>
 
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Description</label>
-                <textarea rows="3" placeholder="Describe the product..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none" />
+                <textarea rows="3" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Describe the product..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none" />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Featured Section</label>
+                <select value={formData.featuredSection} onChange={e => setFormData({...formData, featuredSection: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+                  <option value="none">None (Default)</option>
+                  <option value="top_selling">Top Selling</option>
+                  <option value="newly_launch">Newly Launch</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Category</label>
-                  <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
                     {categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">SKU</label>
-                  <input type="text" placeholder="BRC-004" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="text" value={formData.sku} onChange={e => setFormData({...formData, sku: e.target.value})} placeholder="BRC-004" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Price (₹)</label>
-                  <input type="number" placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">MRP (₹)</label>
-                  <input type="number" placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" value={formData.originalPrice} onChange={e => setFormData({...formData, originalPrice: e.target.value})} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Stock</label>
-                  <input type="number" placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 
-              <button className="w-full px-6 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm">
+              <button onClick={handleAddProduct} className="w-full px-6 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm">
                 <FiPlus size={14} /> Add Product
               </button>
             </div>

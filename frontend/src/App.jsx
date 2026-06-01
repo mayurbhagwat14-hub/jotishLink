@@ -15,6 +15,8 @@ import Login from './pages/Login';
 
 // User Pages
 import Home from './pages/user/Home';
+import Wallet from './pages/user/Wallet';
+import PaymentInformation from './pages/user/PaymentInformation';
 import UserDetails from './pages/user/UserDetails';
 import Astrologers from './pages/user/Astrologers';
 import Horoscope from './pages/user/Horoscope';
@@ -26,8 +28,12 @@ import VideoCallList from './pages/user/VideoCallList';
 import VideoCallBookingForm from './pages/user/VideoCallBookingForm';
 import VideoRoom from './pages/user/VideoRoom';
 import Store from './pages/user/Store';
+import ProductDetails from './pages/user/ProductDetails';
+import Cart from './pages/user/Cart';
+import Checkout from './pages/user/Checkout';
+import OrderSuccess from './pages/user/OrderSuccess';
 import Profile from './pages/user/Profile';
-import ChatScreen from './pages/user/ChatScreen';
+import UserChatRoom from './pages/user/UserChatRoom';
 import OrderHistory from './pages/user/OrderHistory';
 import ComingSoon from './pages/user/ComingSoon';
 import FreeChatOffer from './pages/user/FreeChatOffer';
@@ -47,6 +53,7 @@ import AdminProducts from './pages/admin/Products';
 import AdminOrders from './pages/admin/Orders';
 import AdminInventory from './pages/admin/Inventory';
 import AdminSettings from './pages/admin/Settings';
+import AdminAuditLogs from './pages/admin/AuditLogs';
 
 // Astrologer Pages
 import AstrologerDashboard from './pages/astrologer/Dashboard';
@@ -60,20 +67,36 @@ import History from './pages/astrologer/History';
 import Earnings from './pages/astrologer/Earnings';
 import Analytics from './pages/astrologer/Analytics';
 import AstrologerProfile from './pages/astrologer/Profile';
+import AstrologerVideoRoom from './pages/astrologer/VideoRoom';
 
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from './store/slices/authSlice';
+import { useEffect } from 'react';
 
 const AppContent = () => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+  const { isAuthenticated, user, token } = useSelector((state) => state.auth);
   const userRole = user?.role || 'user';
 
+  // Clear legacy mock guest state from local storage/Redux
+  useEffect(() => {
+    if (isAuthenticated && (token === 'guest-token' || !token)) {
+      dispatch(logout());
+    }
+  }, [isAuthenticated, token, dispatch]);
+
   const getHomePath = () => {
+    if (!isAuthenticated) return '/user/home';
     if (userRole === 'admin') return '/admin/dashboard';
     if (userRole === 'astrologer') return '/astrologer/dashboard';
+    
+    // Check if the user is new or hasn't filled details (only if user object is loaded)
+    if (user && (user.isNewUser || user.name === 'Guest User' || !user.name)) {
+      return '/user/details';
+    }
+    
     return '/user/home';
   };
-
-  const isRealUser = isAuthenticated && user?.name !== 'Guest User';
 
   return (
     <Routes>
@@ -87,37 +110,48 @@ const AppContent = () => {
 
       {/* Auth Pages */}
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={isRealUser ? <Navigate to={getHomePath()} replace /> : <Login />} />
+        <Route path="/user/login" element={isAuthenticated ? <Navigate to={getHomePath()} replace /> : <Login />} />
       </Route>
 
       {/* User Panel */}
-      <Route path="/user" element={
-        <ProtectedRoute allowedRoles={['user']}>
-          <UserLayout />
-        </ProtectedRoute>
-      }>
+      <Route path="/user" element={<UserLayout />}>
+        {/* Default — always start at home */}
+        <Route index element={<Navigate to="home" replace />} />
+        
+        {/* Public Routes within User Panel */}
         <Route path="home" element={<Home />} />
-        <Route path="free-chat-offer" element={<FreeChatOffer />} />
-        <Route path="details" element={<UserDetails />} />
-        <Route path="astrologers" element={<Astrologers />} />
-        <Route path="kundli" element={<Kundli />} />
-        <Route path="matchmaking" element={<Matchmaking />} />
         <Route path="horoscope" element={<Horoscope />} />
+        <Route path="kundli" element={<Kundli />} />
         <Route path="panchang" element={<Panchang />} />
-        <Route path="store" element={<Store />} />
-        <Route path="pooja-booking/:panditId" element={<PoojaBookingForm />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="chat" element={<ChatScreen />} />
-        <Route path="history" element={<OrderHistory />} />
-        <Route path="video-call" element={<VideoCallList />} />
-        <Route path="video-booking/:id" element={<VideoCallBookingForm />} />
-        <Route path="video-room/:id" element={<VideoRoom />} />
-        <Route path="live" element={<ComingSoon />} />
-        <Route path="poojas" element={<ComingSoon />} />
         <Route path="muhurat" element={<Muhurat />} />
-        <Route path="remedies" element={<ComingSoon />} />
-        <Route path="notifications" element={<ComingSoon />} />
-        <Route path="settings" element={<ComingSoon />} />
+        <Route path="matchmaking" element={<Matchmaking />} />
+
+        {/* Protected Routes within User Panel */}
+        <Route element={<ProtectedRoute allowedRoles={['user']} />}>
+          <Route path="astrologers" element={<Astrologers />} />
+          <Route path="store" element={<Store />} />
+          <Route path="product/:id" element={<ProductDetails />} />
+          <Route path="cart" element={<Cart />} />
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="order-success/:orderId" element={<OrderSuccess />} />
+          <Route path="coming-soon" element={<ComingSoon />} />
+          <Route path="free-chat-offer" element={<FreeChatOffer />} />
+          <Route path="wallet" element={<Wallet />} />
+          <Route path="payment" element={<PaymentInformation />} />
+          <Route path="details" element={<UserDetails />} />
+          <Route path="video-call" element={<VideoCallList />} />
+          <Route path="video-booking/:id" element={<VideoCallBookingForm />} />
+          <Route path="video-room/:id" element={<VideoRoom />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="history" element={<OrderHistory />} />
+          <Route path="pooja-booking/:panditId" element={<PoojaBookingForm />} />
+          
+          {/* Coming Soon Links */}
+          <Route path="live" element={<ComingSoon />} />
+          <Route path="poojas" element={<ComingSoon />} />
+          <Route path="remedies" element={<ComingSoon />} />
+          <Route path="settings" element={<ComingSoon />} />
+        </Route>
       </Route>
 
       {/* Admin Panel (Public Login) */}
@@ -140,6 +174,7 @@ const AppContent = () => {
         <Route path="products" element={<AdminProducts />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="inventory" element={<AdminInventory />} />
+        <Route path="audit-logs" element={<AdminAuditLogs />} />
         <Route path="settings" element={<AdminSettings />} />
       </Route>
 
@@ -167,6 +202,20 @@ const AppContent = () => {
       <Route path="/astrologer/chat/:id" element={
         <ProtectedRoute allowedRoles={['astrologer']}>
           <ChatRoom />
+        </ProtectedRoute>
+      } />
+
+      {/* Full-screen Astrologer Video Room */}
+      <Route path="/astrologer/video-room/:id" element={
+        <ProtectedRoute allowedRoles={['astrologer']}>
+          <AstrologerVideoRoom />
+        </ProtectedRoute>
+      } />
+
+      {/* Full-screen User Chat Room */}
+      <Route path="/user/chat" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <UserChatRoom />
         </ProtectedRoute>
       } />
 

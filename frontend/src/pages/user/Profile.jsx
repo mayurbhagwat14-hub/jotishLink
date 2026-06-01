@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiArrowLeft, FiUploadCloud } from 'react-icons/fi';
+import { FiArrowLeft, FiUploadCloud, FiSave } from 'react-icons/fi';
 import { updateUser, fetchProfileThunk, updateProfileThunk } from '../../store/slices/authSlice';
 
 const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { openSidebar } = useOutletContext();
+  const context = useOutletContext();
+  const openSidebar = context?.openSidebar;
   const { user } = useSelector((state) => state.auth);
   
   const [formData, setFormData] = useState(() => ({
@@ -15,24 +16,27 @@ const Profile = () => {
     gender: user?.gender || 'Male',
     dob: user?.dob || '',
     timeOfBirth: user?.timeOfBirth || '',
-    birthplace: user?.birthplace || '',
+    placeOfBirth: user?.placeOfBirth || user?.birthplace || '',
     address: user?.address || '',
     city: user?.city || '',
     pincode: user?.pincode || '',
+    avatar: user?.avatar || '',
   }));
 
   useEffect(() => {
     dispatch(fetchProfileThunk()).unwrap().then((data) => {
       if (data) {
+        const profile = data?.data?.user || data?.user || data;
         setFormData({
-          name: data.name || '',
-          gender: data.gender || 'Male',
-          dob: data.dob || '',
-          timeOfBirth: data.timeOfBirth || '',
-          birthplace: data.birthplace || '',
-          address: data.address || '',
-          city: data.city || '',
-          pincode: data.pincode || '',
+          name: profile?.name || '',
+          gender: profile?.gender || 'Male',
+          dob: profile?.dob || '',
+          timeOfBirth: profile?.timeOfBirth || '',
+          placeOfBirth: profile?.placeOfBirth || profile?.birthplace || '',
+          address: profile?.address || '',
+          city: profile?.city || '',
+          pincode: profile?.pincode || '',
+          avatar: profile?.avatar || '',
         });
       }
     }).catch(err => console.error("Error fetching profile:", err));
@@ -43,6 +47,17 @@ const Profile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, avatar: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -51,7 +66,7 @@ const Profile = () => {
       console.error("Failed to update profile via API, updating local state", err);
       dispatch(updateUser(formData));
     }
-    navigate(-1);
+    navigate('/user/home');
   };
 
   return (
@@ -81,8 +96,8 @@ const Profile = () => {
         <div className="flex flex-col items-center pt-8 pb-6 bg-gradient-to-b from-orange-50 to-white">
           <div className="relative mb-3">
             <div className="w-28 h-28 rounded-full border-[3px] border-orange-300 flex items-center justify-center overflow-hidden bg-white shadow-lg">
-              {user?.avatar ? (
-                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+              {formData.avatar ? (
+                <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-orange-50">
                   <svg className="w-16 h-16 text-orange-300" fill="currentColor" viewBox="0 0 20 20">
@@ -91,9 +106,10 @@ const Profile = () => {
                 </div>
               )}
             </div>
-            <div className="absolute bottom-1 right-1 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-orange-600 transition-colors">
+            <label className="absolute bottom-1 right-1 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-orange-600 transition-colors">
               <FiUploadCloud size={16} className="text-white" />
-            </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+            </label>
           </div>
           <span className="text-gray-500 text-[14px] font-medium">{user?.phone || '+91-876xxxx836'}</span>
         </div>
@@ -146,7 +162,7 @@ const Profile = () => {
           {/* Place of Birth */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Place of Birth</label>
-            <input type="text" name="birthplace" value={formData.birthplace} onChange={handleChange}
+            <input type="text" name="placeOfBirth" value={formData.placeOfBirth} onChange={handleChange}
               className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-orange-500 transition-colors" />
           </div>
 
@@ -177,8 +193,8 @@ const Profile = () => {
 
       {/* Submit Button */}
       <div className="p-4 bg-white mt-auto border-t border-gray-50">
-        <button onClick={handleSubmit} className="w-full py-4 bg-orange-500 text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98] transition-all">
-          Submit
+        <button onClick={handleSubmit} className="w-full py-4 flex items-center justify-center gap-2 bg-orange-500 text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98] transition-all">
+          <FiSave /> Save Changes
         </button>
       </div>
     </div>

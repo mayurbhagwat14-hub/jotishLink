@@ -1,27 +1,78 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../store/slices/authSlice';
-import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiSettings, FiLogOut, FiLogIn, FiUserPlus, FiCreditCard, FiActivity, FiClock, FiMenu } from 'react-icons/fi';
+import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiSettings, FiLogOut, FiLogIn, FiUserPlus, FiCreditCard, FiActivity, FiClock, FiMenu, FiCheckCircle } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
-
+import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
+import { login } from '../store/slices/authSlice';
+import { addIncomingRequest, removeIncomingRequestByUserId } from '../store/slices/astrologerSlice';
+import { io } from 'socket.io-client';
+import NotificationDropdown from '../components/NotificationDropdown';
 const AstrologerLayout = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.auth);
   const location = useLocation();
   const navigate = useNavigate();
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(user?.onlineStatus === 'online' || false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    if (user && user.role === 'astrologer') {
+      const socket = io('http://localhost:5000', { auth: { token } });
+      socketRef.current = socket;
+
+      socket.emit('join_astrologer_room', { astrologerId: user._id });
+
+      socket.on('incoming_session_request', (data) => {
+        dispatch(addIncomingRequest(data));
+      });
+
+      socket.on('session_request_cancelled', (data) => {
+        dispatch(removeIncomingRequestByUserId(data.userId));
+      });
+
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [user, token]);
+
+  // Requests are now handled in the Chats/Calls tabs directly
 
   const handleLogout = () => {
     dispatch(logout());
     navigate('/astrologer/login');
   };
 
+  const toggleStatus = async () => {
+    if (statusLoading) return;
+    setStatusLoading(true);
+    const newStatus = isOnline ? 'offline' : 'online';
+    try {
+      await updateAstrologerOnlineStatus(newStatus);
+      setIsOnline(!isOnline);
+      if (user) {
+        dispatch(login({ user: { ...user, onlineStatus: newStatus }, token }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle status:', err);
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
+  const { incomingRequests } = useSelector((state) => state.astrologer);
+  
+  const chatRequestsCount = incomingRequests.filter(req => req.type === 'chat').length;
+  const callRequestsCount = incomingRequests.filter(req => req.type === 'audio' || req.type === 'video').length;
+
   const navLinks = [
     { path: '/astrologer/dashboard', name: 'Home', icon: <FiHome size={22} /> },
-    { path: '/astrologer/chats', name: 'Chats', icon: <FiMessageSquare size={22} />, badge: 1 },
-    { path: '/astrologer/calls', name: 'Calls', icon: <FiPhoneCall size={22} />, badge: 2 },
+    { path: '/astrologer/chats', name: 'Chats', icon: <FiMessageSquare size={22} />, badge: chatRequestsCount > 0 ? chatRequestsCount : null },
+    { path: '/astrologer/calls', name: 'Calls', icon: <FiPhoneCall size={22} />, badge: callRequestsCount > 0 ? callRequestsCount : null },
     { path: '/astrologer/history', name: 'History', icon: <FiClock size={22} /> },
     { path: '/astrologer/pooja', name: 'Pooja', icon: <GiFlowerPot size={22} /> },
   ];
@@ -58,19 +109,16 @@ const AstrologerLayout = () => {
               {isOnline ? 'Online' : 'Offline'}
             </span>
             <div 
-              onClick={() => setIsOnline(!isOnline)}
-              className={`w-9 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+              onClick={toggleStatus}
+              className={`w-9 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${statusLoading ? 'opacity-50' : ''} ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
             >
               <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isOnline ? 'translate-x-4' : 'translate-x-0'}`}></div>
             </div>
           </div>
           
-          <button className="relative text-gray-400 hover:text-orange-500 transition-colors">
-            <FiBell size={22} />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-[9px] text-white font-bold">
-              3
-            </span>
-          </button>
+          <div className="relative">
+            <NotificationDropdown iconClassName="text-gray-400 hover:text-orange-500" iconSize={22} />
+          </div>
         </div>
       </header>
 
@@ -79,6 +127,8 @@ const AstrologerLayout = () => {
          {/* Subtle background decoration */}
          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
          <Outlet />
+
+         {/* Incoming Request Popup Removed (handled dynamically in Chats/Calls tabs) */}
       </main>
 
       {/* Side Drawer Navbar */}

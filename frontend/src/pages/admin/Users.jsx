@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiSearch, FiFilter, FiUserX, FiUserCheck, FiMoreHorizontal, FiMail, FiPhone, FiCalendar, FiChevronDown, FiChevronLeft, FiChevronRight, FiEye, FiEdit, FiCheck, FiX } from 'react-icons/fi';
-import { fetchAdminUsersThunk, updateAdminUserStatusThunk, localBanUser, localUnbanUser } from '../../store/slices/adminSlice';
+import { fetchAdminUsersThunk, updateAdminUserStatusThunk, deleteAdminUserThunk, localBanUser, localUnbanUser, refundAdminUserThunk } from '../../store/slices/adminSlice';
 
 const AdminUsers = () => {
   const dispatch = useDispatch();
@@ -13,6 +13,9 @@ const AdminUsers = () => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [detailUser, setDetailUser] = useState(null);
   const [successToast, setSuccessToast] = useState(null);
+  const [refundModal, setRefundModal] = useState(false);
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('');
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -58,8 +61,18 @@ const AdminUsers = () => {
     dispatch(localUnbanUser(userId));
     dispatch(updateAdminUserStatusThunk({ id: userId, status: 'Active' }));
     showToast(`User access restored.`);
-    if (detailUser && detailUser.id === userId) {
+    if (detailUser && (detailUser.id === userId || detailUser._id === userId)) {
       setDetailUser(prev => ({ ...prev, status: 'Active' }));
+    }
+  };
+
+  const deleteUser = (userId) => {
+    if (window.confirm("Are you sure you want to permanently delete this user from the database? This action cannot be undone.")) {
+      dispatch(deleteAdminUserThunk(userId));
+      showToast('User permanently deleted from database.');
+      if (detailUser && (detailUser.id === userId || detailUser._id === userId)) {
+        setDetailUser(null);
+      }
     }
   };
 
@@ -210,6 +223,12 @@ const AdminUsers = () => {
                           <FiUserCheck size={12} /> Unban
                         </button>
                       )}
+                      <button
+                        onClick={() => deleteUser(user.id || user._id)}
+                        className="px-2.5 py-1.5 bg-gray-50 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1"
+                      >
+                        <FiX size={12} /> Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -306,8 +325,11 @@ const AdminUsers = () => {
                 ))}
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2">
-                  <FiEdit size={14} /> Edit Wallet
+                <button 
+                  onClick={() => setRefundModal(true)}
+                  className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+                >
+                  <FiEdit size={14} /> Refund to Wallet
                 </button>
                 {detailUser.status === 'Active' ? (
                   <button
@@ -324,6 +346,68 @@ const AdminUsers = () => {
                     <FiUserCheck size={14} /> Unban User
                   </button>
                 )}
+              </div>
+              <button
+                onClick={() => deleteUser(detailUser.id || detailUser._id)}
+                className="w-full mt-2 px-4 py-2.5 bg-white border border-red-100 hover:bg-red-50 text-red-500 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <FiX size={14} /> Permanently Delete User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ═══ REFUND MODAL ═══ */}
+      {refundModal && detailUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => setRefundModal(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Refund Wallet</h3>
+            <p className="text-sm text-gray-500 mb-4">Refunding to <b>{detailUser.name}</b></p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Amount (₹)</label>
+                <input 
+                  type="number" 
+                  value={refundAmount}
+                  onChange={e => setRefundAmount(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-bold"
+                  placeholder="e.g. 50"
+                  min="1"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Reason</label>
+                <input 
+                  type="text" 
+                  value={refundReason}
+                  onChange={e => setRefundReason(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-medium"
+                  placeholder="e.g. Chat failed"
+                />
+              </div>
+              <div className="flex gap-2 mt-6">
+                <button 
+                  onClick={() => setRefundModal(false)}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors"
+                >Cancel</button>
+                <button 
+                  disabled={!refundAmount || !refundReason}
+                  onClick={() => {
+                    dispatch(refundAdminUserThunk({ id: detailUser.id || detailUser._id, data: { amount: Number(refundAmount), reason: refundReason } }));
+                    setRefundModal(false);
+                    setRefundAmount('');
+                    setRefundReason('');
+                    showToast('Refund initiated successfully!');
+                    
+                    // Update detail user wallet optimistically
+                    setDetailUser(prev => ({
+                      ...prev,
+                      wallet: prev.wallet + Number(refundAmount)
+                    }));
+                  }}
+                  className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
+                >Refund</button>
               </div>
             </div>
           </div>

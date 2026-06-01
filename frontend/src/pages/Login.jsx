@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import * as userApis from '../api/userApis';
 import { login } from '../store/slices/authSlice';
@@ -10,10 +10,15 @@ const Login = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [timer, setTimer] = useState(58);
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+  
+  const redirectTo = location.state?.redirectTo || 
+    (location.state?.from ? `${location.state.from.pathname}${location.state.from.search || ''}` : '/user/home');
 
   useEffect(() => {
     let interval;
@@ -42,15 +47,19 @@ const Login = () => {
   };
 
   const requestOtp = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
+    setError('');
     try {
       await userApis.requestOtp(phoneNumber);
       setStep(2);
       setTimer(58);
-    } catch {
-      setStep(2);
-      setTimer(58);
+      setOtp(['', '', '', '']); // clear OTP on resend
+      if (inputRefs[0]?.current) {
+        setTimeout(() => inputRefs[0].current.focus(), 100);
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -62,27 +71,32 @@ const Login = () => {
     const otpValue = otp.join('');
     try {
       const res = await userApis.verifyOtp(phoneNumber, otpValue);
-      const { _id, name, role, accessToken, isNewUser } = res.data;
+      // Backend returns { statusCode, data: { user, accessToken }, message }
+      const { user, accessToken } = res.data.data;
       
-      dispatch(login({ user: { _id, name, phone: phoneNumber, role }, token: accessToken }));
+      dispatch(login({ user, token: accessToken }));
       
-      if (isNewUser || !name || name === 'Guest User') {
-        navigate('/user/details');
+      // Role-based routing
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (user.role === 'astrologer') {
+        navigate('/astrologer/dashboard');
       } else {
-        if (role === 'admin') navigate('/admin/dashboard');
-        else if (role === 'astrologer') navigate('/astrologer/dashboard');
-        else navigate('/user/home');
+        // App User flow
+        if (user.isNewUser || user.name === 'Guest User' || !user.name) {
+          navigate('/user/details', { state: { redirectTo } });
+        } else {
+          navigate(redirectTo);
+        }
       }
-    } catch {
-      dispatch(login({
-        user: { name: 'Guest User', role: 'user', phone: phoneNumber, wallet: 150 },
-        token: 'dummy-token-123'
-      }));
-      navigate('/user/free-chat-offer');
+    } catch (err) {
+      console.error('OTP verification failed:', err?.response?.data?.message || err.message);
+      setError(err?.response?.data?.message || 'OTP verification failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+
 
   // ─── OTP VERIFICATION SCREEN ───
   if (step === 2) {
@@ -106,6 +120,12 @@ const Login = () => {
           <p className="text-gray-600 text-[15px] font-medium mb-2">
             OTP Sent to +91 {phoneNumber || '8766556836'}
           </p>
+
+          {error && (
+            <div className="w-full max-w-sm mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 font-medium text-center shadow-sm">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={verifyOtp} className="w-full max-w-sm flex flex-col items-center mt-6">
             {/* OTP Input boxes */}
@@ -137,8 +157,18 @@ const Login = () => {
               SUBMIT
             </button>
 
-            <div className="flex flex-col items-center mt-8 gap-2">
-              <p className="text-gray-400 text-xs text-center px-4 leading-relaxed font-medium">
+            <div className="flex flex-col items-center mt-6 gap-2">
+              {timer > 0 ? (
+                <p className="text-gray-500 text-[14px] font-medium mb-6">
+                  Resend OTP in <span className="text-orange-500 font-bold text-[15px]">00:{timer < 10 ? `0${timer}` : timer}</span>
+                </p>
+              ) : (
+                <p className="text-gray-500 text-[14px] font-medium mb-6">
+                  Didn't receive code? <button type="button" onClick={() => requestOtp()} className="text-orange-500 font-bold hover:underline transition-all">Resend OTP</button>
+                </p>
+              )}
+
+              <p className="text-gray-400 text-xs text-center px-4 leading-relaxed font-medium mt-2">
               By signing up, you agree to our <br /> <span className="text-gray-600 underline">Terms of Use</span> and <span className="text-gray-600 underline">Privacy Policy</span>
             </p>
             
@@ -170,10 +200,8 @@ const Login = () => {
       <div className="absolute top-[30%] left-[8%] w-2 h-2 bg-orange-300 rounded-full animate-float opacity-40" style={{ animationDelay: '1s' }} />
       <div className="absolute bottom-[25%] right-[15%] w-2 h-2 bg-orange-200 rounded-full animate-float opacity-30" style={{ animationDelay: '0.5s' }} />
 
-      {/* Skip Button */}
       <div className="flex justify-end pt-5 pb-6">
         <button onClick={() => {
-          dispatch(login({ user: { name: 'Guest User', role: 'user', wallet: 150 }, token: 'guest-token' }));
           navigate('/user/home');
         }} className="text-gray-500 font-medium text-[15px] hover:text-orange-500 transition-colors">
           Skip
@@ -204,11 +232,17 @@ const Login = () => {
         <p className="text-orange-500 text-[14px] font-semibold mb-10">First Chat with Astrologer is FREE!</p>
 
         {/* Divider */}
-        <div className="flex items-center w-full mb-8">
+        <div className="flex items-center w-full mb-6">
           <div className="flex-1 h-[1px] bg-gray-200" />
           <span className="px-4 text-gray-500 text-[14px] font-medium">Login or Sign Up</span>
           <div className="flex-1 h-[1px] bg-gray-200" />
         </div>
+
+        {error && (
+          <div className="w-full mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 font-medium text-center shadow-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={requestOtp} className="w-full space-y-5">
           <div className="flex gap-2 sm:gap-3">
@@ -250,16 +284,6 @@ const Login = () => {
           &{' '}
           <span className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors">Privacy Policy</span>
         </p>
-
-        {/* Links to Other Panels for Client Demo */}
-        <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col items-center gap-3 w-full max-w-[280px]">
-           <button 
-             onClick={() => navigate('/astrologer/login')}
-             className="text-[13px] font-bold text-gray-500 hover:text-orange-500 transition-colors"
-           >
-             Are you an Astrologer? Login Here
-           </button>
-        </div>
       </div>
     </div>
   );

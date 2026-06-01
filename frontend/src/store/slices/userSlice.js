@@ -14,12 +14,7 @@ export const fetchAstrologersThunk = createAsyncThunk(
 );
 
 const initialState = {
-  astrologers: [
-    { _id: '1', name: 'Shivika', skills: ['Numerology', 'Tarot'], experience: 9, videoPrice: 50, rate: 50, pricing: { chat: 50, audioCall: 50 }, rating: 5, orders: '5k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=shivika' },
-    { _id: '2', name: 'Vinay', skills: ['Vedic', 'Vastu'], experience: 6, videoPrice: 100, rate: 100, pricing: { chat: 100, audioCall: 100 }, rating: 5, orders: '50k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=vinay' },
-    { _id: '3', name: 'Bruti', skills: ['Face Reading', 'Psychic'], experience: 5, videoPrice: 40, rate: 40, pricing: { chat: 40, audioCall: 40 }, rating: 4.8, orders: '10k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=bruti' },
-    { _id: '4', name: 'Ashirvaas', skills: ['Palmistry', 'Vedic'], experience: 12, videoPrice: 80, rate: 80, pricing: { chat: 80, audioCall: 80 }, rating: 4.9, orders: '15k+', isVerified: true, avatar: 'https://i.pravatar.cc/150?u=ashirvaas' },
-  ],
+  astrologers: [],
   loading: false,
   error: null,
 };
@@ -36,8 +31,12 @@ const userSlice = createSlice({
       })
       .addCase(fetchAstrologersThunk.fulfilled, (state, action) => {
         state.loading = false;
-        if (action.payload && action.payload.length > 0) {
-          state.astrologers = action.payload;
+        // ApiResponse: { data: { astrologers: [...] } }
+        const astrologers = action.payload?.data?.astrologers || action.payload?.astrologers || action.payload;
+        if (Array.isArray(astrologers)) {
+          state.astrologers = astrologers;
+        } else {
+          state.astrologers = [];
         }
       })
       .addCase(fetchAstrologersThunk.rejected, (state, action) => {

@@ -21,4 +21,10 @@ const walletSlice = createSlice({
 });
 
 export const { addTransaction } = walletSlice.actions;
+
+export const fetchWalletThunk = () => async (dispatch) => {
+  // Mock thunk to satisfy import
+  return { payload: true };
+};
+
 export default walletSlice.reducer;

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiSearch, FiHeart, FiClock, FiShoppingBag, FiVideo } from 'react-icons/fi';
+import { FiHome, FiSearch, FiHeart, FiClock, FiShoppingBag, FiVideo, FiBell } from 'react-icons/fi';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -9,7 +9,7 @@ const BottomNav = () => {
     { name: 'Search', path: '/user/astrologers', icon: FiSearch },
     { name: 'Video Call', path: '/user/video-call', icon: FiVideo },
     { name: 'History', path: '/user/history', icon: FiClock },
-    { name: 'JyotishLink Services', path: '/user/store', icon: FiShoppingBag },
+    { name: 'Store', path: '/user/store', icon: FiShoppingBag },
   ];
 
   return (

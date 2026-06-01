@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiSearch, FiCheck, FiX, FiStar, FiPhone, FiMessageSquare, FiVideo, FiCalendar, FiMoreHorizontal, FiEye, FiChevronDown, FiChevronLeft, FiChevronRight, FiUserCheck, FiClock, FiToggleLeft, FiToggleRight, FiSlash } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
+import { getAdminAstrologers, updateAdminAstrologerStatus, deleteAdminAstrologer } from '../../api/adminApis';
 
 const AdminAstrologers = () => {
   const [activeTab, setActiveTab] = useState('Active');
@@ -9,23 +10,51 @@ const AdminAstrologers = () => {
   const [successToast, setSuccessToast] = useState(null);
   const itemsPerPage = 8;
 
-  const [pendingAstrologers, setPendingAstrologers] = useState([
-    { id: 101, name: 'Meera Devi', phone: '+91 99001 22334', skills: 'Tarot, Vedic Astrology', languages: 'Hindi, English', experience: '6 Years', appliedOn: 'May 25, 2026', avatar: 'M', bio: 'Experienced Tarot reader with specialization in relationship guidance and career predictions.' },
-    { id: 102, name: 'Rajesh Pandey', phone: '+91 88112 33445', skills: 'Numerology, Palmistry', languages: 'Hindi', experience: '3 Years', appliedOn: 'May 27, 2026', avatar: 'R', bio: 'Professional numerologist helping clients understand their life path numbers.' },
-  ]);
+  const [pendingAstrologers, setPendingAstrologers] = useState([]);
+  const [activeAstrologers, setActiveAstrologers] = useState([]);
+  const [suspendedAstrologers, setSuspendedAstrologers] = useState([]);
 
-  const [activeAstrologers, setActiveAstrologers] = useState([
-    { id: 1, name: 'Sanjay Sharma', phone: '+91 97651 23400', rating: 4.9, reviews: 1248, rate: 85, earnings: 45200, status: 'Online', sessions: 342, speciality: 'Vedic Astrology', avatar: 'S', enabled: true },
-    { id: 2, name: 'Neeta Joshi', phone: '+91 98761 12340', rating: 4.7, reviews: 876, rate: 40, earnings: 28600, status: 'In Session', sessions: 201, speciality: 'Tarot Reading', avatar: 'N', enabled: true },
-    { id: 3, name: 'Ramesh Gupta', phone: '+91 87651 23450', rating: 4.8, reviews: 2100, rate: 65, earnings: 62400, status: 'Offline', sessions: 510, speciality: 'Palmistry', avatar: 'R', enabled: true },
-    { id: 4, name: 'Vinod Acharya', phone: '+91 76541 23450', rating: 4.5, reviews: 423, rate: 25, earnings: 15800, status: 'Online', sessions: 98, speciality: 'Numerology', avatar: 'V', enabled: true },
-    { id: 5, name: 'Kavita Sharma', phone: '+91 65432 12340', rating: 4.6, reviews: 567, rate: 50, earnings: 22300, status: 'Offline', sessions: 156, speciality: 'Vedic Astrology', avatar: 'K', enabled: false },
-    { id: 6, name: 'Suresh Pandit', phone: '+91 54321 09870', rating: 4.3, reviews: 234, rate: 30, earnings: 9800, status: 'Offline', sessions: 67, speciality: 'Vastu Shastra', avatar: 'S', enabled: true },
-  ]);
+  useEffect(() => {
+    fetchAstrologers();
+  }, []);
 
-  const [suspendedAstrologers, setSuspendedAstrologers] = useState([
-    { id: 201, name: 'Deepak Mishra', phone: '+91 43210 98760', rating: 3.2, reviews: 45, reason: 'Multiple customer complaints', suspendedOn: 'May 15, 2026', avatar: 'D' },
-  ]);
+  const fetchAstrologers = async () => {
+    try {
+      const response = await getAdminAstrologers();
+      const allAstrologers = response.data?.data?.astrologers || response.data?.astrologers || [];
+      
+      setPendingAstrologers(allAstrologers.filter(a => a.approvalStatus === 'pending'));
+      setActiveAstrologers(allAstrologers.filter(a => a.approvalStatus === 'approved').map(a => ({
+        id: a._id,
+        name: a.name,
+        phone: a.phone || 'N/A',
+        rating: a.rating || 0,
+        reviews: 0,
+        rate: a.pricing?.chat || 20,
+        earnings: 0,
+        status: a.onlineStatus === 'online' ? 'Online' : 'Offline',
+        sessions: 0,
+        speciality: a.categories && a.categories.length > 0 ? a.categories.join(', ') : (a.skills && a.skills.length > 0 ? a.skills[0] : 'General'),
+        avatar: a.name ? a.name[0] : 'A',
+        enabled: a.isVerified,
+        raw: a
+      })));
+      setSuspendedAstrologers(allAstrologers.filter(a => a.approvalStatus === 'rejected').map(a => ({
+        id: a._id,
+        name: a.name,
+        phone: a.phone || 'N/A',
+        rating: a.rating || 0,
+        reviews: 0,
+        reason: 'Rejected by admin',
+        suspendedOn: new Date(a.updatedAt).toLocaleDateString(),
+        avatar: a.name ? a.name[0] : 'A',
+        raw: a
+      })));
+    } catch (err) {
+      console.error('Failed to fetch astrologers:', err);
+      showToast('Failed to load astrologers');
+    }
+  };
 
   const showToast = (message) => {
     setSuccessToast(message);
@@ -45,76 +74,56 @@ const AdminAstrologers = () => {
     setActiveAstrologers(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
   };
 
-  const approveAstrologer = (ast) => {
-    setPendingAstrologers(prev => prev.filter(a => a.id !== ast.id));
-    setActiveAstrologers(prev => [
-      {
-        id: ast.id,
-        name: ast.name,
-        phone: ast.phone,
-        rating: 0,
-        reviews: 0,
-        rate: 20, // Default starting rate
-        earnings: 0,
-        status: 'Offline',
-        sessions: 0,
-        speciality: ast.skills.split(',')[0],
-        avatar: ast.avatar,
-        enabled: true
-      },
-      ...prev
-    ]);
-    showToast(`${ast.name} has been approved.`);
+  const approveAstrologer = async (ast) => {
+    try {
+      await updateAdminAstrologerStatus(ast._id || ast.id, 'approved');
+      showToast(`${ast.name} has been approved.`);
+      fetchAstrologers();
+    } catch (err) {
+      showToast(`Failed to approve ${ast.name}`);
+    }
   };
 
-  const rejectAstrologer = (ast) => {
-    setPendingAstrologers(prev => prev.filter(a => a.id !== ast.id));
-    showToast(`${ast.name}'s application was rejected.`);
+  const rejectAstrologer = async (ast) => {
+    try {
+      await updateAdminAstrologerStatus(ast._id || ast.id, 'rejected');
+      showToast(`${ast.name}'s application was rejected.`);
+      fetchAstrologers();
+    } catch (err) {
+      showToast(`Failed to reject ${ast.name}`);
+    }
   };
 
-  const suspendAstrologer = (ast) => {
-    setActiveAstrologers(prev => prev.filter(a => a.id !== ast.id));
-    setSuspendedAstrologers(prev => [
-      {
-        id: ast.id,
-        name: ast.name,
-        phone: ast.phone,
-        rating: ast.rating,
-        reviews: ast.reviews,
-        reason: 'Suspended by admin',
-        suspendedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        avatar: ast.avatar
-      },
-      ...prev
-    ]);
-    showToast(`${ast.name} has been suspended.`);
+  const suspendAstrologer = async (ast) => {
+    try {
+      await updateAdminAstrologerStatus(ast._id || ast.id, 'blocked');
+      showToast(`${ast.name} has been suspended.`);
+      fetchAstrologers();
+    } catch (err) {
+      showToast(`Failed to suspend ${ast.name}`);
+    }
   };
 
-  const reinstateAstrologer = (ast) => {
-    setSuspendedAstrologers(prev => prev.filter(a => a.id !== ast.id));
-    setActiveAstrologers(prev => [
-      {
-        id: ast.id,
-        name: ast.name,
-        phone: ast.phone,
-        rating: ast.rating,
-        reviews: ast.reviews,
-        rate: 50,
-        earnings: 0,
-        status: 'Offline',
-        sessions: 0,
-        speciality: 'General',
-        avatar: ast.avatar,
-        enabled: true
-      },
-      ...prev
-    ]);
-    showToast(`${ast.name} has been reinstated.`);
+  const reinstateAstrologer = async (ast) => {
+    try {
+      await updateAdminAstrologerStatus(ast._id || ast.id, 'approved');
+      showToast(`${ast.name} has been reinstated.`);
+      fetchAstrologers();
+    } catch (err) {
+      showToast(`Failed to reinstate ${ast.name}`);
+    }
   };
 
-  const permanentlyBan = (ast) => {
-    setSuspendedAstrologers(prev => prev.filter(a => a.id !== ast.id));
-    showToast(`${ast.name} has been permanently banned.`);
+  const permanentlyBan = async (ast) => {
+    if (window.confirm(`Are you sure you want to permanently delete ${ast.name} from the database? This action cannot be undone.`)) {
+      try {
+        await deleteAdminAstrologer(ast._id || ast.id || ast.raw?._id);
+        showToast(`${ast.name} has been permanently deleted.`);
+        fetchAstrologers();
+      } catch (err) {
+        showToast(`Failed to delete ${ast.name}`);
+      }
+    }
   };
 
   return (
@@ -245,8 +254,8 @@ const AdminAstrologers = () => {
                           <button onClick={() => suspendAstrologer(ast)} className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1" title="Suspend Astrologer">
                             <FiSlash size={12} />
                           </button>
-                          <button className="p-2 text-gray-300 hover:text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
-                            <FiMoreHorizontal size={16} />
+                          <button onClick={() => permanentlyBan(ast)} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1" title="Delete Astrologer">
+                            <FiX size={12} />
                           </button>
                         </div>
                       </td>
@@ -295,31 +304,33 @@ const AdminAstrologers = () => {
             </div>
           ) : (
             pendingAstrologers.map((ast) => (
-              <div key={ast.id} className="bg-white rounded-2xl border border-orange-100 p-6 hover:border-orange-200 transition-all group">
+              <div key={ast._id} className="bg-white rounded-2xl border border-orange-100 p-6 hover:border-orange-200 transition-all group">
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div className="flex items-start gap-4 flex-1">
                     <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center font-black text-xl shrink-0 border border-orange-100">
-                      {ast.avatar}
+                      {ast.name ? ast.name[0] : 'A'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-bold text-gray-900">{ast.name}</h3>
                         <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full uppercase tracking-wider">New Application</span>
                       </div>
-                      <p className="text-xs text-gray-500 font-medium mb-2">{ast.phone}</p>
-                      <p className="text-xs text-gray-500 font-medium mb-3">{ast.bio}</p>
+                      <p className="text-xs text-gray-500 font-medium mb-2">{ast.phone || 'N/A'}</p>
+                      <p className="text-xs text-gray-500 font-medium mb-3">{ast.about}</p>
                       <div className="flex flex-wrap gap-2">
-                        <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">🔮 {ast.skills}</span>
-                        <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">🗣️ {ast.languages}</span>
-                        <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">📅 {ast.experience} exp.</span>
-                        <span className="text-[11px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg flex items-center gap-1"><FiClock size={10} /> Applied {ast.appliedOn}</span>
+                        <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">🔮 {ast.categories?.join(', ') || ast.skills?.join(', ')}</span>
+                        <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">🗣️ {ast.languages?.join(', ')}</span>
+                        <span className="text-[11px] font-bold text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">📅 {ast.experience} Years exp.</span>
+                        <span className="text-[11px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg flex items-center gap-1"><FiClock size={10} /> Applied {new Date(ast.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5">
-                      <FiEye size={14} /> View Details
-                    </button>
+                    {ast.identityProof && (
+                      <a href={ast.identityProof} target="_blank" rel="noreferrer" className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5">
+                        <FiEye size={14} /> ID Proof
+                      </a>
+                    )}
                     <button onClick={() => rejectAstrologer(ast)} className="px-4 py-2.5 bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5">
                       <FiX size={14} /> Reject
                     </button>

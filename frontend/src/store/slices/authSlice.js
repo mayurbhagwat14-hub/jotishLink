@@ -150,17 +150,22 @@ export const updateProfileThunk = createAsyncThunk(
   }
 );
 
+export const registerUserThunk = createAsyncThunk(
+  'auth/registerUser',
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const response = await userApis.register(profileData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
-  user: {
-    name: 'Guest User',
-    role: 'user',
-    wallet: 150,
-    avatar: '',
-    phone: '+91 9876543210',
-    email: 'guest@jyotishlink.com'
-  },
-  token: 'guest-token',
-  isAuthenticated: true,
+  user: null,
+  token: null,
+  isAuthenticated: false,
   loading: false,
   error: null,
 };
@@ -173,20 +178,22 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+      state.error = null;
     },
     logout: (state) => {
-      state.user = { name: 'Guest User', role: 'user', wallet: 150 };
-      state.token = 'guest-token';
-      state.isAuthenticated = true;
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      state.error = null;
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
     },
     addWalletCash: (state, action) => {
-      state.user.wallet = (state.user.wallet || 0) + action.payload;
+      if (state.user) state.user.wallet = (state.user.wallet || 0) + action.payload;
     },
     deductWalletCash: (state, action) => {
-      state.user.wallet = Math.max(0, (state.user.wallet || 0) - action.payload);
+      if (state.user) state.user.wallet = Math.max(0, (state.user.wallet || 0) - action.payload);
     }
   },
   extraReducers: (builder) => {
@@ -196,44 +203,55 @@ const authSlice = createSlice({
       })
       .addCase(fetchProfileThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = { ...state.user, ...action.payload };
+        // API response wrapped in { data: { user } }
+        const u = action.payload?.data?.user || action.payload?.user || action.payload;
+        state.user = { ...state.user, ...u };
       })
       .addCase(fetchProfileThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
       .addCase(updateProfileThunk.fulfilled, (state, action) => {
-        state.user = { ...state.user, ...action.payload };
+        const u = action.payload?.data?.user || action.payload?.user || action.payload;
+        state.user = { ...state.user, ...u };
+      })
+      .addCase(registerUserThunk.fulfilled, (state, action) => {
+        const u = action.payload?.data?.user || action.payload?.user || action.payload;
+        state.user = { ...state.user, ...u };
       })
       .addCase(userLoginOrSignupThunk.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.isAuthenticated = true;
+        // payload: { data: { user, accessToken } }
+        const data = action.payload?.data || action.payload;
+        state.user = data.user || state.user;
+        state.token = data.accessToken || state.token;
+        if (data.user) state.isAuthenticated = true;
       })
       .addCase(astrologerLoginThunk.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        const data = action.payload?.data || action.payload;
+        state.user = data.user;
+        state.token = data.accessToken;
         state.isAuthenticated = true;
       })
       .addCase(adminLoginThunk.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        const data = action.payload?.data || action.payload;
+        state.user = data.user;
+        state.token = data.accessToken;
         state.isAuthenticated = true;
       })
       .addCase(userDeleteAccountThunk.fulfilled, (state) => {
-        state.user = { name: 'Guest User', role: 'user', wallet: 150 };
-        state.token = 'guest-token';
-        state.isAuthenticated = true;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
       })
       .addCase(astrologerDeleteAccountThunk.fulfilled, (state) => {
-        state.user = { name: 'Guest User', role: 'user', wallet: 150 };
-        state.token = 'guest-token';
-        state.isAuthenticated = true;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
       })
       .addCase(adminDeleteAccountThunk.fulfilled, (state) => {
-        state.user = { name: 'Guest User', role: 'user', wallet: 150 };
-        state.token = 'guest-token';
-        state.isAuthenticated = true;
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
       });
   }
 });

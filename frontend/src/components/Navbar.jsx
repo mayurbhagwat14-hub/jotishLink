@@ -16,7 +16,7 @@ const Navbar = () => {
       </Link>
 
       <button
-        onClick={() => navigate('/login')}
+        onClick={() => navigate('/user/login')}
         className="bg-orange-500 text-white font-bold text-[13px] px-5 py-2 rounded-full shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
       >
         Login
