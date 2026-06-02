@@ -5,12 +5,14 @@ import {
   deleteUserAccount,
   getHomepageData,
   getAstrologers,
+  getAstrologerById,
   getStoreProducts,
   getStorePandits,
   getProductById,
   bookPooja,
   getUserPoojas,
   getUserSessions,
+  getUserWallet,
 } from '../controllers/user.controller.js';
 import { verifyJWT, authorizeRoles, optionalAuth } from '../middlewares/auth.middleware.js';
 
@@ -19,6 +21,7 @@ const router = Router();
 // Public Routes (Optional authentication for personalized data)
 router.get('/user/homepage-data', optionalAuth, getHomepageData);
 router.get('/astrologers', optionalAuth, getAstrologers);
+router.get('/astrologers/:id', optionalAuth, getAstrologerById);
 router.get('/products', optionalAuth, getStoreProducts);
 router.get('/products/:id', optionalAuth, getProductById);
 router.get('/pandits', optionalAuth, getStorePandits);
@@ -35,5 +38,6 @@ router.get('/user/poojas', verifyJWT, getUserPoojas);
 
 // Sessions & wallet history
 router.get('/user/sessions', verifyJWT, getUserSessions);
+router.get('/user/wallet', verifyJWT, getUserWallet);
 
 export default router;

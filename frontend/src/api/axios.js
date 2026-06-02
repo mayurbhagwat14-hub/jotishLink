@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 let store;
 
@@ -7,7 +8,7 @@ export const injectStore = (_store) => {
 };
 
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
   withCredentials: true,
 });
 
@@ -32,7 +33,7 @@ instance.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const res = await axios.post(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh`,
+          `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/refresh`,
           {},
           { withCredentials: true }
         );
@@ -46,9 +47,19 @@ instance.interceptors.response.use(
         if (store) {
           store.dispatch({ type: 'auth/logout' });
         }
+        toast.error('Session expired. Please login again.');
         return Promise.reject(refreshError);
       }
     }
+
+    if (error.response?.status === 403) {
+      toast.error('You are not authorized to perform this action.');
+    } else if (error.response?.status >= 500) {
+      toast.error('Internal Server Error. Please try again later.');
+    } else if (error.message === 'Network Error') {
+      toast.error('Network error. Please check your internet connection.');
+    }
+
     return Promise.reject(error);
   }
 );

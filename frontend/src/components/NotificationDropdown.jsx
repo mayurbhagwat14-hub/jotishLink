@@ -19,7 +19,7 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
     
     // Set up socket listener for real-time notifications
     import('socket.io-client').then(({ io }) => {
-      const socket = io('http://localhost:5000', { withCredentials: true });
+      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { withCredentials: true });
       // We can listen to a global or user-specific event
       socket.on('connect', () => {
         // If user is admin, listen to admin events

@@ -149,6 +149,15 @@ export const getAstrologers = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { astrologers }, 'Astrologers fetched'));
 });
 
+// GET /api/astrologers/:id
+export const getAstrologerById = asyncHandler(async (req, res) => {
+  const astrologer = await Astrologer.findById(req.params.id).lean();
+  if (!astrologer) {
+    throw new ApiError(404, 'Astrologer not found');
+  }
+  return res.status(200).json(new ApiResponse(200, { astrologer }, 'Astrologer fetched'));
+});
+
 // GET /api/products/:id
 export const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).lean();
@@ -160,7 +169,7 @@ export const getProductById = asyncHandler(async (req, res) => {
 
 // GET /api/products
 export const getStoreProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ inStock: { $ne: false } }).sort({ createdAt: -1 }).lean();
+  const products = await Product.find({ $or: [{ inStock: true }, { inStock: { $exists: false } }] }).sort({ createdAt: -1 }).lean();
   
   // Calculate distinct categories with an image
   const categories = [];
@@ -260,4 +269,12 @@ export const getUserSessions = asyncHandler(async (req, res) => {
   const transactions = await Transaction.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
 
   return res.status(200).json(new ApiResponse(200, { sessions, transactions }, 'Sessions fetched'));
+});
+
+// GET /api/user/wallet
+export const getUserWallet = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('wallet');
+  const transactions = await Transaction.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
+  
+  return res.status(200).json(new ApiResponse(200, { wallet: user.wallet || 0, transactions }, 'Wallet fetched'));
 });

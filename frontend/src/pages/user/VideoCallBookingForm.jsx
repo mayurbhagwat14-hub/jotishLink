@@ -25,7 +25,7 @@ const VideoCallBookingForm = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    const s = io('http://localhost:5000', { auth: { token } });
+    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
     setSocket(s);
     return () => { s.disconnect(); };
   }, []);

@@ -20,13 +20,16 @@ export const deleteAccount = () => axios.delete('/user/profile/delete');
 export const getUserHomeData = () => axios.get('/user/homepage-data');
 export const getUserProfile = () => axios.get('/user/profile');
 export const updateUserProfile = (data) => axios.put('/user/profile', data);
-export const getAstrologers = () => axios.get('/astrologers');
-export const getStoreProducts = () => axios.get('/products');
+export const getUserWallet = () => axios.get('/user/wallet');
+export const getAstrologers = (params) => axios.get('/astrologers', { params });
+export const getAstrologerById = (id) => axios.get(`/astrologers/${id}`);
+export const getStoreProducts = (params) => axios.get('/products', { params });
 export const getProductById = (id) => axios.get(`/products/${id}`);
 export const getStorePandits = () => axios.get('/pandits');
 export const bookPooja = (data) => axios.post('/pooja/book', data);
 export const getUserPoojas = () => axios.get('/user/poojas');
 export const getUserSessions = () => axios.get('/user/sessions');
+export const getUserCalls = () => axios.get('/calls/history');
 
 // Tool APIs
 export const getPanchang = () => axios.get('/tools/panchang');

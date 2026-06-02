@@ -21,7 +21,7 @@ const AstrologerLayout = () => {
 
   useEffect(() => {
     if (user && user.role === 'astrologer') {
-      const socket = io('http://localhost:5000', { auth: { token } });
+      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
       socketRef.current = socket;
 
       socket.emit('join_astrologer_room', { astrologerId: user._id });

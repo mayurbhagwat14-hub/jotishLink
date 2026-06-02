@@ -20,6 +20,7 @@ import chatRoutes from './routes/chat.routes.js';
 import storeRoutes from './routes/store.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import callRoutes from './routes/call.routes.js';
 
 // Models (needed for Socket.IO session persistence)
 import ChatSession from './models/chatSession.model.js';
@@ -65,7 +66,7 @@ io.on('connection', (socket) => {
   });
 
   // ── User requests a session
-  socket.on('request_session', ({ astrologerId, userId, userName, type, durationLimit }) => {
+  socket.on('request_session', ({ astrologerId, userId, userName, type, durationLimit, callId }) => {
     const roomId = `room_${Date.now()}_${userId}`;
     io.to(`astro_${astrologerId}`).emit('incoming_session_request', {
       roomId,
@@ -73,6 +74,7 @@ io.on('connection', (socket) => {
       userName,
       type, // 'chat', 'video', 'audio'
       durationLimit,
+      callId,
       userSocketId: socket.id
     });
     console.log(`[Socket.IO] User ${userId} requested ${type} session with Astrologer ${astrologerId}`);
@@ -335,6 +337,80 @@ io.on('connection', (socket) => {
     console.log(`[Socket.IO] Session ended for room ${roomId}`);
   });
 
+  // ── Audio Call Wallet & Auto Disconnect Loop ──
+  socket.on('start_audio_call', async ({ roomId, callId, userId, astrologerRate }) => {
+    if (activeTimers.has(roomId)) return;
+
+    let seconds = 0;
+    const intervalId = setInterval(async () => {
+      seconds++;
+      io.to(roomId).emit('call_time_update', { seconds });
+
+      // Deduct wallet every 60 seconds
+      if (seconds % 60 === 0) {
+        try {
+          const user = await User.findById(userId);
+          if (!user || user.wallet < astrologerRate) {
+            // Insufficient balance, auto disconnect
+            io.to(roomId).emit('wallet_low_balance');
+            io.to(roomId).emit('call_ended', { reason: 'insufficient_balance' });
+            
+            clearInterval(intervalId);
+            activeTimers.delete(roomId);
+
+            // Update DB
+            const { CallSession } = await import('./models/callSession.model.js');
+            const session = await CallSession.findOne({ callId });
+            if (session) {
+              session.status = 'completed';
+              session.duration = seconds;
+              session.endTime = new Date();
+              session.totalAmount = Math.floor(seconds / 60) * astrologerRate;
+              await session.save();
+              
+              await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
+            }
+          } else {
+            await WalletService.deduct(userId, astrologerRate, `Audio Call - 1 min`);
+            io.to(roomId).emit('wallet_update', { deducted: astrologerRate, newBalance: user.wallet - astrologerRate });
+          }
+        } catch (err) {
+          console.error('[Socket.IO] Audio Call Billing error:', err.message);
+        }
+      }
+    }, 1000);
+
+    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type: 'audio' });
+    console.log(`[Socket.IO] Audio Call Timer started for room ${roomId}`);
+  });
+
+  socket.on('end_audio_call', async ({ roomId, callId }) => {
+    const timerData = activeTimers.get(roomId);
+    if (timerData) {
+      clearInterval(timerData.intervalId);
+      activeTimers.delete(roomId);
+    }
+
+    io.to(roomId).emit('call_ended', { reason: 'user_ended' });
+
+    try {
+      const { CallSession } = await import('./models/callSession.model.js');
+      const session = await CallSession.findOne({ callId });
+      if (session && (session.status === 'accepted' || session.status === 'ongoing')) {
+        session.status = 'completed';
+        session.duration = timerData?.seconds || 0;
+        session.endTime = new Date();
+        session.totalAmount = Math.floor((timerData?.seconds || 0) / 60) * session.ratePerMinute;
+        await session.save();
+        
+        await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
+      }
+    } catch (err) {
+      console.error('[Socket.IO] Audio Call end error:', err.message);
+    }
+    console.log(`[Socket.IO] Audio Call ended for room ${roomId}`);
+  });
+
   // ── Astrologer status update
   socket.on('update_status', async ({ astrologerId, status }) => {
     try {
@@ -347,6 +423,8 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+    // Ideally we should find if they were in an active call and end it,
+    // but the frontend will emit 'end_audio_call' in cleanup or beforeUnload.
   });
 });
 
@@ -382,6 +460,7 @@ app.use('/api', chatRoutes);
 app.use('/api', storeRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api', callRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

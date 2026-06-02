@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhoneOff } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiPhoneOff } from 'react-icons/fi';
 import AgoraRTC, {
   AgoraRTCProvider,
   useLocalMicrophoneTrack,
-  useLocalCameraTrack,
   usePublish,
   useJoin,
   useRemoteUsers,
-  RemoteUser,
-  LocalVideoTrack
+  RemoteUser
 } from 'agora-rtc-react';
 import api from '../../api/axios';
 import { io } from 'socket.io-client';
@@ -17,11 +15,9 @@ import { io } from 'socket.io-client';
 const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId, socket }) => {
   const navigate = useNavigate();
   const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(!isMuted);
-  const { localCameraTrack } = useLocalCameraTrack(!isVideoOff);
   const remoteUsers = useRemoteUsers();
   
   useJoin({
@@ -31,7 +27,7 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId, socket
     uid: uid,
   });
 
-  usePublish([localMicrophoneTrack, localCameraTrack]);
+  usePublish([localMicrophoneTrack]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -48,9 +44,12 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId, socket
 
   const handleEndCall = () => {
     localMicrophoneTrack?.close();
-    localCameraTrack?.close();
     if (socket) {
-      socket.emit('end_session', { roomId: channelName });
+      if (sessionData.type === 'audio') {
+        socket.emit('end_audio_call', { roomId: channelName, callId: sessionData.callId });
+      } else {
+        socket.emit('end_session', { roomId: channelName });
+      }
     }
     navigate('/astrologer/calls');
   };
@@ -59,45 +58,48 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId, socket
     if (socket) {
       socket.on('session_ended', () => {
         localMicrophoneTrack?.close();
-        localCameraTrack?.close();
+        navigate('/astrologer/calls');
+      });
+      socket.on('call_ended', () => {
+        localMicrophoneTrack?.close();
         navigate('/astrologer/calls');
       });
     }
     return () => {
-      if (socket) socket.off('session_ended');
+      if (socket) {
+        socket.off('session_ended');
+        socket.off('call_ended');
+      }
     };
-  }, [socket, localMicrophoneTrack, localCameraTrack, navigate]);
+  }, [socket, localMicrophoneTrack, navigate]);
 
   return (
     <div className="w-full h-[100dvh] bg-gray-900 font-sans relative flex flex-col overflow-hidden">
       
-      {/* Remote Video */}
+      {/* Audio Call UI */}
       <div className="absolute inset-0 bg-gray-800 flex flex-col items-center justify-center">
-        {remoteUsers.length > 0 ? (
-          <RemoteUser user={remoteUsers[0]} className="w-full h-full object-cover" />
+        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-700 bg-gray-600 flex items-center justify-center shadow-2xl">
+           <span className="text-5xl text-gray-400 font-bold">{(sessionData.userName || 'U')[0]}</span>
+        </div>
+        
+        {remoteUsers.length === 0 ? (
+          <p className="text-gray-400 mt-6 font-bold animate-pulse">Waiting for {sessionData.userName} to join...</p>
         ) : (
           <>
-            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-700 animate-pulse bg-gray-600 flex items-center justify-center">
-               <span className="text-4xl text-gray-400">{(sessionData.userName || 'U')[0]}</span>
+            <p className="text-green-400 mt-6 font-bold">Connected</p>
+            <div className="hidden">
+              <RemoteUser user={remoteUsers[0]} />
             </div>
-            <p className="text-gray-400 mt-4 font-bold">Waiting for {sessionData.userName} to join...</p>
           </>
         )}
-        <div className="absolute top-16 text-center z-10">
-          <h2 className="text-white text-[24px] font-bold shadow-black drop-shadow-md">{sessionData.userName}</h2>
-          <p className="text-orange-400 text-[14px] font-medium shadow-black drop-shadow-md mt-1">{formatTime(callDuration)}</p>
-        </div>
-      </div>
 
-      {/* Local Video */}
-      <div className="absolute top-6 right-4 w-28 h-40 bg-gray-700 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-lg z-20">
-        {!isVideoOff ? (
-          <LocalVideoTrack track={localCameraTrack} play={true} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-800">
-            <FiVideoOff className="text-gray-500" size={24} />
+        <div className="absolute top-16 text-center z-10 w-full flex flex-col items-center">
+          <div className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full mb-3 shadow-md tracking-wider uppercase">
+            Audio Call
           </div>
-        )}
+          <h2 className="text-white text-[28px] font-bold shadow-black drop-shadow-md">{sessionData.userName}</h2>
+          <p className="text-orange-400 text-[16px] font-medium shadow-black drop-shadow-md mt-1">{formatTime(callDuration)}</p>
+        </div>
       </div>
 
       {/* Controls */}
@@ -118,14 +120,7 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId, socket
           <FiPhoneOff size={28} />
         </button>
 
-        <button 
-          onClick={() => setIsVideoOff(!isVideoOff)}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-            isVideoOff ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-gray-700/80 text-white border border-gray-600/50 hover:bg-gray-600'
-          }`}
-        >
-          {isVideoOff ? <FiVideoOff size={24} /> : <FiVideo size={24} />}
-        </button>
+        {/* Removed video button for Audio Call */}
       </div>
     </div>
   );
@@ -163,8 +158,10 @@ const AstrologerVideoRoom = () => {
     initAgora();
     
     const token = localStorage.getItem('astrologerToken') || localStorage.getItem('accessToken');
-    const s = io('http://localhost:5000', { auth: { token } });
-    s.emit('join_room', { roomId: id, userId: session.userId, astrologerId: session.astrologerId, isBot: false });
+    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+    if (session.type !== 'audio') {
+      s.emit('join_room', { roomId: id, userId: session.userId, astrologerId: session.astrologerId, isBot: false });
+    }
     setSocket(s);
 
     return () => {

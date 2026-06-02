@@ -162,6 +162,46 @@ export const getUserOrders = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { orders }, 'Orders fetched'));
 });
 
+// POST /api/store/orders/:id/cancel
+export const requestCancelOrder = asyncHandler(async (req, res) => {
+  const { reason } = req.body;
+  const order = await Order.findOne({ _id: req.params.id, userId: req.user._id });
+  
+  if (!order) throw new ApiError(404, 'Order not found');
+  if (['delivered', 'cancelled'].includes(order.orderStatus)) {
+    throw new ApiError(400, 'Cannot cancel a delivered or already cancelled order');
+  }
+  if (order.cancelRequest?.requested) {
+    throw new ApiError(400, 'Cancel request already submitted');
+  }
+
+  const refundPercent = 80;
+  const refundAmount = Math.round((order.totalAmount * refundPercent) / 100);
+
+  order.cancelRequest = {
+    requested: true,
+    reason: reason || 'No reason provided',
+    requestedAt: new Date(),
+    adminResponse: 'pending',
+    refundPercent,
+    refundAmount,
+  };
+  await order.save();
+
+  // Notify admin via socket
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('admin_cancel_request', {
+      orderId: order._id,
+      customerName: req.user.name || 'User',
+      reason: order.cancelRequest.reason,
+      amount: order.totalAmount,
+    });
+  }
+
+  return res.status(200).json(new ApiResponse(200, { order }, 'Cancel request submitted'));
+});
+
 // POST /api/store/razorpay-order
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
   const { amount } = req.body;

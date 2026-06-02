@@ -1,19 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProfileThunk } from '../../store/slices/authSlice';
+import { fetchWalletThunk } from '../../store/slices/walletSlice';
 import api from '../../api/axios';
+import { FiArrowUpRight, FiArrowDownLeft, FiClock } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 const Wallet = () => {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useSelector((state) => state.auth);
+  const { balance, transactions, loading: walletLoading } = useSelector((state) => state.wallet);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  useEffect(() => {
+    dispatch(fetchWalletThunk());
+  }, [dispatch]);
+
   const handlePayment = async () => {
     if (!amount || isNaN(amount) || amount < 10) {
-      alert('Please enter a valid amount (minimum ₹10)');
+      toast.error('Please enter a valid amount (minimum ₹10)');
       return;
     }
 
@@ -40,13 +48,14 @@ const Wallet = () => {
               razorpay_signature: response.razorpay_signature,
               amount: Number(amount),
             });
-            alert('Payment successful! Wallet recharged.');
-            // Refresh profile to get updated wallet balance
+            toast.success('Payment successful! Wallet recharged.');
+            // Refresh profile and wallet to get updated balance
             dispatch(fetchProfileThunk());
+            dispatch(fetchWalletThunk());
             navigate('/user/home');
           } catch (error) {
             console.error('Payment verification failed:', error);
-            alert('Payment verification failed.');
+            toast.error('Payment verification failed.');
           }
         },
         prefill: {
@@ -62,12 +71,12 @@ const Wallet = () => {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
         console.error(response.error.description);
-        alert('Payment Failed');
+        toast.error('Payment Failed');
       });
       rzp.open();
     } catch (error) {
       console.error('Error initiating payment:', error);
-      alert('Failed to initiate payment. Please try again.');
+      toast.error('Failed to initiate payment. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -78,7 +87,7 @@ const Wallet = () => {
       <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="bg-orange-500 p-6 text-center text-white">
           <h2 className="text-2xl font-bold">Wallet Balance</h2>
-          <p className="text-4xl font-black mt-2">₹{user?.wallet || 0}</p>
+          <p className="text-4xl font-black mt-2">₹{balance !== null ? balance : (user?.wallet || 0)}</p>
         </div>
         <div className="p-6">
           <h3 className="text-lg font-bold text-gray-800 mb-4">Add Money to Wallet</h3>
@@ -111,6 +120,45 @@ const Wallet = () => {
           >
             {loading ? 'Processing...' : `Proceed to Pay ₹${amount || 0}`}
           </button>
+        </div>
+      </div>
+
+      <div className="max-w-md mx-auto mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-bold text-gray-800 text-lg">Transaction History</h3>
+        </div>
+        <div className="p-4">
+          {walletLoading ? (
+            <div className="flex justify-center p-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+            </div>
+          ) : transactions && transactions.length > 0 ? (
+            <div className="space-y-4">
+              {transactions.map((tx) => (
+                <div key={tx._id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      {tx.type === 'credit' ? <FiArrowDownLeft size={18} /> : <FiArrowUpRight size={18} />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-gray-800 capitalize">{tx.reason || 'Wallet Recharge'}</h4>
+                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                        <FiClock size={10} />
+                        <span>{new Date(tx.createdAt).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`font-bold text-sm ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                    {tx.type === 'credit' ? '+' : '-'}₹{tx.amount}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No transactions found.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiPaperclip, FiSend, FiVideo, FiPhone } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
 import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
 import { updateUser } from '../../store/slices/authSlice';
@@ -18,7 +19,7 @@ const UserChatRoom = () => {
   const astrologer = location.state?.astrologer || { name: 'Astrologer', isBot: true };
   const isBotSession = astrologer.isBot || !astrologer._id;
 
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => location.state?.messages || []);
   const [inputText, setInputText] = useState('');
   const [timer, setTimer] = useState(0); // in seconds
   
@@ -32,18 +33,21 @@ const UserChatRoom = () => {
   const [connectingType, setConnectingType] = useState('');
   
   const messagesEndRef = useRef(null);
+  const viewOnly = location.state?.viewOnly || false;
   
   // Use the roomId from state (if passed from Astrologers acceptance), else generate one
   const [roomId] = useState(() => location.state?.roomId || `room_${user?._id}_${astrologer._id || 'bot'}_${Date.now()}`);
 
   useEffect(() => {
+    if (viewOnly) return; // Do not connect socket in viewOnly mode
+
     // If starting a free bot session, mark it immediately in frontend store as used
     if (isBotActive) {
       dispatch(updateUser({ hasUsedFreeChat: true }));
     }
 
     // Initialize Socket
-    socket = io('http://localhost:5000', { withCredentials: true });
+    socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { withCredentials: true });
 
     // Join room, letting the server know if we are starting with the AI bot
     socket.emit('join_room', { roomId, userId: user?._id, astrologerId: astrologer._id, isBot: isBotActive });
@@ -112,7 +116,7 @@ Problem area: General (Please ask your question)`;
       if (data.reason === 'insufficient_balance') {
         setShowLowBalance(true);
       } else if (data.reason === 'astrologer_ended') {
-        alert('Chat has been ended by the Astrologer.');
+        toast.error('Chat has been ended by the Astrologer.');
         setShowRating(true);
       }
     });
@@ -121,16 +125,16 @@ Problem area: General (Please ask your question)`;
       if (roomId && sessionId) {
         socket.emit('end_session', { roomId, sessionId, userId: user?._id });
       }
-      socket.disconnect();
+      if (socket) socket.disconnect();
     };
-  }, [user?._id, astrologer._id, roomId, isBotActive]);
+  }, [user?._id, astrologer._id, roomId, isBotActive, viewOnly]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const handleSend = () => {
-    if (!inputText.trim() || showLowBalance) return;
+    if (viewOnly || !inputText.trim() || showLowBalance) return;
 
     socket.emit('send_message', {
       roomId,
@@ -183,7 +187,7 @@ Problem area: General (Please ask your question)`;
     socket.once('session_rejected', ({ reason }) => {
       setIsConnecting(false);
       socket.off('session_accepted');
-      alert(`Request declined: ${reason}`);
+      toast.error(`Request declined: ${reason}`);
     });
   };
 
@@ -216,19 +220,27 @@ Problem area: General (Please ask your question)`;
         </div>
         
         <div className="flex items-center gap-2">
-          {!isBotActive && (
+          {viewOnly ? (
+            <button onClick={() => navigate(-1)} className="ml-1 text-[12px] font-bold text-gray-500 border border-gray-200 bg-gray-50 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+              Go Back
+            </button>
+          ) : (
             <>
-              <button onClick={() => handleRequestCall('video')} className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition-colors">
-                 <FiVideo size={18} />
-              </button>
-              <button onClick={() => handleRequestCall('audio')} className="w-9 h-9 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-100 transition-colors">
-                 <FiPhone size={18} />
+              {!isBotActive && (
+                <>
+                  <button onClick={() => handleRequestCall('video')} className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition-colors">
+                     <FiVideo size={18} />
+                  </button>
+                  <button onClick={() => handleRequestCall('audio')} className="w-9 h-9 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-100 transition-colors">
+                     <FiPhone size={18} />
+                  </button>
+                </>
+              )}
+              <button onClick={handleEndChat} className="ml-1 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                End Chat
               </button>
             </>
           )}
-          <button onClick={handleEndChat} className="ml-1 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
-            End Chat
-          </button>
         </div>
       </header>
 
@@ -290,8 +302,8 @@ Problem area: General (Please ask your question)`;
                 }
               }}
               rows="1"
-              placeholder={showLowBalance ? "Recharge to continue..." : "Type your message..."} 
-              disabled={showLowBalance}
+              placeholder={viewOnly ? "Chat has ended." : showLowBalance ? "Recharge to continue..." : "Type your message..."} 
+              disabled={viewOnly || showLowBalance}
               className="w-full bg-transparent px-4 py-3 outline-none text-sm resize-none max-h-32 min-h-[44px] disabled:opacity-50"
             ></textarea>
           </div>

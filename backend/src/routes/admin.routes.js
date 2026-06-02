@@ -9,6 +9,7 @@ import {
   deleteAdminAstrologer,
   getAdminOrders,
   updateOrderStatus,
+  processCancelRequest,
   getAdminProducts,
   createAdminProduct,
   updateAdminProduct,
@@ -36,6 +37,8 @@ import {
   getAdminSessions,
   getAdminPoojas,
   getAdminReports,
+  getAdminCalls,
+  getAdminCallAnalytics,
 } from '../controllers/admin.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { auditLogMiddleware } from '../middlewares/audit.middleware.js';
@@ -68,6 +71,7 @@ router.delete('/admin/astrologers/:id', deleteAdminAstrologer);
 // Orders
 router.get('/admin/orders', getAdminOrders);
 router.put('/admin/orders/:id/status', updateOrderStatus);
+router.put('/admin/orders/:id/cancel', processCancelRequest);
 
 // Products
 router.get('/admin/products', getAdminProducts);
@@ -103,9 +107,11 @@ router.delete('/admin/banners/:id', deleteAdminBanner);
 // Audit Logs
 router.get('/admin/audit-logs', getAdminAuditLogs);
 
-// Sessions, Poojas, Reports
+// Sessions, Poojas, Reports, Calls
 router.get('/admin/sessions', getAdminSessions);
 router.get('/admin/poojas', getAdminPoojas);
 router.get('/admin/reports', getAdminReports);
+router.get('/admin/calls', getAdminCalls);
+router.get('/admin/calls/analytics', getAdminCallAnalytics);
 
 export default router;

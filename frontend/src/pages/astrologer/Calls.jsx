@@ -4,6 +4,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { removeIncomingRequest, addActiveSession } from '../../store/slices/astrologerSlice';
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 
 const Calls = () => {
   const [activeTab, setActiveTab] = useState('Requests');
@@ -22,9 +24,36 @@ const Calls = () => {
     { id: 'Active', label: 'Active', count: callSessions.length },
   ];
 
-  const handleAccept = (req) => {
+  const handleAccept = async (req) => {
     setProcessingId(req.roomId);
-    const socket = io('http://localhost:5000', { auth: { token } });
+    
+    if (req.type === 'audio') {
+      try {
+        const res = await api.post('/calls/accept', { callId: req.callId });
+        const { agora } = res.data.data;
+        
+        const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+        const socket = io(SOCKET_URL, { auth: { token } });
+        socket.emit('accept_session', { 
+          roomId: req.roomId, 
+          userSocketId: req.userSocketId 
+        });
+
+        dispatch(removeIncomingRequest(req.roomId));
+        dispatch(addActiveSession({ ...req, status: 'active', agora }));
+        
+        setTimeout(() => socket.disconnect(), 1000);
+        setProcessingId(null);
+        navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req, agora } });
+      } catch (error) {
+        setProcessingId(null);
+        toast.error(error.response?.data?.message || 'Failed to accept call');
+      }
+      return;
+    }
+
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socket = io(SOCKET_URL, { auth: { token } });
     
     socket.emit('accept_session', { 
       roomId: req.roomId, 
@@ -47,8 +76,16 @@ const Calls = () => {
     }, 1500);
   };
 
-  const handleReject = (req) => {
-    const socket = io('http://localhost:5000', { auth: { token } });
+  const handleReject = async (req) => {
+    if (req.type === 'audio') {
+      try {
+        await api.post('/calls/reject', { callId: req.callId, reason: 'Astrologer declined' });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socket = io(SOCKET_URL, { auth: { token } });
     socket.emit('reject_session', { 
       userSocketId: req.userSocketId 
     });
@@ -152,14 +189,14 @@ const Calls = () => {
                      <p className="text-xs text-green-500 font-bold mt-0.5 animate-pulse">Payment Received • Ongoing</p>
                    </div>
                  </div>
-                 {session.type === 'video' && (
+                  {session.type === 'video' || session.type === 'audio' ? (
                    <button 
-                     onClick={() => navigate(`/astrologer/video-room/${session.roomId}`, { state: { session } })}
+                     onClick={() => navigate(`/astrologer/video-room/${session.roomId}`, { state: { session, agora: session.agora } })}
                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-colors text-xs relative z-10"
                    >
-                     <FiVideo size={14} /> Join Video Room
+                     {session.type === 'video' ? <FiVideo size={14} /> : <FiPhone size={14} />} Join Room
                    </button>
-                 )}
+                 ) : null}
                </div>
              ))}
 

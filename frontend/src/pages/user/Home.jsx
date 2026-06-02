@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, Sun, Grid, Target, MessageCircle, Phone, Lock, BadgeCheck, ShieldCheck, Bell, ChevronRight, Calendar, Clock } from 'lucide-react';
@@ -27,7 +27,7 @@ const Home = () => {
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    const s = io('http://localhost:5000', { auth: { token } });
+    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
     setSocket(s);
     return () => { s.disconnect(); };
   }, []);
@@ -58,11 +58,32 @@ const Home = () => {
     if (!user || user?.name === 'Guest User') {
       navigate('/user/login', { state: { redirectTo: path } });
     } else if (!user?.name || user?.name.trim() === '') {
-      navigate('/user/details', { state: { redirectTo: path } });
+      navigate('/user/profile', { state: { redirectTo: path } });
     } else {
       navigate(path);
     }
   };
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fade-in-up');
+            entry.target.classList.remove('opacity-0', 'translate-y-4');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    const elements = document.querySelectorAll('.scroll-animate');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [isLoaded, userHome]);
 
   const handleViewChat = (session) => {
     if (session.astrologer) {
@@ -160,12 +181,10 @@ const Home = () => {
 
       {/* ═══ SEARCH BAR ═══ */}
       <div className="px-4 py-3 bg-orange-400 rounded-b-3xl mb-4 shadow-sm">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search astrologers, services..."
-            className="w-full border-2 border-transparent rounded-xl py-2.5 px-4 pr-10 text-[14px] outline-none focus:ring-2 focus:ring-white/50 bg-white text-gray-800 transition-all shadow-sm"
-          />
+        <div className="relative cursor-pointer" onClick={() => navigate('/user/search')}>
+          <div className="w-full bg-white rounded-xl py-2.5 px-4 pr-10 text-[14px] text-gray-400 shadow-sm">
+            Search astrologers, products...
+          </div>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400">
             <Search size={18} />
           </div>
@@ -342,7 +361,11 @@ const Home = () => {
         </div>
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
           {(userHome?.services || []).map((item, i) => (
-            <div key={i} className="flex flex-col items-center gap-2 shrink-0 w-[90px] cursor-pointer group">
+            <div 
+              key={i} 
+              className="flex flex-col items-center gap-2 shrink-0 w-[90px] cursor-pointer group"
+              onClick={() => navigate('/user/store', { state: { category: item.name } })}
+            >
               <div className="w-[80px] h-[80px] bg-orange-50 rounded-2xl overflow-hidden shadow-card border border-orange-100">
                 <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
               </div>
@@ -354,7 +377,7 @@ const Home = () => {
 
       {/* ═══ CELEBRITIES SECTION ═══ */}
       {userHome?.celebrities?.length > 0 && (
-        <div className="px-4 py-5 bg-white mt-1">
+        <div className="px-4 py-5 bg-white mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-[17px] font-bold text-gray-800">What Celebrities Says</h2>
             <span className="text-[13px] text-orange-500 font-semibold cursor-pointer">View All</span>
@@ -380,19 +403,19 @@ const Home = () => {
       )}
 
       {/* ═══ UNLOCK COSMIC BANNER ═══ */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 scroll-animate opacity-0 translate-y-4 transition-all duration-700">
         <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-2xl p-5 relative overflow-hidden shadow-lg">
           <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4" />
           <h3 className="text-white font-bold text-[18px] mb-1">Unlock Your Cosmic Destiny</h3>
           <p className="text-orange-100 text-[13px] mb-4">Chat with verified astrologers at ₹5/min</p>
-          <button onClick={() => handleChatCallAction('/user/chat')} className="bg-white text-orange-600 font-bold text-[13px] px-5 py-2 rounded-full shadow-sm hover:shadow-md transition-shadow">
+          <button onClick={() => handleChatCallAction('/user/astrologers')} className="bg-white text-orange-600 font-bold text-[13px] px-5 py-2 rounded-full shadow-sm hover:shadow-md transition-shadow">
             Chat Now
           </button>
         </div>
       </div>
 
       {/* ═══ NEWS & BLOGS ═══ */}
-      <div className="px-4 py-5 bg-white mt-1">
+      <div className="px-4 py-5 bg-white mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700 delay-100">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[17px] font-bold text-gray-800">News & Blogs</h2>
           <span className="text-[13px] text-orange-500 font-semibold cursor-pointer">View All</span>
@@ -412,7 +435,7 @@ const Home = () => {
       </div>
 
       {/* ═══ TRUST BADGES ═══ */}
-      <div className="px-4 py-6 bg-orange-50 mt-2">
+      <div className="px-4 py-6 bg-orange-50 mt-2 scroll-animate opacity-0 translate-y-4 transition-all duration-700 delay-200">
         <p className="text-center text-[12px] text-gray-500 font-medium mb-4">With verified astrologers your details are Private & Confidential!</p>
         <div className="flex justify-around items-start">
           {[
@@ -431,7 +454,7 @@ const Home = () => {
       </div>
 
       {/* ═══ LIVE ASTROLOGERS ═══ */}
-      <div className="px-4 py-5 bg-white mt-1">
+      <div className="px-4 py-5 bg-white mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700 delay-300">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[17px] font-bold text-gray-800">Live Astrologers</h2>
           <span className="text-[13px] text-orange-500 font-semibold cursor-pointer">View All</span>

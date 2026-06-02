@@ -5,6 +5,7 @@ import PoojaBooking from '../models/poojaBooking.model.js';
 import Order from '../models/order.model.js';
 import Transaction from '../models/transaction.model.js';
 import ChatSession from '../models/chatSession.model.js';
+import { CallSession } from '../models/callSession.model.js';
 import SystemSettings from '../models/systemSettings.model.js';
 import Notification from '../models/notification.model.js';
 import { ApiError } from '../utils/apiError.js';
@@ -197,6 +198,66 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json(new ApiResponse(200, { order }, 'Order status updated'));
+});
+
+// PUT /api/admin/orders/:id/cancel — process cancel request
+export const processCancelRequest = asyncHandler(async (req, res) => {
+  const { action, refundPercent } = req.body; // action: 'approved' or 'rejected'
+  
+  if (!['approved', 'rejected'].includes(action)) {
+    throw new ApiError(400, 'Action must be "approved" or "rejected"');
+  }
+
+  const order = await Order.findById(req.params.id);
+  if (!order) throw new ApiError(404, 'Order not found');
+  if (!order.cancelRequest?.requested) throw new ApiError(400, 'No cancel request found for this order');
+
+  const finalRefundPercent = refundPercent || order.cancelRequest.refundPercent || 80;
+  const refundAmount = Math.round((order.totalAmount * finalRefundPercent) / 100);
+
+  order.cancelRequest.adminResponse = action;
+  order.cancelRequest.refundPercent = finalRefundPercent;
+  order.cancelRequest.refundAmount = refundAmount;
+
+  if (action === 'approved') {
+    order.orderStatus = 'cancelled';
+    
+    // Process refund to wallet
+    const user = await User.findById(order.userId);
+    if (user) {
+      user.wallet = (user.wallet || 0) + refundAmount;
+      await user.save();
+
+      // Create refund transaction
+      await Transaction.create({
+        userId: order.userId,
+        amount: refundAmount,
+        type: 'refund',
+        desc: `Order cancellation refund (${finalRefundPercent}%) - Order #${order._id.toString().slice(-6).toUpperCase()}`,
+        status: 'success'
+      });
+    }
+  }
+
+  await order.save();
+
+  // Notify user
+  const notification = await Notification.create({
+    userId: order.userId,
+    title: action === 'approved' ? 'Order Cancelled & Refunded' : 'Cancel Request Rejected',
+    message: action === 'approved'
+      ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled. ₹${refundAmount} (${finalRefundPercent}%) refunded to your wallet.`
+      : `Your cancel request for order #${order._id.toString().slice(-6).toUpperCase()} has been rejected by admin.`,
+    type: action === 'approved' ? 'info' : 'warning',
+    link: '/user/history?tab=Orders'
+  });
+
+  const io = req.app.get('io');
+  if (io) {
+    io.emit(`notification_${order.userId}`, notification);
+  }
+
+  return res.status(200).json(new ApiResponse(200, { order }, `Cancel request ${action}`));
 });
 
 // GET /api/admin/products
@@ -481,4 +542,50 @@ export const getAdminReports = asyncHandler(async (req, res) => {
     storeRevenue,
     dailyRevenue
   }, 'Reports fetched successfully'));
+});
+
+// GET /api/admin/calls
+export const getAdminCalls = asyncHandler(async (req, res) => {
+  const filter = req.query.filter || 'All';
+  let query = {};
+  
+  const now = new Date();
+  if (filter === 'Today') {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    query.createdAt = { $gte: today };
+  } else if (filter === 'This Week') {
+    const weekAgo = new Date(now.setDate(now.getDate() - 7));
+    query.createdAt = { $gte: weekAgo };
+  } else if (filter === 'This Month') {
+    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+    query.createdAt = { $gte: monthAgo };
+  }
+
+  const calls = await CallSession.find(query)
+    .populate('userId', 'name email phone')
+    .populate('astrologerId', 'name email phone')
+    .sort({ createdAt: -1 })
+    .lean();
+    
+  return res.status(200).json(new ApiResponse(200, { calls }, 'Calls fetched successfully'));
+});
+
+// GET /api/admin/calls/analytics
+export const getAdminCallAnalytics = asyncHandler(async (req, res) => {
+  const calls = await CallSession.find().lean();
+  
+  const totalCalls = calls.length;
+  const activeCalls = calls.filter(c => c.status === 'accepted' || c.status === 'ongoing' || c.status === 'ringing').length;
+  const completedCalls = calls.filter(c => c.status === 'completed').length;
+  const missedCalls = calls.filter(c => c.status === 'missed').length;
+  
+  const revenueGenerated = calls.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
+  
+  return res.status(200).json(new ApiResponse(200, { 
+    totalCalls, 
+    activeCalls, 
+    completedCalls, 
+    missedCalls, 
+    revenueGenerated 
+  }, 'Call analytics fetched'));
 });

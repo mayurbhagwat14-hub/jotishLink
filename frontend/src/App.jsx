@@ -19,6 +19,7 @@ import Wallet from './pages/user/Wallet';
 import PaymentInformation from './pages/user/PaymentInformation';
 import UserDetails from './pages/user/UserDetails';
 import Astrologers from './pages/user/Astrologers';
+import AstrologerProfile from './pages/user/AstrologerProfile';
 import Horoscope from './pages/user/Horoscope';
 import Kundli from './pages/user/Kundli';
 import Panchang from './pages/user/Panchang';
@@ -38,6 +39,7 @@ import OrderHistory from './pages/user/OrderHistory';
 import ComingSoon from './pages/user/ComingSoon';
 import FreeChatOffer from './pages/user/FreeChatOffer';
 import PoojaBookingForm from './pages/user/PoojaBookingForm';
+import GlobalSearch from './pages/user/GlobalSearch';
 
 // Admin Pages
 import AdminLogin from './pages/admin/Login';
@@ -66,7 +68,7 @@ import PoojaRequests from './pages/astrologer/PoojaRequests';
 import History from './pages/astrologer/History';
 import Earnings from './pages/astrologer/Earnings';
 import Analytics from './pages/astrologer/Analytics';
-import AstrologerProfile from './pages/astrologer/Profile';
+import AstrologerDashboardProfile from './pages/astrologer/Profile';
 import AstrologerVideoRoom from './pages/astrologer/VideoRoom';
 
 import { useSelector, useDispatch } from 'react-redux';
@@ -129,6 +131,7 @@ const AppContent = () => {
         {/* Protected Routes within User Panel */}
         <Route element={<ProtectedRoute allowedRoles={['user']} />}>
           <Route path="astrologers" element={<Astrologers />} />
+          <Route path="astrologer/:id" element={<AstrologerProfile />} />
           <Route path="store" element={<Store />} />
           <Route path="product/:id" element={<ProductDetails />} />
           <Route path="cart" element={<Cart />} />
@@ -145,6 +148,7 @@ const AppContent = () => {
           <Route path="profile" element={<Profile />} />
           <Route path="history" element={<OrderHistory />} />
           <Route path="pooja-booking/:panditId" element={<PoojaBookingForm />} />
+          <Route path="search" element={<GlobalSearch />} />
           
           {/* Coming Soon Links */}
           <Route path="live" element={<ComingSoon />} />
@@ -195,7 +199,7 @@ const AppContent = () => {
         <Route path="history" element={<History />} />
         <Route path="earnings" element={<Earnings />} />
         <Route path="analytics" element={<Analytics />} />
-        <Route path="profile" element={<AstrologerProfile />} />
+        <Route path="profile" element={<AstrologerDashboardProfile />} />
       </Route>
       
       {/* Full-screen Astrologer Chat Room */}

@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck } from 'react-icons/fi';
 import { createOrderThunk } from '../../store/slices/cartSlice';
 import { fetchWalletThunk } from '../../store/slices/walletSlice';
+import toast from 'react-hot-toast';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -75,7 +76,7 @@ const Checkout = () => {
           // Wallet insufficient, use Razorpay
           const res = await loadRazorpayScript();
           if (!res) {
-            alert('Razorpay SDK failed to load. Are you online?');
+            toast.error('Razorpay SDK failed to load. Are you online?');
             setLoading(false);
             return;
           }
@@ -103,7 +104,7 @@ const Checkout = () => {
                 })).unwrap();
                 navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
               } catch (err) {
-                alert(err.message || 'Payment verification failed');
+                toast.error(err.message || 'Payment verification failed');
               }
             },
             prefill: {
@@ -117,13 +118,13 @@ const Checkout = () => {
 
           const paymentObject = new window.Razorpay(options);
           paymentObject.on('payment.failed', function (response) {
-            alert('Payment Failed: ' + response.error.description);
+            toast.error('Payment Failed: ' + response.error.description);
           });
           paymentObject.open();
         }
       }
     } catch (err) {
-      alert(err.message || 'Failed to place order');
+      toast.error(err.message || 'Failed to place order');
     } finally {
       setLoading(false);
     }

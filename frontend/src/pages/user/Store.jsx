@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FiSearch, FiClock, FiShoppingBag } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { getStoreProducts, getStorePandits } from '../../api/userApis';
 import { fetchCartThunk, updateCartThunk } from '../../store/slices/cartSlice';
+import toast from 'react-hot-toast';
 
 const tabs = ['Astro Mall', 'Pandit Booking'];
 
 const Store = () => {
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState(tabs[0]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(location.state?.category || '');
   const [panditSearchQuery, setPanditSearchQuery] = useState('');
   const { user } = useSelector((state) => state.auth);
   const { cart } = useSelector((state) => state.cart);
@@ -91,9 +93,9 @@ const Store = () => {
       const existingItem = cart?.items?.find(item => item.productId?._id === product._id || item.productId === product._id);
       const newQty = existingItem ? existingItem.quantity + 1 : 1;
       await dispatch(updateCartThunk({ productId: product._id, quantity: newQty })).unwrap();
-      // Optional: show toast notification
+      toast.success('Added to cart successfully!');
     } catch (err) {
-      alert(err.message || 'Failed to add to cart');
+      toast.error(err.message || 'Failed to add to cart');
     }
   };
 

@@ -14,6 +14,7 @@ const ChatRoom = () => {
   const [inputText, setInputText] = useState('');
   const [sessionData, setSessionData] = useState(null);
   const [timer, setTimer] = useState(0);
+  const [endSessionInfo, setEndSessionInfo] = useState(null);
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -31,7 +32,7 @@ const ChatRoom = () => {
     const loadSession = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const socket = io('http://localhost:5000', { auth: { token } });
+        const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
         socketRef.current = socket;
 
         // If ID is a 24-char hex string, it's a MongoDB sessionId
@@ -80,14 +81,17 @@ const ChatRoom = () => {
         });
 
         socket.on('session_ended', (data) => {
-          if (data?.reason === 'user_ended') {
-            alert('Chat has been ended by the User.');
-          } else if (data?.reason === 'insufficient_balance') {
-            alert('Chat ended due to low user balance.');
-          } else if (data?.reason !== 'astrologer_ended') {
-            alert('Session has ended.');
+          if (data?.reason !== 'astrologer_ended') {
+            let message = 'Session has ended.';
+            if (data?.reason === 'user_ended') {
+              message = 'Chat has been ended by the User.';
+            } else if (data?.reason === 'insufficient_balance') {
+              message = 'Chat ended due to low user balance.';
+            }
+            setEndSessionInfo({ message });
+          } else {
+            navigate('/astrologer/chats');
           }
-          navigate('/astrologer/chats');
         });
 
       } catch (err) {
@@ -236,13 +240,34 @@ const ChatRoom = () => {
           
           <button 
             onClick={handleSend}
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || endSessionInfo}
             className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/30 shrink-0 disabled:opacity-50"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
           </button>
         </div>
       </footer>
+
+      {/* ═══ END SESSION MODAL ═══ */}
+      {endSessionInfo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
+            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h3 className="font-bold text-gray-900 text-lg mb-2">Session Ended</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              {endSessionInfo.message}
+            </p>
+            <button 
+              onClick={() => navigate('/astrologer/chats')}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/30"
+            >
+              Go Back to Chats
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

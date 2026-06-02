@@ -48,9 +48,33 @@ export const refundAdminUserThunk = createAsyncThunk(
     }
   }
 );
+export const fetchAdminAstrologersThunk = createAsyncThunk(
+  'admin/fetchAstrologers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await adminApis.getAdminAstrologers();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updateAdminAstrologerStatusThunk = createAsyncThunk(
+  'admin/updateAstrologerStatus',
+  async ({ id, status }, { rejectWithValue }) => {
+    try {
+      const response = await adminApis.updateAdminAstrologerStatus(id, status);
+      return { id, status, data: response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 const initialState = {
   users: [],
+  astrologers: [],
   loading: false,
   error: null,
 };
@@ -100,6 +124,27 @@ const adminSlice = createSlice({
         const user = state.users.find(u => u.id === action.payload.id || u._id === action.payload.id);
         if (user && action.payload.data?.data?.user?.wallet !== undefined) {
           user.wallet = action.payload.data.data.user.wallet;
+        }
+      })
+      .addCase(fetchAdminAstrologersThunk.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchAdminAstrologersThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const astrologers = action.payload?.data?.astrologers || action.payload?.astrologers || action.payload;
+        if (Array.isArray(astrologers)) {
+          state.astrologers = astrologers;
+        }
+      })
+      .addCase(fetchAdminAstrologersThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateAdminAstrologerStatusThunk.fulfilled, (state, action) => {
+        const astro = state.astrologers.find(a => a.id === action.payload.id || a._id === action.payload.id);
+        if (astro) {
+          astro.status = action.payload.status;
+          if (action.payload.status === 'Approved') astro.isVerified = true;
         }
       });
   }

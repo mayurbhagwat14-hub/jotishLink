@@ -1,14 +1,23 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import * as userApis from '../../api/userApis';
 
 const initialState = {
-  transactions: [
-    { id: 'TXN-902', type: 'Call Deducted', amount: -250, date: 'May 28, 2026 • 2:30 PM', desc: 'Call with Shivika' },
-    { id: 'TXN-901', type: 'Wallet Recharged', amount: 500, date: 'May 27, 2026 • 11:15 AM', desc: 'UPI Payment' },
-    { id: 'TXN-900', type: 'Chat Deducted', amount: -100, date: 'May 25, 2026 • 6:45 PM', desc: 'Chat with Vinay' },
-  ],
+  transactions: [],
   loading: false,
   error: null,
 };
+
+export const fetchWalletThunk = createAsyncThunk(
+  'wallet/fetchWallet',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await userApis.getUserWallet();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 const walletSlice = createSlice({
   name: 'wallet',
@@ -17,14 +26,26 @@ const walletSlice = createSlice({
     addTransaction: (state, action) => {
       state.transactions.unshift(action.payload);
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchWalletThunk.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchWalletThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const data = action.payload?.data || action.payload;
+        if (data.transactions) {
+          state.transactions = data.transactions;
+        }
+      })
+      .addCase(fetchWalletThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   }
 });
 
 export const { addTransaction } = walletSlice.actions;
-
-export const fetchWalletThunk = () => async (dispatch) => {
-  // Mock thunk to satisfy import
-  return { payload: true };
-};
 
 export default walletSlice.reducer;

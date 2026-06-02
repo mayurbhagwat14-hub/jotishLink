@@ -60,6 +60,14 @@ const orderSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    cancelRequest: {
+      requested: { type: Boolean, default: false },
+      reason: { type: String, default: '' },
+      requestedAt: { type: Date },
+      adminResponse: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      refundPercent: { type: Number, default: 80 },
+      refundAmount: { type: Number, default: 0 },
+    },
   },
   { timestamps: true }
 );

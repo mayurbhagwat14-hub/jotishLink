@@ -3,9 +3,9 @@ import * as userApis from '../../api/userApis';
 
 export const fetchAstrologersThunk = createAsyncThunk(
   'user/fetchAstrologers',
-  async (_, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await userApis.getAstrologers();
+      const response = await userApis.getAstrologers(params);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

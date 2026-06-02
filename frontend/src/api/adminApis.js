@@ -15,6 +15,7 @@ export const deleteAdminAstrologer = (id) => axios.delete(`/admin/astrologers/${
 export const refundUser = (id, data) => axios.post(`/admin/users/${id}/refund`, data);
 export const getAdminOrders = () => axios.get('/admin/orders');
 export const updateAdminOrderStatus = (id, status) => axios.put(`/admin/orders/${id}/status`, { status });
+export const processCancelRequest = (id, action, refundPercent) => axios.put(`/admin/orders/${id}/cancel`, { action, refundPercent });
 export const getAdminProducts = () => axios.get('/admin/products');
 export const createAdminProduct = (data) => axios.post('/admin/products', data);
 export const updateAdminProduct = (id, data) => axios.put(`/admin/products/${id}`, data);
@@ -44,7 +45,9 @@ export const deleteAdminBanner = (id) => axios.delete(`/admin/banners/${id}`);
 // Audit Logs
 export const getAdminAuditLogs = (limit = 50) => axios.get(`/admin/audit-logs?limit=${limit}`);
 
-// Sessions, Poojas, Reports
+// Sessions, Poojas, Reports, Calls
 export const getAdminSessions = () => axios.get('/admin/sessions');
 export const getAdminPoojas = () => axios.get('/admin/poojas');
 export const getAdminReports = () => axios.get('/admin/reports');
+export const getAdminCalls = () => axios.get('/admin/calls');
+export const getAdminCallAnalytics = () => axios.get('/admin/calls/analytics');

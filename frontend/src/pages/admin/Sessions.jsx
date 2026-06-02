@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle } from 'react-icons/fi';
-import { getAdminSessions } from '../../api/adminApis';
+import { getAdminSessions, getAdminCalls } from '../../api/adminApis';
 
 const AdminSessions = () => {
   const [liveSessions, setLiveSessions] = useState([]);
@@ -14,10 +14,14 @@ const AdminSessions = () => {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const res = await getAdminSessions();
-      const allSessions = res.data?.data?.sessions || [];
+      const [sessionsRes, callsRes] = await Promise.all([
+        getAdminSessions(),
+        getAdminCalls()
+      ]);
+      const allSessions = sessionsRes.data?.data?.sessions || [];
+      const allCalls = callsRes.data?.data?.calls || [];
       
-      const live = allSessions.filter(s => s.status === 'ongoing').map(s => ({
+      const liveChats = allSessions.filter(s => s.status === 'ongoing').map(s => ({
         id: s._id,
         user: s.userId?.name || 'Unknown User',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
@@ -29,7 +33,19 @@ const AdminSessions = () => {
         billed: s.amountDeducted || 0
       }));
 
-      const recent = allSessions.filter(s => s.status === 'completed' || s.status === 'missed').map(s => ({
+      const liveCallsData = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status)).map(c => ({
+        id: c._id,
+        user: c.userId?.name || 'Unknown User',
+        astrologer: c.astrologerId?.name || 'Unknown Astrologer',
+        type: 'Audio Call',
+        typeIcon: <FiPhoneCall />,
+        duration: c.status === 'ringing' ? 'Ringing' : 'Ongoing',
+        rate: c.ratePerMinute || 0,
+        started: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        billed: c.totalAmount || 0
+      }));
+
+      const recentChats = allSessions.filter(s => s.status === 'completed' || s.status === 'missed').map(s => ({
         id: s._id,
         user: s.userId?.name || 'Unknown User',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
@@ -37,11 +53,25 @@ const AdminSessions = () => {
         duration: `${Math.floor((s.durationSeconds || 0) / 60)}m ${(s.durationSeconds || 0) % 60}s`,
         total: s.amountDeducted || 0,
         status: s.status === 'completed' ? 'Completed' : 'Missed',
-        time: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date(s.createdAt).getTime()
       }));
 
-      setLiveSessions(live);
-      setRecentSessions(recent);
+      const recentCallsData = allCalls.filter(c => ['completed', 'missed', 'rejected', 'cancelled'].includes(c.status)).map(c => ({
+        id: c._id,
+        user: c.userId?.name || 'Unknown User',
+        astrologer: c.astrologerId?.name || 'Unknown Astrologer',
+        type: 'Audio Call',
+        duration: `${Math.floor((c.duration || 0) / 60)}m ${(c.duration || 0) % 60}s`,
+        total: c.totalAmount || 0,
+        status: c.status.charAt(0).toUpperCase() + c.status.slice(1),
+        time: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date(c.createdAt).getTime()
+      }));
+
+      setLiveSessions([...liveChats, ...liveCallsData]);
+      const mergedRecent = [...recentChats, ...recentCallsData].sort((a, b) => b.timestamp - a.timestamp);
+      setRecentSessions(mergedRecent);
     } catch (err) {
       console.error('Failed to fetch sessions', err);
     } finally {

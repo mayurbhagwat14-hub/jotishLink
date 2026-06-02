@@ -17,7 +17,7 @@ const UserLayout = () => {
   const { user } = useSelector((state) => state.auth);
 
   const isFullWidth = location.pathname.includes('/user/store') || location.pathname.includes('/user/chat') || location.pathname.includes('/user/details') || location.pathname.includes('/user/video-room');
-  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout');
+  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search');
 
   const handleLogout = () => {
     dispatch(logout());

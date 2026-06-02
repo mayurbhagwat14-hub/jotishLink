@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiDollarSign, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminOrders, updateAdminOrderStatus } from '../../api/adminApis';
+import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi } from '../../api/adminApis';
 
 const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
@@ -34,16 +34,20 @@ const AdminOrders = () => {
         
         // Map backend Order models to frontend UI schema
         const formattedOrders = fetchedOrders.map(o => ({
-          id: o._id.slice(-6).toUpperCase(), // Short ID
+          id: o._id.slice(-6).toUpperCase(),
           dbId: o._id,
           customer: o.userId?.name || 'Unknown',
-          phone: o.userId?.phoneNumber || 'N/A',
+          phone: o.userId?.phoneNumber || o.userId?.phone || 'N/A',
           email: o.userId?.email || 'N/A',
-          address: o.shippingAddress ? `${o.shippingAddress.city}, ${o.shippingAddress.state}` : 'N/A',
+          address: o.shippingAddress 
+            ? `${o.shippingAddress.fullName}, ${o.shippingAddress.addressLine}, ${o.shippingAddress.city}, ${o.shippingAddress.state} - ${o.shippingAddress.pincode}` 
+            : 'N/A',
+          addressPhone: o.shippingAddress?.phone || '',
           products: o.items.map(item => ({ name: item.productId?.name || 'Product', qty: item.quantity, price: item.price })),
           total: o.totalAmount || 0,
           payment: o.paymentStatus || 'Paid',
           status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending',
+          cancelRequest: o.cancelRequest || null,
           date: new Date(o.createdAt).toLocaleDateString(),
           time: new Date(o.createdAt).toLocaleTimeString(),
           timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }]
@@ -156,18 +160,22 @@ const AdminOrders = () => {
     }
   };
 
-  const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+  const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancel Requests', 'Cancelled'];
   const tabCounts = {
     All: orders.length,
     Pending: orders.filter(o => o.status === 'Pending').length,
     Processing: orders.filter(o => o.status === 'Processing').length,
     Shipped: orders.filter(o => o.status === 'Shipped').length,
     Delivered: orders.filter(o => o.status === 'Delivered').length,
+    'Cancel Requests': orders.filter(o => o.cancelRequest?.requested && o.cancelRequest?.adminResponse === 'pending').length,
     Cancelled: orders.filter(o => o.status === 'Cancelled').length,
   };
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) || o.customer.toLowerCase().includes(searchQuery.toLowerCase());
+    if (activeTab === 'Cancel Requests') {
+      return matchesSearch && o.cancelRequest?.requested && o.cancelRequest?.adminResponse === 'pending';
+    }
     const matchesTab = activeTab === 'All' || o.status === activeTab;
     return matchesSearch && matchesTab;
   });
@@ -406,29 +414,33 @@ const AdminOrders = () => {
                         className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100"
                       ><FiEye size={12} /> View</button>
 
-                      {order.status === 'Pending' && (
-                        <button
-                          onClick={() => acceptOrder(order.id, order.dbId)}
-                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
-                        >
-                          <FiCheck size={12} /> Accept
-                        </button>
-                      )}
+                      {(!order.cancelRequest?.requested || order.cancelRequest?.adminResponse !== 'pending') && (
+                        <>
+                          {order.status === 'Pending' && (
+                            <button
+                              onClick={() => acceptOrder(order.id, order.dbId)}
+                              className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
+                            >
+                              <FiCheck size={12} /> Accept
+                            </button>
+                          )}
 
-                      {order.status === 'Processing' && (
-                        <button
-                          onClick={() => { setShowShipModal(order); setTrackingNumber(''); setShippingProvider('DHL Express'); }}
-                          className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 active:scale-95"
-                        ><FiTruck size={12} /> Ship</button>
-                      )}
+                          {order.status === 'Processing' && (
+                            <button
+                              onClick={() => { setShowShipModal(order); setTrackingNumber(''); setShippingProvider('DHL Express'); }}
+                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 active:scale-95"
+                            ><FiTruck size={12} /> Ship</button>
+                          )}
 
-                      {order.status === 'Shipped' && (
-                        <button
-                          onClick={() => markDelivered(order.id, order.dbId)}
-                          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
-                        >
-                          <FiCheckCircle size={12} /> Delivered
-                        </button>
+                          {order.status === 'Shipped' && (
+                            <button
+                              onClick={() => markDelivered(order.id, order.dbId)}
+                              className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
+                            >
+                              <FiCheckCircle size={12} /> Delivered
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
@@ -494,6 +506,7 @@ const AdminOrders = () => {
                       <p className="text-sm font-bold text-gray-800">{order.customer}</p>
                       <p className="text-xs text-gray-500 mt-1">{order.phone} • {order.email}</p>
                       <p className="text-xs text-gray-500 mt-1 flex items-start gap-1"><FiMapPin size={12} className="shrink-0 mt-0.5" /> {order.address}</p>
+                      {order.addressPhone && <p className="text-[10px] text-gray-400 mt-0.5">📞 {order.addressPhone}</p>}
                     </div>
 
                     {/* Products */}
@@ -607,6 +620,60 @@ const AdminOrders = () => {
                         </div>
                       )}
                     </div>
+
+                    {/* Cancel Request Section */}
+                    {order.cancelRequest?.requested && order.cancelRequest?.adminResponse === 'pending' && (
+                      <div className="mt-4 bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                        <p className="text-xs font-bold text-yellow-700 mb-2 flex items-center gap-1.5">
+                          <FiAlertCircle size={14} /> Cancel Request from Customer
+                        </p>
+                        <p className="text-xs text-gray-600 mb-3">Reason: {order.cancelRequest.reason || 'No reason given'}</p>
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-[11px] font-bold text-gray-500">Refund %:</label>
+                          <input
+                            type="number"
+                            defaultValue={order.cancelRequest.refundPercent || 80}
+                            min={0}
+                            max={100}
+                            id={`refund-${order.id}`}
+                            className="w-20 px-2 py-1 rounded-lg bg-white border border-gray-200 text-sm font-bold text-center"
+                          />
+                          <span className="text-[11px] text-gray-400">(₹{Math.round(order.total * (order.cancelRequest.refundPercent || 80) / 100)} refund)</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              const refundEl = document.getElementById(`refund-${order.id}`);
+                              const refundPct = parseInt(refundEl?.value) || 80;
+                              try {
+                                await processCancelRequestApi(order.dbId, 'approved', refundPct);
+                                setOrders(prev => prev.map(o => o.id === order.id ? {
+                                  ...o, status: 'Cancelled', payment: 'Refunded',
+                                  cancelRequest: { ...o.cancelRequest, adminResponse: 'approved' },
+                                  timeline: [...o.timeline, { label: 'Cancelled by User Request', time: now(), icon: 'cancel', detail: `Refunded ${refundPct}%` }]
+                                } : o));
+                                showToast(`${order.id} cancelled. ${refundPct}% refund issued.`);
+                                setSelectedOrder(null);
+                              } catch(e) { showToast('Failed to process cancel'); }
+                            }}
+                            className="flex-1 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1"
+                          ><FiCheck size={12} /> Approve Cancel</button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await processCancelRequestApi(order.dbId, 'rejected');
+                                setOrders(prev => prev.map(o => o.id === order.id ? {
+                                  ...o, cancelRequest: { ...o.cancelRequest, adminResponse: 'rejected' }
+                                } : o));
+                                showToast(`Cancel request for ${order.id} rejected.`);
+                                setSelectedOrder(null);
+                              } catch(e) { showToast('Failed to reject cancel'); }
+                            }}
+                            className="flex-1 px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1"
+                          ><FiX size={12} /> Reject</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
               );

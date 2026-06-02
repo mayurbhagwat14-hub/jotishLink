@@ -4,7 +4,8 @@ import {
   updateCart,
   createOrder,
   getUserOrders,
-  createRazorpayOrder
+  createRazorpayOrder,
+  requestCancelOrder
 } from '../controllers/store.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 
@@ -15,5 +16,6 @@ router.post('/store/cart', verifyJWT, updateCart);
 router.post('/store/order', verifyJWT, createOrder);
 router.post('/store/razorpay-order', verifyJWT, createRazorpayOrder);
 router.get('/store/orders', verifyJWT, getUserOrders);
+router.post('/store/orders/:id/cancel', verifyJWT, requestCancelOrder);
 
 export default router;

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { FiArrowLeft, FiVideo, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard } from 'react-icons/fi';
+import { FiArrowLeft, FiVideo, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiMessageCircle, FiX, FiAlertTriangle } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
-import { getUserSessions, getUserPoojas } from '../../api/userApis';
-import { getUserOrders } from '../../api/storeApis';
+import { getUserSessions, getUserPoojas, getUserCalls } from '../../api/userApis';
+import { getUserOrders, requestCancelOrder } from '../../api/storeApis';
 
-const historyTabs = ['Chat', 'Wallet', 'Orders', 'Poojas'];
+const historyTabs = ['Chat', 'Calls', 'Wallet', 'Orders', 'Poojas'];
 
 const formatDate = (isoString) => {
   if (!isoString) return '';
@@ -28,9 +28,8 @@ const formatTxnDate = (isoString) => {
 const OrderHistory = () => {
   const { user } = useSelector((state) => state.auth);
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'wallet' ? 'Wallet' : 'Chat';
+  const initialTab = searchParams.get('tab') === 'wallet' ? 'Wallet' : (searchParams.get('tab') || 'Chat');
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [walletSubTab, setWalletSubTab] = useState('Wallet Transaction');
   const navigate = useNavigate();
   const { openSidebar } = useOutletContext();
   
@@ -38,26 +37,63 @@ const OrderHistory = () => {
   const [transactions, setTransactions] = useState([]);
   const [poojas, setPoojas] = useState([]);
   const [storeOrders, setStoreOrders] = useState([]);
+  const [calls, setCalls] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Cancel modal
+  const [showCancelModal, setShowCancelModal] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [sessionRes, poojaRes, storeRes] = await Promise.all([
+        const [sessionRes, poojaRes, storeRes, callsRes] = await Promise.all([
           getUserSessions().catch(() => ({ data: { data: {} } })),
           getUserPoojas().catch(() => ({ data: { data: {} } })),
-          getUserOrders().catch(() => ({ data: { data: {} } }))
+          getUserOrders().catch(() => ({ data: { data: {} } })),
+          getUserCalls().catch(() => ({ data: { data: {} } }))
         ]);
         
         if (sessionRes.data?.success) {
           setSessions(sessionRes.data.data.sessions || []);
-          setTransactions(sessionRes.data.data.transactions || []);
+          
+          const rawTxns = sessionRes.data.data.transactions || [];
+          const aggregatedTxns = [];
+          let currentSessionTxn = null;
+
+          for (const txn of rawTxns) {
+            if (txn.desc === 'Chat session - 1 min') {
+              if (!currentSessionTxn) {
+                currentSessionTxn = { ...txn, sessionCount: 1 };
+                aggregatedTxns.push(currentSessionTxn);
+              } else {
+                const timeDiff = new Date(currentSessionTxn.createdAt).getTime() - new Date(txn.createdAt).getTime();
+                if (timeDiff <= 150000 && timeDiff >= 0) {
+                  currentSessionTxn.amount += txn.amount;
+                  currentSessionTxn.sessionCount += 1;
+                  currentSessionTxn.desc = `Chat session - ${currentSessionTxn.sessionCount} mins`;
+                  currentSessionTxn.createdAt = txn.createdAt;
+                } else {
+                  currentSessionTxn = { ...txn, sessionCount: 1 };
+                  aggregatedTxns.push(currentSessionTxn);
+                }
+              }
+            } else {
+              aggregatedTxns.push(txn);
+              currentSessionTxn = null;
+            }
+          }
+          setTransactions(aggregatedTxns);
         }
         if (poojaRes.data?.success) {
           setPoojas(poojaRes.data.data.poojas || []);
         }
         if (storeRes.data?.success) {
           setStoreOrders(storeRes.data.data.orders || []);
+        }
+        if (callsRes.data?.success) {
+          setCalls(callsRes.data.data.calls || []);
         }
       } catch (err) {
         console.error("Failed to fetch order history", err);
@@ -67,6 +103,25 @@ const OrderHistory = () => {
     };
     fetchData();
   }, []);
+
+  const handleCancelRequest = async () => {
+    if (!showCancelModal) return;
+    setCancelLoading(true);
+    try {
+      const res = await requestCancelOrder(showCancelModal._id, cancelReason);
+      if (res.data?.success) {
+        setStoreOrders(prev => prev.map(o => 
+          o._id === showCancelModal._id ? { ...o, cancelRequest: res.data.data.order.cancelRequest } : o
+        ));
+      }
+      setShowCancelModal(null);
+      setCancelReason('');
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit cancel request');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   return (
     <div className="w-full bg-white min-h-screen font-sans pb-24">
@@ -118,19 +173,115 @@ const OrderHistory = () => {
           {isLoading ? (
             <div className="p-8 text-center text-gray-400">Loading...</div>
           ) : sessions.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">No chat history found.</div>
-          ) : (
-            sessions.map((item, i) => (
-              <div key={i} onClick={() => navigate('/user/chat', { state: { astrologer: item.astrologerId } })} className="flex items-center gap-4 px-4 py-3.5 hover:bg-orange-50/50 transition-colors cursor-pointer">
-                <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
-                  <img src={item.astrologerId?.avatar || 'https://ui-avatars.com/api/?name=Astro&background=ffedD5&color=f97316'} alt={item.astrologerId?.name || 'Astrologer'} className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-gray-800 text-[15px]">{item.astrologerId?.name || 'Astrologer'}</h4>
-                  <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)}</p>
-                </div>
+            <div className="flex flex-col items-center justify-center py-20 px-8">
+              <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                <FiMessageCircle size={40} className="text-orange-400" />
               </div>
-            ))
+              <h3 className="text-[18px] font-bold text-gray-800 mb-2">No Chat History</h3>
+              <p className="text-gray-400 text-[14px] text-center">Start chatting with an astrologer to see your history here.</p>
+              <button 
+                onClick={() => navigate('/user/astrologers')}
+                className="mt-6 bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 transition-colors"
+              >
+                Find Astrologer
+              </button>
+            </div>
+          ) : (
+            sessions.map((item, i) => {
+              const astroName = item.astrologerId?.name || 'Astrologer';
+              const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
+              const lastMsg = item.messages?.length > 0 ? item.messages[item.messages.length - 1]?.text : 'No messages';
+              const duration = item.duration || (item.messages?.length ? `${item.messages.length} msgs` : '');
+
+              return (
+                <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
+                      <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
+                      <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)} {duration && `• ${duration}`}</p>
+                      <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{typeof lastMsg === 'string' ? lastMsg.slice(0, 60) : 'Chat session'}{lastMsg?.length > 60 ? '...' : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pl-[60px]">
+                    <button 
+                      onClick={() => navigate('/user/chat', { state: { astrologer: item.astrologerId, viewOnly: true, roomId: item.roomId, messages: item.messages } })}
+                      className="flex-1 py-2 border border-gray-200 text-gray-600 font-semibold rounded-xl text-[12px] hover:bg-gray-50 transition-colors"
+                    >
+                      View Chat
+                    </button>
+                    <button 
+                      onClick={() => navigate('/user/astrologers?type=chat', { state: { autoConnectAstro: item.astrologerId } })}
+                      className="flex-1 py-2 bg-orange-500 text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-orange-600 transition-colors"
+                    >
+                      Start Chat
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* ═══ CALLS TAB ═══ */}
+      {activeTab === 'Calls' && (
+        <div className="divide-y divide-gray-50">
+          {isLoading ? (
+            <div className="p-8 text-center text-gray-400">Loading...</div>
+          ) : calls.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 px-8">
+              <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                <FiClock size={40} className="text-orange-400" />
+              </div>
+              <h3 className="text-[18px] font-bold text-gray-800 mb-2">No Call History</h3>
+              <p className="text-gray-400 text-[14px] text-center">Start a call with an astrologer to see your history here.</p>
+              <button 
+                onClick={() => navigate('/user/astrologers')}
+                className="mt-6 bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 transition-colors"
+              >
+                Find Astrologer
+              </button>
+            </div>
+          ) : (
+            calls.map((item, i) => {
+              const astroName = item.astrologerId?.name || 'Astrologer';
+              const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
+              const duration = item.duration ? `${Math.floor(item.duration / 60)}m ${item.duration % 60}s` : '0m 0s';
+
+              return (
+                <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
+                      <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
+                      <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                          item.status === 'completed' ? 'bg-green-50 text-green-600' :
+                          item.status === 'missed' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {item.status}
+                        </span>
+                        {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{duration} • ₹{item.totalAmount}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pl-[60px]">
+                    <button 
+                      onClick={() => navigate('/user/astrologers')}
+                      className="flex-1 py-2 bg-orange-500 text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-orange-600 transition-colors"
+                    >
+                      Call Again
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       )}
@@ -149,25 +300,11 @@ const OrderHistory = () => {
             </div>
           </div>
 
-          {/* Sub tabs */}
-          <div className="flex bg-white px-4 pt-3 gap-2">
-            {['Wallet Transaction', 'Payment List'].map((sub) => (
-              <button
-                key={sub}
-                onClick={() => setWalletSubTab(sub)}
-                className={`px-4 py-2 rounded-full text-[12px] font-bold transition-all ${
-                  walletSubTab === sub
-                    ? 'bg-orange-500 text-white shadow-sm'
-                    : 'bg-orange-50 text-gray-500 border border-orange-100'
-                }`}
-              >
-                {sub}
-              </button>
-            ))}
+          {/* Transaction List — no sub-tabs */}
+          <div className="px-4 pt-3">
+            <h3 className="text-[14px] font-bold text-gray-800 mb-2">Wallet Transactions</h3>
           </div>
-
-          {/* Transaction List */}
-          <div className="divide-y divide-gray-50 mt-3">
+          <div className="divide-y divide-gray-50">
             {isLoading ? (
                <div className="p-8 text-center text-gray-400">Loading...</div>
             ) : transactions.length === 0 ? (
@@ -175,11 +312,24 @@ const OrderHistory = () => {
             ) : (
               transactions.map((txn, i) => (
                 <div key={i} className="flex items-center justify-between px-4 py-3.5 hover:bg-orange-50/30 transition-colors">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <h4 className="font-medium text-gray-800 text-[13px] line-clamp-1">{txn.desc}</h4>
-                    <p className="text-[11px] text-gray-400 mt-0.5">#{txn.type.charAt(0).toUpperCase() + txn.type.slice(1)}, Date:{formatTxnDate(txn.createdAt)}</p>
+                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      txn.type === 'deduction' ? 'bg-red-50 text-red-500' :
+                      txn.type === 'refund' ? 'bg-blue-50 text-blue-500' :
+                      'bg-green-50 text-green-500'
+                    }`}>
+                      {txn.type === 'deduction' ? '↓' : txn.type === 'refund' ? '↩' : '↑'}
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-gray-800 text-[13px] line-clamp-1">{txn.desc}</h4>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)} • {formatTxnDate(txn.createdAt)}
+                      </p>
+                    </div>
                   </div>
-                  <span className={`text-[14px] font-bold shrink-0 ${txn.type === 'deduction' ? 'text-red-500' : 'text-green-500'}`}>
+                  <span className={`text-[14px] font-bold shrink-0 ${
+                    txn.type === 'deduction' ? 'text-red-500' : 'text-green-500'
+                  }`}>
                     {txn.type === 'deduction' ? '-' : '+'}₹{txn.amount}
                   </span>
                 </div>
@@ -264,12 +414,9 @@ const OrderHistory = () => {
                   <div className="bg-white rounded-xl border border-gray-100 p-4 mt-2">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Order Timeline</p>
                     <div className="relative">
-                      {/* Vertical line */}
                       <div className="absolute left-[11px] top-2 bottom-4 w-0.5 bg-gray-100 z-0"></div>
-                      
-                      {/* Timeline steps */}
                       <div className="space-y-4 relative z-10">
-                        {['pending', 'processing', 'shipped', 'delivered'].map((step, idx, arr) => {
+                        {['pending', 'processing', 'shipped', 'delivered'].map((step, idx) => {
                           const statusOrder = ['pending', 'processing', 'shipped', 'delivered'];
                           const currentIndex = statusOrder.indexOf(order.orderStatus);
                           const isCompleted = currentIndex >= idx;
@@ -310,12 +457,47 @@ const OrderHistory = () => {
                             </div>
                             <div className="pt-0.5">
                               <p className="text-xs font-bold text-red-500 capitalize">Cancelled</p>
+                              {order.cancelRequest?.refundAmount > 0 && (
+                                <p className="text-[10px] text-green-500 font-bold mt-0.5">
+                                  ₹{order.cancelRequest.refundAmount} refunded to wallet
+                                </p>
+                              )}
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
+
+                  {/* Cancel Request Status Card */}
+                  {order.cancelRequest?.requested && order.orderStatus !== 'cancelled' && (
+                    <div className={`rounded-xl p-4 border ${
+                      order.cancelRequest.adminResponse === 'pending' ? 'bg-yellow-50 border-yellow-200' :
+                      order.cancelRequest.adminResponse === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <FiAlertTriangle size={14} className={
+                          order.cancelRequest.adminResponse === 'pending' ? 'text-yellow-600' :
+                          order.cancelRequest.adminResponse === 'rejected' ? 'text-red-500' : 'text-green-500'
+                        } />
+                        <span className={`text-[12px] font-bold ${
+                          order.cancelRequest.adminResponse === 'pending' ? 'text-yellow-700' :
+                          order.cancelRequest.adminResponse === 'rejected' ? 'text-red-600' : 'text-green-700'
+                        }`}>
+                          {order.cancelRequest.adminResponse === 'pending' 
+                            ? 'Cancel Request Sent' 
+                            : order.cancelRequest.adminResponse === 'rejected' 
+                              ? 'Cancel Request Rejected' 
+                              : 'Cancel Approved'}
+                        </span>
+                      </div>
+                      {order.cancelRequest.adminResponse === 'pending' && (
+                        <p className="text-[11px] text-gray-600">
+                          Your cancellation request is being reviewed. Expected refund: <span className="font-bold text-green-600">₹{order.cancelRequest.refundAmount} ({order.cancelRequest.refundPercent}%)</span>
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center mt-2 px-1">
                     <div className="flex flex-col">
@@ -327,6 +509,16 @@ const OrderHistory = () => {
                       <span className="text-[15px] text-orange-500 font-black">₹{order.totalAmount}</span>
                     </div>
                   </div>
+
+                  {/* Cancel Button — only for pending/processing and no existing cancel request */}
+                  {['pending', 'processing'].includes(order.orderStatus) && !order.cancelRequest?.requested && (
+                    <button 
+                      onClick={() => setShowCancelModal(order)}
+                      className="mt-2 w-full py-2.5 border-2 border-red-200 text-red-500 font-bold rounded-xl text-[13px] hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FiX size={16} /> Cancel Order
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -393,6 +585,53 @@ const OrderHistory = () => {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* ═══ CANCEL ORDER MODAL ═══ */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <FiAlertTriangle size={20} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-[16px]">Cancel Order</h3>
+                <p className="text-[11px] text-gray-400">Order #{showCancelModal._id.slice(-6).toUpperCase()}</p>
+              </div>
+            </div>
+            
+            <div className="bg-green-50 rounded-xl p-3 mb-4 border border-green-100">
+              <p className="text-[12px] text-green-700 font-medium">
+                You will receive <span className="font-bold">80% refund (₹{Math.round(showCancelModal.totalAmount * 0.8)})</span> to your wallet upon approval.
+              </p>
+            </div>
+
+            <textarea
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder="Reason for cancellation (optional)"
+              rows={3}
+              className="w-full bg-gray-50 rounded-xl p-3 text-[13px] outline-none border border-gray-100 focus:border-orange-300 resize-none mb-4"
+            />
+
+            <div className="flex gap-2">
+              <button 
+                onClick={() => { setShowCancelModal(null); setCancelReason(''); }}
+                className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl text-[13px] hover:bg-gray-200 transition-colors"
+              >
+                Keep Order
+              </button>
+              <button 
+                onClick={handleCancelRequest}
+                disabled={cancelLoading}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl text-[13px] hover:bg-red-600 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {cancelLoading ? 'Sending...' : 'Cancel Order'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -2,8 +2,45 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as userApis from '../../api/userApis';
 import * as astrologerApis from '../../api/astrologerApis';
 import * as adminApis from '../../api/adminApis';
+import axios from '../../api/axios';
 
 // User Auth Thunks
+export const verifyOtpThunk = createAsyncThunk(
+  'auth/verifyOtp',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await userApis.verifyOtp(credentials.phoneNumber, credentials.otp);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const refreshAccessTokenThunk = createAsyncThunk(
+  'auth/refreshToken',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.post('/auth/refresh', {});
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const logoutUserThunk = createAsyncThunk(
+  'auth/logoutUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Optional: Hit a backend logout if it exists. 
+      // For now we just resolve to clear frontend state.
+      return { success: true };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 export const userLoginOrSignupThunk = createAsyncThunk(
   'auth/userLoginOrSignup',
   async (credentials, { rejectWithValue }) => {
@@ -219,12 +256,22 @@ const authSlice = createSlice({
         const u = action.payload?.data?.user || action.payload?.user || action.payload;
         state.user = { ...state.user, ...u };
       })
-      .addCase(userLoginOrSignupThunk.fulfilled, (state, action) => {
-        // payload: { data: { user, accessToken } }
+      .addCase(verifyOtpThunk.fulfilled, (state, action) => {
         const data = action.payload?.data || action.payload;
         state.user = data.user || state.user;
         state.token = data.accessToken || state.token;
         if (data.user) state.isAuthenticated = true;
+      })
+      .addCase(refreshAccessTokenThunk.fulfilled, (state, action) => {
+        const data = action.payload?.data || action.payload;
+        state.token = data.accessToken || state.token;
+        if (state.user) state.isAuthenticated = true;
+      })
+      .addCase(logoutUserThunk.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
       })
       .addCase(astrologerLoginThunk.fulfilled, (state, action) => {
         const data = action.payload?.data || action.payload;

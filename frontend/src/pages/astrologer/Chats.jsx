@@ -24,7 +24,7 @@ const Chats = () => {
 
   const handleAccept = (req) => {
     setProcessingId(req.roomId);
-    const socket = io('http://localhost:5000', { auth: { token } });
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
     
     socket.emit('accept_session', { 
       roomId: req.roomId, 
@@ -42,7 +42,7 @@ const Chats = () => {
   };
 
   const handleReject = (req) => {
-    const socket = io('http://localhost:5000', { auth: { token } });
+    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
     socket.emit('reject_session', { 
       userSocketId: req.userSocketId 
     });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
+import { useNavigate, useSearchParams, useOutletContext, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
 import { BiCategoryAlt, BiHeart, BiBookHeart } from 'react-icons/bi';
@@ -8,6 +8,8 @@ import { FaRupeeSign } from 'react-icons/fa';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
+import api from '../../api/axios';
 
 const categories = [
   { name: 'All', icon: <BiCategoryAlt />, active: true },
@@ -45,14 +47,37 @@ const Astrologers = () => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchAstrologersThunk());
+    const params = {};
+    if (activeCategory !== 'All' && activeCategory !== 'NEW!') {
+      params.skill = activeCategory;
+    }
+    dispatch(fetchAstrologersThunk(params));
+    
     const token = localStorage.getItem('accessToken');
-    const s = io('http://localhost:5000', { auth: { token } });
+    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
     setSocket(s);
     return () => { s.disconnect(); };
-  }, [dispatch]);
+  }, [dispatch, activeCategory]);
 
-  const handleActionClick = (astro) => {
+  const { state } = useLocation();
+  useEffect(() => {
+    if (state?.autoConnectAstro && socket && astrologers.length > 0) {
+      const astroId = typeof state.autoConnectAstro === 'object' ? state.autoConnectAstro._id : state.autoConnectAstro;
+      const astro = astrologers.find(a => a._id === astroId && a.onlineStatus === 'online');
+      
+      // Clear the state so it doesn't fire again
+      navigate(location.pathname + location.search, { replace: true, state: {} });
+
+      if (astro) {
+        // slight delay to let state settle
+        setTimeout(() => handleActionClick(astro), 500);
+      } else {
+        toast.error("Astrologer is currently offline or unavailable.");
+      }
+    }
+  }, [socket, astrologers, state, navigate]);
+
+  const handleActionClick = async (astro) => {
     if (!isAuthenticated || user?.name === 'Guest User') {
       navigate('/user/login', { state: { redirectTo: `/user/astrologers?type=${activeTab}` } });
       return;
@@ -96,11 +121,24 @@ const Astrologers = () => {
       if (activeTab === 'call') emitType = 'audio';
       if (activeTab === 'video call') emitType = 'video';
 
+      let callIdForAudio = null;
+      if (emitType === 'audio') {
+        try {
+          const res = await api.post('/calls/request', { astrologerId: targetAstroId });
+          callIdForAudio = res.data.data.callSession.callId;
+        } catch (error) {
+          setIsConnecting(false);
+          toast.error(error.response?.data?.message || 'Failed to request call');
+          return;
+        }
+      }
+
       socket.emit('request_session', {
         astrologerId: targetAstroId,
         userId: user._id,
         userName: user.name,
         type: emitType,
+        callId: callIdForAudio,
       });
 
       socket.once('session_accepted', ({ roomId }) => {
@@ -109,14 +147,14 @@ const Astrologers = () => {
         if (activeTab === 'chat') {
           navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: false, roomId } });
         } else {
-          navigate(`/user/video-room/${roomId}?type=${activeTab === 'video call' ? 'video' : 'audio'}`, { state: { astrologer: astro } });
+          navigate(`/user/video-room/${roomId}?type=${activeTab === 'video call' ? 'video' : 'audio'}&callId=${callIdForAudio || ''}`, { state: { astrologer: astro } });
         }
       });
 
       socket.once('session_rejected', ({ reason }) => {
         setIsConnecting(false);
         socket.off('session_accepted'); // cleanup
-        alert(`Request declined: ${reason}`);
+        toast.error(`Request declined: ${reason}`);
       });
     }
   };
@@ -187,7 +225,7 @@ const Astrologers = () => {
                   : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              {tab}
+              {tab === 'call' ? 'Audio Call' : tab}
               {activeTab === tab && (
                 <div className="absolute bottom-0 left-1/4 right-1/4 h-[3px] bg-orange-500 rounded-full" />
               )}
@@ -221,7 +259,7 @@ const Astrologers = () => {
           const avatarUrl = astro.avatar || astro.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
           return (
           <div key={astro._id || idx} className="bg-white rounded-2xl shadow-card border border-gray-100 relative overflow-hidden hover:shadow-card-hover transition-shadow duration-300">
-            <div className="p-4">
+            <div className="p-4 cursor-pointer" onClick={() => navigate(`/user/astrologer/${astro._id}`)}>
               <div className="flex gap-3">
                 {/* Avatar & rating */}
                 <div className="flex flex-col items-center gap-1.5 shrink-0">
@@ -259,10 +297,13 @@ const Astrologers = () => {
                 {/* Action Button */}
                 <div className="flex flex-col items-end justify-center">
                   <button
-                    onClick={() => handleActionClick(astro)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleActionClick(astro);
+                    }}
                     className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
                   >
-                    {activeTab}
+                    {activeTab === 'call' ? 'Audio Call' : activeTab}
                   </button>
                 </div>
               </div>
@@ -296,9 +337,11 @@ const Astrologers = () => {
               <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
               <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
             </div>
-            <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
+            <h3 className="font-bold text-gray-900 text-lg mb-2">
+              {activeTab === 'call' ? 'Audio Call Request Sent!' : 'Request Sent!'}
+            </h3>
             <p className="text-gray-500 text-sm mb-6">
-              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your {activeTab} request...
+              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your {activeTab === 'call' ? 'audio call' : activeTab} request...
             </p>
             <button 
               onClick={() => {
