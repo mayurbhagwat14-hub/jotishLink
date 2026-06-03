@@ -27,17 +27,15 @@ const AstrologerLayout = () => {
 
       socket.emit('join_astrologer_room', { astrologerId: user._id });
 
-      socket.on('incoming_session_request', (data) => {
-        dispatch(addIncomingRequest(data));
-      });
+      const onIncoming = (data) => dispatch(addIncomingRequest(data));
+      const onCancelled = (data) => dispatch(removeIncomingRequestByUserId(data.userId));
 
-      socket.on('session_request_cancelled', (data) => {
-        dispatch(removeIncomingRequestByUserId(data.userId));
-      });
+      socket.on('incoming_session_request', onIncoming);
+      socket.on('session_request_cancelled', onCancelled);
 
       return () => {
-        socket.off('incoming_session_request');
-        socket.off('session_request_cancelled');
+        socket.off('incoming_session_request', onIncoming);
+        socket.off('session_request_cancelled', onCancelled);
       };
     }
   }, [user, token, dispatch]);

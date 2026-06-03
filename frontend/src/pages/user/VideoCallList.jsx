@@ -46,39 +46,21 @@ const VideoCallList = () => {
     return () => {  };
   }, [dispatch]);
 
-  const handleSessionRequest = async (astro, type) => {
-    // 1. Check auth
+  const handleSessionRequest = (astro, type) => {
     if (!isAuthenticated) return navigate('/user/login');
     
-    // 2. Check wallet balance
     const rate = type === 'chat' ? astro.pricing?.chat
                : type === 'audio' ? astro.pricing?.audioCall
                : astro.pricing?.videoCall;
-    const minBalance = (rate || 5) * 5; // minimum 5 minutes worth
+    const minBalance = (rate || 5) * 5;
     
     if ((user?.wallet || 0) < minBalance) {
-      // Show LowBalanceModal or navigate to recharge
       setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0 });
       setShowBalanceModal(true);
       return;
     }
     
-    // 3. Navigate to WaitingScreen with callId if applicable
-    if (type === 'audio' || type === 'video') {
-      try {
-        const res = await api.post('/calls/request', { astrologerId: astro._id || astro.userId });
-        const { callId } = res.data.data.callSession;
-        navigate('/user/waiting', {
-          state: { astrologer: astro, type, callId }
-        });
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to initiate call');
-      }
-    } else {
-      navigate('/user/waiting', {
-        state: { astrologer: astro, type }
-      });
-    }
+    navigate('/user/waiting', { state: { astrologer: astro, type } });
   };
 
   const handleRecharge = () => {

@@ -276,7 +276,11 @@ export const getUserPoojas = asyncHandler(async (req, res) => {
 
 // GET /api/user/sessions
 export const getUserSessions = asyncHandler(async (req, res) => {
-  const sessions = await ChatSession.find({ userId: req.user._id, deletedByUser: { $ne: true } })
+  const sessions = await ChatSession.find({ 
+    userId: req.user._id, 
+    deletedByUser: { $ne: true },
+    $or: [{ type: 'chat' }, { type: { $exists: false } }]
+  })
     .populate('astrologerId', 'name')
     .sort({ createdAt: -1 })
     .lean();
@@ -325,4 +329,37 @@ export const deleteUserHistory = asyncHandler(async (req, res) => {
   );
 
   return res.status(200).json(new ApiResponse(200, {}, `${type} history deleted`));
+});
+
+// POST /api/user/rate-astrologer
+export const rateAstrologer = asyncHandler(async (req, res) => {
+  const { astrologerId, rating, review } = req.body;
+  const userId = req.user._id;
+
+  // Check already rated
+  const user = await User.findById(userId);
+  if (user.ratedAstrologers?.includes(astrologerId)) {
+    return res.status(200).json(new ApiResponse(200, { alreadyRated: true }, 'Already rated'));
+  }
+
+  // Save rating on Astrologer
+  const astrologer = await Astrologer.findById(astrologerId);
+  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+
+  const totalRatings = astrologer.totalRatings || 0;
+  const currentRating = astrologer.rating || 0;
+  astrologer.rating = ((currentRating * totalRatings) + rating) / (totalRatings + 1);
+  astrologer.totalRatings = totalRatings + 1;
+  if (review) {
+    if (!astrologer.reviews) astrologer.reviews = [];
+    astrologer.reviews.push({ userId, rating, review, date: new Date() });
+  }
+  await astrologer.save();
+
+  // Mark user as rated this astrologer
+  await User.findByIdAndUpdate(userId, {
+    $addToSet: { ratedAstrologers: astrologerId }
+  });
+
+  return res.status(200).json(new ApiResponse(200, { rated: true }, 'Rating submitted'));
 });

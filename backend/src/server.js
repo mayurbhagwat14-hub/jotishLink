@@ -112,13 +112,13 @@ io.on('connection', (socket) => {
   });
 
   // ── Astrologer accepts session
-  socket.on('accept_session', ({ roomId, userSocketId }) => {
+  socket.on('accept_session', ({ roomId, userSocketId, astrologerId }) => {
     pendingRequests.delete(roomId);
+    // Notify user
     io.to(userSocketId).emit('session_accepted', { roomId });
-    io.to(roomId).emit('session_accepted', { roomId });
-    // also let astrologer socket know directly in case they haven't joined room yet
-    socket.emit('session_accepted', { roomId });
-    console.log(`[Socket.IO] Astrologer accepted session. Room: ${roomId}`);
+    // Notify astrologer's own socket too (confirmation)
+    socket.emit('session_accept_confirmed', { roomId });
+    console.log(`[Socket.IO] Session accepted. Room: ${roomId}`);
   });
 
   // ── Astrologer rejects session
@@ -136,11 +136,11 @@ io.on('connection', (socket) => {
   });
 
   // ── Join a chat room
-  socket.on('join_room', async ({ roomId, userId, astrologerId, isBot }) => {
+  socket.on('join_room', async ({ roomId, userId, astrologerId, isBot, sessionType }) => {
     socket.join(roomId);
     socketRoomMap.set(socket.id, { roomId, type: 'chat_session' });
     socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
-    console.log(`[Socket.IO] ${userId} joined room ${roomId}`);
+    console.log(`[Socket.IO] ${userId} joined room ${roomId} (Type: ${sessionType || 'chat'})`);
 
     try {
       // Find or create the real Mongoose ChatSession
@@ -165,6 +165,7 @@ io.on('connection', (socket) => {
           astrologerId: astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/) ? astrologerId : undefined,
           isBotSession: !!isBot,
           status: 'ongoing',
+          type: sessionType || 'chat',
           messages: [welcomeMessage],
         });
         console.log(`[Socket.IO] Created ChatSession in DB with welcome message: ${session._id}`);
@@ -366,25 +367,28 @@ io.on('connection', (socket) => {
       activeTimers.delete(roomId);
     }
 
-    io.to(roomId).emit('session_ended', {
+    const endPayload = {
       reason: `${endedBy}_ended`,
       durationSeconds: timerData?.seconds || 0,
+      amountDeducted: timerData ? Math.floor((timerData.seconds || 0) / 60) * (timerData.astrologerRate || 0) : 0,
       sessionId: finalSessionId,
-    });
+    };
 
-    // Also notify astrologer's personal room in case they're not in the chat room
+    // Emit to the room (both user and astrologer who joined the room)
+    io.to(roomId).emit('session_ended', endPayload);
+
+    // ALSO emit to astrologer's personal room (in case astrologer not in chat room socket)
     try {
       if (finalSessionId) {
-        const sessionForAstro = await ChatSession.findById(finalSessionId);
-        if (sessionForAstro?.astrologerId) {
-          io.to(`astro_${sessionForAstro.astrologerId}`).emit('session_ended', {
-            reason: `${endedBy}_ended`,
-            durationSeconds: timerData?.seconds || 0,
+        const sessionForEnd = await ChatSession.findById(finalSessionId);
+        if (sessionForEnd?.astrologerId) {
+          io.to(`astro_${sessionForEnd.astrologerId}`).emit('session_ended', {
+            ...endPayload,
             sessionId: finalSessionId,
           });
         }
       }
-    } catch (e) { console.error('Error notifying astro:', e.message); }
+    } catch (e) { /* ignore */ }
 
     // Mark session complete
     try {

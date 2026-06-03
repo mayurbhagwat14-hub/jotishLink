@@ -15,27 +15,19 @@ const ChatRoom = () => {
   const [sessionData, setSessionData] = useState(null);
   const [timer, setTimer] = useState(0);
   const [endSessionInfo, setEndSessionInfo] = useState(null);
-  const socketRef = useRef(null);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const messagesEndRef = useRef(null);
-
-  // Auto-scroll
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const { user: astrologer } = useSelector((state) => state.auth);
 
   useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
     const loadSession = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
         const socket = getSocket();
-        socketRef.current = socket;
-
-        // If ID is a 24-char hex string, it's a MongoDB sessionId
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(sessionId);
 
         if (sessionId === 'new' && !location.state?.roomId) {
@@ -48,7 +40,6 @@ const ChatRoom = () => {
         let astrologerIdForJoin = astrologer?._id || '';
 
         if (isMongoId) {
-          // Fetch existing session history
           const { data } = await api.get(`/chat/${sessionId}/messages`);
           setSessionData(data.data.session);
           setMessages(data.data.session.messages || []);
@@ -61,32 +52,45 @@ const ChatRoom = () => {
           roomId: roomIdToJoin, 
           userId: userIdForJoin, 
           astrologerId: astrologerIdForJoin,
-          isBot: false 
+          isBot: false,
+          sessionType: 'chat'
         });
 
-        socket.on('session_created', ({ sessionId: newSessionId, messages: loadedMessages }) => {
-          // Server created or found the session
+        const onSessionCreated = ({ sessionId: newSessionId, messages: loadedMessages }) => {
           if (!isMongoId) {
              setSessionData({ _id: newSessionId, roomId: roomIdToJoin });
              setMessages(loadedMessages || []);
           }
-        });
+        };
 
-        socket.on('receive_message', (msg) => {
+        const onReceiveMessage = (msg) => {
           setMessages(prev => [...prev, msg]);
-        });
+        };
 
-        socket.on('timer_tick', ({ seconds }) => {
+        const onTimerTick = ({ seconds }) => {
           setTimer(seconds);
-        });
+        };
 
-        socket.on('session_ended', ({ reason, durationSeconds }) => {
-          const earned = Math.floor(durationSeconds / 60) * (astrologer?.rate || 5);
+        const onSessionEnded = ({ reason, durationSeconds }) => {
+          if (sessionEnded) return;
+          setSessionEnded(true);
+          const earned = Math.floor((durationSeconds || 0) / 60) * (astrologer?.rate || 5);
           setEndSessionInfo({
-            message: `Session ended. Duration: ${Math.floor(durationSeconds/60)} min. Estimated earning: ₹${earned}`
+            message: `Session ended. Duration: ${Math.floor((durationSeconds || 0)/60)} min. Estimated earning: ₹${earned}`
           });
-        });
+        };
 
+        socket.on('session_created', onSessionCreated);
+        socket.on('receive_message', onReceiveMessage);
+        socket.on('timer_tick', onTimerTick);
+        socket.on('session_ended', onSessionEnded);
+
+        return () => {
+          socket.off('session_created', onSessionCreated);
+          socket.off('receive_message', onReceiveMessage);
+          socket.off('timer_tick', onTimerTick);
+          socket.off('session_ended', onSessionEnded);
+        };
       } catch (err) {
         console.error('Failed to load session:', err);
         alert('Could not load chat session');
@@ -94,17 +98,17 @@ const ChatRoom = () => {
       }
     };
     
-    loadSession();
-    
+    const cleanup = loadSession();
     return () => {
-      
+      cleanup.then(clean => clean && clean());
     };
   }, [sessionId, navigate]);
 
   const handleSend = () => {
-    if (!inputText.trim() || !sessionData) return;
+    if (!inputText.trim() || !sessionData || sessionEnded) return;
     
-    socketRef.current.emit('send_message', {
+    const socket = getSocket();
+    socket.emit('send_message', {
       roomId: sessionData.roomId,
       sessionId: sessionData._id,
       sender: 'astrologer',
@@ -114,14 +118,8 @@ const ChatRoom = () => {
     setInputText('');
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   const handleEndChat = () => {
+    if (sessionEnded) return;
     const socket = getSocket();
     socket.emit('end_session', {
       roomId: sessionData?.roomId || location.state?.roomId || sessionId,
@@ -137,10 +135,10 @@ const ChatRoom = () => {
     return `${m}:${s}`;
   };
 
-  if (!sessionData) return <div className="flex h-screen items-center justify-center">Loading session...</div>;
+  if (!sessionData && !endSessionInfo) return <div className="flex h-screen items-center justify-center">Loading session...</div>;
 
-  const userName = location.state?.userName || sessionData.userId?.name || 'User';
-  const userAvatar = sessionData.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=ffedD5&color=f97316`;
+  const userName = location.state?.userName || sessionData?.userId?.name || 'User';
+  const userAvatar = sessionData?.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=ffedD5&color=f97316`;
   
   return (
     <div className="flex flex-col h-screen bg-gray-50 font-sans absolute inset-0 z-50">
@@ -164,20 +162,20 @@ const ChatRoom = () => {
         </div>
         
         <div className="flex gap-2 items-center">
-          <button className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition-colors">
+          <button className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition-colors disabled:opacity-50" disabled={sessionEnded}>
              <FiVideo size={18} />
           </button>
-          <button className="w-9 h-9 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-100 transition-colors">
+          <button className="w-9 h-9 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-100 transition-colors disabled:opacity-50" disabled={sessionEnded}>
              <FiPhone size={18} />
           </button>
-          <button onClick={handleEndChat} className="ml-2 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0">
+          <button onClick={handleEndChat} disabled={sessionEnded} className="ml-2 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50">
             End Chat
           </button>
         </div>
       </header>
 
       {/* Chat Messages */}
-      <main className="flex-1 p-4 overflow-y-auto space-y-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50/80">
+      <main className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/80">
         {messages.map((msg, index) => {
           const isMe = msg.sender === 'astrologer';
           const isSystem = msg.sender === 'system' || msg.sender === 'bot';
@@ -223,16 +221,17 @@ const ChatRoom = () => {
               rows="1"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your guidance..." 
-              className="w-full bg-transparent px-4 py-3 outline-none text-sm resize-none max-h-32 min-h-[44px]"
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder={sessionEnded ? 'Session ended' : 'Type your guidance...'}
+              disabled={sessionEnded}
+              className="w-full bg-transparent px-4 py-3 outline-none text-sm resize-none max-h-32 min-h-[44px] disabled:opacity-50"
             ></textarea>
           </div>
           
           <button 
             onClick={handleSend}
-            disabled={!inputText.trim() || endSessionInfo}
-            className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/30 shrink-0 disabled:opacity-50"
+            disabled={!inputText.trim() || endSessionInfo || sessionEnded}
+            className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/30 shrink-0 disabled:opacity-50 disabled:shadow-none"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
           </button>

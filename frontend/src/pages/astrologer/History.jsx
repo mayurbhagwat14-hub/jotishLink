@@ -40,8 +40,10 @@ const History = () => {
     switch (type) {
       case 'call':
       case 'audio call':
+      case 'audio_call':
         return <FiPhone size={18} />;
       case 'video call':
+      case 'video_call':
         return <FiVideo size={18} />;
       case 'pooja':
         return <GiFlowerPot size={18} />;

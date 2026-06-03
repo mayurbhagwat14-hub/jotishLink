@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 150, // Initial wallet balance incentive
     },
+    ratedAstrologers: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Astrologer',
+    }],
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other'],

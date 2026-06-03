@@ -97,7 +97,8 @@ export const rejectCall = asyncHandler(async (req, res) => {
 });
 
 export const getCallHistory = asyncHandler(async (req, res) => {
-  let query = {};
+  let query = { type: { $in: ['audio', 'video', 'audio_call', 'video_call'] } };
+  
   if (req.user?.role === 'astrologer') {
     query.astrologerId = req.user._id;
   } else if (req.user) {
@@ -105,7 +106,8 @@ export const getCallHistory = asyncHandler(async (req, res) => {
     query.deletedByUser = { $ne: true };
   }
 
-  const calls = await CallSession.find(query)
+  const ChatSession = (await import('../models/chatSession.model.js')).default;
+  const calls = await ChatSession.find(query)
     .populate('userId', 'name avatar')
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 });

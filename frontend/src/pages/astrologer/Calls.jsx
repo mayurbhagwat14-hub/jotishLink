@@ -24,39 +24,35 @@ const Calls = () => {
     { id: 'Active', label: 'Active', count: callSessions.length },
   ];
 
-  const handleAccept = async (req) => {
+  const handleAccept = (req) => {
     setProcessingId(req.roomId);
-    
-    try {
-      const res = await api.post('/calls/accept', { callId: req.callId });
-      const { agora } = res.data.data;
-      
-      const socket = getSocket();
-      socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
-      dispatch(removeIncomingRequest(req.roomId));
-      dispatch(addActiveSession({ ...req, status: 'active', agora }));
-      
-      if (req.type === 'audio') {
-        navigate(`/astrologer/video-room/${req.roomId}?type=audio`, { state: { session: req, agora } });
-      } else {
-        navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req, agora } });
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to accept call');
-      setProcessingId(null);
+    const socket = getSocket();
+    socket.emit('accept_session', {
+      roomId: req.roomId,
+      userSocketId: req.userSocketId,
+    });
+    dispatch(removeIncomingRequest(req.roomId));
+    dispatch(addActiveSession({ ...req, status: 'active' }));
+    setProcessingId(null);
+
+    if (req.type === 'video') {
+      navigate(`/astrologer/video-room/${req.roomId}`, {
+        state: { session: { ...req, roomId: req.roomId } },
+      });
+    } else {
+      // Audio call — navigate to audio room (same VideoRoom component with type=audio)
+      navigate(`/astrologer/video-room/${req.roomId}?type=audio`, {
+        state: { session: { ...req, roomId: req.roomId }, type: 'audio' },
+      });
     }
   };
 
-  const handleReject = async (req) => {
-    if (req.type === 'audio') {
-      try {
-        await api.post('/calls/reject', { callId: req.callId, reason: 'Astrologer declined' });
-      } catch (e) {
-        console.error(e);
-      }
-    }
+  const handleReject = (req) => {
     const socket = getSocket();
-    socket.emit('reject_session', { userSocketId: req.userSocketId, reason: 'Astrologer is busy' });
+    socket.emit('reject_session', {
+      userSocketId: req.userSocketId,
+      reason: 'Astrologer is busy right now.',
+    });
     dispatch(removeIncomingRequest(req.roomId));
   };
 
