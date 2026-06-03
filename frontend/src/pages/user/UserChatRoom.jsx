@@ -59,7 +59,27 @@ const UserChatRoom = () => {
     const onSessionCreated = (data) => {
       setSessionId(data.sessionId);
       sessionIdRef.current = data.sessionId;
-      if (data.messages?.length > 0) setMessages(data.messages);
+      if (data.messages?.length > 0) {
+        setMessages(data.messages);
+      }
+
+      // Auto-send user details if it's a fresh chat (only the welcome message exists)
+      if (data.messages?.length === 1 && !viewOnly) {
+        const details = `[System generated user info]
+Name: ${user?.name || 'N/A'}
+DOB: ${user?.dob || 'N/A'}
+Time of Birth: ${user?.tob || 'N/A'}
+Place of Birth: ${user?.pob || 'N/A'}
+Gender: ${user?.gender || 'N/A'}
+Marital Status: ${user?.maritalStatus || 'N/A'}`;
+        
+        socket.emit('send_message', { 
+          roomId, 
+          sessionId: data.sessionId, 
+          sender: 'user', 
+          text: details 
+        });
+      }
 
       if (isBotSession) {
         socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id });

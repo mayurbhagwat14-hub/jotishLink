@@ -160,7 +160,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   return res.status(201).json(
     new ApiResponse(201, {
       accessToken,
-      user: { _id: astrologer._id, name, phone, role: 'astrologer' },
+      user: { _id: astrologer._id, name, phone, role: 'astrologer', avatar: astrologer.avatar },
       astrologer,
     }, 'Astrologer account created. Pending verification.')
   );
@@ -209,7 +209,7 @@ export const astrologerLogin = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       accessToken,
-      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', onlineStatus: astrologer.onlineStatus },
+      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', onlineStatus: astrologer.onlineStatus, avatar: astrologer.avatar },
       astrologer,
     }, 'Login successful')
   );

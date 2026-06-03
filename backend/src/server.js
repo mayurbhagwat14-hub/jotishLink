@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
   // ── Join a chat room
   socket.on('join_room', async ({ roomId, userId, astrologerId, isBot, sessionType }) => {
     socket.join(roomId);
-    socketRoomMap.set(socket.id, { roomId, type: 'chat_session' });
+    socketRoomMap.set(socket.id, { roomId, type: 'chat_session', astrologerId });
     socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
     console.log(`[Socket.IO] ${userId} joined room ${roomId} (Type: ${sessionType || 'chat'})`);
 
@@ -324,7 +324,7 @@ io.on('connection', (socket) => {
             await ChatSession.findByIdAndUpdate(sessionId, {
               status: 'completed',
               durationSeconds: seconds,
-              amountDeducted: Math.floor(seconds / 60) * astrologerRate,
+              amountDeducted: (seconds / 60) * astrologerRate,
             });
 
             // Mark astrologer online
@@ -370,23 +370,32 @@ io.on('connection', (socket) => {
     const endPayload = {
       reason: `${endedBy}_ended`,
       durationSeconds: timerData?.seconds || 0,
-      amountDeducted: timerData ? Math.floor((timerData.seconds || 0) / 60) * (timerData.astrologerRate || 0) : 0,
+      amountDeducted: timerData ? ((timerData.seconds || 0) / 60) * (timerData.astrologerRate || 0) : 0,
       sessionId: finalSessionId,
+      roomId,
     };
 
     // Emit to the room (both user and astrologer who joined the room)
     io.to(roomId).emit('session_ended', endPayload);
 
+    // Get astrologerId either from finalSessionId or from socketRoomMap if available
+    let astroId = null;
+    const roomInfo = socketRoomMap.get(socket.id);
+    if (roomInfo && roomInfo.astrologerId) {
+      astroId = roomInfo.astrologerId;
+    }
+
     // ALSO emit to astrologer's personal room (in case astrologer not in chat room socket)
     try {
-      if (finalSessionId) {
+      if (finalSessionId && !astroId) {
         const sessionForEnd = await ChatSession.findById(finalSessionId);
-        if (sessionForEnd?.astrologerId) {
-          io.to(`astro_${sessionForEnd.astrologerId}`).emit('session_ended', {
-            ...endPayload,
-            sessionId: finalSessionId,
-          });
-        }
+        if (sessionForEnd?.astrologerId) astroId = sessionForEnd.astrologerId;
+      }
+      if (astroId) {
+         io.to(`astro_${astroId}`).emit('session_ended', {
+           ...endPayload,
+           sessionId: finalSessionId,
+         });
       }
     } catch (e) { /* ignore */ }
 
@@ -401,7 +410,7 @@ io.on('connection', (socket) => {
 
         if (timerData && timerData.astrologerRate) {
           try {
-            const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+            const finalAmount = ((timerData.seconds || 0) / 60) * timerData.astrologerRate;
             if (finalAmount > 0) {
               const sys = await SystemSettings.findOne();
               const comm = sys ? sys.commissionPercent : 30;
@@ -453,7 +462,7 @@ io.on('connection', (socket) => {
               session.status = 'completed';
               session.duration = seconds;
               session.endTime = new Date();
-              session.totalAmount = Math.floor(seconds / 60) * astrologerRate;
+              session.totalAmount = (seconds / 60) * astrologerRate;
               await session.save();
               
               await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
@@ -488,7 +497,18 @@ io.on('connection', (socket) => {
       activeTimers.delete(roomId);
     }
 
-    io.to(roomId).emit('call_ended', { reason: 'user_ended' });
+    io.to(roomId).emit('call_ended', { reason: 'user_ended', roomId });
+    // Attempt to notify astrologer personal room
+    try {
+      if (timerData && timerData.astrologerId) {
+        io.to(`astro_${timerData.astrologerId}`).emit('call_ended', { reason: 'user_ended', roomId });
+      } else {
+        // Find session from db to get astrologerId if timerData is missing it
+        const { CallSession } = await import('./models/callSession.model.js');
+        const sess = await CallSession.findOne({ callId });
+        if (sess) io.to(`astro_${sess.astrologerId}`).emit('call_ended', { reason: 'user_ended', roomId });
+      }
+    } catch (e) { /* ignore */ }
 
     try {
       const { CallSession } = await import('./models/callSession.model.js');
@@ -497,12 +517,12 @@ io.on('connection', (socket) => {
         session.status = 'completed';
         session.duration = timerData?.seconds || 0;
         session.endTime = new Date();
-        session.totalAmount = Math.floor((timerData?.seconds || 0) / 60) * session.ratePerMinute;
+        session.totalAmount = ((timerData?.seconds || 0) / 60) * session.ratePerMinute;
         await session.save();
         
         if (timerData && timerData.astrologerRate) {
           try {
-            const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+            const finalAmount = ((timerData.seconds || 0) / 60) * timerData.astrologerRate;
             if (finalAmount > 0) {
               const sys = await SystemSettings.findOne();
               const comm = sys ? sys.commissionPercent : 30;
@@ -553,15 +573,21 @@ io.on('connection', (socket) => {
     // Strict Disconnect Handling
     const roomInfo = socketRoomMap.get(socket.id);
     if (roomInfo) {
-      const { roomId } = roomInfo;
+      const { roomId, astrologerId } = roomInfo;
       const timerData = activeTimers.get(roomId);
       
+      // Always emit to room and astrologer so UI can clear ghost active sessions
+      io.to(roomId).emit('call_ended', { reason: 'peer_disconnected', roomId });
+      io.to(roomId).emit('session_ended', { reason: 'peer_disconnected', roomId });
+      const targetAstroId = (timerData && timerData.astrologerId) || astrologerId;
+      if (targetAstroId) {
+         io.to(`astro_${targetAstroId}`).emit('call_ended', { reason: 'peer_disconnected', roomId });
+         io.to(`astro_${targetAstroId}`).emit('session_ended', { reason: 'peer_disconnected', roomId });
+      }
+
       if (timerData) {
         clearInterval(timerData.intervalId);
         activeTimers.delete(roomId);
-        
-        io.to(roomId).emit('call_ended', { reason: 'peer_disconnected' });
-        io.to(roomId).emit('session_ended', { reason: 'peer_disconnected' });
 
         try {
           if (timerData.type === 'audio' && timerData.callId) {
@@ -571,12 +597,12 @@ io.on('connection', (socket) => {
               session.status = 'completed';
               session.duration = timerData.seconds || 0;
               session.endTime = new Date();
-              session.totalAmount = Math.floor((timerData.seconds || 0) / 60) * session.ratePerMinute;
+              session.totalAmount = ((timerData.seconds || 0) / 60) * session.ratePerMinute;
               await session.save();
 
               if (timerData && timerData.astrologerRate) {
                 try {
-                  const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+                  const finalAmount = ((timerData.seconds || 0) / 60) * timerData.astrologerRate;
                   if (finalAmount > 0) {
                     const sys = await SystemSettings.findOne();
                     const comm = sys ? sys.commissionPercent : 30;
@@ -596,7 +622,7 @@ io.on('connection', (socket) => {
 
               if (timerData && timerData.astrologerRate) {
                 try {
-                  const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+                  const finalAmount = ((timerData.seconds || 0) / 60) * timerData.astrologerRate;
                   if (finalAmount > 0) {
                     const sys = await SystemSettings.findOne();
                     const comm = sys ? sys.commissionPercent : 30;

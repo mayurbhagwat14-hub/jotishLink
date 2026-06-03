@@ -13,8 +13,8 @@ export const createOrder = asyncHandler(async (req, res) => {
   const key_id = process.env.RAZORPAY_KEY_ID;
   const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
-  if (!key_id || !key_secret) {
-    throw new ApiError(500, 'Razorpay credentials missing. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env');
+  if (!key_id || !key_secret || key_secret.includes('••••')) {
+    throw new ApiError(500, 'Razorpay credentials missing or using placeholders. Set actual RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env');
   }
 
   if (!amount || amount < 10) {

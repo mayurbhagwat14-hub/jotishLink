@@ -6,13 +6,14 @@ import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiS
 import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
 import { login } from '../store/slices/authSlice';
-import { addIncomingRequest, removeIncomingRequestByUserId } from '../store/slices/astrologerSlice';
+import { addIncomingRequest, removeIncomingRequestByUserId, removeActiveSession } from '../store/slices/astrologerSlice';
 import getSocket from '../socket/socketManager';
 import NotificationDropdown from '../components/NotificationDropdown';
 
 const AstrologerLayout = () => {
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
+  const { profile } = useSelector((state) => state.astrologer);
   const location = useLocation();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(user?.onlineStatus === 'online' || false);
@@ -29,16 +30,33 @@ const AstrologerLayout = () => {
 
       const onIncoming = (data) => dispatch(addIncomingRequest(data));
       const onCancelled = (data) => dispatch(removeIncomingRequestByUserId(data.userId));
+      const onSessionEnded = (data) => {
+        if (data.roomId) {
+          dispatch(removeActiveSession(data.roomId));
+        }
+      };
 
       socket.on('incoming_session_request', onIncoming);
       socket.on('session_request_cancelled', onCancelled);
+      socket.on('session_ended', onSessionEnded);
+      socket.on('call_ended', onSessionEnded);
 
       return () => {
         socket.off('incoming_session_request', onIncoming);
         socket.off('session_request_cancelled', onCancelled);
+        socket.off('session_ended', onSessionEnded);
+        socket.off('call_ended', onSessionEnded);
       };
     }
   }, [user, token, dispatch]);
+
+  useEffect(() => {
+    if (user && user.role === 'astrologer') {
+      import('../store/slices/astrologerSlice').then(({ fetchAstrologerProfileThunk }) => {
+        dispatch(fetchAstrologerProfileThunk());
+      });
+    }
+  }, [dispatch, user]);
 
   // Requests are now handled in the Chats/Calls tabs directly
 
@@ -95,7 +113,7 @@ const AstrologerLayout = () => {
             className="flex items-center gap-2 hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors text-left"
           >
              <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0">
-                <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
+                <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
              </div>
              <div>
                <h3 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[120px]">{user?.name || 'Astrologer'}</h3>
@@ -144,7 +162,7 @@ const AstrologerLayout = () => {
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-orange-50/50">
               <div className="flex items-center gap-3">
                  <div className="w-10 h-10 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0 shadow-sm">
-                    <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
+                    <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
                  </div>
                  <div>
                    <h3 className="font-bold text-gray-900 leading-tight">{user?.name || 'Astrologer'}</h3>
