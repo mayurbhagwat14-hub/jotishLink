@@ -55,12 +55,7 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId, socket
     localMicrophoneTrack?.close();
     localCameraTrack?.close();
     const socket = getSocket();
-    if (sessionData.type === 'audio') {
-      socket.emit('end_session', { roomId: channelName, sessionId: sessionData._id, userId: sessionData.userId, endedBy: 'astrologer', callId: sessionData.callId });
-    } else {
-      socket.emit('end_session', { roomId: channelName, sessionId: sessionData._id, userId: sessionData.userId, endedBy: 'astrologer' });
-    }
-    // Wait for session_ended to navigate
+    socket.emit('end_call', { roomId: channelName, callId: sessionData.callId });
   };
 
   useEffect(() => {

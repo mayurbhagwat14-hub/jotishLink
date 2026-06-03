@@ -276,8 +276,18 @@ export const createAdminProduct = asyncHandler(async (req, res) => {
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) + '%' : '0%';
   const inStock = stock > 0;
 
+  let uploadedImage = image || '';
+  let pubId = '';
+  if (uploadedImage.startsWith('data:image')) {
+    const result = await uploadMedia(uploadedImage, 'astrotalk_products');
+    uploadedImage = result.url;
+    pubId = result.publicId;
+  }
+
   const product = await Product.create({
-    name, description, price, originalPrice, discount, category, image,
+    name, description, price, originalPrice, discount, category, 
+    image: uploadedImage,
+    cloudinaryPublicId: pubId,
     stock: stock || 0,
     minStock: minStock || 10,
     sku: sku || Math.random().toString(36).substr(2, 6).toUpperCase(),
@@ -299,16 +309,32 @@ export const updateAdminProduct = asyncHandler(async (req, res) => {
     updates.inStock = updates.stock > 0;
   }
 
-  const product = await Product.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
-  if (!product) throw new ApiError(404, 'Product not found');
+  const productToUpdate = await Product.findById(req.params.id);
+  if (!productToUpdate) throw new ApiError(404, 'Product not found');
 
+  if (updates.image && updates.image.startsWith('data:image')) {
+    if (productToUpdate.cloudinaryPublicId) {
+      await deleteMedia(productToUpdate.cloudinaryPublicId);
+    }
+    const result = await uploadMedia(updates.image, 'astrotalk_products');
+    updates.image = result.url;
+    updates.cloudinaryPublicId = result.publicId;
+  }
+
+  const product = await Product.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
   return res.status(200).json(new ApiResponse(200, { product }, 'Product updated successfully'));
 });
 
 // DELETE /api/admin/products/:id
 export const deleteAdminProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndDelete(req.params.id);
+  const product = await Product.findById(req.params.id);
   if (!product) throw new ApiError(404, 'Product not found');
+
+  if (product.cloudinaryPublicId) {
+    await deleteMedia(product.cloudinaryPublicId);
+  }
+
+  await Product.findByIdAndDelete(req.params.id);
 
   return res.status(200).json(new ApiResponse(200, {}, 'Product deleted successfully'));
 });
@@ -376,26 +402,57 @@ export const getAdminCelebrities = asyncHandler(async (req, res) => {
 export const createAdminCelebrity = asyncHandler(async (req, res) => {
   const { name, role, img, isActive } = req.body;
   if (!name || !role || !img) throw new ApiError(400, 'Name, role, and image are required');
-  const celebrity = await Celebrity.create({ name, role, img, isActive });
+
+  let uploadedImg = img;
+  let pubId = '';
+  if (uploadedImg.startsWith('data:image')) {
+    const result = await uploadMedia(uploadedImg, 'astrotalk_celebrities');
+    uploadedImg = result.url;
+    pubId = result.publicId;
+  }
+
+  const celebrity = await Celebrity.create({ name, role, img: uploadedImg, cloudinaryPublicId: pubId, isActive });
   return res.status(201).json(new ApiResponse(201, { celebrity }, 'Celebrity created'));
 });
 
 // PUT /api/admin/celebrities/:id
 export const updateAdminCelebrity = asyncHandler(async (req, res) => {
   const { name, role, img, isActive } = req.body;
+  const celebToUpdate = await Celebrity.findById(req.params.id);
+  if (!celebToUpdate) throw new ApiError(404, 'Celebrity not found');
+
+  let newImg = img;
+  let newPubId = celebToUpdate.cloudinaryPublicId;
+
+  if (img && img.startsWith('data:image')) {
+    if (celebToUpdate.cloudinaryPublicId) {
+      await deleteMedia(celebToUpdate.cloudinaryPublicId);
+    }
+    const result = await uploadMedia(img, 'astrotalk_celebrities');
+    newImg = result.url;
+    newPubId = result.publicId;
+  }
+
   const celebrity = await Celebrity.findByIdAndUpdate(
     req.params.id,
-    { name, role, img, isActive },
+    { name, role, img: newImg, cloudinaryPublicId: newPubId, isActive },
     { new: true, runValidators: true }
   );
-  if (!celebrity) throw new ApiError(404, 'Celebrity not found');
+
   return res.status(200).json(new ApiResponse(200, { celebrity }, 'Celebrity updated'));
 });
 
 // DELETE /api/admin/celebrities/:id
 export const deleteAdminCelebrity = asyncHandler(async (req, res) => {
-  const celebrity = await Celebrity.findByIdAndDelete(req.params.id);
+  const celebrity = await Celebrity.findById(req.params.id);
   if (!celebrity) throw new ApiError(404, 'Celebrity not found');
+  
+  if (celebrity.cloudinaryPublicId) {
+    await deleteMedia(celebrity.cloudinaryPublicId);
+  }
+
+  await Celebrity.findByIdAndDelete(req.params.id);
+
   return res.status(200).json(new ApiResponse(200, {}, 'Celebrity deleted'));
 });
 

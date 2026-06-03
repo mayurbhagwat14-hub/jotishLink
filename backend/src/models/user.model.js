@@ -32,6 +32,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    avatarPublicId: {
+      type: String,
+    },
     wallet: {
       type: Number,
       default: 150, // Initial wallet balance incentive

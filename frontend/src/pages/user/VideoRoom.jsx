@@ -9,7 +9,8 @@ import AgoraRTC, {
   usePublish,
   useJoin,
   useRemoteUsers,
-  LocalVideoTrack
+  LocalVideoTrack,
+  RemoteUser
 } from 'agora-rtc-react';
 import api from '../../api/axios';
 import getSocket from '../../socket/socketManager';
@@ -62,44 +63,37 @@ const AgoraVideoCall = ({ astrologer, channelName, rtcToken, uid, appId, socket,
     localCameraTrack?.close();
     
     const socket = getSocket();
-    if (isAudioCall) {
-      // Keep legacy for audio if needed, but per instructions emit end_session
-      socket.emit('end_session', { roomId: channelName, sessionId, userId: user?._id, endedBy: 'user', callId });
-    } else {
-      socket.emit('end_session', { roomId: channelName, sessionId, userId: user?._id, endedBy: 'user' });
-    }
+    socket.emit('end_call', { roomId: channelName, callId });
   };
 
   useEffect(() => {
     if (socket) {
-      socket.on('session_created', (data) => {
-        setSessionId(data.sessionId);
-        const rate = astrologer.pricing?.videoCall || astrologer.rate * 2 || 10;
-        socket.emit('start_timer', { roomId: channelName, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate });
-      });
-
-      if (isAudioCall) {
-        const rate = astrologer.pricing?.audioCall || astrologer.rate || 5;
-        socket.emit('start_audio_call', { roomId: channelName, callId, userId: user?._id, astrologerRate: rate });
-        socket.on('call_ended', () => {
-          localMicrophoneTrack?.close();
-          navigate('/user/astrologers');
-        });
-      }
-
-      socket.on('session_ended', () => {
+      socket.on('call_ended', () => {
         localMicrophoneTrack?.close();
         localCameraTrack?.close();
-        navigate('/user/home');
+        navigate('/user/astrologers');
       });
+
+      // Video calls and audio calls now both use start_call
+      const rate = isAudioCall 
+        ? (astrologer.pricing?.audioCall || astrologer.rate || 5)
+        : (astrologer.pricing?.videoCall || astrologer.rate * 2 || 10);
+        
+      socket.emit('start_call', { 
+        roomId: channelName, 
+        callId, 
+        userId: user?._id, 
+        astrologerRate: rate,
+        type: isAudioCall ? 'audio' : 'video'
+      });
+
     }
     return () => {
       if (socket) {
-        socket.off('session_created');
-        socket.off('session_ended');
+        socket.off('call_ended');
       }
     };
-  }, [socket, localMicrophoneTrack, localCameraTrack, navigate, channelName, user, astrologer]);
+  }, [socket, localMicrophoneTrack, localCameraTrack, navigate, channelName, user, astrologer, isAudioCall, callId]);
 
   return (
     <div className="w-full h-[100dvh] bg-gray-900 font-sans relative flex flex-col overflow-hidden">

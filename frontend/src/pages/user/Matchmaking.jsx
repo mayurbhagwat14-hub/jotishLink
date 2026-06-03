@@ -27,15 +27,8 @@ const Matchmaking = () => {
       setLoading(false);
     } catch (error) {
       console.error(error);
-      setTimeout(() => {
-        setResult({
-          matchedGunas: 24,
-          totalGunas: 36,
-          verdict: 'This is a very good match! Your Gunas align well for a harmonious relationship.',
-          isManglikMatch: true
-        });
-        setLoading(false);
-      }, 1500);
+      setResult({ error: 'Failed to generate Matchmaking report. Please try again later.' });
+      setLoading(false);
     }
   };
 
@@ -105,7 +98,13 @@ const Matchmaking = () => {
           </form>
         </div>
 
-        {result && (
+        {result && result.error && (
+          <div className="bg-red-50 text-red-600 text-center py-6 rounded-2xl font-bold border border-red-100 animate-fade-in mb-8">
+            {result.error}
+          </div>
+        )}
+
+        {result && !result.error && (
           <div className="bg-white rounded-3xl p-6 md:p-8 border border-orange-100 shadow-card animate-fade-in text-center">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 border-4 text-3xl shadow-sm ${result.matchedGunas >= 18 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
               {result.matchedGunas >= 18 ? '💖' : '⚠️'}

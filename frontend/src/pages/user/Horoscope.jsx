@@ -24,21 +24,8 @@ const Horoscope = () => {
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch horoscope:", error);
-        setTimeout(() => {
-          setHoroscopeData({
-            date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }),
-            luckyColors: ['#f97316', '#fbbf24'],
-            mood: '🤩',
-            luckyNumber: '9',
-            luckyTime: '06:15 PM',
-            love: { score: '95%', text: 'Your charm is irresistible today. Expect a pleasant surprise from someone special.' },
-            career: { score: '80%', text: 'New opportunities are on the horizon. Stay focused and trust your instincts.' },
-            money: { score: '70%', text: 'Avoid impulsive purchases today. A steady approach will bring financial stability.' },
-            health: { score: '85%', text: 'Your energy levels are high. Channel it into a productive workout or creative hobby.' },
-            travel: { score: '60%', text: 'Short trips are favorable, but double-check your plans to avoid minor delays.' }
-          });
-          setLoading(false);
-        }, 1000);
+        setHoroscopeData(null);
+        setLoading(false);
       }
     };
     fetchHoroscope();
@@ -122,75 +109,86 @@ const Horoscope = () => {
         </div>
 
         {/* ═══ HIGHLIGHT CARD ═══ */}
-        <div className="bg-gradient-to-br from-orange-500 to-orange-400 rounded-3xl p-6 relative overflow-hidden shadow-lg mb-8">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-600/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4" />
-          
-          <div className="text-center mb-5 relative z-10">
-            <span className="text-orange-100 text-[11px] tracking-widest font-bold uppercase">—— {horoscopeData?.date || 'Loading...'} ——</span>
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
-          
-          <h2 className="text-white text-[20px] font-bold mb-6 relative z-10 w-2/3 leading-tight">Your Daily horoscope is ready!</h2>
-          
-          <div className="grid grid-cols-2 gap-y-5 relative z-10 w-2/3">
-            <div>
-              <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Colours</p>
-              <div className="flex gap-2">
-                {(horoscopeData?.luckyColors || ['#f97316', '#fbbf24']).map((color, i) => (
-                  <div key={i} className="w-5 h-5 rounded-full shadow-sm border border-white/30" style={{ backgroundColor: color }} />
-                ))}
+        ) : !horoscopeData ? (
+          <div className="bg-orange-50 text-orange-600 text-center py-10 rounded-2xl font-bold border border-orange-100 mb-8">
+            Horoscope data is currently unavailable. Please try again later.
+          </div>
+        ) : (
+          <>
+            <div className="bg-gradient-to-br from-orange-500 to-orange-400 rounded-3xl p-6 relative overflow-hidden shadow-lg mb-8">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-orange-600/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4" />
+              
+              <div className="text-center mb-5 relative z-10">
+                <span className="text-orange-100 text-[11px] tracking-widest font-bold uppercase">—— {horoscopeData?.date || 'Loading...'} ——</span>
               </div>
-            </div>
-            <div>
-              <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Mood</p>
-              <span className="text-2xl drop-shadow-sm">{horoscopeData?.mood || '🤩'}</span>
-            </div>
-            <div>
-              <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Number</p>
-              <p className="text-white font-black text-[22px] drop-shadow-sm">{horoscopeData?.luckyNumber || '9'}</p>
-            </div>
-            <div>
-              <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Time</p>
-              <p className="text-white font-bold text-[16px] drop-shadow-sm mt-1">{horoscopeData?.luckyTime || '06:15 PM'}</p>
-            </div>
-          </div>
-
-          <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-40 h-40">
-            <div className="absolute inset-0 rounded-full border-2 border-white/20 border-t-white/60 transform rotate-45" />
-            <div className="w-28 h-28 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full shadow-lg border-4 border-orange-300 flex items-center justify-center text-6xl text-orange-500 font-bold z-10">
-              {signs.find(s => s.name === selectedSign)?.icon || '♈'}
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ CATEGORIES ═══ */}
-        <h2 className="text-[17px] font-bold text-gray-800 mb-4">Daily Horoscope</h2>
-
-        <div className="space-y-4 mb-8">
-          {[
-            { id: 'love', label: 'Love', icon: FiHeart, color: 'text-pink-500' },
-            { id: 'career', label: 'Career', icon: FiBriefcase, color: 'text-orange-500' },
-            { id: 'money', label: 'Money', icon: FiCreditCard, color: 'text-green-500' },
-            { id: 'health', label: 'Health', icon: FiActivity, color: 'text-blue-500' },
-            { id: 'travel', label: 'Travel', icon: FiNavigation, color: 'text-purple-500' }
-          ].map((cat) => (
-            <div key={cat.id} className="bg-white border border-gray-100 rounded-2xl p-5 relative overflow-hidden shadow-card">
-              {loading && <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex items-center justify-center"><div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /></div>}
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  <cat.icon className={cat.color} size={18} />
-                  <span className="text-[15px] font-bold text-gray-800">{cat.label}</span>
+              
+              <h2 className="text-white text-[20px] font-bold mb-6 relative z-10 w-2/3 leading-tight">Your Daily horoscope is ready!</h2>
+              
+              <div className="grid grid-cols-2 gap-y-5 relative z-10 w-2/3">
+                <div>
+                  <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Colours</p>
+                  <div className="flex gap-2">
+                    {(horoscopeData?.luckyColors || ['#f97316', '#fbbf24']).map((color, i) => (
+                      <div key={i} className="w-5 h-5 rounded-full shadow-sm border border-white/30" style={{ backgroundColor: color }} />
+                    ))}
+                  </div>
                 </div>
-                <span className="text-orange-500 font-bold text-[13px] bg-orange-50 px-2.5 py-0.5 rounded-full">
-                  {horoscopeData?.[cat.id]?.score || '100%'}
-                </span>
+                <div>
+                  <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Mood</p>
+                  <span className="text-2xl drop-shadow-sm">{horoscopeData?.mood || '🤩'}</span>
+                </div>
+                <div>
+                  <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Number</p>
+                  <p className="text-white font-black text-[22px] drop-shadow-sm">{horoscopeData?.luckyNumber || '9'}</p>
+                </div>
+                <div>
+                  <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Time</p>
+                  <p className="text-white font-bold text-[16px] drop-shadow-sm mt-1">{horoscopeData?.luckyTime || '06:15 PM'}</p>
+                </div>
               </div>
-              <p className="text-gray-600 text-[13px] leading-relaxed">
-                {horoscopeData?.[cat.id]?.text || 'Loading...'}
-              </p>
+
+              <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-40 h-40">
+                <div className="absolute inset-0 rounded-full border-2 border-white/20 border-t-white/60 transform rotate-45" />
+                <div className="w-28 h-28 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-full shadow-lg border-4 border-orange-300 flex items-center justify-center text-6xl text-orange-500 font-bold z-10">
+                  {signs.find(s => s.name === selectedSign)?.icon || '♈'}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
+
+            {/* ═══ CATEGORIES ═══ */}
+            <h2 className="text-[17px] font-bold text-gray-800 mb-4">Daily Horoscope</h2>
+
+            <div className="space-y-4 mb-8">
+              {[
+                { id: 'love', label: 'Love', icon: FiHeart, color: 'text-pink-500' },
+                { id: 'career', label: 'Career', icon: FiBriefcase, color: 'text-orange-500' },
+                { id: 'money', label: 'Money', icon: FiCreditCard, color: 'text-green-500' },
+                { id: 'health', label: 'Health', icon: FiActivity, color: 'text-blue-500' },
+                { id: 'travel', label: 'Travel', icon: FiNavigation, color: 'text-purple-500' }
+              ].map((cat) => (
+                <div key={cat.id} className="bg-white border border-gray-100 rounded-2xl p-5 relative overflow-hidden shadow-card">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <cat.icon className={cat.color} size={18} />
+                      <span className="text-[15px] font-bold text-gray-800">{cat.label}</span>
+                    </div>
+                    <span className="text-orange-500 font-bold text-[13px] bg-orange-50 px-2.5 py-0.5 rounded-full">
+                      {horoscopeData?.[cat.id]?.score || '100%'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-[13px] leading-relaxed">
+                    {horoscopeData?.[cat.id]?.text || 'Loading...'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* ═══ QUOTE OF THE DAY ═══ */}
         <div className="bg-gray-900 rounded-2xl p-6 relative overflow-hidden mb-8 border border-orange-200/20 shadow-lg">

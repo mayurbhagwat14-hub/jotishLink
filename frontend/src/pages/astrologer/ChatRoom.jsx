@@ -82,8 +82,9 @@ const ChatRoom = () => {
 
         socket.on('session_ended', ({ reason, durationSeconds }) => {
           const earned = Math.floor(durationSeconds / 60) * (astrologer?.rate || 5);
-          alert(`Session ended. Duration: ${Math.floor(durationSeconds/60)} min. Estimated earning: ₹${earned}`);
-          navigate('/astrologer/chats');
+          setEndSessionInfo({
+            message: `Session ended. Duration: ${Math.floor(durationSeconds/60)} min. Estimated earning: ₹${earned}`
+          });
         });
 
       } catch (err) {

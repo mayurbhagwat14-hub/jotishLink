@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
 import { updateUser } from '../../store/slices/authSlice';
+import api from '../../api/axios';
 
 let socket;
 
@@ -39,8 +40,17 @@ const UserChatRoom = () => {
   const messagesEndRef = useRef(null);
   const viewOnly = location.state?.viewOnly || false;
   
-  // Use the roomId from state (if passed from Astrologers acceptance), else generate one
-  const [roomId] = useState(() => location.state?.roomId || `room_${user?._id}_${astrologer._id || 'bot'}_${Date.now()}`);
+  const [roomId] = useState(() => {
+    if (location.state?.roomId) return location.state.roomId;
+    if (isBotSession) return `room_${user?._id}_bot_${Date.now()}`;
+    return null;
+  });
+
+  useEffect(() => {
+    if (!roomId && !isBotSession) {
+      navigate('/user/astrologers');
+    }
+  }, [roomId, isBotSession, navigate]);
 
   useEffect(() => {
     if (viewOnly) return; // Do not connect socket in viewOnly mode
@@ -168,7 +178,7 @@ Problem area: General (Please ask your question)`;
     // Don't navigate immediately — wait for 'session_ended' event
   };
 
-  const handleRequestCall = (type) => {
+  const handleRequestCall = async (type) => {
     const rate = type === 'video'
       ? (astrologer.pricing?.videoCall || (astrologer.rate ? astrologer.rate * 2 : 10))
       : (astrologer.pricing?.audioCall || astrologer.rate || 5);
@@ -182,13 +192,20 @@ Problem area: General (Please ask your question)`;
       return;
     }
 
-    navigate('/user/waiting', {
-      state: {
-        astrologer: astrologer,
-        type: type,
-        callId: null // audio call from here might need callId generation if we want, but UserChatRoom doesn't do it currently. Let's pass null.
-      }
-    });
+    try {
+      const res = await api.post('/calls/request', { astrologerId: astrologer._id || astrologer.userId });
+      const { callId } = res.data.data.callSession;
+
+      navigate('/user/waiting', {
+        state: {
+          astrologer: astrologer,
+          type: type,
+          callId
+        }
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate call');
+    }
   };
 
   const formatTime = (totalSeconds) => {

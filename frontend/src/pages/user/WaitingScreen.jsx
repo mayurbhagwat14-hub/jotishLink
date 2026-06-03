@@ -39,9 +39,9 @@ const WaitingScreen = () => {
         if (type === 'chat') {
           navigate('/user/chat', { state: { roomId, astrologer, startWithBot: false } });
         } else if (type === 'audio') {
-          navigate(`/user/video-room/${roomId}?type=audio`, { state: { astrologer } });
+          navigate(`/user/video-room/${roomId}?type=audio`, { state: { astrologer, callId } });
         } else if (type === 'video') {
-          navigate(`/user/video-room/${roomId}?type=video`, { state: { astrologer } });
+          navigate(`/user/video-room/${roomId}?type=video`, { state: { astrologer, callId } });
         }
       }, 1000);
     };

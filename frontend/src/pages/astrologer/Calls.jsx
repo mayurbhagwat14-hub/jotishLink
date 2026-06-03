@@ -25,30 +25,25 @@ const Calls = () => {
   ];
 
   const handleAccept = async (req) => {
-    if (req.type === 'audio') {
-      try {
-        const res = await api.post('/calls/accept', { callId: req.callId });
-        const { agora } = res.data.data;
-        
-        const socket = getSocket();
-        socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
-        dispatch(removeIncomingRequest(req.roomId));
-        dispatch(addActiveSession({ ...req, status: 'active', agora }));
-        
-        navigate(`/astrologer/video-room/${req.roomId}?type=audio`, { state: { session: req, agora } });
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Failed to accept call');
-      }
-      return;
-    }
-
-    const socket = getSocket();
-    socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
-    dispatch(removeIncomingRequest(req.roomId));
-    dispatch(addActiveSession({ ...req, status: 'active' }));
+    setProcessingId(req.roomId);
     
-    if (req.type === 'video') {
-      navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req } });
+    try {
+      const res = await api.post('/calls/accept', { callId: req.callId });
+      const { agora } = res.data.data;
+      
+      const socket = getSocket();
+      socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
+      dispatch(removeIncomingRequest(req.roomId));
+      dispatch(addActiveSession({ ...req, status: 'active', agora }));
+      
+      if (req.type === 'audio') {
+        navigate(`/astrologer/video-room/${req.roomId}?type=audio`, { state: { session: req, agora } });
+      } else {
+        navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req, agora } });
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to accept call');
+      setProcessingId(null);
     }
   };
 
@@ -163,7 +158,7 @@ const Calls = () => {
                  </div>
                   {session.type === 'video' || session.type === 'audio' ? (
                    <button 
-                     onClick={() => navigate(`/astrologer/video-room/${session.roomId}`, { state: { session, agora: session.agora } })}
+                     onClick={() => navigate(`/astrologer/video-room/${session.roomId}${session.type === 'audio' ? '?type=audio' : ''}`, { state: { session, agora: session.agora } })}
                      className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl shadow-md shadow-orange-500/20 flex items-center justify-center gap-1.5 transition-colors text-xs relative z-10"
                    >
                      {session.type === 'video' ? <FiVideo size={14} /> : <FiPhone size={14} />} Join Room

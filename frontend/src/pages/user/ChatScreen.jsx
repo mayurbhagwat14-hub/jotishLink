@@ -7,6 +7,8 @@ import { FaRupeeSign, FaStar } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 import LowBalanceModal from '../../components/LowBalanceModal';
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 
 // No mock data
 
@@ -28,10 +30,6 @@ const ChatScreen = () => {
   const { astrologers: reduxAstrologers } = useSelector((state) => state.user);
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const [selectedAstrologer, setSelectedAstrologer] = useState(null);
-  const [showRateModal, setShowRateModal] = useState(false);
-  const [rateStars, setRateStars] = useState(0);
-  const [rateComment, setRateComment] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   
   const [showLowBalance, setShowLowBalance] = useState(false);
@@ -49,7 +47,7 @@ const ChatScreen = () => {
     avatar: astro.avatar || 'https://i.pravatar.cc/150?u=' + astro.name
   }));
 
-  const handleSessionRequest = (astro, type) => {
+  const handleSessionRequest = async (astro, type) => {
     // 1. Check auth
     if (!isAuthenticated) return navigate('/user/login');
     
@@ -66,18 +64,25 @@ const ChatScreen = () => {
       return;
     }
     
-    // 3. Navigate to WaitingScreen
-    navigate('/user/waiting', {
-      state: { astrologer: astro, type }
-    });
+    // 3. Navigate to WaitingScreen with callId if applicable
+    if (type === 'audio' || type === 'video') {
+      try {
+        const res = await api.post('/calls/request', { astrologerId: astro._id || astro.userId });
+        const { callId } = res.data.data.callSession;
+        navigate('/user/waiting', {
+          state: { astrologer: astro, type, callId }
+        });
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to initiate call');
+      }
+    } else {
+      navigate('/user/waiting', {
+        state: { astrologer: astro, type }
+      });
+    }
   };
 
-  const submitRating = () => {
-    console.log('Rating submitted:', { astrologer: selectedAstrologer?.name, stars: rateStars, comment: rateComment });
-    setShowRateModal(false);
-    setRateStars(0);
-    setRateComment('');
-  };
+
 
   return (
     <div className="w-full bg-white min-h-screen font-sans pb-20">
@@ -194,74 +199,6 @@ const ChatScreen = () => {
         ))}
       </div>
 
-      {/* ═══ RATE ASTROLOGER MODAL ═══ */}
-      {showRateModal && selectedAstrologer && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center px-6 animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-in">
-            {/* Close button */}
-            <div className="flex justify-end p-3">
-              <button onClick={() => setShowRateModal(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-                <FiX size={18} className="text-gray-500" />
-              </button>
-            </div>
-
-            {/* Astrologer Info */}
-            <div className="flex flex-col items-center px-6 pb-4">
-              <h3 className="text-[18px] font-bold text-gray-800 mb-1">Rate Astrologer</h3>
-              <div className="flex items-center gap-3 mt-4 mb-2">
-                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-orange-200">
-                  <img src={selectedAstrologer.avatar} alt={selectedAstrologer.name} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">{selectedAstrologer.name}</h4>
-                  <p className="text-[12px] text-gray-400">{selectedAstrologer.skills?.slice(0, 2).join(', ')}</p>
-                </div>
-              </div>
-
-              <p className="text-gray-500 text-[13px] text-center my-3">
-                Welcome diya bolo! If you are not anonymous it looks more trust worthy.
-              </p>
-
-              {/* Stars */}
-              <div className="flex gap-2 my-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setRateStars(star)}
-                    className="transition-transform hover:scale-110 active:scale-95"
-                  >
-                    <FaStar
-                      size={32}
-                      className={star <= rateStars ? 'text-orange-400' : 'text-gray-200'}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {/* Comment */}
-              <textarea
-                value={rateComment}
-                onChange={(e) => setRateComment(e.target.value)}
-                placeholder="Describe your experience (optional)"
-                className="w-full border-2 border-gray-200 rounded-xl p-3 text-[14px] outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-50 resize-none h-24 mt-2 transition-all"
-              />
-
-              {/* Submit */}
-              <button
-                onClick={submitRating}
-                disabled={rateStars === 0}
-                className={`w-full py-3.5 rounded-xl font-bold text-[15px] mt-4 mb-2 transition-all ${
-                  rateStars > 0
-                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                SUBMIT
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <LowBalanceModal 
         isOpen={showLowBalance} 

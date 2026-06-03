@@ -97,7 +97,7 @@ const AstrologerLayout = () => {
             className="flex items-center gap-2 hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors text-left"
           >
              <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0">
-                <img src="https://i.pravatar.cc/150?u=astrologer1" alt="Astrologer" className="w-full h-full object-cover" />
+                <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
              </div>
              <div>
                <h3 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[120px]">{user?.name || 'Astrologer'}</h3>
@@ -146,7 +146,7 @@ const AstrologerLayout = () => {
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-orange-50/50">
               <div className="flex items-center gap-3">
                  <div className="w-10 h-10 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0 shadow-sm">
-                    <img src="https://i.pravatar.cc/150?u=astrologer1" alt="Astrologer" className="w-full h-full object-cover" />
+                    <img src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
                  </div>
                  <div>
                    <h3 className="font-bold text-gray-900 leading-tight">{user?.name || 'Astrologer'}</h3>

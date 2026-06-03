@@ -8,6 +8,8 @@ import { FaRupeeSign } from 'react-icons/fa';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 import { addWalletCash } from '../../store/slices/authSlice';
 import getSocket from '../../socket/socketManager';
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 
 const categories = [
   { name: 'All', icon: <BiCategoryAlt />, active: true },
@@ -44,7 +46,7 @@ const VideoCallList = () => {
     return () => {  };
   }, [dispatch]);
 
-  const handleSessionRequest = (astro, type) => {
+  const handleSessionRequest = async (astro, type) => {
     // 1. Check auth
     if (!isAuthenticated) return navigate('/user/login');
     
@@ -61,10 +63,22 @@ const VideoCallList = () => {
       return;
     }
     
-    // 3. Navigate to WaitingScreen
-    navigate('/user/waiting', {
-      state: { astrologer: astro, type }
-    });
+    // 3. Navigate to WaitingScreen with callId if applicable
+    if (type === 'audio' || type === 'video') {
+      try {
+        const res = await api.post('/calls/request', { astrologerId: astro._id || astro.userId });
+        const { callId } = res.data.data.callSession;
+        navigate('/user/waiting', {
+          state: { astrologer: astro, type, callId }
+        });
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to initiate call');
+      }
+    } else {
+      navigate('/user/waiting', {
+        state: { astrologer: astro, type }
+      });
+    }
   };
 
   const handleRecharge = () => {

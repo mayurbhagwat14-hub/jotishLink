@@ -369,10 +369,26 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('session_ended', {
       reason: `${endedBy}_ended`,
       durationSeconds: timerData?.seconds || 0,
+      sessionId: finalSessionId,
     });
+
+    // Also notify astrologer's personal room in case they're not in the chat room
+    try {
+      if (finalSessionId) {
+        const sessionForAstro = await ChatSession.findById(finalSessionId);
+        if (sessionForAstro?.astrologerId) {
+          io.to(`astro_${sessionForAstro.astrologerId}`).emit('session_ended', {
+            reason: `${endedBy}_ended`,
+            durationSeconds: timerData?.seconds || 0,
+            sessionId: finalSessionId,
+          });
+        }
+      }
+    } catch (e) { console.error('Error notifying astro:', e.message); }
 
     // Mark session complete
     try {
+      if (!finalSessionId) return;
       const session = await ChatSession.findById(finalSessionId);
       if (session && session.status === 'ongoing') {
         session.status = 'completed';
@@ -405,8 +421,8 @@ io.on('connection', (socket) => {
     console.log(`[Socket.IO] Session ended for room ${roomId}`);
   });
 
-  // ── Audio Call Wallet & Auto Disconnect Loop ──
-  socket.on('start_audio_call', async ({ roomId, callId, userId, astrologerRate }) => {
+  // ── Call Wallet & Auto Disconnect Loop ──
+  socket.on('start_call', async ({ roomId, callId, userId, astrologerRate, type = 'audio' }) => {
     if (activeTimers.has(roomId)) return;
 
     let seconds = 0;
@@ -439,29 +455,29 @@ io.on('connection', (socket) => {
               await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
             }
           } else {
-            await WalletService.deduct(userId, astrologerRate, `Audio Call - 1 min`);
+            await WalletService.deduct(userId, astrologerRate, `${type === 'video' ? 'Video' : 'Audio'} Call - 1 min`);
             try {
               const sys = await SystemSettings.findOne();
               const comm = sys ? sys.commissionPercent : 30;
               const { CallSession } = await import('./models/callSession.model.js');
               const sessionDoc = await CallSession.findOne({ callId });
               if (sessionDoc) {
-                await WalletService.creditAstrologer(sessionDoc.astrologerId, astrologerRate, "Audio Call earning - 1 min", comm);
+                await WalletService.creditAstrologer(sessionDoc.astrologerId, astrologerRate, `${type === 'video' ? 'Video' : 'Audio'} Call earning - 1 min`, comm);
               }
             } catch (e) { console.error(e); }
             io.to(roomId).emit('wallet_update', { deducted: astrologerRate, newBalance: user.wallet - astrologerRate });
           }
         } catch (err) {
-          console.error('[Socket.IO] Audio Call Billing error:', err.message);
+          console.error('[Socket.IO] Call Billing error:', err.message);
         }
       }
     }, 1000);
 
-    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type: 'audio' });
-    console.log(`[Socket.IO] Audio Call Timer started for room ${roomId}`);
+    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type });
+    console.log(`[Socket.IO] ${type} Call Timer started for room ${roomId}`);
   });
 
-  socket.on('end_audio_call', async ({ roomId, callId }) => {
+  socket.on('end_call', async ({ roomId, callId }) => {
     const timerData = activeTimers.get(roomId);
     if (timerData) {
       clearInterval(timerData.intervalId);
@@ -497,9 +513,9 @@ io.on('connection', (socket) => {
         await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
       }
     } catch (err) {
-      console.error('[Socket.IO] Audio Call end error:', err.message);
+      console.error('[Socket.IO] Call end error:', err.message);
     }
-    console.log(`[Socket.IO] Audio Call ended for room ${roomId}`);
+    console.log(`[Socket.IO] Call ended for room ${roomId}`);
   });
 
   // ── Astrologer status update

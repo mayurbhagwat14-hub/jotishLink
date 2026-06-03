@@ -19,18 +19,8 @@ const Panchang = () => {
         setLoading(false);
       } catch (error) {
         console.error(error);
-        setTimeout(() => {
-          setResult({
-            sunrise: '06:12 AM',
-            sunset: '06:45 PM',
-            tithi: 'Shukla Paksha Dwitiya',
-            nakshatra: 'Rohini',
-            yoga: 'Ayushman',
-            karana: 'Kaulava',
-            rahuKaal: '09:00 AM - 10:30 AM'
-          });
-          setLoading(false);
-        }, 1000);
+        setResult({ error: 'Failed to fetch Panchang. Please try again later.' });
+        setLoading(false);
       }
     };
     fetchPanchang();
@@ -68,6 +58,10 @@ const Panchang = () => {
           <div className="flex flex-col items-center justify-center py-20">
             <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mb-4" />
             <p className="text-gray-500 font-medium text-[15px]">Loading cosmic data...</p>
+          </div>
+        ) : result && result.error ? (
+          <div className="bg-red-50 text-red-600 text-center py-6 rounded-2xl font-bold border border-red-100 animate-fade-in mb-8">
+            {result.error}
           </div>
         ) : result ? (
           <div className="bg-white rounded-3xl p-6 md:p-8 shadow-card border border-orange-100">

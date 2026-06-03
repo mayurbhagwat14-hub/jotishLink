@@ -39,18 +39,8 @@ const Kundli = () => {
       setLoading(false);
     } catch (error) {
       console.error(error);
-      // Dummy data for demo
-      setTimeout(() => {
-        setResult({
-          name: formData.name,
-          ascendant: 'Aries',
-          moonSign: 'Taurus',
-          nakshatra: 'Rohini',
-          isManglik: false,
-          summary: 'You have a strong placement of Mars which indicates high energy and leadership qualities. Your moon sign suggests emotional stability.'
-        });
-        setLoading(false);
-      }, 1500);
+      setResult({ error: 'Failed to generate Kundli. Please try again later.' });
+      setLoading(false);
     }
   };
 
@@ -132,7 +122,13 @@ const Kundli = () => {
           </form>
         </div>
 
-        {result && (
+        {result && result.error && (
+          <div className="bg-red-50 text-red-600 text-center py-6 rounded-2xl font-bold border border-red-100 animate-fade-in mb-8">
+            {result.error}
+          </div>
+        )}
+
+        {result && !result.error && (
           <div className="bg-gradient-to-br from-orange-50 to-white rounded-3xl p-6 md:p-8 border border-orange-100 shadow-card animate-fade-in">
             <h2 className="text-[20px] font-bold text-gray-900 mb-6 text-center border-b border-orange-100 pb-4">Kundli for {result.name}</h2>
             

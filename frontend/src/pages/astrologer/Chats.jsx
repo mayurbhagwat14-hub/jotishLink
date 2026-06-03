@@ -30,7 +30,7 @@ const Chats = () => {
     
     // Navigate immediately
     if (req.type === 'chat') {
-      navigate('/astrologer/chat/new', { state: { roomId: req.roomId, userId: req.userId, userName: req.userName } });
+      navigate(`/astrologer/chat/${req.roomId}`, { state: { roomId: req.roomId, userId: req.userId, userName: req.userName } });
     }
   };
 

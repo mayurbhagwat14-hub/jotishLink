@@ -9,6 +9,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import SmsService from '../services/sms.service.js';
+import { uploadMedia, deleteMedia } from '../config/cloudinary.js';
 
 const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
@@ -117,8 +118,26 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     astrologer.otpExpires = undefined;
     astrologer.skills = skills || ['Vedic'];
     astrologer.categories = categories || [];
-    astrologer.identityProof = identityProof || '';
-    astrologer.avatar = avatar || '';
+    let uploadedIdentity = identityProof || '';
+    let identityPubId = '';
+    if (uploadedIdentity.startsWith('data:image')) {
+      const result = await uploadMedia(uploadedIdentity, 'astrotalk_astrologers');
+      uploadedIdentity = result.url;
+      identityPubId = result.publicId;
+    }
+
+    let uploadedAvatar = avatar || '';
+    let avatarPubId = '';
+    if (uploadedAvatar.startsWith('data:image')) {
+      const result = await uploadMedia(uploadedAvatar, 'astrotalk_astrologers');
+      uploadedAvatar = result.url;
+      avatarPubId = result.publicId;
+    }
+
+    astrologer.identityProof = uploadedIdentity;
+    astrologer.identityProofPublicId = identityPubId;
+    astrologer.avatar = uploadedAvatar;
+    astrologer.avatarPublicId = avatarPubId;
     astrologer.languages = languages || ['Hindi', 'English'];
     astrologer.experience = experience || 0;
     astrologer.about = about || '';
@@ -234,7 +253,18 @@ export const updateAstrologerProfile = asyncHandler(async (req, res) => {
     if (pricing.videoCall !== undefined && pricing.videoCall < 5) throw new ApiError(400, 'Minimum video call price is ₹5/min');
     astrologer.pricing = { ...astrologer.pricing, ...pricing };
   }
-  if (avatar !== undefined) astrologer.avatar = avatar;
+  if (avatar !== undefined) {
+    if (avatar.startsWith('data:image')) {
+      if (astrologer.avatarPublicId) {
+        await deleteMedia(astrologer.avatarPublicId);
+      }
+      const uploadResult = await uploadMedia(avatar, 'astrotalk_astrologers');
+      astrologer.avatar = uploadResult.url;
+      astrologer.avatarPublicId = uploadResult.publicId;
+    } else {
+      astrologer.avatar = avatar;
+    }
+  }
 
   await astrologer.save();
   return res.status(200).json(new ApiResponse(200, { astrologer }, 'Profile updated'));

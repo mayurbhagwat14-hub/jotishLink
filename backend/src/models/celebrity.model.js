@@ -16,6 +16,9 @@ const celebritySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    cloudinaryPublicId: {
+      type: String,
+    },
     isActive: {
       type: Boolean,
       default: true,

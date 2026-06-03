@@ -3,7 +3,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiCalendar, FiClock, FiVideo } from 'react-icons/fi';
 import getSocket from '../../socket/socketManager';
-
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 const VideoCallBookingForm = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -41,20 +42,28 @@ const VideoCallBookingForm = () => {
     );
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated || user?.name === 'Guest User') {
       navigate('/user/login');
       return;
     }
     
-    navigate('/user/waiting', {
-      state: {
-        astrologer: astrologer,
-        type: 'video',
-        scheduled: formData
-      }
-    });
+    try {
+      const res = await api.post('/calls/request', { astrologerId: astrologer._id || astrologer.userId });
+      const { callId } = res.data.data.callSession;
+      
+      navigate('/user/waiting', {
+        state: {
+          astrologer: astrologer,
+          type: 'video',
+          scheduled: formData,
+          callId
+        }
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate booking');
+    }
   };
 
   const isFormValid = formData.date && formData.time;

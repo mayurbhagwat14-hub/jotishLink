@@ -54,13 +54,22 @@ const astrologerSchema = new mongoose.Schema(
       type: [String],
       default: ['Hindi', 'English'],
     },
-    categories: {
-      type: [String],
-      default: [],
+    avatar: {
+      type: String,
+      default: '',
+    },
+    avatarPublicId: {
+      type: String,
     },
     identityProof: {
       type: String,
-      default: '',
+    },
+    identityProofPublicId: {
+      type: String,
+    },
+    categories: {
+      type: [String],
+      default: [],
     },
     experience: {
       type: Number,

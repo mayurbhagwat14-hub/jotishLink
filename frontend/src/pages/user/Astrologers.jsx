@@ -81,7 +81,7 @@ const Astrologers = () => {
     }
   }, [socket, astrologers, state, navigate]);
 
-  const handleSessionRequest = (astro, type) => {
+  const handleSessionRequest = async (astro, type) => {
     // 1. Check auth
     if (!isAuthenticated) return navigate('/user/login');
     
@@ -105,10 +105,22 @@ const Astrologers = () => {
       return;
     }
     
-    // 3. Navigate to WaitingScreen
-    navigate('/user/waiting', {
-      state: { astrologer: astro, type }
-    });
+    // 3. Navigate to WaitingScreen with callId if applicable
+    if (type === 'audio' || type === 'video') {
+      try {
+        const res = await api.post('/calls/request', { astrologerId: astro._id || astro.userId?._id || astro.userId });
+        const { callId } = res.data.data.callSession;
+        navigate('/user/waiting', {
+          state: { astrologer: astro, type, callId }
+        });
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to initiate call');
+      }
+    } else {
+      navigate('/user/waiting', {
+        state: { astrologer: astro, type }
+      });
+    }
   };
 
   const filteredAstrologers = astrologers.filter(a => {

@@ -56,10 +56,7 @@ const initialState = {
   userHome: {
     services: [],
     celebrities: [],
-    blogs: [
-      { title: "Top 5 Zodiac Signs Having Ability to Rise...", img: '/blog_ai.png' },
-      { title: "Top 5 Zodiac Signs Having Ability to Rise...", img: '/blog_mars.png' },
-    ],
+    blogs: [],
     liveAstrologers: [],
     activeSession: null,
   },

@@ -12,6 +12,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import WalletService from '../services/wallet.service.js';
+import { uploadMedia, deleteMedia } from '../config/cloudinary.js';
 
 // GET /api/user/profile
 export const getUserProfile = asyncHandler(async (req, res) => {
@@ -32,7 +33,20 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   if (dob !== undefined) user.dob = dob;
   if (timeOfBirth !== undefined) user.timeOfBirth = timeOfBirth;
   if (placeOfBirth !== undefined) user.placeOfBirth = placeOfBirth;
-  if (avatar !== undefined) user.avatar = avatar;
+  
+  if (avatar !== undefined) {
+    if (avatar.startsWith('data:image')) {
+      if (user.avatarPublicId) {
+        await deleteMedia(user.avatarPublicId);
+      }
+      const uploadResult = await uploadMedia(avatar, 'astrotalk_users');
+      user.avatar = uploadResult.url;
+      user.avatarPublicId = uploadResult.publicId;
+    } else {
+      user.avatar = avatar;
+    }
+  }
+  
   if (address !== undefined) user.address = address;
   if (city !== undefined) user.city = city;
   if (pincode !== undefined) user.pincode = pincode;
