@@ -682,9 +682,12 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api', callRoutes);
 
-// Health check
+// Health check & Root
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'JyotishLink Backend API is running perfectly!', status: 'ok' });
 });
 
 // 404 handler
