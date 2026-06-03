@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiChevronLeft, FiChevronRight, FiCreditCard, FiSmartphone, FiX } from 'react-icons/fi';
 import { BiBuildingHouse } from 'react-icons/bi';
-import { addWalletCash } from '../../store/slices/authSlice';
-import axios from '../../utils/axios';
+import { fetchProfileThunk } from '../../store/slices/authSlice';
+import { fetchWalletThunk } from '../../store/slices/walletSlice';
+import api from '../../api/axios';
+import toast from 'react-hot-toast';
 
 const PaymentInformation = () => {
   const navigate = useNavigate();
@@ -18,43 +20,84 @@ const PaymentInformation = () => {
   
   const [selectedMethod, setSelectedMethod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showRazorpayMock, setShowRazorpayMock] = useState(false);
 
-  const handlePayment = () => {
-    if (!selectedMethod) return;
-    setIsProcessing(true);
-    // Simulate opening the Razorpay Checkout Modal
-    setTimeout(() => {
-      setIsProcessing(false);
-      setShowRazorpayMock(true);
-    }, 800);
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
   };
 
-  const handleMockSuccess = async () => {
-    setIsProcessing(true);
-    setShowRazorpayMock(false);
-    try {
-      // Call backend to verify and credit the user's wallet in MongoDB
-      const res = await axios.post('/payment/verify', {
-        razorpay_order_id: `order_mock_${Date.now()}`,
-        razorpay_payment_id: `pay_mock_${Date.now()}`,
-        razorpay_signature: 'mock_signature_bypass',
-        amount: amount
-      });
+  const handlePayment = async () => {
+    if (!selectedMethod) return;
 
-      if (res.data?.success) {
-        // Credit the local Redux store balance
-        dispatch(addWalletCash(amount));
-        const redirectTo = location.state?.redirectTo || '/user/home';
-        navigate(redirectTo, { replace: true, state: { paymentSuccess: true } });
-      } else {
-        alert('Payment verification failed on the server.');
+    setIsProcessing(true);
+    try {
+      const isScriptLoaded = await loadRazorpayScript();
+      if (!isScriptLoaded) {
+        toast.error('Failed to load Razorpay SDK. Check your connection.');
+        setIsProcessing(false);
+        return;
       }
-    } catch (err) {
-      console.error('Bypass verification failed, applying locally:', err.message);
-      dispatch(addWalletCash(amount));
-      const redirectTo = location.state?.redirectTo || '/user/home';
-      navigate(redirectTo, { replace: true, state: { paymentSuccess: true } });
+
+      // 1. Create order on backend (for the total amount including GST)
+      const { data } = await api.post('/payment/create-order', { amount: total });
+      const order = data.data;
+
+      // 2. Initialize Razorpay options using dynamic key
+      const options = {
+        key: order.key, // Dynamic from API response
+        amount: order.amount,
+        currency: order.currency,
+        name: 'JyotishLink',
+        description: 'Wallet Recharge with GST',
+        order_id: order.orderId,
+        handler: async function (response) {
+          try {
+            // 3. Verify payment on backend (credit the base amount to wallet)
+            await api.post('/payment/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              amount: Number(amount), // Only credit the base amount
+            });
+            toast.success('Payment successful! Wallet recharged.');
+            // Refresh profile and wallet to get updated balance
+            dispatch(fetchProfileThunk());
+            dispatch(fetchWalletThunk());
+            const redirectTo = location.state?.redirectTo || '/user/home';
+            navigate(redirectTo, { replace: true, state: { paymentSuccess: true } });
+          } catch (error) {
+            console.error('Payment verification failed:', error);
+            toast.error('Payment verification failed.');
+          }
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email,
+          contact: user?.phone,
+        },
+        theme: {
+          color: '#f97316', // Orange-500
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        console.error(response.error.description);
+        toast.error('Payment Failed');
+      });
+      rzp.open();
+    } catch (error) {
+      console.error('Error initiating payment:', error);
+      toast.error('Failed to initiate payment. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -194,85 +237,6 @@ const PaymentInformation = () => {
           </button>
         </div>
       </div>
-
-      {/* ═══ MOCK RAZORPAY CHECKOUT MODAL ═══ */}
-      {showRazorpayMock && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in font-sans">
-          <div className="bg-[#1C2038] text-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-in border border-slate-700/50">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-800 bg-[#12162B] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center font-bold text-lg text-white">
-                  R
-                </div>
-                <div>
-                  <h3 className="font-bold text-[14px]">Razorpay Checkout</h3>
-                  <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider bg-blue-900/30 px-2 py-0.5 rounded">TEST MODE</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowRazorpayMock(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <FiX size={20} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Product Info */}
-              <div className="flex justify-between items-center bg-[#151930] p-4 rounded-2xl border border-slate-800">
-                <div>
-                  <span className="text-gray-400 text-xs">Paying to</span>
-                  <p className="font-bold text-sm text-gray-200">JyotishLink Services</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-gray-400 text-xs">Amount</span>
-                  <p className="font-extrabold text-[16px] text-blue-400">₹{total}</p>
-                </div>
-              </div>
-
-              {/* User details */}
-              <div className="space-y-3">
-                <div className="flex justify-between text-[13px] border-b border-slate-800 pb-2">
-                  <span className="text-gray-400">Phone</span>
-                  <span className="text-gray-200 font-medium">{user?.phone || '+91 9876543210'}</span>
-                </div>
-                <div className="flex justify-between text-[13px] border-b border-slate-800 pb-2">
-                  <span className="text-gray-400">Email</span>
-                  <span className="text-gray-200 font-medium">{user?.email || 'user@jyotishlink.com'}</span>
-                </div>
-              </div>
-
-              {/* Simulator Options */}
-              <div className="space-y-3 pt-2">
-                <p className="text-xs text-yellow-400 font-semibold text-center mb-1 bg-yellow-950/20 py-1.5 rounded-lg border border-yellow-900/30">
-                  ⚠️ Simulated Sandbox Payment Gateway
-                </p>
-                <button
-                  onClick={handleMockSuccess}
-                  className="w-full bg-green-500 hover:bg-green-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl transition-all shadow-md shadow-green-900/20 text-sm"
-                >
-                  SIMULATE PAYMENT SUCCESS
-                </button>
-                <button
-                  onClick={() => setShowRazorpayMock(false)}
-                  className="w-full bg-red-500/20 hover:bg-red-500/30 active:scale-[0.98] text-red-400 font-bold py-3 rounded-2xl transition-all border border-red-500/30 text-sm"
-                >
-                  SIMULATE PAYMENT FAILURE
-                </button>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 bg-[#12162B] text-center border-t border-slate-800">
-              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                🔒 Secured by Razorpay
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

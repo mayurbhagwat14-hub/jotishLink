@@ -27,6 +27,18 @@ export const fetchAstrologerDashboardThunk = createAsyncThunk(
   }
 );
 
+export const fetchAstrologerAnalyticsThunk = createAsyncThunk(
+  'dashboard/fetchAstrologerAnalytics',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await astrologerApis.getAstrologerAnalytics();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const fetchAdminDashboardThunk = createAsyncThunk(
   'dashboard/fetchAdmin',
   async (_, { rejectWithValue }) => {
@@ -54,6 +66,7 @@ const initialState = {
 
   // Astrologer Panel Dashboard
   astrologerDashboard: {},
+  astrologerAnalytics: {},
 
   // Admin Panel Dashboard
   adminDashboard: {},
@@ -97,6 +110,22 @@ const dashboardSlice = createSlice({
         }
       })
       .addCase(fetchAstrologerDashboardThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Astrologer Analytics Data
+      .addCase(fetchAstrologerAnalyticsThunk.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchAstrologerAnalyticsThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        const payload = action.payload?.data || action.payload;
+        if (payload && payload.analytics) {
+          state.astrologerAnalytics = payload.analytics;
+        }
+      })
+      .addCase(fetchAstrologerAnalyticsThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

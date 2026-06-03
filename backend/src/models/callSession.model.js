@@ -44,6 +44,10 @@ const callSessionSchema = new mongoose.Schema(
       enum: ['pending', 'ringing', 'accepted', 'rejected', 'missed', 'completed', 'cancelled'],
       default: 'pending',
     },
+    deletedByUser: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

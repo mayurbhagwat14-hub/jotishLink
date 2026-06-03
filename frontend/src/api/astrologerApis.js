@@ -17,3 +17,4 @@ export const getAstrologerCalls = () => axios.get('/astrologer/calls');
 export const deleteAstrologerAccount = () => axios.delete('/astrologer/profile/delete');
 export const updateAstrologerOnlineStatus = (status) => axios.put('/astrologer/status', { status });
 export const getAstrologerHistory = () => axios.get('/astrologer/history');
+export const getAstrologerAnalytics = () => axios.get('/astrologer/analytics');

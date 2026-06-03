@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiVideo, FiPhone, FiPaperclip, FiSend, FiArrowLeft } from 'react-icons/fi';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 import api from '../../api/axios';
 import { useSelector } from 'react-redux';
 
@@ -32,7 +32,7 @@ const ChatRoom = () => {
     const loadSession = async () => {
       try {
         const token = localStorage.getItem('accessToken');
-        const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+        const socket = getSocket();
         socketRef.current = socket;
 
         // If ID is a 24-char hex string, it's a MongoDB sessionId
@@ -80,18 +80,10 @@ const ChatRoom = () => {
           setTimer(seconds);
         });
 
-        socket.on('session_ended', (data) => {
-          if (data?.reason !== 'astrologer_ended') {
-            let message = 'Session has ended.';
-            if (data?.reason === 'user_ended') {
-              message = 'Chat has been ended by the User.';
-            } else if (data?.reason === 'insufficient_balance') {
-              message = 'Chat ended due to low user balance.';
-            }
-            setEndSessionInfo({ message });
-          } else {
-            navigate('/astrologer/chats');
-          }
+        socket.on('session_ended', ({ reason, durationSeconds }) => {
+          const earned = Math.floor(durationSeconds / 60) * (astrologer?.rate || 5);
+          alert(`Session ended. Duration: ${Math.floor(durationSeconds/60)} min. Estimated earning: ₹${earned}`);
+          navigate('/astrologer/chats');
         });
 
       } catch (err) {
@@ -104,7 +96,7 @@ const ChatRoom = () => {
     loadSession();
     
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      
     };
   }, [sessionId, navigate]);
 
@@ -129,15 +121,13 @@ const ChatRoom = () => {
   };
 
   const handleEndChat = () => {
-    if (socketRef.current && sessionData) {
-      socketRef.current.emit('end_session', { 
-        roomId: sessionData.roomId, 
-        sessionId: sessionData._id, 
-        userId: location.state?.userId || '', 
-        endedBy: 'astrologer' 
-      });
-    }
-    navigate('/astrologer/chats');
+    const socket = getSocket();
+    socket.emit('end_session', {
+      roomId: sessionData?.roomId || location.state?.roomId || sessionId,
+      sessionId: sessionData?._id,
+      userId: sessionData?.userId?._id || location.state?.userId,
+      endedBy: 'astrologer'
+    });
   };
 
   const formatTime = (seconds) => {

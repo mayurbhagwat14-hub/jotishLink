@@ -30,6 +30,7 @@ export const bookPooja = (data) => axios.post('/pooja/book', data);
 export const getUserPoojas = () => axios.get('/user/poojas');
 export const getUserSessions = () => axios.get('/user/sessions');
 export const getUserCalls = () => axios.get('/calls/history');
+export const deleteUserHistory = (data) => axios.post('/user/history/delete', data);
 
 // Tool APIs
 export const getPanchang = () => axios.get('/tools/panchang');

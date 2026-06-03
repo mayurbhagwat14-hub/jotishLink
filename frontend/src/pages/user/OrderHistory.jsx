@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { FiArrowLeft, FiVideo, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiMessageCircle, FiX, FiAlertTriangle } from 'react-icons/fi';
+import { FiArrowLeft, FiVideo, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiMessageCircle, FiX, FiAlertTriangle, FiTrash2, FiCheckSquare } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
-import { getUserSessions, getUserPoojas, getUserCalls } from '../../api/userApis';
-import { getUserOrders, requestCancelOrder } from '../../api/storeApis';
+import { getUserSessions, getUserPoojas, getUserCalls, deleteUserHistory } from '../../api/userApis';
+import { getUserOrders } from '../../api/storeApis';
 
 const historyTabs = ['Chat', 'Calls', 'Wallet', 'Orders', 'Poojas'];
 
@@ -40,10 +40,16 @@ const OrderHistory = () => {
   const [calls, setCalls] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cancel modal
-  const [showCancelModal, setShowCancelModal] = useState(null);
-  const [cancelReason, setCancelReason] = useState('');
-  const [cancelLoading, setCancelLoading] = useState(false);
+
+  // Selection mode
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // Reset selection when tab changes
+  useEffect(() => {
+    setIsSelectionMode(false);
+    setSelectedIds([]);
+  }, [activeTab]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,22 +110,39 @@ const OrderHistory = () => {
     fetchData();
   }, []);
 
-  const handleCancelRequest = async () => {
-    if (!showCancelModal) return;
-    setCancelLoading(true);
+  const handleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    const confirmDelete = window.confirm(`Delete ${selectedIds.length} items from history?`);
+    if (!confirmDelete) return;
+
+    let type;
+    if (activeTab === 'Chat') type = 'chat';
+    else if (activeTab === 'Calls') type = 'call';
+    else if (activeTab === 'Poojas') type = 'pooja';
+    else if (activeTab === 'Orders') type = 'order';
+    
+    if (!type) return;
+
     try {
-      const res = await requestCancelOrder(showCancelModal._id, cancelReason);
-      if (res.data?.success) {
-        setStoreOrders(prev => prev.map(o => 
-          o._id === showCancelModal._id ? { ...o, cancelRequest: res.data.data.order.cancelRequest } : o
-        ));
-      }
-      setShowCancelModal(null);
-      setCancelReason('');
+      setIsLoading(true);
+      await deleteUserHistory({ ids: selectedIds, type });
+      
+      // Update local state
+      if (type === 'chat') setSessions(prev => prev.filter(x => !selectedIds.includes(x._id)));
+      if (type === 'call') setCalls(prev => prev.filter(x => !selectedIds.includes(x._id)));
+      if (type === 'pooja') setPoojas(prev => prev.filter(x => !selectedIds.includes(x._id)));
+      if (type === 'order') setStoreOrders(prev => prev.filter(x => !selectedIds.includes(x._id)));
+      
+      setIsSelectionMode(false);
+      setSelectedIds([]);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to submit cancel request');
+      alert(err.response?.data?.message || 'Failed to delete history');
     } finally {
-      setCancelLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -135,12 +158,20 @@ const OrderHistory = () => {
           <span className="text-gray-800 font-semibold text-[17px]">Order History</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
-            <span className="text-[12px] font-bold text-orange-600">₹ {user?.wallet || 0}</span>
-          </div>
+          {['Chat', 'Calls', 'Orders', 'Poojas'].includes(activeTab) && (
+            <button 
+              onClick={() => {
+                setIsSelectionMode(!isSelectionMode);
+                setSelectedIds([]);
+              }} 
+              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${isSelectionMode ? 'bg-gray-200 text-gray-700' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}
+            >
+              {isSelectionMode ? 'Cancel' : 'Select'}
+            </button>
+          )}
           <div 
             onClick={openSidebar}
-            className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200 cursor-pointer shrink-0"
+            className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200 cursor-pointer shrink-0 ml-1"
           >
             {user?.avatar ? (
               <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
@@ -156,7 +187,10 @@ const OrderHistory = () => {
         {historyTabs.map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              setActiveTab(tab);
+              navigate(`/user/history?tab=${tab}`, { replace: true });
+            }}
             className={`flex-1 min-w-[70px] py-3 text-[12px] font-bold transition-all relative whitespace-nowrap px-2 ${
               activeTab === tab ? 'text-orange-500' : 'text-gray-400'
             }`}
@@ -194,17 +228,26 @@ const OrderHistory = () => {
               const duration = item.duration || (item.messages?.length ? `${item.messages.length} msgs` : '');
 
               return (
-                <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
-                      <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
+                <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors flex items-start gap-2 relative">
+                  {isSelectionMode && (
+                    <div 
+                      onClick={() => handleSelect(item._id)}
+                      className={`mt-2 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(item._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                    >
+                      {selectedIds.includes(item._id) && <FiCheckSquare size={14} />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
-                      <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)} {duration && `• ${duration}`}</p>
-                      <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{typeof lastMsg === 'string' ? lastMsg.slice(0, 60) : 'Chat session'}{lastMsg?.length > 60 ? '...' : ''}</p>
+                  )}
+                  <div className="flex-1 min-w-0" onClick={() => isSelectionMode && handleSelect(item._id)}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
+                        <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
+                        <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)} {duration && `• ${duration}`}</p>
+                        <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{typeof lastMsg === 'string' ? lastMsg.slice(0, 60) : 'Chat session'}{lastMsg?.length > 60 ? '...' : ''}</p>
+                      </div>
                     </div>
-                  </div>
                   <div className="flex gap-2 pl-[60px]">
                     <button 
                       onClick={() => navigate('/user/chat', { state: { astrologer: item.astrologerId, viewOnly: true, roomId: item.roomId, messages: item.messages } })}
@@ -218,6 +261,7 @@ const OrderHistory = () => {
                     >
                       Start Chat
                     </button>
+                  </div>
                   </div>
                 </div>
               );
@@ -252,25 +296,34 @@ const OrderHistory = () => {
               const duration = item.duration ? `${Math.floor(item.duration / 60)}m ${item.duration % 60}s` : '0m 0s';
 
               return (
-                <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
-                      <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
+                <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors flex items-start gap-2 relative">
+                  {isSelectionMode && (
+                    <div 
+                      onClick={() => handleSelect(item._id)}
+                      className={`mt-2 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(item._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                    >
+                      {selectedIds.includes(item._id) && <FiCheckSquare size={14} />}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
-                      <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                          item.status === 'completed' ? 'bg-green-50 text-green-600' :
-                          item.status === 'missed' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {item.status}
-                        </span>
-                        {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{duration} • ₹{item.totalAmount}</span>}
+                  )}
+                  <div className="flex-1 min-w-0" onClick={() => isSelectionMode && handleSelect(item._id)}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
+                        <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
+                        <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                            item.status === 'completed' ? 'bg-green-50 text-green-600' :
+                            item.status === 'missed' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {item.status}
+                          </span>
+                          {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{duration} • ₹{item.totalAmount}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
                   <div className="flex gap-2 pl-[60px]">
                     <button 
                       onClick={() => navigate('/user/astrologers')}
@@ -278,6 +331,7 @@ const OrderHistory = () => {
                     >
                       Call Again
                     </button>
+                  </div>
                   </div>
                 </div>
               );
@@ -360,165 +414,65 @@ const OrderHistory = () => {
             </div>
           ) : (
             storeOrders.map((order, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex gap-2 items-center">
-                    <FiPackage className="text-orange-500" />
-                    <span className="text-[13px] font-bold text-gray-800">Order ID: {order._id.slice(-6).toUpperCase()}</span>
+              <div key={i} className="flex items-start gap-2 relative">
+                {isSelectionMode && (
+                  <div 
+                    onClick={() => handleSelect(order._id)}
+                    className={`mt-6 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(order._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                  >
+                    {selectedIds.includes(order._id) && <FiCheckSquare size={14} />}
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
-                    order.orderStatus === 'pending' ? 'bg-orange-50 text-orange-500' :
-                    order.orderStatus === 'delivered' ? 'bg-green-50 text-green-600' :
-                    order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
-                  }`}>
-                    {order.orderStatus}
-                  </span>
-                </div>
-                
-                <div className="space-y-3">
-                  {order.items.map((item, idx) => (
-                    <div key={idx} className="flex gap-3 items-center">
-                      <div className="w-12 h-12 rounded-xl bg-orange-50 overflow-hidden border border-gray-100">
-                        <img src={item.productId?.image || item.productId?.img} alt="Product" className="w-full h-full object-cover" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-[13px] font-semibold text-gray-800 line-clamp-1">{item.productId?.name}</h4>
-                        <p className="text-[11px] text-gray-500">Qty: {item.quantity}</p>
-                      </div>
-                      <div className="text-[13px] font-bold text-gray-900">₹{item.price * item.quantity}</div>
+                )}
+                <div 
+                  className="flex-1 min-w-0 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow" 
+                  onClick={() => isSelectionMode ? handleSelect(order._id) : navigate(`/user/order/${order._id}`)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex gap-2 items-center">
+                      <FiPackage className="text-orange-500" />
+                      <span className="text-[13px] font-bold text-gray-800">Order ID: {order._id.slice(-6).toUpperCase()}</span>
                     </div>
-                  ))}
-                </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
+                      order.orderStatus === 'pending' ? 'bg-orange-50 text-orange-500' :
+                      order.orderStatus === 'delivered' ? 'bg-green-50 text-green-600' :
+                      order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
+                    }`}>
+                      {order.orderStatus}
+                    </span>
+                  </div>
+                
+                  <div className="space-y-3">
+                    {order.items.slice(0, 1).map((item, idx) => (
+                      <div key={idx} className="flex gap-3 items-center">
+                        <div className="w-12 h-12 rounded-xl bg-orange-50 overflow-hidden border border-gray-100">
+                          <img src={item.productId?.image || item.productId?.img || '/store_bracelet.png'} alt="Product" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-[13px] font-semibold text-gray-800 line-clamp-1">{item.productId?.name}</h4>
+                          <p className="text-[11px] text-gray-500">Qty: {item.quantity} {order.items.length > 1 && `(+${order.items.length - 1} more)`}</p>
+                        </div>
+                        <div className="text-[13px] font-bold text-gray-900">₹{order.totalAmount}</div>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="mt-3 pt-3 border-t border-gray-50 flex flex-col gap-3">
-                  {/* Payment Details */}
-                  <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center">
+                  <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center mt-1">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-500 shadow-sm">
                         <FiCreditCard size={14} />
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase">Payment Method</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase">PAYMENT METHOD</p>
                         <p className="text-[12px] text-gray-800 font-bold capitalize">{order.paymentMethod}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase">Status</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase">STATUS</p>
                       <p className={`text-[12px] font-bold capitalize ${order.paymentStatus === 'paid' ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
                         {order.paymentStatus}
                       </p>
                     </div>
                   </div>
-
-                  {/* Timeline UI */}
-                  <div className="bg-white rounded-xl border border-gray-100 p-4 mt-2">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-4">Order Timeline</p>
-                    <div className="relative">
-                      <div className="absolute left-[11px] top-2 bottom-4 w-0.5 bg-gray-100 z-0"></div>
-                      <div className="space-y-4 relative z-10">
-                        {['pending', 'processing', 'shipped', 'delivered'].map((step, idx) => {
-                          const statusOrder = ['pending', 'processing', 'shipped', 'delivered'];
-                          const currentIndex = statusOrder.indexOf(order.orderStatus);
-                          const isCompleted = currentIndex >= idx;
-                          const isCurrent = currentIndex === idx;
-                          
-                          if (order.orderStatus === 'cancelled' && step !== 'pending') return null;
-
-                          let icon = <FiClock size={12} />;
-                          if (step === 'processing') icon = <FiPackage size={12} />;
-                          if (step === 'shipped') icon = <FiTruck size={12} />;
-                          if (step === 'delivered') icon = <FiCheckCircle size={12} />;
-
-                          return (
-                            <div key={step} className={`flex items-start gap-4 ${isCompleted ? 'opacity-100' : 'opacity-40'}`}>
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 bg-white ${
-                                isCurrent ? 'border-orange-500 text-orange-500' : 
-                                isCompleted ? 'border-green-500 text-green-500' : 'border-gray-300 text-gray-400'
-                              }`}>
-                                {icon}
-                              </div>
-                              <div className="pt-0.5">
-                                <p className={`text-xs font-bold capitalize ${isCurrent ? 'text-orange-600' : isCompleted ? 'text-gray-800' : 'text-gray-400'}`}>
-                                  {step}
-                                </p>
-                                {isCurrent && step === 'shipped' && order.trackingId && (
-                                  <p className="text-[10px] text-blue-500 font-mono mt-1">
-                                    Tracking: {order.trackingId}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {order.orderStatus === 'cancelled' && (
-                          <div className="flex items-start gap-4">
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 border-2 bg-white border-red-500 text-red-500">
-                              <FiCheckCircle size={12} />
-                            </div>
-                            <div className="pt-0.5">
-                              <p className="text-xs font-bold text-red-500 capitalize">Cancelled</p>
-                              {order.cancelRequest?.refundAmount > 0 && (
-                                <p className="text-[10px] text-green-500 font-bold mt-0.5">
-                                  ₹{order.cancelRequest.refundAmount} refunded to wallet
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Cancel Request Status Card */}
-                  {order.cancelRequest?.requested && order.orderStatus !== 'cancelled' && (
-                    <div className={`rounded-xl p-4 border ${
-                      order.cancelRequest.adminResponse === 'pending' ? 'bg-yellow-50 border-yellow-200' :
-                      order.cancelRequest.adminResponse === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                    }`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <FiAlertTriangle size={14} className={
-                          order.cancelRequest.adminResponse === 'pending' ? 'text-yellow-600' :
-                          order.cancelRequest.adminResponse === 'rejected' ? 'text-red-500' : 'text-green-500'
-                        } />
-                        <span className={`text-[12px] font-bold ${
-                          order.cancelRequest.adminResponse === 'pending' ? 'text-yellow-700' :
-                          order.cancelRequest.adminResponse === 'rejected' ? 'text-red-600' : 'text-green-700'
-                        }`}>
-                          {order.cancelRequest.adminResponse === 'pending' 
-                            ? 'Cancel Request Sent' 
-                            : order.cancelRequest.adminResponse === 'rejected' 
-                              ? 'Cancel Request Rejected' 
-                              : 'Cancel Approved'}
-                        </span>
-                      </div>
-                      {order.cancelRequest.adminResponse === 'pending' && (
-                        <p className="text-[11px] text-gray-600">
-                          Your cancellation request is being reviewed. Expected refund: <span className="font-bold text-green-600">₹{order.cancelRequest.refundAmount} ({order.cancelRequest.refundPercent}%)</span>
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center mt-2 px-1">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase">Ordered On</span>
-                      <span className="text-[12px] text-gray-800 font-bold">{formatDate(order.createdAt)}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[10px] text-gray-400 font-bold uppercase">Total Amount</span>
-                      <span className="text-[15px] text-orange-500 font-black">₹{order.totalAmount}</span>
-                    </div>
-                  </div>
-
-                  {/* Cancel Button — only for pending/processing and no existing cancel request */}
-                  {['pending', 'processing'].includes(order.orderStatus) && !order.cancelRequest?.requested && (
-                    <button 
-                      onClick={() => setShowCancelModal(order)}
-                      className="mt-2 w-full py-2.5 border-2 border-red-200 text-red-500 font-bold rounded-xl text-[13px] hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <FiX size={16} /> Cancel Order
-                    </button>
-                  )}
                 </div>
               </div>
             ))
@@ -541,25 +495,34 @@ const OrderHistory = () => {
             </div>
           ) : (
             poojas.map((pooja, i) => (
-              <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex flex-col gap-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-200">
-                      <img src={pooja.astrologerId?.avatar || 'https://ui-avatars.com/api/?name=Pandit&background=ffedD5&color=f97316'} alt="Pandit" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-gray-800 text-[15px]">{pooja.poojaName}</h4>
-                      <p className="text-[12px] text-gray-500">with {pooja.astrologerId?.name || 'Pandit'}</p>
-                    </div>
+              <div key={i} className="flex items-start gap-2 relative">
+                {isSelectionMode && (
+                  <div 
+                    onClick={() => handleSelect(pooja._id)}
+                    className={`mt-6 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(pooja._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                  >
+                    {selectedIds.includes(pooja._id) && <FiCheckSquare size={14} />}
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
-                    pooja.status === 'pending' ? 'bg-orange-50 text-orange-500' :
-                    pooja.status === 'confirmed' ? 'bg-green-50 text-green-600' :
-                    pooja.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {pooja.status}
-                  </span>
-                </div>
+                )}
+                <div className="flex-1 min-w-0 bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex flex-col gap-3" onClick={() => isSelectionMode && handleSelect(pooja._id)}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-200">
+                        <img src={pooja.astrologerId?.avatar || 'https://ui-avatars.com/api/?name=Pandit&background=ffedD5&color=f97316'} alt="Pandit" className="w-full h-full object-cover" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-800 text-[15px]">{pooja.poojaName}</h4>
+                        <p className="text-[12px] text-gray-500">with {pooja.astrologerId?.name || 'Pandit'}</p>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
+                      pooja.status === 'pending' ? 'bg-orange-50 text-orange-500' :
+                      pooja.status === 'confirmed' ? 'bg-green-50 text-green-600' :
+                      pooja.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {pooja.status}
+                    </span>
+                  </div>
                 
                 <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center mt-1 border border-gray-100">
                   <div className="flex flex-col">
@@ -582,56 +545,25 @@ const OrderHistory = () => {
                     <FiVideo size={18} /> Join Live Pooja
                   </button>
                 )}
+                </div>
               </div>
             ))
           )}
         </div>
       )}
 
-      {/* ═══ CANCEL ORDER MODAL ═══ */}
-      {showCancelModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <FiAlertTriangle size={20} className="text-red-500" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-[16px]">Cancel Order</h3>
-                <p className="text-[11px] text-gray-400">Order #{showCancelModal._id.slice(-6).toUpperCase()}</p>
-              </div>
-            </div>
-            
-            <div className="bg-green-50 rounded-xl p-3 mb-4 border border-green-100">
-              <p className="text-[12px] text-green-700 font-medium">
-                You will receive <span className="font-bold">80% refund (₹{Math.round(showCancelModal.totalAmount * 0.8)})</span> to your wallet upon approval.
-              </p>
-            </div>
 
-            <textarea
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Reason for cancellation (optional)"
-              rows={3}
-              className="w-full bg-gray-50 rounded-xl p-3 text-[13px] outline-none border border-gray-100 focus:border-orange-300 resize-none mb-4"
-            />
 
-            <div className="flex gap-2">
-              <button 
-                onClick={() => { setShowCancelModal(null); setCancelReason(''); }}
-                className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl text-[13px] hover:bg-gray-200 transition-colors"
-              >
-                Keep Order
-              </button>
-              <button 
-                onClick={handleCancelRequest}
-                disabled={cancelLoading}
-                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl text-[13px] hover:bg-red-600 transition-colors shadow-sm disabled:opacity-50"
-              >
-                {cancelLoading ? 'Sending...' : 'Cancel Order'}
-              </button>
-            </div>
-          </div>
+      {/* Delete Selected Sticky Bottom Bar */}
+      {isSelectionMode && selectedIds.length > 0 && (
+        <div className="fixed bottom-[70px] left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] z-40 animate-fade-in flex items-center justify-between">
+          <span className="text-[13px] font-bold text-gray-700">{selectedIds.length} item{selectedIds.length > 1 ? 's' : ''} selected</span>
+          <button 
+            onClick={handleDeleteSelected}
+            className="bg-red-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2 hover:bg-red-600 transition-colors"
+          >
+            <FiTrash2 size={16} /> Delete Selected
+          </button>
         </div>
       )}
 

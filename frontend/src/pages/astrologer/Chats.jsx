@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FiMessageSquare, FiCheck, FiX, FiLoader } from 'react-icons/fi';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 import { removeIncomingRequest, addActiveSession } from '../../store/slices/astrologerSlice';
 
 const Chats = () => {
@@ -23,31 +23,21 @@ const Chats = () => {
   ];
 
   const handleAccept = (req) => {
-    setProcessingId(req.roomId);
-    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+    const socket = getSocket();
+    socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
+    dispatch(removeIncomingRequest(req.roomId));
+    dispatch(addActiveSession({ ...req, status: 'active' }));
     
-    socket.emit('accept_session', { 
-      roomId: req.roomId, 
-      userSocketId: req.userSocketId 
-    });
-    
-    // Simulate user paying/connecting
-    setTimeout(() => {
-      dispatch(removeIncomingRequest(req.roomId));
-      dispatch(addActiveSession({ ...req, status: 'active' }));
+    // Navigate immediately
+    if (req.type === 'chat') {
       navigate('/astrologer/chat/new', { state: { roomId: req.roomId, userId: req.userId, userName: req.userName } });
-      socket.disconnect();
-      setProcessingId(null);
-    }, 1500);
+    }
   };
 
   const handleReject = (req) => {
-    const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
-    socket.emit('reject_session', { 
-      userSocketId: req.userSocketId 
-    });
+    const socket = getSocket();
+    socket.emit('reject_session', { userSocketId: req.userSocketId, reason: 'Astrologer is busy' });
     dispatch(removeIncomingRequest(req.roomId));
-    setTimeout(() => socket.disconnect(), 1000);
   };
 
   return (

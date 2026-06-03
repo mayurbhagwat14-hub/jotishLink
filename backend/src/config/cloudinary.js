@@ -1,21 +1,33 @@
-// Media upload config abstraction. Can support S3 or Cloudinary.
-// Default to mock upload handler saving files locally or returning placeholders if credentials aren't set.
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
+dotenv.config();
 
-export const uploadMedia = async (fileBuffer, fileName) => {
-  if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
-    // Real Cloudinary upload logic would go here.
-    // Since we want this to be deployment-ready without requiring active credentials,
-    // we return a mock success payload matching normal formats.
-    console.log(`Mocking Cloudinary upload for file: ${fileName}`);
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export const uploadMedia = async (base64String, folder = 'astrotalk_banners') => {
+  try {
+    const result = await cloudinary.uploader.upload(base64String, {
+      folder: folder,
+    });
     return {
-      url: `https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?q=80&w=250&auto=format&fit=crop`,
-      publicId: `upload_${Date.now()}`
+      url: result.secure_url,
+      publicId: result.public_id,
     };
-  } else {
-    console.log(`Mocking local S3 upload for file: ${fileName}`);
-    return {
-      url: `https://i.pravatar.cc/150?u=${fileName}`,
-      publicId: `upload_${Date.now()}`
-    };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw error;
+  }
+};
+
+export const deleteMedia = async (publicId) => {
+  try {
+    if (!publicId) return;
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
   }
 };

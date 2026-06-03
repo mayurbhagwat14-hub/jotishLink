@@ -1,4 +1,5 @@
 import User from '../models/user.model.js';
+import Astrologer from '../models/astrologer.model.js';
 import Transaction from '../models/transaction.model.js';
 import { ApiError } from '../utils/apiError.js';
 
@@ -64,6 +65,36 @@ class WalletService {
    */
   static async getHistory(userId) {
     return Transaction.find({ userId }).sort({ date: -1 });
+  }
+
+  /**
+   * Credit balance to an astrologer's wallet (after platform commission)
+   */
+  static async creditAstrologer(astrologerId, grossAmount, desc, commissionPercent = 30) {
+    if (grossAmount <= 0) return null;
+
+    try {
+      const astrologer = await Astrologer.findById(astrologerId);
+      if (!astrologer) return null; // Silently fail to not crash billing loops
+
+      const netAmount = grossAmount * (1 - commissionPercent / 100);
+      const commissionAmount = grossAmount - netAmount;
+
+      astrologer.wallet = (astrologer.wallet || 0) + netAmount;
+      await astrologer.save();
+
+      const transaction = await Transaction.create({
+        userId: astrologer._id,
+        type: 'recharge',
+        amount: netAmount,
+        desc: `[Earning] ${desc} | Gross: ₹${grossAmount} | Commission: ${commissionPercent}% | Net: ₹${netAmount.toFixed(2)}`,
+      });
+
+      return { astrologer, netAmount, commissionAmount };
+    } catch (error) {
+      console.error('[WalletService] Failed to credit astrologer:', error);
+      return null;
+    }
   }
 }
 

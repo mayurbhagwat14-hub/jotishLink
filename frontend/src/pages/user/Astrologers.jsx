@@ -7,7 +7,7 @@ import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 import LowBalanceModal from '../../components/LowBalanceModal';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 import toast from 'react-hot-toast';
 import api from '../../api/axios';
 
@@ -54,9 +54,9 @@ const Astrologers = () => {
     dispatch(fetchAstrologersThunk(params));
     
     const token = localStorage.getItem('accessToken');
-    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+    const s = getSocket();
     setSocket(s);
-    return () => { s.disconnect(); };
+    return () => {  };
   }, [dispatch, activeCategory]);
 
   const { state } = useLocation();
@@ -69,94 +69,46 @@ const Astrologers = () => {
       navigate(location.pathname + location.search, { replace: true, state: {} });
 
       if (astro) {
-        // slight delay to let state settle
-        setTimeout(() => handleActionClick(astro), 500);
+        setTimeout(() => {
+          let emitType = activeTab;
+          if (activeTab === 'call') emitType = 'audio';
+          if (activeTab === 'video call') emitType = 'video';
+          handleSessionRequest(astro, emitType);
+        }, 500);
       } else {
         toast.error("Astrologer is currently offline or unavailable.");
       }
     }
   }, [socket, astrologers, state, navigate]);
 
-  const handleActionClick = async (astro) => {
-    if (!isAuthenticated || user?.name === 'Guest User') {
-      navigate('/user/login', { state: { redirectTo: `/user/astrologers?type=${activeTab}` } });
-      return;
-    }
-    if (!user?.name || user?.name.trim() === '') {
-      navigate('/user/details', { state: { redirectTo: `/user/astrologers?type=${activeTab}` } });
-      return;
-    }
-
-    const rate = activeTab === 'video call'
-      ? (astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10))
-      : activeTab === 'call' 
-      ? (astro.pricing?.audioCall || astro.rate || 5) 
-      : (astro.pricing?.chat || astro.rate || 5);
-
-    // Minimum 5 minutes required
-    const requiredAmount = rate * 5;
-    const walletBalance = user?.wallet || 0;
-    const astroName = astro.name || astro.userId?.name || 'Astrologer';
-
-    // Free Chat Offer eligibility (no wallet check needed for free chat)
-    const isFreeChatEligible = activeTab === 'chat' && user?.hasUsedFreeChat === false;
-
-    if (walletBalance < requiredAmount && !isFreeChatEligible) {
-      setShortBalanceInfo({ required: requiredAmount, current: walletBalance, name: astroName });
+  const handleSessionRequest = (astro, type) => {
+    // 1. Check auth
+    if (!isAuthenticated) return navigate('/user/login');
+    
+    // 2. Check wallet balance
+    const rate = type === 'chat' ? astro.pricing?.chat
+               : type === 'audio' ? astro.pricing?.audioCall
+               : astro.pricing?.videoCall;
+    const minBalance = (rate || 5) * 5; // minimum 5 minutes worth
+    
+    // Free Chat Offer eligibility
+    const isFreeChatEligible = type === 'chat' && user?.hasUsedFreeChat === false;
+    
+    if ((user?.wallet || 0) < minBalance && !isFreeChatEligible) {
+      setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0, name: astro.name || astro.userId?.name || 'Astrologer' });
       setShowBalanceModal(true);
-    } else {
-      if (isFreeChatEligible) {
-        navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: true, roomId: `room_${user._id}_bot_${Date.now()}` } });
-        return;
-      }
-
-      if (!socket) return;
-      setIsConnecting(true);
-      setConnectingAstroName(astroName);
-
-      const targetAstroId = astro.userId?._id || astro.userId || astro._id;
-      setConnectingAstroId(targetAstroId);
-      
-      let emitType = activeTab;
-      if (activeTab === 'call') emitType = 'audio';
-      if (activeTab === 'video call') emitType = 'video';
-
-      let callIdForAudio = null;
-      if (emitType === 'audio') {
-        try {
-          const res = await api.post('/calls/request', { astrologerId: targetAstroId });
-          callIdForAudio = res.data.data.callSession.callId;
-        } catch (error) {
-          setIsConnecting(false);
-          toast.error(error.response?.data?.message || 'Failed to request call');
-          return;
-        }
-      }
-
-      socket.emit('request_session', {
-        astrologerId: targetAstroId,
-        userId: user._id,
-        userName: user.name,
-        type: emitType,
-        callId: callIdForAudio,
-      });
-
-      socket.once('session_accepted', ({ roomId }) => {
-        setIsConnecting(false);
-        socket.off('session_rejected'); // cleanup the other listener
-        if (activeTab === 'chat') {
-          navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: false, roomId } });
-        } else {
-          navigate(`/user/video-room/${roomId}?type=${activeTab === 'video call' ? 'video' : 'audio'}&callId=${callIdForAudio || ''}`, { state: { astrologer: astro } });
-        }
-      });
-
-      socket.once('session_rejected', ({ reason }) => {
-        setIsConnecting(false);
-        socket.off('session_accepted'); // cleanup
-        toast.error(`Request declined: ${reason}`);
-      });
+      return;
     }
+    
+    if (isFreeChatEligible) {
+      navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: true, roomId: `room_${user._id}_bot_${Date.now()}` } });
+      return;
+    }
+    
+    // 3. Navigate to WaitingScreen
+    navigate('/user/waiting', {
+      state: { astrologer: astro, type }
+    });
   };
 
   const filteredAstrologers = astrologers.filter(a => {
@@ -299,7 +251,10 @@ const Astrologers = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleActionClick(astro);
+                      let emitType = activeTab;
+                      if (activeTab === 'call') emitType = 'audio';
+                      if (activeTab === 'video call') emitType = 'video';
+                      handleSessionRequest(astro, emitType);
                     }}
                     className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
                   >
@@ -328,38 +283,7 @@ const Astrologers = () => {
         targetName={shortBalanceInfo.name}
       />
 
-      {/* ═══ CONNECTING MODAL (ASTROLOGER REQUEST) ═══ */}
-      {isConnecting && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
-            <div className="relative w-20 h-20 mb-4">
-              <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
-            </div>
-            <h3 className="font-bold text-gray-900 text-lg mb-2">
-              {activeTab === 'call' ? 'Audio Call Request Sent!' : 'Request Sent!'}
-            </h3>
-            <p className="text-gray-500 text-sm mb-6">
-              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your {activeTab === 'call' ? 'audio call' : activeTab} request...
-            </p>
-            <button 
-              onClick={() => {
-                setIsConnecting(false);
-                if (socket && user && connectingAstroId) {
-                  socket.emit('cancel_session_request', { 
-                    astrologerId: connectingAstroId, 
-                    userId: user._id 
-                  });
-                }
-              }}
-              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors"
-            >
-              Cancel Request
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

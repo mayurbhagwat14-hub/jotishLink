@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiPaperclip, FiSend, FiVideo, FiPhone } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 import toast from 'react-hot-toast';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
@@ -28,6 +28,10 @@ const UserChatRoom = () => {
   
   const [showLowBalance, setShowLowBalance] = useState(false);
   const [showRating, setShowRating] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
+  const [endReason, setEndReason] = useState('');
+  const [finalDuration, setFinalDuration] = useState(0);
   const [shortBalanceInfo, setShortBalanceInfo] = useState({ required: 355, current: 0, targetName: '' });
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingType, setConnectingType] = useState('');
@@ -47,7 +51,7 @@ const UserChatRoom = () => {
     }
 
     // Initialize Socket
-    socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { withCredentials: true });
+    socket = getSocket();
 
     // Join room, letting the server know if we are starting with the AI bot
     socket.emit('join_room', { roomId, userId: user?._id, astrologerId: astrologer._id, isBot: isBotActive });
@@ -112,20 +116,27 @@ Problem area: General (Please ask your question)`;
       dispatch(updateUser({ wallet: data.newBalance }));
     });
 
-    socket.on('session_ended', (data) => {
-      if (data.reason === 'insufficient_balance') {
-        setShowLowBalance(true);
-      } else if (data.reason === 'astrologer_ended') {
-        toast.error('Chat has been ended by the Astrologer.');
+    socket.on('session_ended', ({ reason, durationSeconds }) => {
+      setSessionEnded(true);
+      setEndReason(reason);
+      setFinalDuration(durationSeconds);
+      // Show session summary modal for 3 seconds then show rating modal
+      setShowSummary(true);
+      setTimeout(() => {
+        setShowSummary(false);
         setShowRating(true);
-      }
+      }, 3000);
     });
 
     return () => {
-      if (roomId && sessionId) {
-        socket.emit('end_session', { roomId, sessionId, userId: user?._id });
+      if (socket) {
+        socket.off('session_created');
+        socket.off('receive_message');
+        socket.off('timer_tick');
+        socket.off('bot_time_up');
+        socket.off('wallet_update');
+        socket.off('session_ended');
       }
-      if (socket) socket.disconnect();
     };
   }, [user?._id, astrologer._id, roomId, isBotActive, viewOnly]);
 
@@ -147,11 +158,14 @@ Problem area: General (Please ask your question)`;
   };
 
   const handleEndChat = () => {
-    if (socket) {
-      socket.emit('end_session', { roomId, sessionId, userId: user?._id, endedBy: 'user' });
-    }
-    // Show rating modal before leaving
-    setShowRating(true);
+    const socket = getSocket();
+    socket.emit('end_session', {
+      roomId,
+      sessionId,
+      userId: user?._id,
+      endedBy: 'user'
+    });
+    // Don't navigate immediately — wait for 'session_ended' event
   };
 
   const handleRequestCall = (type) => {
@@ -168,26 +182,12 @@ Problem area: General (Please ask your question)`;
       return;
     }
 
-    setIsConnecting(true);
-    setConnectingType(type);
-
-    socket.emit('request_session', {
-      astrologerId: astrologer._id || astrologer.userId?._id || astrologer.userId,
-      userId: user._id,
-      userName: user.name,
-      type: type,
-    });
-
-    socket.once('session_accepted', ({ roomId: callRoomId }) => {
-      setIsConnecting(false);
-      socket.off('session_rejected');
-      navigate(`/user/video-room/${callRoomId}?type=${type}`, { state: { astrologer } });
-    });
-
-    socket.once('session_rejected', ({ reason }) => {
-      setIsConnecting(false);
-      socket.off('session_accepted');
-      toast.error(`Request declined: ${reason}`);
+    navigate('/user/waiting', {
+      state: {
+        astrologer: astrologer,
+        type: type,
+        callId: null // audio call from here might need callId generation if we want, but UserChatRoom doesn't do it currently. Let's pass null.
+      }
     });
   };
 
@@ -203,7 +203,7 @@ Problem area: General (Please ask your question)`;
       <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           <button 
-            onClick={handleEndChat}
+            onClick={viewOnly ? () => navigate(-1) : handleEndChat}
             className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors -ml-1 text-gray-600"
           >
             <FiArrowLeft size={20} />
@@ -327,28 +327,40 @@ Problem area: General (Please ask your question)`;
         redirectTo={`/user/chat`}
       />
 
-      {isConnecting && (
+      {/* Session Summary Modal */}
+      {showSummary && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
-            <div className="relative w-20 h-20 mb-4">
-              <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
+            <h3 className="font-bold text-gray-900 text-lg mb-2">Session Ended</h3>
+            <p className="text-gray-500 text-sm mb-4">Reason: {endReason}</p>
+            <div className="bg-orange-50 w-full rounded-2xl p-4 mb-6 border border-orange-100">
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-600 font-medium">Duration</span>
+                <span className="font-bold text-gray-900">{formatTime(finalDuration || timer)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 font-medium">Amount Deducted</span>
+                <span className="font-bold text-orange-500">₹{Math.floor((finalDuration || timer) / 60) * (astrologer.pricing?.chat || astrologer.rate || 5)}</span>
+              </div>
             </div>
-            <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
-            <p className="text-gray-500 text-sm">
-              Waiting for <span className="font-semibold text-gray-800">{astrologer.name}</span> to accept your {connectingType} call request...
-            </p>
+            <button 
+              onClick={() => {
+                setShowSummary(false);
+                setShowRating(true);
+              }}
+              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/20"
+            >
+              Rate your experience
+            </button>
           </div>
         </div>
-      )}
-
-      <RateAstrologerModal 
+      )}      <RateAstrologerModal 
         isOpen={showRating}
         onClose={() => navigate('/user/home')}
         astrologer={astrologer}
         onSubmit={(ratingData) => {
           console.log("Rating submitted", ratingData);
+          localStorage.setItem(`rated_${astrologer._id}`, 'true');
           navigate('/user/home');
         }}
       />

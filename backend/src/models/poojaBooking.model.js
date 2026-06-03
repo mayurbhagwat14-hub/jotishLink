@@ -27,6 +27,15 @@ const poojaBookingSchema = new mongoose.Schema(
     address: {
       type: String,
     },
+    paymentMethod: {
+      type: String,
+      enum: ['wallet', 'razorpay'],
+      required: true,
+    },
+    deletedByUser: {
+      type: Boolean,
+      default: false,
+    },
     mode: {
       type: String,
       enum: ['online', 'offline'],

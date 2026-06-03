@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiBell, FiCheck, FiInfo, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { getNotifications, markAllNotificationsAsRead, markNotificationAsRead } from '../api/notificationApis';
 import { useSelector } from 'react-redux';
+import getSocket from '../socket/socketManager';
 
 const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 hover:text-orange-500" }) => {
   const [notifications, setNotifications] = useState([]);
@@ -18,24 +19,20 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
     fetchNotifications();
     
     // Set up socket listener for real-time notifications
-    import('socket.io-client').then(({ io }) => {
-      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { withCredentials: true });
-      // We can listen to a global or user-specific event
-      socket.on('connect', () => {
-        // If user is admin, listen to admin events
+    try {
+      const socket = getSocket();
+      if (window.location.pathname.startsWith('/admin')) {
+        socket.on('admin_new_order', fetchNotifications);
+      }
+      
+      return () => {
         if (window.location.pathname.startsWith('/admin')) {
-          socket.on('admin_new_order', () => {
-            fetchNotifications();
-          });
+          socket.off('admin_new_order', fetchNotifications);
         }
-      });
-      
-      // We don't have the user ID easily available here without subscribing to the auth state,
-      // but we can just use an interval as a fallback if socket isn't robust,
-      // OR we can listen to all incoming notifications and filter by user (not secure but works for demo)
-      
-      return () => socket.disconnect();
-    }).catch(err => console.error('Socket init error', err));
+      };
+    } catch (err) {
+      console.error('Socket init error', err);
+    }
   }, []);
 
   useEffect(() => {

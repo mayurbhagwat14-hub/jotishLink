@@ -19,6 +19,20 @@ const Wallet = () => {
     dispatch(fetchWalletThunk());
   }, [dispatch]);
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePayment = async () => {
     if (!amount || isNaN(amount) || amount < 10) {
       toast.error('Please enter a valid amount (minimum ₹10)');
@@ -27,18 +41,25 @@ const Wallet = () => {
 
     setLoading(true);
     try {
+      const isScriptLoaded = await loadRazorpayScript();
+      if (!isScriptLoaded) {
+        toast.error('Failed to load Razorpay SDK. Check your connection.');
+        setLoading(false);
+        return;
+      }
+
       // 1. Create order on backend
       const { data } = await api.post('/payment/create-order', { amount: Number(amount) });
       const order = data.data;
 
-      // 2. Initialize Razorpay options
+      // 2. Initialize Razorpay options using dynamic key
       const options = {
-        key: 'rzp_test_dummy', // Replace with real key in production
+        key: order.key, // Dynamic from API response
         amount: order.amount,
         currency: order.currency,
         name: 'JyotishLink',
         description: 'Wallet Recharge',
-        order_id: order.id,
+        order_id: order.orderId,
         handler: async function (response) {
           try {
             // 3. Verify payment on backend
@@ -52,7 +73,6 @@ const Wallet = () => {
             // Refresh profile and wallet to get updated balance
             dispatch(fetchProfileThunk());
             dispatch(fetchWalletThunk());
-            navigate('/user/home');
           } catch (error) {
             console.error('Payment verification failed:', error);
             toast.error('Payment verification failed.');
@@ -137,19 +157,19 @@ const Wallet = () => {
               {transactions.map((tx) => (
                 <div key={tx._id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'credit' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                      {tx.type === 'credit' ? <FiArrowDownLeft size={18} /> : <FiArrowUpRight size={18} />}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'recharge' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      {tx.type === 'recharge' ? <FiArrowDownLeft size={18} /> : <FiArrowUpRight size={18} />}
                     </div>
                     <div>
-                      <h4 className="font-bold text-sm text-gray-800 capitalize">{tx.reason || 'Wallet Recharge'}</h4>
+                      <h4 className="font-bold text-sm text-gray-800 capitalize">{tx.desc || 'Wallet Transaction'}</h4>
                       <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                         <FiClock size={10} />
                         <span>{new Date(tx.createdAt).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
-                  <div className={`font-bold text-sm ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
-                    {tx.type === 'credit' ? '+' : '-'}₹{tx.amount}
+                  <div className={`font-bold text-sm ${tx.type === 'recharge' ? 'text-green-600' : 'text-red-600'}`}>
+                    {tx.type === 'recharge' ? '+' : '-'}₹{Math.abs(tx.amount)}
                   </div>
                 </div>
               ))}

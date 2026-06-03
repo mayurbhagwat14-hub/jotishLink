@@ -8,29 +8,50 @@ import Notification from '../models/notification.model.js';
 
 // POST /api/payment/create-order
 export const createOrder = asyncHandler(async (req, res) => {
-  const { amount } = req.body; // Amount in INR
+  const { amount } = req.body;
 
-  if (!amount || amount <= 0) {
-    throw new ApiError(400, 'Invalid amount');
+  const key_id = process.env.RAZORPAY_KEY_ID;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!key_id || !key_secret) {
+    throw new ApiError(500, 'Razorpay credentials missing. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env');
+  }
+
+  if (!amount || amount < 10) {
+    throw new ApiError(400, 'Amount must be at least ₹10');
   }
 
   const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_dummy',
-    key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
+    key_id,
+    key_secret,
   });
 
   const options = {
-    amount: amount * 100, // Razorpay expects amount in paise
+    amount: Math.round(amount * 100), // paise (must be an integer)
     currency: 'INR',
-    receipt: `receipt_${Date.now()}`,
+    receipt: `rcpt_${Date.now()}_${req.user._id}`,
+    notes: {
+      userId: req.user._id.toString(),
+      purpose: 'wallet_recharge'
+    }
   };
 
-  const order = await razorpay.orders.create(options);
-  if (!order) {
-    throw new ApiError(500, 'Failed to create Razorpay order');
+  let order;
+  try {
+    order = await razorpay.orders.create(options);
+  } catch (error) {
+    console.error('Razorpay Error:', error);
+    // Throw a 500 so that external 401s don't trigger frontend auth/logout
+    throw new ApiError(500, 'Failed to create payment order with the provider. Please check provider keys.');
   }
-
-  return res.status(200).json(new ApiResponse(200, order, 'Order created successfully'));
+  
+  return res.status(200).json(new ApiResponse(200, {
+    orderId: order.id,
+    amount: order.amount,
+    amountINR: amount,
+    currency: order.currency,
+    key: key_id
+  }, 'Order created successfully'));
 });
 
 // POST /api/payment/verify
@@ -41,36 +62,38 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Missing payment verification parameters');
   }
 
-  const secret = process.env.RAZORPAY_KEY_SECRET || 'dummy_secret';
+  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+  if (!key_secret) {
+    throw new ApiError(500, 'Razorpay credentials missing in server');
+  }
 
   const body = razorpay_order_id + '|' + razorpay_payment_id;
 
   const expectedSignature = crypto
-    .createHmac('sha256', secret)
+    .createHmac('sha256', key_secret)
     .update(body.toString())
     .digest('hex');
 
-  const isBypassAllowed = process.env.NODE_ENV !== 'production' && razorpay_signature === 'mock_signature_bypass';
-  const isAuthentic = expectedSignature === razorpay_signature || isBypassAllowed;
-
-  if (isAuthentic) {
-    // Payment is successful, credit the user's wallet
-    const { user, transaction } = await WalletService.credit(
-      req.user._id,
-      amount,
-      `Wallet recharge via Razorpay (Order: ${razorpay_order_id})`
-    );
-
-    // Create notification
-    await Notification.create({
-      userId: req.user._id,
-      title: 'Wallet Recharged',
-      message: `Your wallet has been successfully recharged with ₹${amount}.`,
-      type: 'success',
-    });
-
-    return res.status(200).json(new ApiResponse(200, { user, transaction }, 'Payment verified and wallet credited'));
-  } else {
-    throw new ApiError(400, 'Invalid payment signature');
+  if (expectedSignature !== razorpay_signature) {
+    throw new ApiError(400, 'Payment signature verification failed');
   }
+
+  // Payment is successful
+  const { user, transaction } = await WalletService.credit(
+    req.user._id,
+    amount,
+    `Wallet recharge via Razorpay | Payment ID: ${razorpay_payment_id}`
+  );
+
+  await Notification.create({
+    userId: req.user._id,
+    title: 'Wallet Recharged ✅',
+    message: `₹${amount} added. New balance: ₹${user.wallet}`,
+    type: 'success',
+  });
+
+  return res.status(200).json(new ApiResponse(200, {
+    newBalance: user.wallet,
+    transaction
+  }, 'Payment verified and wallet credited'));
 });

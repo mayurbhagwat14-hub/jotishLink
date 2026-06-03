@@ -3,8 +3,11 @@ import Astrologer from '../models/astrologer.model.js';
 import Product from '../models/product.model.js';
 import PoojaBooking from '../models/poojaBooking.model.js';
 import ChatSession from '../models/chatSession.model.js';
+import { CallSession } from '../models/callSession.model.js';
+import Order from '../models/order.model.js';
 import Transaction from '../models/transaction.model.js';
 import Celebrity from '../models/celebrity.model.js';
+import Banner from '../models/banner.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -48,7 +51,7 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
 
 // GET /api/user/homepage-data
 export const getHomepageData = asyncHandler(async (req, res) => {
-  const [astrologers, products, celebrities, liveAstrologersRaw, storeCategories] = await Promise.all([
+  const [astrologers, products, celebrities, liveAstrologersRaw, storeCategories, banners] = await Promise.all([
     Astrologer.find({ isVerified: true })
       .sort({ rating: -1 })
       .limit(10)
@@ -64,7 +67,8 @@ export const getHomepageData = asyncHandler(async (req, res) => {
       { $group: { _id: '$category', img: { $first: { $cond: [ { $ifNull: ['$image', false] }, '$image', '$img' ] } } } },
       { $project: { _id: 0, name: '$_id', img: 1 } },
       { $limit: 6 }
-    ])
+    ]),
+    Banner.find({ isActive: true }).sort({ position: 1, createdAt: -1 }).lean()
   ]);
 
   const liveAstrologers = liveAstrologersRaw.map(astro => ({
@@ -111,10 +115,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
       featuredProducts: products,
       services: storeCategories,
       celebrities,
-      banners: [
-        { id: 1, title: 'First Chat Free!', subtitle: 'Get your first consultation free', tag: 'Limited' },
-        { id: 2, title: 'Daily Horoscope', subtitle: 'Know what stars have in store', tag: 'Free' },
-      ],
+      banners: banners || [],
     }, 'Homepage data fetched')
   );
 });
@@ -251,7 +252,7 @@ export const bookPooja = asyncHandler(async (req, res) => {
 
 // GET /api/user/poojas
 export const getUserPoojas = asyncHandler(async (req, res) => {
-  const poojas = await PoojaBooking.find({ userId: req.user._id })
+  const poojas = await PoojaBooking.find({ userId: req.user._id, deletedByUser: { $ne: true } })
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
@@ -261,7 +262,7 @@ export const getUserPoojas = asyncHandler(async (req, res) => {
 
 // GET /api/user/sessions
 export const getUserSessions = asyncHandler(async (req, res) => {
-  const sessions = await ChatSession.find({ userId: req.user._id })
+  const sessions = await ChatSession.find({ userId: req.user._id, deletedByUser: { $ne: true } })
     .populate('astrologerId', 'name')
     .sort({ createdAt: -1 })
     .lean();
@@ -277,4 +278,37 @@ export const getUserWallet = asyncHandler(async (req, res) => {
   const transactions = await Transaction.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
   
   return res.status(200).json(new ApiResponse(200, { wallet: user.wallet || 0, transactions }, 'Wallet fetched'));
+});
+
+// POST /api/user/history/delete
+export const deleteUserHistory = asyncHandler(async (req, res) => {
+  const { ids, type } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new ApiError(400, 'Please provide an array of ids to delete');
+  }
+
+  let Model;
+  switch (type) {
+    case 'chat':
+      Model = ChatSession;
+      break;
+    case 'pooja':
+      Model = PoojaBooking;
+      break;
+    case 'call':
+      Model = CallSession;
+      break;
+    case 'order':
+      Model = Order;
+      break;
+    default:
+      throw new ApiError(400, 'Invalid history type for this endpoint');
+  }
+
+  await Model.updateMany(
+    { _id: { $in: ids }, userId: req.user._id },
+    { $set: { deletedByUser: true } }
+  );
+
+  return res.status(200).json(new ApiResponse(200, {}, `${type} history deleted`));
 });

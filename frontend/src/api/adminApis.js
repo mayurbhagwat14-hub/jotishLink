@@ -51,3 +51,5 @@ export const getAdminPoojas = () => axios.get('/admin/poojas');
 export const getAdminReports = () => axios.get('/admin/reports');
 export const getAdminCalls = () => axios.get('/admin/calls');
 export const getAdminCallAnalytics = () => axios.get('/admin/calls/analytics');
+export const getAstrologerPayouts = () => axios.get('/admin/astrologer-payouts');
+export const processAstrologerPayout = (id, data) => axios.post(`/admin/astrologer-payouts/${id}/process`, data);

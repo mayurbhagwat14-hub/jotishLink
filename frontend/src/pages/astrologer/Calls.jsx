@@ -2,7 +2,7 @@ import { FiPhone, FiVideo, FiCheck, FiX, FiLoader } from 'react-icons/fi';
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 import { removeIncomingRequest, addActiveSession } from '../../store/slices/astrologerSlice';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -25,55 +25,31 @@ const Calls = () => {
   ];
 
   const handleAccept = async (req) => {
-    setProcessingId(req.roomId);
-    
     if (req.type === 'audio') {
       try {
         const res = await api.post('/calls/accept', { callId: req.callId });
         const { agora } = res.data.data;
         
-        const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-        const socket = io(SOCKET_URL, { auth: { token } });
-        socket.emit('accept_session', { 
-          roomId: req.roomId, 
-          userSocketId: req.userSocketId 
-        });
-
+        const socket = getSocket();
+        socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
         dispatch(removeIncomingRequest(req.roomId));
         dispatch(addActiveSession({ ...req, status: 'active', agora }));
         
-        setTimeout(() => socket.disconnect(), 1000);
-        setProcessingId(null);
-        navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req, agora } });
+        navigate(`/astrologer/video-room/${req.roomId}?type=audio`, { state: { session: req, agora } });
       } catch (error) {
-        setProcessingId(null);
         toast.error(error.response?.data?.message || 'Failed to accept call');
       }
       return;
     }
 
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    const socket = io(SOCKET_URL, { auth: { token } });
+    const socket = getSocket();
+    socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
+    dispatch(removeIncomingRequest(req.roomId));
+    dispatch(addActiveSession({ ...req, status: 'active' }));
     
-    socket.emit('accept_session', { 
-      roomId: req.roomId, 
-      userSocketId: req.userSocketId 
-    });
-    
-    // Simulate user paying/connecting
-    setTimeout(() => {
-      dispatch(removeIncomingRequest(req.roomId));
-      dispatch(addActiveSession({ ...req, status: 'active' }));
-      
-      socket.disconnect();
-      setProcessingId(null);
-      
-      if (req.type === 'video') {
-        navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req } });
-      } else {
-        setActiveTab('Active');
-      }
-    }, 1500);
+    if (req.type === 'video') {
+      navigate(`/astrologer/video-room/${req.roomId}`, { state: { session: req } });
+    }
   };
 
   const handleReject = async (req) => {
@@ -84,13 +60,9 @@ const Calls = () => {
         console.error(e);
       }
     }
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    const socket = io(SOCKET_URL, { auth: { token } });
-    socket.emit('reject_session', { 
-      userSocketId: req.userSocketId 
-    });
+    const socket = getSocket();
+    socket.emit('reject_session', { userSocketId: req.userSocketId, reason: 'Astrologer is busy' });
     dispatch(removeIncomingRequest(req.roomId));
-    setTimeout(() => socket.disconnect(), 1000);
   };
 
   return (

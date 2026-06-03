@@ -13,7 +13,7 @@ const AdminContent = () => {
 
   // Modals
   const [showBannerModal, setShowBannerModal] = useState(false);
-  const [newBanner, setNewBanner] = useState({ title: '', imageUrl: '', linkUrl: '', position: 0 });
+  const [newBanner, setNewBanner] = useState({ imageUrl: '' });
 
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 });
@@ -52,11 +52,22 @@ const AdminContent = () => {
     try {
       await adminApis.createAdminBanner(newBanner);
       setShowBannerModal(false);
-      setNewBanner({ title: '', imageUrl: '', linkUrl: '', position: 0 });
+      setNewBanner({ imageUrl: '' });
       fetchBanners();
     } catch (err) {
       console.error(err);
       alert('Failed to create banner');
+    }
+  };
+
+  const handleBannerImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewBanner({ ...newBanner, imageUrl: reader.result });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -165,12 +176,10 @@ const AdminContent = () => {
                     </div>
                   </div>
                   <div className="p-4">
-                    <p className="text-sm font-bold text-gray-800">{banner.title}</p>
-                    <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${banner.isActive ? 'text-green-600 bg-green-50' : 'text-gray-500 bg-gray-100'}`}>
                         {banner.isActive ? 'Active' : 'Inactive'}
                       </span>
-                      <span className="text-[10px] text-gray-400 font-medium">Position {banner.position}</span>
                     </div>
                   </div>
                 </div>
@@ -291,20 +300,24 @@ const AdminContent = () => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Title</label>
-                <input type="text" value={newBanner.title} onChange={e=>setNewBanner({...newBanner, title: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="Diwali Sale"/>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Image URL</label>
-                <input type="text" value={newBanner.imageUrl} onChange={e=>setNewBanner({...newBanner, imageUrl: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="https://..."/>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Link URL (optional)</label>
-                <input type="text" value={newBanner.linkUrl} onChange={e=>setNewBanner({...newBanner, linkUrl: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="/user/wallet"/>
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Position (Order)</label>
-                <input type="number" value={newBanner.position} onChange={e=>setNewBanner({...newBanner, position: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Banner Image</label>
+                <label className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer block relative overflow-hidden group">
+                  <input type="file" accept="image/*" className="hidden" onChange={handleBannerImageUpload} />
+                  {newBanner.imageUrl ? (
+                    <div className="absolute inset-0 w-full h-full">
+                      <img src={newBanner.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-white font-bold text-sm">Change Image</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm font-bold text-gray-600">Click to upload banner image</p>
+                      <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                    </>
+                  )}
+                </label>
               </div>
               <button onClick={handleCreateBanner} className="w-full py-3 mt-2 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-colors">Save Banner</button>
             </div>

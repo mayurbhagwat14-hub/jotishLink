@@ -4,6 +4,7 @@ import {
   updateCart,
   createOrder,
   getUserOrders,
+  getOrderById,
   createRazorpayOrder,
   requestCancelOrder
 } from '../controllers/store.controller.js';
@@ -16,6 +17,7 @@ router.post('/store/cart', verifyJWT, updateCart);
 router.post('/store/order', verifyJWT, createOrder);
 router.post('/store/razorpay-order', verifyJWT, createRazorpayOrder);
 router.get('/store/orders', verifyJWT, getUserOrders);
+router.get('/store/orders/:id', verifyJWT, getOrderById);
 router.post('/store/orders/:id/cancel', verifyJWT, requestCancelOrder);
 
 export default router;

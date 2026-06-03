@@ -33,13 +33,15 @@ import ProductDetails from './pages/user/ProductDetails';
 import Cart from './pages/user/Cart';
 import Checkout from './pages/user/Checkout';
 import OrderSuccess from './pages/user/OrderSuccess';
+import OrderHistory from './pages/user/OrderHistory';
+import OrderDetails from './pages/user/OrderDetails';
 import Profile from './pages/user/Profile';
 import UserChatRoom from './pages/user/UserChatRoom';
-import OrderHistory from './pages/user/OrderHistory';
 import ComingSoon from './pages/user/ComingSoon';
 import FreeChatOffer from './pages/user/FreeChatOffer';
 import PoojaBookingForm from './pages/user/PoojaBookingForm';
 import GlobalSearch from './pages/user/GlobalSearch';
+import WaitingScreen from './pages/user/WaitingScreen';
 
 // Admin Pages
 import AdminLogin from './pages/admin/Login';
@@ -135,6 +137,8 @@ const AppContent = () => {
           <Route path="store" element={<Store />} />
           <Route path="product/:id" element={<ProductDetails />} />
           <Route path="cart" element={<Cart />} />
+          <Route path="history" element={<OrderHistory />} />
+          <Route path="order/:id" element={<OrderDetails />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="order-success/:orderId" element={<OrderSuccess />} />
           <Route path="coming-soon" element={<ComingSoon />} />
@@ -144,6 +148,7 @@ const AppContent = () => {
           <Route path="details" element={<UserDetails />} />
           <Route path="video-call" element={<VideoCallList />} />
           <Route path="video-booking/:id" element={<VideoCallBookingForm />} />
+          <Route path="waiting" element={<WaitingScreen />} />
           <Route path="video-room/:id" element={<VideoRoom />} />
           <Route path="profile" element={<Profile />} />
           <Route path="history" element={<OrderHistory />} />

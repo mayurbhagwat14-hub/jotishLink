@@ -5,6 +5,9 @@ import BottomNav from '../components/BottomNav';
 import { X, ChevronRight, LogOut } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import CartBottomSheet from '../components/CartBottomSheet';
+import { useEffect } from 'react';
+import getSocket from '../socket/socketManager';
+import { setActiveSession, clearPendingRequest } from '../store/slices/sessionSlice';
 
 const UserLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,6 +27,29 @@ const UserLayout = () => {
     setIsSidebarOpen(false);
     navigate('/');
   };
+
+  useEffect(() => {
+    if (user) {
+      const socket = getSocket();
+
+      const handleSessionAccepted = ({ roomId }) => {
+        dispatch(setActiveSession({ roomId, status: 'accepted' }));
+        dispatch(clearPendingRequest());
+      };
+
+      const handleSessionRejected = ({ reason }) => {
+        dispatch(clearPendingRequest());
+      };
+
+      socket.on('session_accepted', handleSessionAccepted);
+      socket.on('session_rejected', handleSessionRejected);
+
+      return () => {
+        socket.off('session_accepted', handleSessionAccepted);
+        socket.off('session_rejected', handleSessionRejected);
+      };
+    }
+  }, [user, dispatch]);
 
   return (
     <div className="bg-white min-h-screen relative">

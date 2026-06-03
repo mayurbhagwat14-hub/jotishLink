@@ -156,10 +156,22 @@ export const createOrder = asyncHandler(async (req, res) => {
 
 // GET /api/store/orders
 export const getUserOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find({ userId: req.user._id })
+  const orders = await Order.find({ userId: req.user._id, deletedByUser: { $ne: true } })
     .populate('items.productId')
     .sort({ createdAt: -1 });
   return res.status(200).json(new ApiResponse(200, { orders }, 'Orders fetched'));
+});
+
+// GET /api/store/orders/:id
+export const getOrderById = asyncHandler(async (req, res) => {
+  const order = await Order.findOne({ _id: req.params.id, userId: req.user._id })
+    .populate('items.productId');
+  
+  if (!order) {
+    throw new ApiError(404, 'Order not found');
+  }
+
+  return res.status(200).json(new ApiResponse(200, { order }, 'Order details fetched'));
 });
 
 // POST /api/store/orders/:id/cancel

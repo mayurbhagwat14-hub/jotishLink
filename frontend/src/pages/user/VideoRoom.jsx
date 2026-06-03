@@ -12,7 +12,7 @@ import AgoraRTC, {
   LocalVideoTrack
 } from 'agora-rtc-react';
 import api from '../../api/axios';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUser } from '../../store/slices/authSlice';
 
@@ -22,13 +22,14 @@ const AgoraVideoCall = ({ astrologer, channelName, rtcToken, uid, appId, socket,
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(!isMuted);
-  const { localCameraTrack } = useLocalCameraTrack(!isVideoOff);
-  const remoteUsers = useRemoteUsers();
-  const [sessionId, setSessionId] = useState(null);
   const [searchParams] = useSearchParams();
   const isAudioCall = searchParams.get('type') === 'audio';
   const callId = searchParams.get('callId');
+
+  const { localMicrophoneTrack } = useLocalMicrophoneTrack(!isMuted);
+  const { localCameraTrack } = useLocalCameraTrack(!isVideoOff && !isAudioCall);
+  const remoteUsers = useRemoteUsers();
+  const [sessionId, setSessionId] = useState(null);
   
   useJoin({
     appid: appId,
@@ -37,7 +38,11 @@ const AgoraVideoCall = ({ astrologer, channelName, rtcToken, uid, appId, socket,
     uid: uid,
   });
 
-  usePublish([localMicrophoneTrack, localCameraTrack]);
+  const tracksToPublish = !isAudioCall && !isVideoOff
+    ? [localMicrophoneTrack, localCameraTrack].filter(Boolean)
+    : [localMicrophoneTrack].filter(Boolean);
+
+  usePublish(tracksToPublish);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -55,14 +60,14 @@ const AgoraVideoCall = ({ astrologer, channelName, rtcToken, uid, appId, socket,
   const handleEndCall = () => {
     localMicrophoneTrack?.close();
     localCameraTrack?.close();
-    if (socket) {
-      if (isAudioCall) {
-        socket.emit('end_audio_call', { roomId: channelName, callId });
-      } else {
-        socket.emit('end_session', { roomId: channelName, sessionId, userId: user?._id });
-      }
+    
+    const socket = getSocket();
+    if (isAudioCall) {
+      // Keep legacy for audio if needed, but per instructions emit end_session
+      socket.emit('end_session', { roomId: channelName, sessionId, userId: user?._id, endedBy: 'user', callId });
+    } else {
+      socket.emit('end_session', { roomId: channelName, sessionId, userId: user?._id, endedBy: 'user' });
     }
-    navigate('/user/astrologers');
   };
 
   useEffect(() => {
@@ -85,7 +90,7 @@ const AgoraVideoCall = ({ astrologer, channelName, rtcToken, uid, appId, socket,
       socket.on('session_ended', () => {
         localMicrophoneTrack?.close();
         localCameraTrack?.close();
-        navigate('/user/astrologers');
+        navigate('/user/home');
       });
     }
     return () => {
@@ -197,7 +202,7 @@ const VideoRoom = () => {
     initAgora();
     
     const token = localStorage.getItem('accessToken');
-    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+    const s = getSocket();
     
     // Only user emits join_room to create the session in DB
     const targetAstroId = astrologer.userId?._id || astrologer.userId || astrologer._id;
@@ -218,7 +223,7 @@ const VideoRoom = () => {
 
     return () => {
       s.off('wallet_update');
-      s.disconnect();
+      
     };
   }, [astrologer, id, navigate, user, dispatch]);
 

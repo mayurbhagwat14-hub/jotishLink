@@ -16,6 +16,7 @@ import {
   getAstrologerCalls,
   updateOnlineStatus,
   getAstrologerHistory,
+  getAstrologerAnalytics,
 } from '../controllers/astrologer.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { otpRateLimiter } from '../middlewares/rateLimiter.middleware.js';
@@ -50,6 +51,7 @@ router.put('/astrologer/poojas/:id/status', astroAuth, updatePoojaStatus);
 router.get('/astrologer/chats', astroAuth, getAstrologerChats);
 router.get('/astrologer/calls', astroAuth, getAstrologerCalls);
 router.get('/astrologer/history', astroAuth, getAstrologerHistory);
+router.get('/astrologer/analytics', astroAuth, getAstrologerAnalytics);
 router.put('/astrologer/status', astroAuth, updateOnlineStatus);
 
 export default router;

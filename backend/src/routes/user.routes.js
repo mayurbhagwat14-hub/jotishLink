@@ -13,6 +13,7 @@ import {
   getUserPoojas,
   getUserSessions,
   getUserWallet,
+  deleteUserHistory,
 } from '../controllers/user.controller.js';
 import { verifyJWT, authorizeRoles, optionalAuth } from '../middlewares/auth.middleware.js';
 
@@ -39,5 +40,6 @@ router.get('/user/poojas', verifyJWT, getUserPoojas);
 // Sessions & wallet history
 router.get('/user/sessions', verifyJWT, getUserSessions);
 router.get('/user/wallet', verifyJWT, getUserWallet);
+router.post('/user/history/delete', verifyJWT, deleteUserHistory);
 
 export default router;

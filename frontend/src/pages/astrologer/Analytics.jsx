@@ -1,6 +1,20 @@
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { FiUsers, FiStar, FiActivity, FiArrowUp, FiArrowDown } from 'react-icons/fi';
+import { fetchAstrologerAnalyticsThunk } from '../../store/slices/dashboardSlice';
 
 const Analytics = () => {
+  const dispatch = useDispatch();
+  const { astrologerAnalytics, loading } = useSelector((state) => state.dashboard);
+
+  useEffect(() => {
+    dispatch(fetchAstrologerAnalyticsThunk());
+  }, [dispatch]);
+
+  const data = astrologerAnalytics || {};
+  const trends = data.consultationTrends || [0, 0, 0, 0, 0, 0, 0];
+  const reviews = data.topReviews || [];
+
   return (
     <div className="p-4 md:p-8 space-y-8 animate-fade-in">
       <div>
@@ -12,10 +26,7 @@ const Analytics = () => {
         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-gray-500 font-medium mb-1">Average Rating</p>
-            <h2 className="text-3xl font-black text-gray-800">4.9<span className="text-lg text-orange-500 ml-1">★</span></h2>
-            <p className="text-sm font-bold text-green-500 flex items-center gap-1 mt-2">
-              <FiArrowUp /> +0.2 this week
-            </p>
+            <h2 className="text-3xl font-black text-gray-800">{(data.averageRating || 5.0).toFixed(1)}<span className="text-lg text-orange-500 ml-1">★</span></h2>
           </div>
           <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center">
             <FiStar size={28} />
@@ -25,10 +36,7 @@ const Analytics = () => {
         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-gray-500 font-medium mb-1">Total Users Consulted</p>
-            <h2 className="text-3xl font-black text-gray-800">1,248</h2>
-            <p className="text-sm font-bold text-green-500 flex items-center gap-1 mt-2">
-              <FiArrowUp /> +45 this week
-            </p>
+            <h2 className="text-3xl font-black text-gray-800">{data.totalUsersConsulted || 0}</h2>
           </div>
           <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center">
             <FiUsers size={28} />
@@ -38,10 +46,7 @@ const Analytics = () => {
         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-gray-500 font-medium mb-1">Returning Customers</p>
-            <h2 className="text-3xl font-black text-gray-800">42%</h2>
-            <p className="text-sm font-bold text-red-500 flex items-center gap-1 mt-2">
-              <FiArrowDown /> -2% this week
-            </p>
+            <h2 className="text-3xl font-black text-gray-800">{data.returningCustomersPercentage || 0}%</h2>
           </div>
           <div className="w-16 h-16 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center">
             <FiActivity size={28} />
@@ -53,10 +58,10 @@ const Analytics = () => {
         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm h-80 flex flex-col">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Consultation Trends</h2>
           <div className="flex-1 flex items-end justify-between gap-2 border-b border-gray-100 pb-2">
-            {[40, 60, 45, 80, 50, 90, 70].map((h, i) => (
-              <div key={i} className="w-full bg-orange-100 rounded-t-lg relative group">
+            {trends.map((h, i) => (
+              <div key={i} className="w-full bg-orange-100 rounded-t-lg relative group h-full flex items-end">
                 <div 
-                  className="absolute bottom-0 w-full bg-orange-500 rounded-t-lg transition-all duration-500 group-hover:bg-orange-600" 
+                  className="w-full bg-orange-500 rounded-t-lg transition-all duration-500 group-hover:bg-orange-600" 
                   style={{ height: `${h}%` }}
                 ></div>
               </div>
@@ -76,20 +81,20 @@ const Analytics = () => {
         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-800 mb-6">Top User Reviews</h2>
           <div className="space-y-4">
-            <div className="border-b border-gray-50 pb-4">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="font-bold text-gray-800">Priya K.</h4>
-                <div className="flex text-orange-400 text-xs">★★★★★</div>
+            {reviews.map((review) => (
+              <div key={review.id} className="border-b border-gray-50 pb-4 last:border-0">
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="font-bold text-gray-800">{review.userName}</h4>
+                  <div className="flex text-orange-400 text-xs">
+                    {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed">"{review.review}"</p>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">"Very accurate predictions. The remedies suggested were easy to follow and highly effective. Highly recommend!"</p>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="font-bold text-gray-800">Rahul M.</h4>
-                <div className="flex text-orange-400 text-xs">★★★★★</div>
-              </div>
-              <p className="text-sm text-gray-600 leading-relaxed">"Gave me great clarity about my career path. The video consultation felt very personal and deeply insightful."</p>
-            </div>
+            ))}
+            {reviews.length === 0 && (
+              <p className="text-sm text-gray-500">No reviews yet.</p>
+            )}
           </div>
         </div>
       </div>

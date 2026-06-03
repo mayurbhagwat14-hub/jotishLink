@@ -39,6 +39,8 @@ import {
   getAdminReports,
   getAdminCalls,
   getAdminCallAnalytics,
+  getAstrologerPayouts,
+  processAstrologerPayout,
 } from '../controllers/admin.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { auditLogMiddleware } from '../middlewares/audit.middleware.js';
@@ -67,6 +69,10 @@ router.post('/admin/users/:id/refund', validate(refundUserSchema), refundUserWal
 router.get('/admin/astrologers', getAdminAstrologers);
 router.put('/admin/astrologers/:id/status', updateAstrologerStatus);
 router.delete('/admin/astrologers/:id', deleteAdminAstrologer);
+
+// Astrologer payouts
+router.get('/admin/astrologer-payouts', getAstrologerPayouts);
+router.post('/admin/astrologer-payouts/:id/process', processAstrologerPayout);
 
 // Orders
 router.get('/admin/orders', getAdminOrders);

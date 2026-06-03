@@ -62,6 +62,10 @@ const chatSessionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedByUser: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

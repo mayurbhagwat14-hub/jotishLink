@@ -6,7 +6,7 @@ import { fetchProfileThunk } from '../../store/slices/authSlice';
 import { fetchUserHomeDataThunk } from '../../store/slices/dashboardSlice';
 import NotificationDropdown from '../../components/NotificationDropdown';
 import LowBalanceModal from '../../components/LowBalanceModal';
-import { io } from 'socket.io-client';
+import getSocket from '../../socket/socketManager';
 
 const Home = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -25,11 +25,21 @@ const Home = () => {
   const [connectingAstroId, setConnectingAstroId] = useState('');
   const [socket, setSocket] = useState(null);
 
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+
+  useEffect(() => {
+    if (!userHome?.banners || userHome.banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % userHome.banners.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [userHome?.banners]);
+
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    const s = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+    const s = getSocket();
     setSocket(s);
-    return () => { s.disconnect(); };
+    return () => {  };
   }, []);
 
   useEffect(() => {
@@ -116,30 +126,11 @@ const Home = () => {
         return;
       }
 
-      if (!socket) return;
-      setIsConnecting(true);
-      setConnectingAstroName(astroName);
-
-      const targetAstroId = astro.userId?._id || astro.userId || astro._id;
-      setConnectingAstroId(targetAstroId);
-
-      socket.emit('request_session', {
-        astrologerId: targetAstroId,
-        userId: user._id,
-        userName: user.name,
-        type: 'chat',
-      });
-
-      socket.once('session_accepted', ({ roomId }) => {
-        setIsConnecting(false);
-        socket.off('session_rejected');
-        navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: false, roomId } });
-      });
-
-      socket.once('session_rejected', ({ reason }) => {
-        setIsConnecting(false);
-        socket.off('session_accepted');
-        alert(`Request declined: ${reason}`);
+      navigate('/user/waiting', {
+        state: {
+          astrologer: astro,
+          type: 'chat'
+        }
       });
     }
   };
@@ -208,6 +199,54 @@ const Home = () => {
           </div>
         ))}
       </div>
+
+      {/* ═══ DYNAMIC BANNERS CAROUSEL ═══ */}
+      {userHome?.banners && userHome.banners.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="relative w-full h-[88px] rounded-2xl overflow-hidden shadow-card group">
+            <div 
+              className="flex transition-transform duration-700 ease-in-out h-full"
+              style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
+            >
+              {userHome.banners.map((banner, idx) => (
+                <div 
+                  key={banner._id || idx} 
+                  className="w-full h-full shrink-0 relative cursor-pointer"
+                  onClick={() => {
+                    if (banner.linkUrl) {
+                      if (banner.linkUrl.startsWith('http')) {
+                        window.open(banner.linkUrl, '_blank');
+                      } else {
+                        navigate(banner.linkUrl);
+                      }
+                    }
+                  }}
+                >
+                  <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                  {/* Subtle overlay to ensure title visibility if image is bright, maybe not needed if images are self-contained banners, but good for design */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex flex-col justify-end p-4">
+                     {banner.title && <h3 className="text-white font-bold text-lg drop-shadow-md">{banner.title}</h3>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Dots */}
+            {userHome.banners.length > 1 && (
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                {userHome.banners.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      idx === currentBannerIndex ? 'w-4 bg-orange-500' : 'w-1.5 bg-white/70'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ═══ CHAT BANNER ═══ */}
       <div className="px-4 pb-4">
@@ -548,36 +587,7 @@ const Home = () => {
         targetName={shortBalanceInfo.name}
       />
 
-      {/* ═══ CONNECTING MODAL (ASTROLOGER REQUEST) ═══ */}
-      {isConnecting && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center max-w-sm w-full text-center shadow-2xl animate-scale-in">
-            <div className="relative w-20 h-20 mb-4">
-              <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
-            </div>
-            <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
-            <p className="text-gray-500 text-sm mb-6">
-              Waiting for <span className="font-semibold text-gray-800">{connectingAstroName}</span> to accept your chat request...
-            </p>
-            <button 
-              onClick={() => {
-                setIsConnecting(false);
-                if (socket && user && connectingAstroId) {
-                  socket.emit('cancel_session_request', { 
-                    astrologerId: connectingAstroId, 
-                    userId: user._id 
-                  });
-                }
-              }}
-              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-colors"
-            >
-              Cancel Request
-            </button>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );

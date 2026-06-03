@@ -6,6 +6,12 @@ const AdminSessions = () => {
   const [liveSessions, setLiveSessions] = useState([]);
   const [recentSessions, setRecentSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filters
+  const [filterUser, setFilterUser] = useState('');
+  const [filterAstro, setFilterAstro] = useState('');
+  const [filterType, setFilterType] = useState('All');
+  const [filterStatus, setFilterStatus] = useState('All');
 
   useEffect(() => {
     fetchSessions();
@@ -149,8 +155,46 @@ const AdminSessions = () => {
 
       {/* ═══ RECENT COMPLETED SESSIONS ═══ */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100">
+        <div className="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h2 className="font-bold text-gray-900">Recently Completed</h2>
+          <div className="flex flex-wrap gap-3">
+            <input 
+              type="text" 
+              placeholder="Filter by User" 
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm"
+            />
+            <input 
+              type="text" 
+              placeholder="Filter by Astrologer" 
+              value={filterAstro}
+              onChange={(e) => setFilterAstro(e.target.value)}
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm"
+            />
+            <select 
+              value={filterType} 
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
+            >
+              <option value="All">All Types</option>
+              <option value="Audio Call">Audio Call</option>
+              <option value="Video Call">Video Call</option>
+              <option value="Chat">Chat</option>
+              <option value="Chat (Bot)">Chat (Bot)</option>
+            </select>
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white"
+            >
+              <option value="All">All Statuses</option>
+              <option value="Completed">Completed</option>
+              <option value="Missed">Missed</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -169,7 +213,12 @@ const AdminSessions = () => {
                 <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">Loading recent sessions...</td></tr>
               ) : recentSessions.length === 0 ? (
                 <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">No recent sessions found</td></tr>
-              ) : recentSessions.map((s) => (
+              ) : recentSessions
+                  .filter(s => filterUser === '' || s.user.toLowerCase().includes(filterUser.toLowerCase()))
+                  .filter(s => filterAstro === '' || s.astrologer.toLowerCase().includes(filterAstro.toLowerCase()))
+                  .filter(s => filterType === 'All' || s.type === filterType)
+                  .filter(s => filterStatus === 'All' || s.status === filterStatus)
+                  .map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3.5 px-6 text-sm font-bold text-gray-800">{s.user} → {s.astrologer}</td>
                   <td className="py-3.5 px-6">

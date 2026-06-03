@@ -424,6 +424,7 @@ export const refundUserWallet = asyncHandler(async (req, res) => {
 import Coupon from '../models/coupon.model.js';
 import Banner from '../models/banner.model.js';
 import AuditLog from '../models/auditLog.model.js';
+import { uploadMedia, deleteMedia } from '../config/cloudinary.js';
 
 // GET /api/admin/coupons
 export const getAdminCoupons = asyncHandler(async (req, res) => {
@@ -459,7 +460,24 @@ export const getAdminBanners = asyncHandler(async (req, res) => {
 
 // POST /api/admin/banners
 export const createAdminBanner = asyncHandler(async (req, res) => {
-  const banner = await Banner.create(req.body);
+  const { imageUrl, isActive } = req.body;
+  if (!imageUrl) throw new ApiError(400, 'Image is required');
+
+  let uploadedUrl = imageUrl;
+  let publicId = '';
+
+  // If the imageUrl is a base64 string, upload it to Cloudinary
+  if (imageUrl.startsWith('data:image')) {
+    const uploadResult = await uploadMedia(imageUrl, 'astrotalk_banners');
+    uploadedUrl = uploadResult.url;
+    publicId = uploadResult.publicId;
+  }
+
+  const banner = await Banner.create({ 
+    imageUrl: uploadedUrl, 
+    cloudinaryPublicId: publicId,
+    isActive 
+  });
   return res.status(201).json(new ApiResponse(201, { banner }, 'Banner created'));
 });
 
@@ -472,8 +490,15 @@ export const updateAdminBanner = asyncHandler(async (req, res) => {
 
 // DELETE /api/admin/banners/:id
 export const deleteAdminBanner = asyncHandler(async (req, res) => {
-  const banner = await Banner.findByIdAndDelete(req.params.id);
+  const banner = await Banner.findById(req.params.id);
   if (!banner) throw new ApiError(404, 'Banner not found');
+
+  if (banner.cloudinaryPublicId) {
+    await deleteMedia(banner.cloudinaryPublicId);
+  }
+
+  await Banner.findByIdAndDelete(req.params.id);
+
   return res.status(200).json(new ApiResponse(200, {}, 'Banner deleted'));
 });
 
@@ -588,4 +613,54 @@ export const getAdminCallAnalytics = asyncHandler(async (req, res) => {
     missedCalls, 
     revenueGenerated 
   }, 'Call analytics fetched'));
+});
+
+// GET /api/admin/astrologer-payouts
+export const getAstrologerPayouts = asyncHandler(async (req, res) => {
+  const astrologers = await Astrologer.find().lean();
+  const payouts = await Promise.all(astrologers.map(async (astro) => {
+    const transactions = await Transaction.find({ userId: astro._id, type: 'recharge' }).lean();
+    const totalEarned = transactions.reduce((acc, curr) => acc + curr.amount, 0);
+
+    return {
+      _id: astro._id,
+      name: astro.name,
+      phone: astro.phone,
+      wallet: astro.wallet || 0,
+      totalEarned
+    };
+  }));
+
+  payouts.sort((a, b) => b.wallet - a.wallet);
+
+  return res.status(200).json(new ApiResponse(200, { payouts }, 'Astrologer payouts fetched successfully'));
+});
+
+// POST /api/admin/astrologer-payouts/:id/process
+export const processAstrologerPayout = asyncHandler(async (req, res) => {
+  const { amount } = req.body;
+  if (!amount || amount <= 0) {
+    throw new ApiError(400, 'Invalid payout amount');
+  }
+
+  const astrologer = await Astrologer.findById(req.params.id);
+  if (!astrologer) {
+    throw new ApiError(404, 'Astrologer not found');
+  }
+
+  if ((astrologer.wallet || 0) < amount) {
+    throw new ApiError(400, 'Insufficient astrologer wallet balance');
+  }
+
+  astrologer.wallet -= amount;
+  await astrologer.save();
+
+  await Transaction.create({
+    userId: astrologer._id,
+    type: 'deduction',
+    amount: -amount,
+    desc: 'Admin payout processed by admin'
+  });
+
+  return res.status(200).json(new ApiResponse(200, { wallet: astrologer.wallet }, 'Payout processed successfully'));
 });

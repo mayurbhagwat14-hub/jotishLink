@@ -7,8 +7,9 @@ import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
 import { login } from '../store/slices/authSlice';
 import { addIncomingRequest, removeIncomingRequestByUserId } from '../store/slices/astrologerSlice';
-import { io } from 'socket.io-client';
+import getSocket from '../socket/socketManager';
 import NotificationDropdown from '../components/NotificationDropdown';
+
 const AstrologerLayout = () => {
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
@@ -21,7 +22,7 @@ const AstrologerLayout = () => {
 
   useEffect(() => {
     if (user && user.role === 'astrologer') {
-      const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', { auth: { token } });
+      const socket = getSocket();
       socketRef.current = socket;
 
       socket.emit('join_astrologer_room', { astrologerId: user._id });
@@ -35,10 +36,11 @@ const AstrologerLayout = () => {
       });
 
       return () => {
-        socket.disconnect();
+        socket.off('incoming_session_request');
+        socket.off('session_request_cancelled');
       };
     }
-  }, [user, token]);
+  }, [user, token, dispatch]);
 
   // Requests are now handled in the Chats/Calls tabs directly
 
@@ -128,7 +130,6 @@ const AstrologerLayout = () => {
          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
          <Outlet />
 
-         {/* Incoming Request Popup Removed (handled dynamically in Chats/Calls tabs) */}
       </main>
 
       {/* Side Drawer Navbar */}

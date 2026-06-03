@@ -6,6 +6,7 @@ import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign, FaStar } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
+import LowBalanceModal from '../../components/LowBalanceModal';
 
 // No mock data
 
@@ -32,6 +33,9 @@ const ChatScreen = () => {
   const [rateStars, setRateStars] = useState(0);
   const [rateComment, setRateComment] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  
+  const [showLowBalance, setShowLowBalance] = useState(false);
+  const [lowBalanceInfo, setLowBalanceInfo] = useState({ required: 0, current: 0 });
 
   useEffect(() => {
     dispatch(fetchAstrologersThunk());
@@ -45,13 +49,27 @@ const ChatScreen = () => {
     avatar: astro.avatar || 'https://i.pravatar.cc/150?u=' + astro.name
   }));
 
-  const handleChatClick = (astro) => {
-    if (!isAuthenticated) {
-      navigate('/user/login');
-    } else {
-      setSelectedAstrologer(astro);
-      setShowRateModal(true);
+  const handleSessionRequest = (astro, type) => {
+    // 1. Check auth
+    if (!isAuthenticated) return navigate('/user/login');
+    
+    // 2. Check wallet balance
+    const rate = type === 'chat' ? astro.pricing?.chat
+               : type === 'audio' ? astro.pricing?.audioCall
+               : astro.pricing?.videoCall;
+    const minBalance = (rate || 5) * 5; // minimum 5 minutes worth
+    
+    if ((user?.wallet || 0) < minBalance) {
+      // Show LowBalanceModal or navigate to recharge
+      setLowBalanceInfo({ required: minBalance, current: user?.wallet || 0 });
+      setShowLowBalance(true);
+      return;
     }
+    
+    // 3. Navigate to WaitingScreen
+    navigate('/user/waiting', {
+      state: { astrologer: astro, type }
+    });
   };
 
   const submitRating = () => {
@@ -157,7 +175,7 @@ const ChatScreen = () => {
 
                 <div className="flex flex-col items-end justify-center">
                   <button
-                    onClick={() => handleChatClick(astro)}
+                    onClick={() => handleSessionRequest(astro, 'chat')}
                     className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
                   >
                     Chat
@@ -244,6 +262,13 @@ const ChatScreen = () => {
           </div>
         </div>
       )}
+
+      <LowBalanceModal 
+        isOpen={showLowBalance} 
+        onClose={() => setShowLowBalance(false)}
+        requiredAmount={lowBalanceInfo.required}
+        currentBalance={lowBalanceInfo.current}
+      />
     </div>
   );
 };

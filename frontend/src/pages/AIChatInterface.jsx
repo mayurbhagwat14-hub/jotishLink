@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
+import getSocket from '../socket/socketManager';
 import { FiSend, FiArrowLeft, FiMoreVertical, FiClock, FiShield } from 'react-icons/fi';
 
-const socket = io('/', {
-  autoConnect: false
-});
+const socket = getSocket();
 
 const AIChatInterface = () => {
   const navigate = useNavigate();
@@ -45,7 +43,7 @@ const AIChatInterface = () => {
       socket.off('receive_message');
       socket.off('time_update');
       socket.off('chat_blocked');
-      socket.disconnect();
+      
     };
   }, []);
 

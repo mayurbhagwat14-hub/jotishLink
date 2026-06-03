@@ -8,6 +8,7 @@ import { fetchAstrologerDashboardThunk } from '../../store/slices/dashboardSlice
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { astrologerDashboard, loading, error } = useSelector((state) => state.dashboard);
+  const { incomingRequests } = useSelector((state) => state.astrologer);
 
   useEffect(() => {
     dispatch(fetchAstrologerDashboardThunk());
@@ -121,6 +122,24 @@ const Dashboard = () => {
            )}
         </div>
       </div>
+
+      {/* Floating Notification Badge */}
+      {incomingRequests && incomingRequests.length > 0 && (
+        <div className="fixed bottom-24 right-4 z-50 animate-bounce-short">
+          <Link 
+            to={incomingRequests[0].type === 'chat' ? '/astrologer/chats' : '/astrologer/calls'}
+            className="bg-red-500 hover:bg-red-600 transition-colors text-white rounded-full pl-4 pr-2 py-2 shadow-lg shadow-red-500/40 flex items-center gap-3 animate-pulse border-2 border-white"
+          >
+            <div className="flex flex-col">
+              <span className="font-bold text-[13px] leading-tight">New Request!</span>
+              <span className="text-[10px] font-medium opacity-90 leading-tight">Click to view</span>
+            </div>
+            <div className="bg-white text-red-500 font-bold w-8 h-8 rounded-full flex items-center justify-center shadow-inner">
+              {incomingRequests.length}
+            </div>
+          </Link>
+        </div>
+      )}
 
     </div>
   );

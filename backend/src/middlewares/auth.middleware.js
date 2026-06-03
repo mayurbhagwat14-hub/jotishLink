@@ -11,6 +11,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     : null;
 
   if (!token) {
+    console.error('verifyJWT Failed: Token is missing from headers');
     throw new ApiError(401, 'Unauthorized request: Token is missing');
   }
 
@@ -28,11 +29,13 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     }
 
     if (!user) {
+      console.error(`verifyJWT Failed: User not found in DB for id ${decoded.id} with role ${decoded.role}`);
       throw new ApiError(401, 'Unauthorized request: Invalid Access Token');
     }
     req.user = user;
     next();
   } catch (error) {
+    console.error('verifyJWT Failed: JWT verification error or other error:', error.message);
     throw new ApiError(401, error.message || 'Invalid Access Token');
   }
 });

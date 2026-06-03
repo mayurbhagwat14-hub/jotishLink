@@ -27,6 +27,7 @@ import ChatSession from './models/chatSession.model.js';
 import Astrologer from './models/astrologer.model.js';
 import User from './models/user.model.js';
 import WalletService from './services/wallet.service.js';
+import SystemSettings from './models/systemSettings.model.js';
 
 // ──────────────────────────────────────────────
 //  App & HTTP Server Setup
@@ -53,8 +54,12 @@ const io = new SocketIOServer(httpServer, {
 
 app.set('io', io);
 
-// Track active session timers: { roomId -> { intervalId, seconds, astrologerRate, sessionId, userId } }
+// ── Track timers for billing (roomId -> { intervalId, seconds, astrologerRate, sessionId, userId, isBot })
 const activeTimers = new Map();
+// ── Track socket associations for strict disconnect handling (socket.id -> roomId)
+const socketRoomMap = new Map();
+// ── Track pending session requests (roomId -> { userSocketId, userId, astrologerId, type })
+const pendingRequests = new Map();
 
 io.on('connection', (socket) => {
   console.log(`[Socket.IO] Client connected: ${socket.id}`);
@@ -66,8 +71,27 @@ io.on('connection', (socket) => {
   });
 
   // ── User requests a session
-  socket.on('request_session', ({ astrologerId, userId, userName, type, durationLimit, callId }) => {
+  socket.on('request_session', async ({ astrologerId, userId, userName, type, durationLimit, callId }) => {
+    try {
+      const Astrologer = (await import('./models/astrologer.model.js')).default;
+      const astrologer = await Astrologer.findById(astrologerId);
+      
+      if (!astrologer || astrologer.onlineStatus === 'offline') {
+        io.to(socket.id).emit('session_rejected', { reason: 'Astrologer is currently offline.' });
+        return;
+      }
+      
+      if (astrologer.onlineStatus === 'busy') {
+        io.to(socket.id).emit('session_rejected', { reason: 'Astrologer is currently busy.' });
+        return;
+      }
+    } catch (err) {
+      console.error('[Socket.IO] Busy check failed:', err.message);
+    }
+
     const roomId = `room_${Date.now()}_${userId}`;
+    pendingRequests.set(roomId, { userSocketId: socket.id, userId, astrologerId, type });
+
     io.to(`astro_${astrologerId}`).emit('incoming_session_request', {
       roomId,
       userId,
@@ -81,26 +105,40 @@ io.on('connection', (socket) => {
   });
 
   // ── User cancels their session request
-  socket.on('cancel_session_request', ({ astrologerId, userId }) => {
-    io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId });
-    console.log(`[Socket.IO] User ${userId} cancelled session request with Astrologer ${astrologerId}`);
+  socket.on('cancel_session_request', async ({ astrologerId, userId, roomId }) => {
+    io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
+    if (roomId) pendingRequests.delete(roomId);
+    console.log(`[Socket.IO] User ${userId} cancelled request to Astrologer ${astrologerId}`);
   });
 
   // ── Astrologer accepts session
   socket.on('accept_session', ({ roomId, userSocketId }) => {
+    pendingRequests.delete(roomId);
     io.to(userSocketId).emit('session_accepted', { roomId });
+    io.to(roomId).emit('session_accepted', { roomId });
+    // also let astrologer socket know directly in case they haven't joined room yet
+    socket.emit('session_accepted', { roomId });
     console.log(`[Socket.IO] Astrologer accepted session. Room: ${roomId}`);
   });
 
   // ── Astrologer rejects session
-  socket.on('reject_session', ({ userSocketId, reason }) => {
+  socket.on('reject_session', ({ roomId, userSocketId, reason }) => {
+    if (roomId) pendingRequests.delete(roomId);
     io.to(userSocketId).emit('session_rejected', { reason: reason || 'Astrologer is busy right now.' });
     console.log(`[Socket.IO] Astrologer rejected session. Reason: ${reason}`);
+  });
+
+  // ── Join a call room for audio/video (no DB session creation)
+  socket.on('join_call_room', ({ roomId }) => {
+    socket.join(roomId);
+    socketRoomMap.set(socket.id, { roomId, type: 'audio_call' });
+    console.log(`[Socket.IO] Socket ${socket.id} joined call room ${roomId}`);
   });
 
   // ── Join a chat room
   socket.on('join_room', async ({ roomId, userId, astrologerId, isBot }) => {
     socket.join(roomId);
+    socketRoomMap.set(socket.id, { roomId, type: 'chat_session' });
     socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
     console.log(`[Socket.IO] ${userId} joined room ${roomId}`);
 
@@ -239,6 +277,14 @@ io.on('connection', (socket) => {
             });
           } else {
             await WalletService.deduct(userId, astrologerRate, `Chat session - 1 min`);
+            try {
+              const sys = await SystemSettings.findOne();
+              const comm = sys ? sys.commissionPercent : 30;
+              const sessionDoc = await ChatSession.findById(sessionId);
+              if (sessionDoc) {
+                await WalletService.creditAstrologer(sessionDoc.astrologerId, astrologerRate, "Chat session earning - 1 min", comm);
+              }
+            } catch (e) { console.error(e); }
             io.to(roomId).emit('wallet_update', { deducted: astrologerRate, newBalance: user.wallet - astrologerRate });
           }
         } catch (err) {
@@ -290,6 +336,14 @@ io.on('connection', (socket) => {
             }
           } else {
             await WalletService.deduct(userId, astrologerRate, `Chat session - 1 min`);
+            try {
+              const sys = await SystemSettings.findOne();
+              const comm = sys ? sys.commissionPercent : 30;
+              const sessionDoc = await ChatSession.findById(sessionId);
+              if (sessionDoc) {
+                await WalletService.creditAstrologer(sessionDoc.astrologerId, astrologerRate, "Chat session earning - 1 min", comm);
+              }
+            } catch (e) { console.error(e); }
             io.to(roomId).emit('wallet_update', { deducted: astrologerRate });
           }
         } catch (err) {
@@ -324,10 +378,24 @@ io.on('connection', (socket) => {
         session.status = 'completed';
         session.durationSeconds = timerData?.seconds || 0;
         await session.save();
+
+        if (timerData && timerData.astrologerRate) {
+          try {
+            const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+            if (finalAmount > 0) {
+              const sys = await SystemSettings.findOne();
+              const comm = sys ? sys.commissionPercent : 30;
+              const creditRes = await WalletService.creditAstrologer(session.astrologerId, finalAmount, "Session completed - total earning", comm);
+              if (creditRes && creditRes.netAmount) {
+                io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
+              }
+            }
+          } catch (e) { console.error(e); }
+        }
       }
       if (session) {
         await Astrologer.findOneAndUpdate(
-          { userId: session.astrologerId },
+          { _id: session.astrologerId },
           { onlineStatus: 'online' }
         );
       }
@@ -372,6 +440,15 @@ io.on('connection', (socket) => {
             }
           } else {
             await WalletService.deduct(userId, astrologerRate, `Audio Call - 1 min`);
+            try {
+              const sys = await SystemSettings.findOne();
+              const comm = sys ? sys.commissionPercent : 30;
+              const { CallSession } = await import('./models/callSession.model.js');
+              const sessionDoc = await CallSession.findOne({ callId });
+              if (sessionDoc) {
+                await WalletService.creditAstrologer(sessionDoc.astrologerId, astrologerRate, "Audio Call earning - 1 min", comm);
+              }
+            } catch (e) { console.error(e); }
             io.to(roomId).emit('wallet_update', { deducted: astrologerRate, newBalance: user.wallet - astrologerRate });
           }
         } catch (err) {
@@ -403,6 +480,20 @@ io.on('connection', (socket) => {
         session.totalAmount = Math.floor((timerData?.seconds || 0) / 60) * session.ratePerMinute;
         await session.save();
         
+        if (timerData && timerData.astrologerRate) {
+          try {
+            const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+            if (finalAmount > 0) {
+              const sys = await SystemSettings.findOne();
+              const comm = sys ? sys.commissionPercent : 30;
+              const creditRes = await WalletService.creditAstrologer(session.astrologerId, finalAmount, "Session completed - total earning", comm);
+              if (creditRes && creditRes.netAmount) {
+                io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
+              }
+            }
+          } catch (e) { console.error(e); }
+        }
+        
         await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
       }
     } catch (err) {
@@ -414,17 +505,99 @@ io.on('connection', (socket) => {
   // ── Astrologer status update
   socket.on('update_status', async ({ astrologerId, status }) => {
     try {
-      await Astrologer.findOneAndUpdate({ userId: astrologerId }, { onlineStatus: status });
+      await Astrologer.findOneAndUpdate({ _id: astrologerId }, { onlineStatus: status });
+      
+      if (status === 'online') {
+        // Self-healing: clear any stuck ongoing sessions in DB
+        const { CallSession } = await import('./models/callSession.model.js');
+        await CallSession.updateMany(
+          { astrologerId, status: { $in: ['accepted', 'ongoing', 'ringing'] } },
+          { $set: { status: 'completed', endTime: new Date() } }
+        );
+        const ChatSession = (await import('./models/chatSession.model.js')).default;
+        await ChatSession.updateMany(
+          { astrologerId, status: 'ongoing' },
+          { $set: { status: 'completed' } }
+        );
+      }
+
       io.emit('astrologer_status_changed', { astrologerId, status });
     } catch (err) {
       console.error('[Socket.IO] Status update error:', err.message);
     }
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
-    // Ideally we should find if they were in an active call and end it,
-    // but the frontend will emit 'end_audio_call' in cleanup or beforeUnload.
+    
+    // Strict Disconnect Handling
+    const roomInfo = socketRoomMap.get(socket.id);
+    if (roomInfo) {
+      const { roomId } = roomInfo;
+      const timerData = activeTimers.get(roomId);
+      
+      if (timerData) {
+        clearInterval(timerData.intervalId);
+        activeTimers.delete(roomId);
+        
+        io.to(roomId).emit('call_ended', { reason: 'peer_disconnected' });
+        io.to(roomId).emit('session_ended', { reason: 'peer_disconnected' });
+
+        try {
+          if (timerData.type === 'audio' && timerData.callId) {
+            const { CallSession } = await import('./models/callSession.model.js');
+            const session = await CallSession.findOne({ callId: timerData.callId });
+            if (session && (session.status === 'accepted' || session.status === 'ongoing')) {
+              session.status = 'completed';
+              session.duration = timerData.seconds || 0;
+              session.endTime = new Date();
+              session.totalAmount = Math.floor((timerData.seconds || 0) / 60) * session.ratePerMinute;
+              await session.save();
+
+              if (timerData && timerData.astrologerRate) {
+                try {
+                  const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+                  if (finalAmount > 0) {
+                    const sys = await SystemSettings.findOne();
+                    const comm = sys ? sys.commissionPercent : 30;
+                    await WalletService.creditAstrologer(session.astrologerId, finalAmount, "Session completed - total earning", comm);
+                  }
+                } catch (e) { console.error(e); }
+              }
+
+              await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
+            }
+          } else if (timerData.sessionId) {
+            const session = await ChatSession.findById(timerData.sessionId);
+            if (session && session.status === 'ongoing') {
+              session.status = 'completed';
+              session.durationSeconds = timerData.seconds || 0;
+              await session.save();
+
+              if (timerData && timerData.astrologerRate) {
+                try {
+                  const finalAmount = Math.floor((timerData.seconds || 0) / 60) * timerData.astrologerRate;
+                  if (finalAmount > 0) {
+                    const sys = await SystemSettings.findOne();
+                    const comm = sys ? sys.commissionPercent : 30;
+                    await WalletService.creditAstrologer(session.astrologerId, finalAmount, "Session completed - total earning", comm);
+                  }
+                } catch (e) { console.error(e); }
+              }
+
+              await Astrologer.findOneAndUpdate(
+                { _id: session.astrologerId },
+                { onlineStatus: 'online' }
+              );
+            }
+          }
+        } catch (err) {
+          console.error('[Socket.IO] Strict Disconnect Cleanup Error:', err.message);
+        }
+      }
+      
+      socketRoomMap.delete(socket.id);
+    }
   });
 });
 

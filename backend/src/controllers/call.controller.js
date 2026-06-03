@@ -102,6 +102,7 @@ export const getCallHistory = asyncHandler(async (req, res) => {
     query.astrologerId = req.user._id;
   } else if (req.user) {
     query.userId = req.user._id;
+    query.deletedByUser = { $ne: true };
   }
 
   const calls = await CallSession.find(query)
