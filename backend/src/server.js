@@ -274,7 +274,7 @@ io.on('connection', (socket) => {
             await ChatSession.findByIdAndUpdate(sessionId, {
               status: 'completed',
               durationSeconds: seconds,
-              amountDeducted: Math.floor(seconds / 60) * astrologerRate,
+              amountDeducted: (seconds / 60) * astrologerRate,
             });
           } else {
             await WalletService.deduct(userId, astrologerRate, `Chat session - 1 min`);
@@ -618,6 +618,7 @@ io.on('connection', (socket) => {
             if (session && session.status === 'ongoing') {
               session.status = 'completed';
               session.durationSeconds = timerData.seconds || 0;
+              session.amountDeducted = ((timerData.seconds || 0) / 60) * (timerData.astrologerRate || 0);
               await session.save();
 
               if (timerData && timerData.astrologerRate) {

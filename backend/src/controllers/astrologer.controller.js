@@ -380,8 +380,8 @@ export const getAstrologerChats = asyncHandler(async (req, res) => {
 
 // GET /api/astrologer/calls
 export const getAstrologerCalls = asyncHandler(async (req, res) => {
-  // For now, return chat sessions that represent calls (can be extended with a call model)
-  const sessions = await ChatSession.find({ astrologerId: req.user._id, status: 'completed' })
+  // Return chat sessions that represent calls
+  const sessions = await ChatSession.find({ astrologerId: req.user._id, status: 'completed', type: { $in: ['audio_call', 'video_call'] } })
     .populate('userId', 'name avatar phone')
     .sort({ createdAt: -1 })
     .lean();
