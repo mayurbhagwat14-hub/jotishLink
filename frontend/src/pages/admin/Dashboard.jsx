@@ -142,8 +142,12 @@ const AdminDashboard = () => {
               <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-blue-600">{s.user[0]}</div>
-                    <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-orange-600">{s.astrologer[0]}</div>
+                    <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-blue-600 overflow-hidden">
+                      <img src={s.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.user || 'U')}&background=dbeafe&color=2563eb`} alt={s.user} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-orange-600 overflow-hidden">
+                      <img src={s.astrologerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.astrologer || 'A')}&background=ffedD5&color=f97316`} alt={s.astrologer} className="w-full h-full object-cover" />
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-800">{s.user} ↔ {s.astrologer}</p>

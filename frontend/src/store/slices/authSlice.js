@@ -85,7 +85,8 @@ export const astrologerLoginThunk = createAsyncThunk(
       const response = await astrologerApis.astrologerLogin(credentials);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const payload = typeof error.response?.data === 'object' ? error.response.data : { message: error.response?.data || error.message };
+      return rejectWithValue({ ...payload, status: error.response?.status });
     }
   }
 );

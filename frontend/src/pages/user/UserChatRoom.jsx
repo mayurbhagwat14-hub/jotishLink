@@ -65,13 +65,15 @@ const UserChatRoom = () => {
 
       // Auto-send user details if it's a fresh chat (only the welcome message exists)
       if (data.messages?.length === 1 && !viewOnly) {
-        const details = `[System generated user info]
-Name: ${user?.name || 'N/A'}
-DOB: ${user?.dob || 'N/A'}
-Time of Birth: ${user?.tob || 'N/A'}
-Place of Birth: ${user?.pob || 'N/A'}
-Gender: ${user?.gender || 'N/A'}
-Marital Status: ${user?.maritalStatus || 'N/A'}`;
+        const details = `Hi, here are my details for the consultation:
+Name: ${user?.name || 'Not provided'}
+DOB: ${user?.dob || 'Not provided'}
+Time of Birth: ${user?.tob || 'Not provided'}
+Place of Birth: ${user?.pob || 'Not provided'}
+Gender: ${user?.gender || 'Not provided'}
+Marital Status: ${user?.maritalStatus || 'Not provided'}
+
+Please analyze my chart based on this information.`;
         
         socket.emit('send_message', { 
           roomId, 

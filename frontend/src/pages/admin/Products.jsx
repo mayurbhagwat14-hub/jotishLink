@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronLeft, FiChevronRight, FiBox, FiImage, FiToggleLeft, FiToggleRight, FiX, FiFilter, FiMoreHorizontal } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminProducts, createAdminProduct, deleteAdminProduct } from '../../api/adminApis';
+import { getAdminProducts, createAdminProduct, deleteAdminProduct, updateAdminProduct } from '../../api/adminApis';
 
 const AdminProducts = () => {
   const [activeTab, setActiveTab] = useState('All Products');
@@ -10,6 +10,11 @@ const AdminProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [openActionDropdown, setOpenActionDropdown] = useState(null);
+  const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
     name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none'
@@ -31,6 +36,8 @@ const AdminProducts = () => {
         category: p.category || 'General',
         price: p.price,
         originalPrice: p.mrp || Math.round(p.price * 1.5), // fallback if mrp not present
+        description: p.description || '',
+        featuredSection: p.featuredSection || 'none',
         discount: p.mrp ? Math.round(((p.mrp - p.price) / p.mrp) * 100) + '%' : '0%',
         stock: p.stock || 0,
         status: p.isActive === false || p.stock === 0 ? (p.stock === 0 ? 'Out of Stock' : 'Draft') : 'Active',
@@ -56,37 +63,71 @@ const AdminProducts = () => {
     }
   };
 
-  const handleAddProduct = async () => {
+  const handleSaveProduct = async () => {
+    if (isSubmitting) return;
     try {
       if (!formData.name || !formData.price || !formData.category) return;
-      await createAdminProduct({
+      setIsSubmitting(true);
+      const payload = {
         ...formData,
         price: Number(formData.price),
         originalPrice: Number(formData.originalPrice),
         stock: Number(formData.stock)
-      });
+      };
+
+      if (editingProductId) {
+        await updateAdminProduct(editingProductId, payload);
+      } else {
+        await createAdminProduct(payload);
+      }
+      
       setShowAddModal(false);
-      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '' });
+      setEditingProductId(null);
+      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none' });
       fetchProducts();
     } catch (err) {
-      console.error('Failed to add product', err);
+      console.error('Failed to save product', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+  const openEditModal = (product) => {
+    setEditingProductId(product.id);
+    setFormData({
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      sku: product.sku,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      stock: product.stock,
+      image: product.img,
+      featuredSection: product.featuredSection || 'none'
+    });
+    setOpenActionDropdown(null);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!deleteConfirmProduct || isDeleting) return;
     try {
-      await deleteAdminProduct(id);
+      setIsDeleting(true);
+      await deleteAdminProduct(deleteConfirmProduct.id);
+      setDeleteConfirmProduct(null);
       fetchProducts();
     } catch (err) {
       console.error('Failed to delete product', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const categories = ['All', 'Bracelets', 'Rudraksha', 'Gemstones', 'Lal Kitab'];
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (p.sku || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     const matchesTab = activeTab === 'All Products' ||
       (activeTab === 'Active' && p.status === 'Active') ||
@@ -127,7 +168,11 @@ const AdminProducts = () => {
           <p className="text-sm text-gray-400 font-medium mt-1">Manage your store product catalog, pricing, and stock</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setEditingProductId(null);
+            setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none' });
+            setShowAddModal(true);
+          }}
           className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all"
         >
           <FiPlus size={16} /> Add Product
@@ -184,8 +229,8 @@ const AdminProducts = () => {
       </div>
 
       {/* Product Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-visible">
+        <div className="w-full overflow-visible">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-100">
@@ -255,12 +300,36 @@ const AdminProducts = () => {
                       {product.status === 'Active' ? <FiToggleRight size={22} /> : <FiToggleLeft size={22} />}
                     </button>
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><FiEdit size={14} /></button>
-                      <button onClick={() => handleDeleteProduct(product.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><FiTrash2 size={14} /></button>
-                      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><FiMoreHorizontal size={14} /></button>
-                    </div>
+                  <td className={`py-3 px-4 text-right relative ${openActionDropdown === product.id ? 'z-50' : ''}`}>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenActionDropdown(openActionDropdown === product.id ? null : product.id);
+                      }}
+                      className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <FiMoreHorizontal size={18} />
+                    </button>
+
+                    {openActionDropdown === product.id && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
+                        <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
+                          <button
+                            onClick={() => openEditModal(product)}
+                            className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                          >
+                            <FiEdit size={16} className="text-blue-500" /> Edit Product
+                          </button>
+                          <button
+                            onClick={() => { setDeleteConfirmProduct(product); setOpenActionDropdown(null); }}
+                            className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <FiTrash2 size={16} /> Delete Product
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -283,16 +352,26 @@ const AdminProducts = () => {
         </div>
       </div>
 
-      {/* ═══ ADD PRODUCT MODAL ═══ */}
+      {/* ═══ ADD/EDIT PRODUCT MODAL ═══ */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h3 className="font-bold text-gray-900">Add New Product</h3>
-              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600"><FiX size={16} /></button>
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+          <div className="w-full sm:max-w-2xl bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                  {editingProductId ? <FiEdit size={20} /> : <FiBox size={20} />}
+                </div>
+                <div>
+                  <h3 className="font-black text-gray-900">{editingProductId ? 'Edit Product' : 'Add New Product'}</h3>
+                  <p className="text-xs font-medium text-gray-400">Fill in the product details below</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors">
+                <FiX size={20} />
+              </button>
             </div>
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto">
               {/* Image Upload */}
               <label className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer block relative overflow-hidden group">
                 <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
@@ -359,8 +438,55 @@ const AdminProducts = () => {
                 </div>
               </div>
 
-              <button onClick={handleAddProduct} className="w-full px-6 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm">
-                <FiPlus size={14} /> Add Product
+              <button 
+                onClick={handleSaveProduct} 
+                disabled={isSubmitting}
+                className={`w-full px-6 py-3.5 ${isSubmitting ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 active:scale-[0.98]'} text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm`}
+              >
+                {isSubmitting ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  <>
+                    {editingProductId ? <FiEdit size={14} /> : <FiPlus size={14} />} {editingProductId ? 'Update Product' : 'Add Product'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
+      {deleteConfirmProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setDeleteConfirmProduct(null)}>
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+              <FiTrash2 size={32} className="text-red-500" />
+            </div>
+            
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Delete Product?</h3>
+            <p className="text-gray-500 font-medium mb-8">
+              Are you sure you want to permanently delete <b className="text-gray-900">{deleteConfirmProduct.name}</b> from the store? This action cannot be undone.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setDeleteConfirmProduct(null)}
+                className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteProduct}
+                disabled={isDeleting}
+                className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center ${isDeleting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'}`}
+              >
+                {isDeleting ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Yes, Delete'
+                )}
               </button>
             </div>
           </div>

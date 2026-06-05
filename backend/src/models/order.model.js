@@ -39,8 +39,16 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['wallet', 'razorpay'],
+      enum: ['wallet', 'online', 'cod', 'razorpay'],
       required: true,
+    },
+    couponCode: {
+      type: String,
+      default: null,
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
     },
     deletedByUser: {
       type: Boolean,

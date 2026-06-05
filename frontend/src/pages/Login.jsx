@@ -277,8 +277,18 @@ const Login = () => {
           </button>
         </form>
 
+        {/* Astrologer Login Link */}
+        <div className="mt-6 text-center">
+          <button 
+            onClick={() => navigate('/astrologer/login')}
+            className="text-[14px] font-medium text-gray-500 hover:text-orange-500 transition-colors underline decoration-transparent hover:decoration-orange-500 underline-offset-4"
+          >
+            Login as Astrologer
+          </button>
+        </div>
+
         {/* Footer Text */}
-        <p className="text-center text-gray-400 text-[12px] mt-8 max-w-[280px] leading-relaxed">
+        <p className="text-center text-gray-400 text-[12px] mt-6 max-w-[280px] leading-relaxed">
           By signing up, you agree to our{' '}
           <span className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors">Terms of Use</span>{' '}
           &{' '}

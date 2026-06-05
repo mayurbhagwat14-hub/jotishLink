@@ -9,6 +9,7 @@ import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { apiLimiter as apiRateLimiter } from './middlewares/rateLimiter.middleware.js';
+import { initFirebase } from './config/firebase.config.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
@@ -34,6 +35,12 @@ import SystemSettings from './models/systemSettings.model.js';
 // ──────────────────────────────────────────────
 const app = express();
 const httpServer = http.createServer(app);
+
+// Connect to DB
+connectDB();
+
+// Initialize Firebase Admin SDK
+initFirebase();
 
 // ──────────────────────────────────────────────
 //  Socket.IO — Real-Time Chat + Timers

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX } from 'react-icons/fi';
+import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX, FiCheck } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import * as adminApis from '../../api/adminApis';
 
@@ -13,10 +13,16 @@ const AdminContent = () => {
 
   // Modals
   const [showBannerModal, setShowBannerModal] = useState(false);
-  const [newBanner, setNewBanner] = useState({ imageUrl: '' });
+  const [isSubmittingBanner, setIsSubmittingBanner] = useState(false);
+  const [deleteConfirmBanner, setDeleteConfirmBanner] = useState(null);
+  const [isDeletingBanner, setIsDeletingBanner] = useState(false);
+  const [newBanner, setNewBanner] = useState({ imageUrl: '', pages: ['Home'] });
 
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 });
+
+  const [broadcastData, setBroadcastData] = useState({ title: '', message: '', audience: 'All Users' });
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'Banners') fetchBanners();
@@ -49,14 +55,22 @@ const AdminContent = () => {
 
   // --- Banner Actions ---
   const handleCreateBanner = async () => {
+    if (isSubmittingBanner) return;
     try {
+      if (!newBanner.imageUrl) {
+        alert('Please select an image for the banner');
+        return;
+      }
+      setIsSubmittingBanner(true);
       await adminApis.createAdminBanner(newBanner);
       setShowBannerModal(false);
-      setNewBanner({ imageUrl: '' });
+      setNewBanner({ imageUrl: '', pages: ['Home'] });
       fetchBanners();
     } catch (err) {
       console.error(err);
       alert('Failed to create banner');
+    } finally {
+      setIsSubmittingBanner(false);
     }
   };
 
@@ -71,13 +85,41 @@ const AdminContent = () => {
     }
   };
 
-  const handleDeleteBanner = async (id) => {
-    if (!window.confirm('Delete this banner?')) return;
+  const handleDeleteBanner = async () => {
+    if (!deleteConfirmBanner || isDeletingBanner) return;
     try {
-      await adminApis.deleteAdminBanner(id);
+      setIsDeletingBanner(true);
+      await adminApis.deleteAdminBanner(deleteConfirmBanner._id);
+      setDeleteConfirmBanner(null);
       fetchBanners();
     } catch (err) {
       console.error(err);
+      alert('Failed to delete banner');
+    } finally {
+      setIsDeletingBanner(false);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastData.title || !broadcastData.message) return;
+    try {
+      setIsSendingBroadcast(true);
+      await adminApis.sendBroadcast(broadcastData);
+      
+      // Add to local UI array
+      setNotifications([{
+        title: broadcastData.title,
+        body: broadcastData.message,
+        audience: broadcastData.audience,
+        sent: 'Just now',
+        status: 'Delivered'
+      }, ...notifications]);
+
+      setBroadcastData({ title: '', message: '', audience: 'All Users' });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSendingBroadcast(false);
     }
   };
 
@@ -170,7 +212,7 @@ const AdminContent = () => {
                       <button onClick={() => handleToggleBanner(banner)} className="w-10 h-10 bg-white text-gray-700 rounded-xl flex items-center justify-center hover:scale-110 transition-transform shadow-sm" title="Toggle Active">
                         {banner.isActive ? <FiToggleRight size={16} className="text-green-500" /> : <FiToggleLeft size={16} className="text-gray-400" />}
                       </button>
-                      <button onClick={() => handleDeleteBanner(banner._id)} className="w-10 h-10 bg-white text-red-500 rounded-xl flex items-center justify-center hover:scale-110 transition-transform shadow-sm">
+                      <button onClick={() => setDeleteConfirmBanner(banner)} className="w-10 h-10 bg-white text-red-500 rounded-xl flex items-center justify-center hover:scale-110 transition-transform shadow-sm">
                         <FiTrash2 size={16} />
                       </button>
                     </div>
@@ -248,21 +290,47 @@ const AdminContent = () => {
             <h2 className="font-bold text-gray-900">Send New Notification</h2>
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Target Audience</label>
-              <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+              <select 
+                value={broadcastData.audience}
+                onChange={e => setBroadcastData({...broadcastData, audience: e.target.value})}
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+              >
                 <option>All Users</option>
                 <option>New Users</option>
               </select>
             </div>
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Title</label>
-              <input type="text" placeholder="e.g., 50% OFF!" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <input 
+                type="text" 
+                value={broadcastData.title}
+                onChange={e => setBroadcastData({...broadcastData, title: e.target.value})}
+                placeholder="e.g., 50% OFF!" 
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" 
+              />
             </div>
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Message</label>
-              <textarea rows="4" placeholder="..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none" />
+              <textarea 
+                rows="4" 
+                value={broadcastData.message}
+                onChange={e => setBroadcastData({...broadcastData, message: e.target.value})}
+                placeholder="..." 
+                className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none" 
+              />
             </div>
-            <button className="w-full px-6 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm">
-              <FiSend size={14} /> Send Broadcast
+            <button 
+              onClick={handleSendBroadcast}
+              disabled={isSendingBroadcast}
+              className={`w-full px-6 py-3.5 ${isSendingBroadcast ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 active:scale-[0.98]'} text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm`}
+            >
+              {isSendingBroadcast ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              ) : (
+                <>
+                  <FiSend size={14} /> Send Broadcast
+                </>
+              )}
             </button>
           </div>
           <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -319,7 +387,51 @@ const AdminContent = () => {
                   )}
                 </label>
               </div>
-              <button onClick={handleCreateBanner} className="w-full py-3 mt-2 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-colors">Save Banner</button>
+
+              {/* Pages Selection */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Display On Pages</label>
+                <div className="flex gap-4">
+                  {['Home', 'Store'].map(page => (
+                    <label key={page} className="flex items-center gap-2 cursor-pointer">
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${newBanner.pages?.includes(page) ? 'bg-orange-500 border-orange-500' : 'bg-white border-gray-300'}`}>
+                        {newBanner.pages?.includes(page) && <FiCheck size={12} className="text-white" />}
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        className="hidden"
+                        checked={newBanner.pages?.includes(page)}
+                        onChange={(e) => {
+                          const isChecked = e.target.checked;
+                          const currentPages = newBanner.pages || [];
+                          if (isChecked) {
+                            setNewBanner({ ...newBanner, pages: [...currentPages, page] });
+                          } else {
+                            if (currentPages.length > 1) {
+                              setNewBanner({ ...newBanner, pages: currentPages.filter(p => p !== page) });
+                            } else {
+                              alert('At least one page must be selected');
+                            }
+                          }
+                        }}
+                      />
+                      <span className="text-sm font-bold text-gray-700">{page}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <button 
+                onClick={handleCreateBanner} 
+                disabled={isSubmittingBanner}
+                className={`w-full py-3 mt-2 text-white font-bold rounded-xl transition-all flex items-center justify-center ${isSubmittingBanner ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 active:scale-[0.98]'}`}
+              >
+                {isSubmittingBanner ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Save Banner'
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -356,6 +468,43 @@ const AdminContent = () => {
                 <input type="number" value={newCoupon.usageLimit} onChange={e=>setNewCoupon({...newCoupon, usageLimit: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="0 for unlimited"/>
               </div>
               <button onClick={handleCreateCoupon} className="w-full py-3 mt-2 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-colors">Create Coupon</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
+      {deleteConfirmBanner && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setDeleteConfirmBanner(null)}>
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+              <FiTrash2 size={32} className="text-red-500" />
+            </div>
+            
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Delete Banner?</h3>
+            <p className="text-gray-500 font-medium mb-8">
+              Are you sure you want to permanently delete this banner from the home screen carousel? This action cannot be undone.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setDeleteConfirmBanner(null)}
+                className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteBanner}
+                disabled={isDeletingBanner}
+                className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center ${isDeletingBanner ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'}`}
+              >
+                {isDeletingBanner ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Yes, Delete'
+                )}
+              </button>
             </div>
           </div>
         </div>

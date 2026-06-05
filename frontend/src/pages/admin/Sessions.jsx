@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle } from 'react-icons/fi';
-import { getAdminSessions, getAdminCalls } from '../../api/adminApis';
+import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle, FiTrash2, FiX, FiCheck } from 'react-icons/fi';
+import { getAdminSessions, getAdminCalls, deleteAdminSession, deleteAdminCall } from '../../api/adminApis';
 
 const AdminSessions = () => {
   const [liveSessions, setLiveSessions] = useState([]);
@@ -12,6 +12,13 @@ const AdminSessions = () => {
   const [filterAstro, setFilterAstro] = useState('');
   const [filterType, setFilterType] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
+  
+  const [deletingId, setDeletingId] = useState(null);
+
+  // Deletion States
+  const [deleteConfirmSession, setDeleteConfirmSession] = useState(null);
+  const [selectedSessions, setSelectedSessions] = useState([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   useEffect(() => {
     fetchSessions();
@@ -27,10 +34,12 @@ const AdminSessions = () => {
       const allSessions = sessionsRes.data?.data?.sessions || [];
       const allCalls = callsRes.data?.data?.calls || [];
       
-      const liveChats = allSessions.filter(s => s.status === 'ongoing').map(s => ({
+      const liveChats = allSessions.filter(s => s.status === 'ongoing' && s.userId && s.astrologerId).map(s => ({
         id: s._id,
         user: s.userId?.name || 'Unknown User',
+        userAvatar: s.userId?.avatar || '',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
+        astrologerAvatar: s.astrologerId?.avatar || '',
         type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
         typeIcon: <FiMessageSquare />,
         duration: 'Ongoing',
@@ -39,10 +48,12 @@ const AdminSessions = () => {
         billed: s.amountDeducted || 0
       }));
 
-      const liveCallsData = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status)).map(c => ({
+      const liveCallsData = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status) && c.userId && c.astrologerId).map(c => ({
         id: c._id,
         user: c.userId?.name || 'Unknown User',
+        userAvatar: c.userId?.avatar || '',
         astrologer: c.astrologerId?.name || 'Unknown Astrologer',
+        astrologerAvatar: c.astrologerId?.avatar || '',
         type: 'Audio Call',
         typeIcon: <FiPhoneCall />,
         duration: c.status === 'ringing' ? 'Ringing' : 'Ongoing',
@@ -54,7 +65,9 @@ const AdminSessions = () => {
       const recentChats = allSessions.filter(s => s.status === 'completed' || s.status === 'missed').map(s => ({
         id: s._id,
         user: s.userId?.name || 'Unknown User',
+        userAvatar: s.userId?.avatar || '',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
+        astrologerAvatar: s.astrologerId?.avatar || '',
         type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
         duration: `${Math.floor((s.durationSeconds || 0) / 60)}m ${(s.durationSeconds || 0) % 60}s`,
         total: s.amountDeducted || 0,
@@ -66,7 +79,9 @@ const AdminSessions = () => {
       const recentCallsData = allCalls.filter(c => ['completed', 'missed', 'rejected', 'cancelled'].includes(c.status)).map(c => ({
         id: c._id,
         user: c.userId?.name || 'Unknown User',
+        userAvatar: c.userId?.avatar || '',
         astrologer: c.astrologerId?.name || 'Unknown Astrologer',
+        astrologerAvatar: c.astrologerId?.avatar || '',
         type: 'Audio Call',
         duration: `${Math.floor((c.duration || 0) / 60)}m ${(c.duration || 0) % 60}s`,
         total: c.totalAmount || 0,
@@ -90,6 +105,57 @@ const AdminSessions = () => {
     if (type === 'Audio Call') return 'text-green-500 bg-green-50';
     return 'text-purple-500 bg-purple-50';
   };
+
+  const handleDeleteSession = (id, type) => {
+    setDeleteConfirmSession([{ id, type }]);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedSessions.length === 0) return;
+    setDeleteConfirmSession(selectedSessions);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmSession || deleteConfirmSession.length === 0) return;
+    
+    setIsBulkDeleting(true);
+    try {
+      await Promise.all(deleteConfirmSession.map(s => {
+        if (s.type.includes('Call')) return deleteAdminCall(s.id);
+        return deleteAdminSession(s.id);
+      }));
+      fetchSessions();
+      setSelectedSessions([]);
+    } catch (err) {
+      console.error('Failed to delete sessions', err);
+      alert('Failed to delete some sessions');
+    } finally {
+      setIsBulkDeleting(false);
+      setDeleteConfirmSession(null);
+    }
+  };
+
+  const toggleSelectAll = (filtered) => {
+    if (selectedSessions.length === filtered.length && filtered.length > 0) {
+      setSelectedSessions([]);
+    } else {
+      setSelectedSessions(filtered.map(s => ({ id: s.id, type: s.type })));
+    }
+  };
+
+  const toggleSelect = (session) => {
+    setSelectedSessions(prev => 
+      prev.some(s => s.id === session.id) 
+        ? prev.filter(s => s.id !== session.id) 
+        : [...prev, { id: session.id, type: session.type }]
+    );
+  };
+
+  const filteredRecentSessions = recentSessions
+    .filter(s => filterUser === '' || s.user.toLowerCase().includes(filterUser.toLowerCase()))
+    .filter(s => filterAstro === '' || s.astrologer.toLowerCase().includes(filterAstro.toLowerCase()))
+    .filter(s => filterType === 'All' || s.type === filterType)
+    .filter(s => filterStatus === 'All' || s.status === filterStatus);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -133,8 +199,12 @@ const AdminSessions = () => {
             <div key={s.id} className="px-6 py-5 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
               <div className="flex items-center gap-5">
                 <div className="flex -space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 border-2 border-white flex items-center justify-center text-xs font-black text-blue-600 shadow-sm">{s.user?.[0] || 'U'}</div>
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 border-2 border-white flex items-center justify-center text-xs font-black text-orange-600 shadow-sm">{s.astrologer?.[0] || 'A'}</div>
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border-2 border-white flex items-center justify-center text-xs font-black text-blue-600 shadow-sm overflow-hidden">
+                    <img src={s.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.user || 'U')}&background=dbeafe&color=2563eb`} alt={s.user} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 border-2 border-white flex items-center justify-center text-xs font-black text-orange-600 shadow-sm overflow-hidden">
+                    <img src={s.astrologerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.astrologer || 'A')}&background=ffedD5&color=f97316`} alt={s.astrologer} className="w-full h-full object-cover" />
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-gray-800">{s.user} <span className="text-gray-300 mx-1">↔</span> {s.astrologer}</p>
@@ -144,9 +214,19 @@ const AdminSessions = () => {
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-black text-gray-900 tabular-nums">{s.duration}</p>
-                <p className="text-[11px] text-gray-400 font-medium">₹{s.rate}/min • Billed: <span className="text-green-600 font-bold">₹{s.billed}</span></p>
+              <div className="text-right flex flex-col items-end gap-3">
+                <div>
+                  <p className="text-lg font-black text-gray-900 tabular-nums">{s.duration}</p>
+                  <p className="text-[11px] text-gray-400 font-medium">₹{s.rate}/min • Billed: <span className="text-green-600 font-bold">₹{s.billed}</span></p>
+                </div>
+                <button
+                  onClick={() => handleDeleteSession(s.id, s.type)}
+                  disabled={deletingId === s.id}
+                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  title="Force Delete Stuck Session"
+                >
+                  <FiTrash2 size={12} /> Delete
+                </button>
               </div>
             </div>
           ))}
@@ -197,15 +277,35 @@ const AdminSessions = () => {
           </div>
         </div>
         <div className="overflow-x-auto">
+          {selectedSessions.length > 0 && (
+            <div className="px-6 py-3 bg-red-50/50 border-b border-red-100 flex items-center justify-between">
+              <span className="text-sm font-bold text-red-600">{selectedSessions.length} session(s) selected</span>
+              <button 
+                onClick={handleBulkDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-red-600/20 active:scale-95"
+              >
+                Delete Selected
+              </button>
+            </div>
+          )}
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-100">
+                <th className="py-3 px-6 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedSessions.length === filteredRecentSessions.length && filteredRecentSessions.length > 0}
+                    onChange={() => toggleSelectAll(filteredRecentSessions)}
+                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
+                  />
+                </th>
                 <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">User → Astrologer</th>
                 <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Type</th>
                 <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Duration</th>
                 <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Billed</th>
                 <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Time</th>
                 <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -213,13 +313,16 @@ const AdminSessions = () => {
                 <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">Loading recent sessions...</td></tr>
               ) : recentSessions.length === 0 ? (
                 <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">No recent sessions found</td></tr>
-              ) : recentSessions
-                  .filter(s => filterUser === '' || s.user.toLowerCase().includes(filterUser.toLowerCase()))
-                  .filter(s => filterAstro === '' || s.astrologer.toLowerCase().includes(filterAstro.toLowerCase()))
-                  .filter(s => filterType === 'All' || s.type === filterType)
-                  .filter(s => filterStatus === 'All' || s.status === filterStatus)
-                  .map((s) => (
+              ) : filteredRecentSessions.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="py-3.5 px-6">
+                    <input
+                      type="checkbox"
+                      checked={selectedSessions.some(sel => sel.id === s.id)}
+                      onChange={() => toggleSelect(s)}
+                      className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
+                    />
+                  </td>
                   <td className="py-3.5 px-6 text-sm font-bold text-gray-800">{s.user} → {s.astrologer}</td>
                   <td className="py-3.5 px-6">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${getTypeColor(s.type)}`}>{s.type}</span>
@@ -235,12 +338,64 @@ const AdminSessions = () => {
                       {s.status}
                     </span>
                   </td>
+                  <td className="py-3.5 px-6 text-right">
+                    <button
+                      onClick={() => handleDeleteSession(s.id, s.type)}
+                      disabled={deletingId === s.id}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      title="Delete Session"
+                    >
+                      {deletingId === s.id ? (
+                        <span className="w-4 h-4 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin inline-block"></span>
+                      ) : (
+                        <FiTrash2 size={16} />
+                      )}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
+      {deleteConfirmSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => !isBulkDeleting && setDeleteConfirmSession(null)} />
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative z-10 animate-scale-up text-center">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiTrash2 size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Delete Session{deleteConfirmSession.length > 1 ? 's' : ''}?</h2>
+            <p className="text-gray-500 mb-8 font-medium">
+              Are you sure you want to permanently delete {deleteConfirmSession.length > 1 ? `these ${deleteConfirmSession.length} sessions` : 'this session'}? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteConfirmSession(null)}
+                disabled={isBulkDeleting}
+                className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold rounded-xl transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDelete}
+                disabled={isBulkDeleting}
+                className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isBulkDeleting ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  <>
+                    <FiTrash2 size={18} /> Delete
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

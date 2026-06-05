@@ -10,7 +10,11 @@ export const getAdminUsers = () => axios.get('/admin/users');
 export const updateAdminUserStatus = (id, status) => axios.put(`/admin/users/${id}/status`, { status });
 export const deleteAdminUser = (id) => axios.delete(`/admin/users/${id}`);
 export const getAdminAstrologers = () => axios.get('/admin/astrologers');
+export const getAdminAstrologerById = (id) => axios.get(`/admin/astrologer/${id}`);
 export const updateAdminAstrologerStatus = (id, status) => axios.put(`/admin/astrologers/${id}/status`, { status });
+export const approveAstrologer = (id) => axios.put(`/admin/astrologer/approve/${id}`);
+export const rejectAstrologer = (id, reason) => axios.put(`/admin/astrologer/reject/${id}`, { reason });
+export const suspendAstrologer = (id, reason) => axios.put(`/admin/astrologer/suspend/${id}`, { reason });
 export const deleteAdminAstrologer = (id) => axios.delete(`/admin/astrologers/${id}`);
 export const refundUser = (id, data) => axios.post(`/admin/users/${id}/refund`, data);
 export const getAdminOrders = () => axios.get('/admin/orders');
@@ -36,6 +40,8 @@ export const createAdminCoupon = (data) => axios.post('/admin/coupons', data);
 export const updateAdminCoupon = (id, data) => axios.put(`/admin/coupons/${id}`, data);
 export const deleteAdminCoupon = (id) => axios.delete(`/admin/coupons/${id}`);
 
+export const sendBroadcast = (data) => axios.post('/admin/broadcast', data);
+
 // Banners
 export const getAdminBanners = () => axios.get('/admin/banners');
 export const createAdminBanner = (data) => axios.post('/admin/banners', data);
@@ -44,12 +50,15 @@ export const deleteAdminBanner = (id) => axios.delete(`/admin/banners/${id}`);
 
 // Audit Logs
 export const getAdminAuditLogs = (limit = 50) => axios.get(`/admin/audit-logs?limit=${limit}`);
+export const deleteAdminAuditLog = (id) => axios.delete(`/admin/audit-logs/${id}`);
 
 // Sessions, Poojas, Reports, Calls
 export const getAdminSessions = () => axios.get('/admin/sessions');
+export const deleteAdminSession = (id) => axios.delete(`/admin/sessions/${id}`);
 export const getAdminPoojas = () => axios.get('/admin/poojas');
 export const getAdminReports = () => axios.get('/admin/reports');
 export const getAdminCalls = () => axios.get('/admin/calls');
+export const deleteAdminCall = (id) => axios.delete(`/admin/calls/${id}`);
 export const getAdminCallAnalytics = () => axios.get('/admin/calls/analytics');
 export const getAstrologerPayouts = () => axios.get('/admin/astrologer-payouts');
 export const processAstrologerPayout = (id, data) => axios.post(`/admin/astrologer-payouts/${id}/process`, data);

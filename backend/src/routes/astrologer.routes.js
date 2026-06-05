@@ -19,6 +19,7 @@ import {
   getAstrologerAnalytics,
 } from '../controllers/astrologer.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
+import { uploadFields } from '../middlewares/upload.middleware.js';
 import { otpRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 import {
   validate,
@@ -33,14 +34,14 @@ const router = Router();
 // Public astrologer auth
 router.post('/astrologer/auth/check-phone', validate(astrologerCheckPhoneSchema), checkAstrologerPhone);
 router.post('/astrologer/auth/request-otp', otpRateLimiter, validate(astrologerCheckPhoneSchema), astrologerRequestOtp);
-router.post('/astrologer/auth/signup', validate(astrologerSignupSchema), astrologerSignup);
+router.post('/astrologer/auth/signup', uploadFields, validate(astrologerSignupSchema), astrologerSignup);
 router.post('/astrologer/auth/login', validate(astrologerLoginSchema), astrologerLogin);
 
 // Protected astrologer routes
 const astroAuth = [verifyJWT, authorizeRoles('astrologer', 'admin')];
 router.post('/astrologer/auth/change-password', astroAuth, validate(changePasswordSchema), astrologerChangePassword);
 router.get('/astrologer/profile', astroAuth, getAstrologerProfile);
-router.put('/astrologer/profile/update', astroAuth, updateAstrologerProfile);
+router.put('/astrologer/profile/update', astroAuth, uploadFields, updateAstrologerProfile);
 router.delete('/astrologer/profile', astroAuth, deleteAstrologerAccount);
 router.delete('/astrologer/profile/delete', astroAuth, deleteAstrologerAccount);
 

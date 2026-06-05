@@ -124,6 +124,7 @@ const AdminOrders = () => {
           return {
             ...o,
             status: 'Delivered',
+            payment: 'Paid',
             timeline: [...o.timeline, { label: 'Delivered', time: now(), icon: 'delivered' }]
           };
         }
@@ -411,8 +412,8 @@ const AdminOrders = () => {
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => setSelectedOrder(getOrderById(order.id))}
-                        className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1 opacity-0 group-hover:opacity-100"
-                      ><FiEye size={12} /> View</button>
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1 shadow-sm"
+                      ><FiEye size={12} /> View Details</button>
 
                       {(!order.cancelRequest?.requested || order.cancelRequest?.adminResponse !== 'pending') && (
                         <>

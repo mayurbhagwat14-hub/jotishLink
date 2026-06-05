@@ -27,9 +27,9 @@ export const updateCartThunk = createAsyncThunk(
 
 export const createOrderThunk = createAsyncThunk(
   'cart/createOrder',
-  async ({ shippingAddress, paymentMethod, paymentData }, { rejectWithValue }) => {
+  async ({ shippingAddress, paymentMethod, paymentData, couponCode }, { rejectWithValue }) => {
     try {
-      const response = await createOrder(shippingAddress, paymentMethod, paymentData);
+      const response = await createOrder(shippingAddress, paymentMethod, paymentData, couponCode);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

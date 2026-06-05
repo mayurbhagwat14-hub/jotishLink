@@ -3,6 +3,7 @@ import {
   getCart,
   updateCart,
   createOrder,
+  verifyCoupon,
   getUserOrders,
   getOrderById,
   createRazorpayOrder,
@@ -14,6 +15,7 @@ const router = Router();
 
 router.get('/store/cart', verifyJWT, getCart);
 router.post('/store/cart', verifyJWT, updateCart);
+router.post('/store/coupon/verify', verifyJWT, verifyCoupon);
 router.post('/store/order', verifyJWT, createOrder);
 router.post('/store/razorpay-order', verifyJWT, createRazorpayOrder);
 router.get('/store/orders', verifyJWT, getUserOrders);

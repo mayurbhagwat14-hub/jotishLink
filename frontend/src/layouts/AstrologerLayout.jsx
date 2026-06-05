@@ -28,24 +28,44 @@ const AstrologerLayout = () => {
 
       socket.emit('join_astrologer_room', { astrologerId: user._id });
 
-      const onIncoming = (data) => dispatch(addIncomingRequest(data));
-      const onCancelled = (data) => dispatch(removeIncomingRequestByUserId(data.userId));
+      const onIncoming = (data) => {
+        dispatch(addIncomingRequest(data));
+        import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
+          dispatch(fetchAstrologerDashboardThunk());
+        });
+      };
+      const onCancelled = (data) => {
+        dispatch(removeIncomingRequestByUserId(data.userId));
+        import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
+          dispatch(fetchAstrologerDashboardThunk());
+        });
+      };
       const onSessionEnded = (data) => {
         if (data.roomId) {
           dispatch(removeActiveSession(data.roomId));
         }
+        // Force refresh dashboard data and history data so UI updates instantly
+        import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
+          dispatch(fetchAstrologerDashboardThunk());
+        });
+        import('../store/slices/astrologerSlice').then(({ fetchAstrologerHistoryThunk }) => {
+          dispatch(fetchAstrologerHistoryThunk());
+        });
       };
 
       socket.on('incoming_session_request', onIncoming);
       socket.on('session_request_cancelled', onCancelled);
       socket.on('session_ended', onSessionEnded);
       socket.on('call_ended', onSessionEnded);
+      // Also refresh on accepted
+      socket.on('session_accept_confirmed', onSessionEnded);
 
       return () => {
         socket.off('incoming_session_request', onIncoming);
         socket.off('session_request_cancelled', onCancelled);
         socket.off('session_ended', onSessionEnded);
         socket.off('call_ended', onSessionEnded);
+        socket.off('session_accept_confirmed', onSessionEnded);
       };
     }
   }, [user, token, dispatch]);
@@ -113,10 +133,10 @@ const AstrologerLayout = () => {
             className="flex items-center gap-2 hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors text-left"
           >
              <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0">
-                <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
+                <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.name === 'Temp Astrologer' ? 'Astrologer' : user?.name) || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
              </div>
              <div>
-               <h3 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[120px]">{user?.name || 'Astrologer'}</h3>
+               <h3 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[120px]">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h3>
              </div>
           </button>
         </div>
@@ -162,10 +182,10 @@ const AstrologerLayout = () => {
             <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-orange-50/50">
               <div className="flex items-center gap-3">
                  <div className="w-10 h-10 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0 shadow-sm">
-                    <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
+                    <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.name === 'Temp Astrologer' ? 'Astrologer' : user?.name) || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
                  </div>
                  <div>
-                   <h3 className="font-bold text-gray-900 leading-tight">{user?.name || 'Astrologer'}</h3>
+                   <h3 className="font-bold text-gray-900 leading-tight">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h3>
                    <p className="text-xs font-bold text-orange-500">Astrologer Panel</p>
                  </div>
               </div>

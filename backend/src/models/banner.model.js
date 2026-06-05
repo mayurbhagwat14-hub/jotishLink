@@ -17,6 +17,11 @@ const bannerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    pages: {
+      type: [String],
+      enum: ['Home', 'Store'],
+      default: ['Home'],
+    },
   },
   { timestamps: true }
 );

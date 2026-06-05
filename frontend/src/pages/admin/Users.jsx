@@ -16,6 +16,8 @@ const AdminUsers = () => {
   const [refundModal, setRefundModal] = useState(false);
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
+  const [openActionDropdown, setOpenActionDropdown] = useState(null);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -28,8 +30,11 @@ const AdminUsers = () => {
   };
 
   const filteredUsers = users.filter(u => {
-    const matchesSearch = u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.phone.includes(searchQuery) || u.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || u.status === statusFilter;
+    const uStatus = u.status || (u.isBlocked ? 'Banned' : 'Active');
+    const matchesSearch = (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (u.phone || '').includes(searchQuery) || 
+                          (u.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || uStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -66,14 +71,18 @@ const AdminUsers = () => {
     }
   };
 
-  const deleteUser = (userId) => {
-    if (window.confirm("Are you sure you want to permanently delete this user from the database? This action cannot be undone.")) {
-      dispatch(deleteAdminUserThunk(userId));
-      showToast('User permanently deleted from database.');
-      if (detailUser && (detailUser.id === userId || detailUser._id === userId)) {
-        setDetailUser(null);
-      }
+  const deleteUser = (user) => {
+    setDeleteConfirmUser(user);
+  };
+
+  const executeDelete = () => {
+    if (!deleteConfirmUser) return;
+    dispatch(deleteAdminUserThunk(deleteConfirmUser.id || deleteConfirmUser._id));
+    showToast('User permanently deleted from database.');
+    if (detailUser && (detailUser.id === deleteConfirmUser.id || detailUser._id === deleteConfirmUser._id)) {
+      setDetailUser(null);
     }
+    setDeleteConfirmUser(null);
   };
 
   return (
@@ -134,8 +143,8 @@ const AdminUsers = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="w-full overflow-visible">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-100">
@@ -157,82 +166,107 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {paginatedUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50/50 transition-colors group">
+              {paginatedUsers.map((user) => {
+                const uStatus = user.status || (user.isBlocked ? 'Banned' : 'Active');
+                const joinedDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
+                const lastActive = user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : 'N/A';
+                
+                return (
+                <tr key={user._id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => setDetailUser(user)}>
                   <td className="py-4 px-4">
                     <input
                       type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => toggleSelect(user.id)}
+                      checked={selectedUsers.includes(user._id)}
+                      onChange={(e) => { e.stopPropagation(); toggleSelect(user._id); }}
                       className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
                     />
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
-                        user.status === 'Banned' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
+                      <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center font-bold text-sm shrink-0 ${
+                        uStatus === 'Banned' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
                       }`}>
-                        {user.avatar}
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.name || 'User'} className="w-full h-full object-cover" />
+                        ) : (
+                          (user.name || 'U').charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div>
-                        <p className={`font-bold text-sm ${user.status === 'Banned' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{user.name}</p>
-                        <p className="text-[10px] text-gray-400 font-medium">Last active: {user.lastActive}</p>
+                        <p className={`font-bold text-sm ${uStatus === 'Banned' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{user.name || 'Guest User'}</p>
+                        <p className="text-[10px] text-gray-400 font-medium">Last active: {lastActive}</p>
                       </div>
                     </div>
                   </td>
                   <td className="py-4 px-4">
                     <p className="text-xs text-gray-500 font-medium flex items-center gap-1"><FiPhone size={10} /> {user.phone}</p>
-                    <p className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5"><FiMail size={10} /> {user.email}</p>
+                    <p className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5"><FiMail size={10} /> {user.email || 'N/A'}</p>
                   </td>
                   <td className="py-4 px-4">
-                    <span className="font-black text-sm text-gray-900">₹{user.wallet.toLocaleString()}</span>
+                    <span className="font-black text-sm text-gray-900">₹{(user.wallet || 0).toLocaleString()}</span>
                   </td>
                   <td className="py-4 px-4">
-                    <span className="text-sm font-bold text-gray-600">{user.sessions}</span>
+                    <span className="text-sm font-bold text-gray-600">{user.sessions || 0}</span>
                   </td>
                   <td className="py-4 px-4">
-                    <span className="text-xs text-gray-400 font-medium flex items-center gap-1"><FiCalendar size={10} /> {user.joined}</span>
+                    <span className="text-xs text-gray-400 font-medium flex items-center gap-1"><FiCalendar size={10} /> {joinedDate}</span>
                   </td>
                   <td className="py-4 px-4">
                     <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                      user.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
+                      uStatus === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
                     }`}>
-                      {user.status}
+                      {uStatus}
                     </span>
                   </td>
-                  <td className="py-4 px-4">
-                    <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setDetailUser(user)}
-                        className="px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1"
-                      >
-                        <FiEye size={12} /> View
-                      </button>
-                      {user.status === 'Active' ? (
-                        <button
-                          onClick={() => banUser(user.id)}
-                          className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1"
-                        >
-                          <FiUserX size={12} /> Ban
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => unbanUser(user.id)}
-                          className="px-2.5 py-1.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1"
-                        >
-                          <FiUserCheck size={12} /> Unban
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteUser(user.id || user._id)}
-                        className="px-2.5 py-1.5 bg-gray-50 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1"
-                      >
-                        <FiX size={12} /> Delete
-                      </button>
-                    </div>
+                  <td className={`py-4 px-4 text-right relative ${openActionDropdown === user._id ? 'z-50' : ''}`}>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenActionDropdown(openActionDropdown === user._id ? null : user._id);
+                      }}
+                      className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <FiMoreHorizontal size={18} />
+                    </button>
+
+                    {openActionDropdown === user._id && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
+                        <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDetailUser(user); setOpenActionDropdown(null); }}
+                            className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                          >
+                            <FiEye size={16} className="text-blue-500" /> View Profile
+                          </button>
+                          {uStatus === 'Active' ? (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); banUser(user._id); setOpenActionDropdown(null); }}
+                              className="w-full px-4 py-3 text-left text-sm font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                            >
+                              <FiUserX size={16} /> Ban User
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); unbanUser(user._id); setOpenActionDropdown(null); }}
+                              className="w-full px-4 py-3 text-left text-sm font-bold text-green-600 hover:bg-green-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                            >
+                              <FiUserCheck size={16} /> Unban User
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); deleteUser(user); setOpenActionDropdown(null); }}
+                            className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <FiX size={16} /> Delete User
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {paginatedUsers.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-gray-500">
@@ -287,71 +321,181 @@ const AdminUsers = () => {
         )}
       </div>
 
-      {/* ═══ USER DETAIL MODAL ═══ */}
+      {/* ═══ COMPREHENSIVE USER DETAIL MODAL ═══ */}
       {detailUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setDetailUser(null)}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900">User Details</h3>
-              <button onClick={() => setDetailUser(null)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600"><FiX size={16} /></button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setDetailUser(null)}>
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
+            
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+              <div>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">User Profile</h3>
+                <p className="text-sm font-medium text-gray-500 mt-1">Detailed information and platform metrics</p>
+              </div>
+              <button onClick={() => setDetailUser(null)} className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+                <FiX size={20} />
+              </button>
             </div>
-            <div className="p-6 space-y-5">
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl ${
-                  detailUser.status === 'Banned' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
-                }`}>{detailUser.avatar}</div>
-                <div>
-                  <h4 className="text-lg font-bold text-gray-900">{detailUser.name}</h4>
-                  <p className="text-sm text-gray-400 font-medium">{detailUser.email}</p>
-                  <span className={`inline-block mt-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                    detailUser.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
-                  }`}>{detailUser.status}</span>
+
+            {/* Scrollable Content */}
+            <div className="overflow-y-auto p-8 flex-1 bg-gray-50/30">
+              
+              {/* Top Banner & Basic Info */}
+              <div className="bg-white rounded-3xl border border-gray-100 p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6 shadow-sm mb-6">
+                <div className={`w-24 h-24 rounded-full flex items-center justify-center font-black text-4xl shrink-0 ${
+                  detailUser.isBlocked ? 'bg-red-50 text-red-500' : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30'
+                }`}>
+                  {detailUser.avatar ? (
+                    <img src={detailUser.avatar} alt="avatar" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    detailUser.name?.charAt(0).toUpperCase() || 'U'
+                  )}
+                </div>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
+                    <h4 className="text-2xl font-bold text-gray-900">{detailUser.name || 'Guest User'}</h4>
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider justify-center ${
+                      detailUser.isBlocked ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-100'
+                    }`}>
+                      {detailUser.isBlocked ? 'Banned' : 'Active'}
+                    </span>
+                    {detailUser.isNewUser && (
+                      <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 justify-center">
+                        New User
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-gray-500 font-medium text-sm mt-3">
+                    <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                      <FiMail size={16} /> {detailUser.email || 'N/A'}
+                    </div>
+                    <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-gray-200" />
+                    <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                      <FiPhone size={16} /> {detailUser.phone || 'N/A'}
+                    </div>
+                    <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-gray-200" />
+                    <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                      <FiCalendar size={16} /> Joined: {new Date(detailUser.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Wallet Balance', value: `₹${detailUser.wallet.toLocaleString()}` },
-                  { label: 'Total Spent', value: `₹${detailUser.totalSpent.toLocaleString()}` },
-                  { label: 'Total Sessions', value: detailUser.sessions },
-                  { label: 'Joined', value: detailUser.joined },
-                  { label: 'Phone', value: detailUser.phone },
-                  { label: 'Last Active', value: detailUser.lastActive },
-                ].map((item, i) => (
-                  <div key={i} className="bg-gray-50 rounded-xl p-3">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{item.label}</p>
-                    <p className="text-sm font-bold text-gray-800">{item.value}</p>
+
+              {/* Data Grids */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                
+                {/* Personal Information */}
+                <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+                  <h5 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-500" /> Personal Details
+                  </h5>
+                  <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Gender</p>
+                      <p className="text-[15px] font-bold text-gray-800">{detailUser.gender || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Date of Birth</p>
+                      <p className="text-[15px] font-bold text-gray-800">{detailUser.dob || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Time of Birth</p>
+                      <p className="text-[15px] font-bold text-gray-800">{detailUser.timeOfBirth || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Place of Birth</p>
+                      <p className="text-[15px] font-bold text-gray-800">{detailUser.placeOfBirth || 'N/A'}</p>
+                    </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Location Information */}
+                <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+                  <h5 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500" /> Location Details
+                  </h5>
+                  <div className="grid grid-cols-1 gap-y-6">
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Address</p>
+                      <p className="text-[15px] font-bold text-gray-800 leading-relaxed">{detailUser.address || 'N/A'}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">City</p>
+                        <p className="text-[15px] font-bold text-gray-800">{detailUser.city || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Pincode</p>
+                        <p className="text-[15px] font-bold text-gray-800">{detailUser.pincode || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setRefundModal(true)}
-                  className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
-                >
-                  <FiEdit size={14} /> Refund to Wallet
-                </button>
-                {detailUser.status === 'Active' ? (
-                  <button
-                    onClick={() => banUser(detailUser.id)}
-                    className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
-                  >
-                    <FiUserX size={14} /> Ban User
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => unbanUser(detailUser.id)}
-                    className="flex-1 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-600 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
-                  >
-                    <FiUserCheck size={14} /> Unban User
-                  </button>
-                )}
+
+              {/* Platform Metrics */}
+              <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+                <h5 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" /> Platform Metrics
+                </h5>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Wallet Balance</p>
+                    <p className="text-xl font-black text-gray-900">₹{(detailUser.wallet || 0).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Spent</p>
+                    <p className="text-xl font-black text-gray-900">₹{(detailUser.totalSpent || 0).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Free Chat Used</p>
+                    <p className={`text-sm font-bold mt-1 inline-flex px-2 py-0.5 rounded-lg ${detailUser.hasUsedFreeChat ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                      {detailUser.hasUsedFreeChat ? 'Yes' : 'No'}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Last Active</p>
+                    <p className="text-sm font-bold text-gray-800 mt-1">{detailUser.lastActive ? new Date(detailUser.lastActive).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => deleteUser(detailUser.id || detailUser._id)}
-                className="w-full mt-2 px-4 py-2.5 bg-white border border-red-100 hover:bg-red-50 text-red-500 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
+
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-6 border-t border-gray-100 bg-white shrink-0 flex flex-col sm:flex-row items-center gap-3">
+              <button 
+                onClick={() => setRefundModal(true)}
+                className="w-full sm:flex-1 py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-lg shadow-gray-900/20 active:scale-[0.98] flex justify-center items-center gap-2"
               >
-                <FiX size={14} /> Permanently Delete User
+                <FiEdit size={16} /> Refund to Wallet
+              </button>
+              
+              {!detailUser.isBlocked ? (
+                <button
+                  onClick={() => banUser(detailUser._id || detailUser.id)}
+                  className="w-full sm:flex-1 py-3.5 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
+                >
+                  <FiUserX size={16} /> Ban User
+                </button>
+              ) : (
+                <button
+                  onClick={() => unbanUser(detailUser._id || detailUser.id)}
+                  className="w-full sm:flex-1 py-3.5 bg-green-50 hover:bg-green-100 text-green-600 font-bold rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
+                >
+                  <FiUserCheck size={16} /> Unban User
+                </button>
+              )}
+              
+              <button
+                onClick={() => deleteUser(detailUser)}
+                className="w-full sm:flex-1 py-3.5 bg-red-50 border border-red-100 hover:bg-red-100 text-red-600 font-bold rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
+              >
+                <FiX size={16} /> Delete Account
               </button>
             </div>
           </div>
@@ -409,6 +553,35 @@ const AdminUsers = () => {
                   className="flex-1 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors disabled:opacity-50"
                 >Refund</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ═══ DELETE CONFIRM MODAL ═══ */}
+      {deleteConfirmUser && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setDeleteConfirmUser(null)} />
+          <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl p-6 text-center animate-scale-in">
+            <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+              <FiX size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete User?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to permanently delete <b className="text-gray-800">{deleteConfirmUser.name}</b> from the database? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmUser(null)}
+                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-500/30"
+              >
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>

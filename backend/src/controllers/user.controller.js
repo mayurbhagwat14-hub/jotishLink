@@ -66,13 +66,13 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
 // GET /api/user/homepage-data
 export const getHomepageData = asyncHandler(async (req, res) => {
   const [astrologers, products, celebrities, liveAstrologersRaw, storeCategories, banners] = await Promise.all([
-    Astrologer.find({ isVerified: true })
+    Astrologer.find({ isVerified: true, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
       .lean(),
     Product.find({ inStock: true }).limit(6).lean(),
     Celebrity.find({ isActive: true }).sort({ createdAt: -1 }).lean(),
-    Astrologer.find({ isVerified: true, onlineStatus: { $in: ['online', 'busy'] } })
+    Astrologer.find({ isVerified: true, onlineStatus: { $in: ['online', 'busy'] }, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
       .lean(),
@@ -82,7 +82,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
       { $project: { _id: 0, name: '$_id', img: 1 } },
       { $limit: 6 }
     ]),
-    Banner.find({ isActive: true }).sort({ position: 1, createdAt: -1 }).lean()
+    Banner.find({ isActive: true, $or: [{ pages: 'Home' }, { pages: { $exists: false } }, { pages: { $size: 0 } }] }).sort({ position: 1, createdAt: -1 }).lean()
   ]);
 
   const liveAstrologers = liveAstrologersRaw.map(astro => ({
@@ -115,6 +115,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
           year: 'numeric'
         }),
         status: lastSession.status,
+        roomId: lastSession.roomId,
         astrologer: astroDoc ? { ...astroDoc, userId: lastSession.astrologerId } : null,
       };
     }
@@ -137,7 +138,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
 // GET /api/astrologers
 export const getAstrologers = asyncHandler(async (req, res) => {
   const { search, skill, language, sort } = req.query;
-  let filter = { isVerified: true };
+  let filter = { isVerified: true, name: { $ne: 'Temp Astrologer' } };
 
   if (skill) filter.skills = { $in: [skill] };
   if (language) filter.languages = { $in: [language] };
@@ -214,7 +215,7 @@ export const getStoreProducts = asyncHandler(async (req, res) => {
 
   // Fetch Banners
   const Banner = (await import('../models/banner.model.js')).default;
-  const banners = await Banner.find({ isActive: true }).sort({ position: 1, createdAt: -1 }).lean();
+  const banners = await Banner.find({ isActive: true, pages: 'Store' }).sort({ position: 1, createdAt: -1 }).lean();
 
   return res.status(200).json(new ApiResponse(200, { products, categories, topSelling, newLaunch, banners }, 'Products fetched'));
 });
@@ -362,4 +363,17 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
   });
 
   return res.status(200).json(new ApiResponse(200, { rated: true }, 'Rating submitted'));
+});
+
+// PUT /api/user/fcm-token
+export const updateFcmToken = asyncHandler(async (req, res) => {
+  const { fcmToken } = req.body;
+  
+  if (!fcmToken) {
+    throw new ApiError(400, 'FCM token is required');
+  }
+
+  await User.findByIdAndUpdate(req.user._id, { fcmToken });
+  
+  return res.status(200).json(new ApiResponse(200, {}, 'FCM token updated successfully'));
 });

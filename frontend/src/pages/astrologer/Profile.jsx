@@ -87,7 +87,7 @@ const Profile = () => {
     }
 
     try {
-      await dispatch(updateAstrologerProfileThunk({
+      const res = await dispatch(updateAstrologerProfileThunk({
         about: formData.bio,
         languages,
         skills: expertise,
@@ -98,6 +98,12 @@ const Profile = () => {
           videoCall: vPrice
         }
       })).unwrap();
+
+      const updatedData = res?.data?.astrologer || res?.astrologer;
+      if (updatedData) {
+        dispatch({ type: 'auth/updateUser', payload: { avatar: updatedData.avatar, name: updatedData.name } });
+      }
+
       navigate('/astrologer/dashboard');
     } catch (err) {
       alert('Failed to save profile: ' + (err.message || 'Unknown error'));

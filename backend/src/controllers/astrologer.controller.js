@@ -38,8 +38,8 @@ export const checkAstrologerPhone = asyncHandler(async (req, res) => {
   }
 
   const astrologer = await Astrologer.findOne({ phone });
-  if (!astrologer) {
-    return res.status(200).json(new ApiResponse(200, { exists: false }, 'Astrologer not found'));
+  if (!astrologer || !astrologer.password) {
+    return res.status(200).json(new ApiResponse(200, { exists: false }, 'Astrologer not found or incomplete'));
   }
 
   return res.status(200).json(new ApiResponse(200, { 
@@ -67,7 +67,7 @@ export const astrologerRequestOtp = asyncHandler(async (req, res) => {
     astrologer = new Astrologer({ 
       phone, 
       name: 'Temp Astrologer', 
-      approvalStatus: 'pending' 
+      approvalStatus: 'incomplete' 
     });
   }
 
@@ -82,7 +82,12 @@ export const astrologerRequestOtp = asyncHandler(async (req, res) => {
 
 // POST /api/astrologer/auth/signup
 export const astrologerSignup = asyncHandler(async (req, res) => {
-  const { name, phone, password, otp, skills, categories, languages, experience, about, pricing, identityProof, avatar } = req.body;
+  const { 
+    name, phone, password, otp, skills, categories, languages, experience, about, pricing, 
+    identityProof, avatar, dob, gender, address, city, state, pincode, consultationStyle, 
+    education, certificationDetails, bankDetails, email
+  } = req.body;
+
   if (!name || !phone || !password || !otp) throw new ApiError(400, 'name, phone, password, and otp required');
 
   const existingRole = await checkGlobalMobileExists(phone);
@@ -91,10 +96,13 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   }
 
   // Validate pricing minimums
-  if (pricing) {
-    if (pricing.chat !== undefined && pricing.chat < 5) throw new ApiError(400, 'Minimum chat price is ₹5/min');
-    if (pricing.audioCall !== undefined && pricing.audioCall < 5) throw new ApiError(400, 'Minimum audio call price is ₹5/min');
-    if (pricing.videoCall !== undefined && pricing.videoCall < 5) throw new ApiError(400, 'Minimum video call price is ₹5/min');
+  let parsedPricing = pricing;
+  if (typeof pricing === 'string') parsedPricing = JSON.parse(pricing);
+  
+  if (parsedPricing) {
+    if (parsedPricing.chat !== undefined && parsedPricing.chat < 5) throw new ApiError(400, 'Minimum chat price is ₹5/min');
+    if (parsedPricing.audioCall !== undefined && parsedPricing.audioCall < 5) throw new ApiError(400, 'Minimum audio call price is ₹5/min');
+    if (parsedPricing.videoCall !== undefined && parsedPricing.videoCall < 5) throw new ApiError(400, 'Minimum video call price is ₹5/min');
   }
 
   let astrologer = await Astrologer.findOne({ phone });
@@ -116,35 +124,93 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     astrologer.password = password;
     astrologer.otpHash = undefined;
     astrologer.otpExpires = undefined;
-    astrologer.skills = skills || ['Vedic'];
-    astrologer.categories = categories || [];
-    let uploadedIdentity = identityProof || '';
-    let identityPubId = '';
-    if (uploadedIdentity.startsWith('data:image')) {
-      const result = await uploadMedia(uploadedIdentity, 'astrotalk_astrologers');
-      uploadedIdentity = result.url;
-      identityPubId = result.publicId;
-    }
-
-    let uploadedAvatar = avatar || '';
-    let avatarPubId = '';
-    if (uploadedAvatar.startsWith('data:image')) {
-      const result = await uploadMedia(uploadedAvatar, 'astrotalk_astrologers');
-      uploadedAvatar = result.url;
-      avatarPubId = result.publicId;
-    }
-
-    astrologer.identityProof = uploadedIdentity;
-    astrologer.identityProofPublicId = identityPubId;
-    astrologer.avatar = uploadedAvatar;
-    astrologer.avatarPublicId = avatarPubId;
-    astrologer.languages = languages || ['Hindi', 'English'];
+    
+    astrologer.skills = skills ? (Array.isArray(skills) ? skills : JSON.parse(skills)) : ['Vedic'];
+    astrologer.categories = categories ? (Array.isArray(categories) ? categories : JSON.parse(categories)) : [];
+    astrologer.languages = languages ? (Array.isArray(languages) ? languages : JSON.parse(languages)) : ['Hindi', 'English'];
+    
     astrologer.experience = experience || 0;
     astrologer.about = about || '';
-    astrologer.pricing = pricing || { chat: 5, audioCall: 5, videoCall: 10 };
+    astrologer.pricing = parsedPricing || { chat: 5, audioCall: 5, videoCall: 10, report: 0 };
+    
+    // New Fields
+    if (dob) astrologer.dob = dob;
+    if (gender) astrologer.gender = gender;
+    if (address) astrologer.address = address;
+    if (city) astrologer.city = city;
+    if (state) astrologer.state = state;
+    if (pincode) astrologer.pincode = pincode;
+    if (consultationStyle) astrologer.consultationStyle = consultationStyle;
+    if (education) astrologer.education = education;
+    if (certificationDetails) astrologer.certificationDetails = certificationDetails;
+    if (email) astrologer.email = email;
+    if (bankDetails) astrologer.bankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+
+    // Helper for base64 uploads
+    const handleBase64Upload = async (dataStr) => {
+      if (dataStr && typeof dataStr === 'string' && dataStr.startsWith('data:')) {
+        try {
+          const result = await uploadMedia(dataStr, 'astrotalk_astrologers');
+          return { url: result.url, publicId: result.publicId };
+        } catch (err) {
+          console.warn('Cloudinary upload failed:', err.message);
+        }
+      }
+      return { url: '', publicId: '' };
+    };
+
+    const files = req.files || {};
+    // Process Multer files if they exist, otherwise try base64 from body
+    const uploadField = async (fieldName) => {
+      if (files[fieldName] && files[fieldName][0]) {
+         const fileData = files[fieldName][0];
+         const b64 = Buffer.from(fileData.buffer).toString('base64');
+         let dataURI = "data:" + fileData.mimetype + ";base64," + b64;
+         return handleBase64Upload(dataURI);
+      } else if (req.body[fieldName]) {
+         return handleBase64Upload(req.body[fieldName]);
+      }
+      return { url: '', publicId: '' };
+    };
+
+    const avatarRes = await uploadField('avatar');
+    if (avatarRes.url) { astrologer.avatar = avatarRes.url; astrologer.avatarPublicId = avatarRes.publicId; }
+
+    const idRes = await uploadField('identityProof');
+    if (idRes.url) { astrologer.identityProof = idRes.url; astrologer.identityProofPublicId = idRes.publicId; }
+
+    const aadhaarFrontRes = await uploadField('aadhaarFront');
+    if (aadhaarFrontRes.url) { astrologer.aadhaarFront = aadhaarFrontRes.url; astrologer.aadhaarFrontPublicId = aadhaarFrontRes.publicId; }
+
+    const aadhaarBackRes = await uploadField('aadhaarBack');
+    if (aadhaarBackRes.url) { astrologer.aadhaarBack = aadhaarBackRes.url; astrologer.aadhaarBackPublicId = aadhaarBackRes.publicId; }
+
+    const panCardRes = await uploadField('panCard');
+    if (panCardRes.url) { astrologer.panCard = panCardRes.url; astrologer.panCardPublicId = panCardRes.publicId; }
+
+    const certRes = await uploadField('certificate');
+    if (certRes.url) { astrologer.certificate = certRes.url; astrologer.certificatePublicId = certRes.publicId; }
+
+    const selfieRes = await uploadField('selfieVerification');
+    if (selfieRes.url) { astrologer.selfieVerification = selfieRes.url; astrologer.selfieVerificationPublicId = selfieRes.publicId; }
+
     astrologer.isVerified = false;
     astrologer.approvalStatus = 'pending';
+    astrologer.registrationStatus = 'pending';
     await astrologer.save();
+    
+    // Log Audit
+    const { default: AuditLog } = await import('../models/auditLog.model.js');
+    await AuditLog.create({
+      userId: astrologer._id,
+      userModel: 'Astrologer',
+      targetId: astrologer._id,
+      action: 'ASTROLOGER_REGISTERED',
+      resource: 'Astrologer',
+      details: { name: astrologer.name, phone: astrologer.phone },
+      ipAddress: req.ip
+    });
+
   } else {
     throw new ApiError(400, 'Please request OTP first');
   }
@@ -160,7 +226,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   return res.status(201).json(
     new ApiResponse(201, {
       accessToken,
-      user: { _id: astrologer._id, name, phone, role: 'astrologer', avatar: astrologer.avatar },
+      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', avatar: astrologer.avatar },
       astrologer,
     }, 'Astrologer account created. Pending verification.')
   );
@@ -238,29 +304,57 @@ export const getAstrologerProfile = asyncHandler(async (req, res) => {
 
 // PUT /api/astrologer/profile/update
 export const updateAstrologerProfile = asyncHandler(async (req, res) => {
-  const { name, skills, languages, experience, about, pricing, avatar } = req.body;
+  const { name, skills, languages, experience, about, pricing, avatar, dob, gender, address, city, state, pincode, bankDetails } = req.body;
   const astrologer = await Astrologer.findById(req.user._id);
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
   if (name !== undefined) astrologer.name = name;
-  if (skills !== undefined) astrologer.skills = skills;
-  if (languages !== undefined) astrologer.languages = languages;
+  if (skills !== undefined) astrologer.skills = typeof skills === 'string' ? JSON.parse(skills) : skills;
+  if (languages !== undefined) astrologer.languages = typeof languages === 'string' ? JSON.parse(languages) : languages;
   if (experience !== undefined) astrologer.experience = experience;
   if (about !== undefined) astrologer.about = about;
+  if (dob !== undefined) astrologer.dob = dob;
+  if (gender !== undefined) astrologer.gender = gender;
+  if (address !== undefined) astrologer.address = address;
+  if (city !== undefined) astrologer.city = city;
+  if (state !== undefined) astrologer.state = state;
+  if (pincode !== undefined) astrologer.pincode = pincode;
+  if (bankDetails !== undefined) astrologer.bankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+  
   if (pricing !== undefined) {
-    if (pricing.chat !== undefined && pricing.chat < 5) throw new ApiError(400, 'Minimum chat price is ₹5/min');
-    if (pricing.audioCall !== undefined && pricing.audioCall < 5) throw new ApiError(400, 'Minimum audio call price is ₹5/min');
-    if (pricing.videoCall !== undefined && pricing.videoCall < 5) throw new ApiError(400, 'Minimum video call price is ₹5/min');
-    astrologer.pricing = { ...astrologer.pricing, ...pricing };
+    let parsedPricing = typeof pricing === 'string' ? JSON.parse(pricing) : pricing;
+    if (parsedPricing.chat !== undefined && parsedPricing.chat < 5) throw new ApiError(400, 'Minimum chat price is ₹5/min');
+    if (parsedPricing.audioCall !== undefined && parsedPricing.audioCall < 5) throw new ApiError(400, 'Minimum audio call price is ₹5/min');
+    if (parsedPricing.videoCall !== undefined && parsedPricing.videoCall < 5) throw new ApiError(400, 'Minimum video call price is ₹5/min');
+    astrologer.pricing = { ...astrologer.pricing, ...parsedPricing };
   }
-  if (avatar !== undefined) {
-    if (avatar.startsWith('data:image')) {
+
+  // Handle avatar upload via file or base64
+  const files = req.files || {};
+  if (files['avatar'] && files['avatar'][0]) {
+     if (astrologer.avatarPublicId) await deleteMedia(astrologer.avatarPublicId);
+     const fileData = files['avatar'][0];
+     const b64 = Buffer.from(fileData.buffer).toString('base64');
+     let dataURI = "data:" + fileData.mimetype + ";base64," + b64;
+     try {
+       const uploadResult = await uploadMedia(dataURI, 'astrotalk_astrologers');
+       astrologer.avatar = uploadResult.url;
+       astrologer.avatarPublicId = uploadResult.publicId;
+     } catch(err) {
+       console.warn('Upload failed', err);
+     }
+  } else if (avatar !== undefined) {
+    if (typeof avatar === 'string' && avatar.startsWith('data:image')) {
       if (astrologer.avatarPublicId) {
         await deleteMedia(astrologer.avatarPublicId);
       }
-      const uploadResult = await uploadMedia(avatar, 'astrotalk_astrologers');
-      astrologer.avatar = uploadResult.url;
-      astrologer.avatarPublicId = uploadResult.publicId;
+      try {
+        const uploadResult = await uploadMedia(avatar, 'astrotalk_astrologers');
+        astrologer.avatar = uploadResult.url;
+        astrologer.avatarPublicId = uploadResult.publicId;
+      } catch (err) {
+        console.warn('Cloudinary upload failed for avatar:', err.message);
+      }
     } else {
       astrologer.avatar = avatar;
     }

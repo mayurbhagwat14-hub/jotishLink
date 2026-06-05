@@ -4,6 +4,7 @@ import { FiSearch, FiClock, FiShoppingBag } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { getStoreProducts, getStorePandits } from '../../api/userApis';
 import { fetchCartThunk, updateCartThunk } from '../../store/slices/cartSlice';
+import getSocket from '../../socket/socketManager';
 import toast from 'react-hot-toast';
 
 const tabs = ['Astro Mall', 'Pandit Booking'];
@@ -73,20 +74,31 @@ const Store = () => {
       }
     };
     loadStoreData();
+
+    // Listen for real-time banner updates
+    const s = getSocket();
+    if (s) {
+      s.on('banners_updated', loadStoreData);
+    }
+
     return () => {
       active = false;
+      if (s) s.off('banners_updated', loadStoreData);
     };
-  }, []);
+  }, [dispatch]);
 
   const filteredPandits = (pandits || []).filter(p => 
     p &&
     Array.isArray(p.skills) && p.skills.includes(selectedPooja) && 
     typeof p.name === 'string' && p.name.toLowerCase().includes(panditSearchQuery.toLowerCase())
   );
-  const filteredProducts = (products || []).filter(p => 
-    p &&
-    typeof p.name === 'string' && p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = (products || []).filter(p => {
+    if (!p) return false;
+    const query = searchQuery.toLowerCase();
+    const matchName = typeof p.name === 'string' && p.name.toLowerCase().includes(query);
+    const matchCategory = typeof p.category === 'string' && p.category.toLowerCase().includes(query);
+    return matchName || matchCategory;
+  });
 
   const handleAddToCart = async (product) => {
     try {

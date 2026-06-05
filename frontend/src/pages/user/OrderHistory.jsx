@@ -259,7 +259,7 @@ const OrderHistory = () => {
                       onClick={() => navigate('/user/astrologers?type=chat', { state: { autoConnectAstro: item.astrologerId } })}
                       className="flex-1 py-2 bg-orange-500 text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-orange-600 transition-colors"
                     >
-                      Start Chat
+                      Chat Again
                     </button>
                   </div>
                   </div>
@@ -326,7 +326,7 @@ const OrderHistory = () => {
                     </div>
                   <div className="flex gap-2 pl-[60px]">
                     <button 
-                      onClick={() => navigate('/user/astrologers')}
+                      onClick={() => navigate('/user/astrologers?type=call', { state: { autoConnectAstro: item.astrologerId } })}
                       className="flex-1 py-2 bg-orange-500 text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-orange-600 transition-colors"
                     >
                       Call Again

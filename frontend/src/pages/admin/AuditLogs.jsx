@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { FiShield, FiFileText, FiRefreshCcw, FiX, FiClock } from 'react-icons/fi';
+import { FiShield, FiFileText, FiRefreshCcw, FiX, FiClock, FiTrash2 } from 'react-icons/fi';
 import * as adminApis from '../../api/adminApis';
 
 const AdminAuditLogs = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [deleteConfirmLog, setDeleteConfirmLog] = useState(null);
+  const [isDeletingLog, setIsDeletingLog] = useState(false);
 
   const fetchLogs = async () => {
     try {
@@ -29,6 +31,21 @@ const AdminAuditLogs = () => {
       case 'UPDATE': return 'text-blue-600 bg-blue-50';
       case 'DELETE': return 'text-red-600 bg-red-50';
       default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const handleDeleteLog = async () => {
+    if (!deleteConfirmLog || isDeletingLog) return;
+    try {
+      setIsDeletingLog(true);
+      await adminApis.deleteAdminAuditLog(deleteConfirmLog._id);
+      setDeleteConfirmLog(null);
+      fetchLogs();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete audit log');
+    } finally {
+      setIsDeletingLog(false);
     }
   };
 
@@ -93,9 +110,12 @@ const AdminAuditLogs = () => {
                   <td className="py-4 px-6 text-xs font-mono text-gray-400">
                     {log.ipAddress || 'N/A'}
                   </td>
-                  <td className="py-4 px-6 text-right">
+                  <td className="py-4 px-6 text-right space-x-2">
                     <button onClick={() => setSelectedLog(log)} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200">
                       <FiFileText size={14} /> View
+                    </button>
+                    <button onClick={() => setDeleteConfirmLog(log)} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-red-50 text-red-500 hover:bg-red-100">
+                      <FiTrash2 size={14} />
                     </button>
                   </td>
                 </tr>
@@ -147,6 +167,42 @@ const AdminAuditLogs = () => {
                   </pre>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmLog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setDeleteConfirmLog(null)}>
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+              <FiTrash2 size={32} className="text-red-500" />
+            </div>
+            
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Delete Log?</h3>
+            <p className="text-gray-500 font-medium mb-8">
+              Are you sure you want to permanently delete this audit log record? This action cannot be undone.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setDeleteConfirmLog(null)}
+                className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteLog}
+                disabled={isDeletingLog}
+                className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center ${isDeletingLog ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'}`}
+              >
+                {isDeletingLog ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Yes, Delete'
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiCheck, FiX, FiStar, FiPhone, FiMessageSquare, FiVideo, FiCalendar, FiMoreHorizontal, FiEye, FiChevronDown, FiChevronLeft, FiChevronRight, FiUserCheck, FiClock, FiToggleLeft, FiToggleRight, FiSlash } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminAstrologers, updateAdminAstrologerStatus, deleteAdminAstrologer } from '../../api/adminApis';
+import { getAdminAstrologers, getAdminAstrologerById, updateAdminAstrologerStatus, deleteAdminAstrologer } from '../../api/adminApis';
 
 const AdminAstrologers = () => {
   const [activeTab, setActiveTab] = useState('Active');
@@ -13,6 +13,11 @@ const AdminAstrologers = () => {
   const [pendingAstrologers, setPendingAstrologers] = useState([]);
   const [activeAstrologers, setActiveAstrologers] = useState([]);
   const [suspendedAstrologers, setSuspendedAstrologers] = useState([]);
+  
+  const [selectedAstrologer, setSelectedAstrologer] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [openActionDropdown, setOpenActionDropdown] = useState(null);
+  const [deleteConfirmAstrologer, setDeleteConfirmAstrologer] = useState(null);
 
   useEffect(() => {
     fetchAstrologers();
@@ -26,6 +31,7 @@ const AdminAstrologers = () => {
       setPendingAstrologers(allAstrologers.filter(a => a.approvalStatus === 'pending'));
       setActiveAstrologers(allAstrologers.filter(a => a.approvalStatus === 'approved').map(a => ({
         id: a._id,
+        _id: a._id,
         name: a.name,
         phone: a.phone || 'N/A',
         rating: a.rating || 0,
@@ -35,19 +41,20 @@ const AdminAstrologers = () => {
         status: a.onlineStatus === 'online' ? 'Online' : 'Offline',
         sessions: 0,
         speciality: a.categories && a.categories.length > 0 ? a.categories.join(', ') : (a.skills && a.skills.length > 0 ? a.skills[0] : 'General'),
-        avatar: a.name ? a.name[0] : 'A',
+        avatar: a.avatar || '',
         enabled: a.isVerified,
         raw: a
       })));
       setSuspendedAstrologers(allAstrologers.filter(a => a.approvalStatus === 'rejected').map(a => ({
         id: a._id,
+        _id: a._id,
         name: a.name,
         phone: a.phone || 'N/A',
         rating: a.rating || 0,
         reviews: 0,
         reason: 'Rejected by admin',
         suspendedOn: new Date(a.updatedAt).toLocaleDateString(),
-        avatar: a.name ? a.name[0] : 'A',
+        avatar: a.avatar || '',
         raw: a
       })));
     } catch (err) {
@@ -114,15 +121,36 @@ const AdminAstrologers = () => {
     }
   };
 
-  const permanentlyBan = async (ast) => {
-    if (window.confirm(`Are you sure you want to permanently delete ${ast.name} from the database? This action cannot be undone.`)) {
-      try {
-        await deleteAdminAstrologer(ast._id || ast.id || ast.raw?._id);
-        showToast(`${ast.name} has been permanently deleted.`);
-        fetchAstrologers();
-      } catch (err) {
-        showToast(`Failed to delete ${ast.name}`);
+  const permanentlyBan = (ast) => {
+    setDeleteConfirmAstrologer(ast);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmAstrologer) return;
+    const ast = deleteConfirmAstrologer;
+    try {
+      await deleteAdminAstrologer(ast.id || ast._id);
+      showToast('Astrologer deleted permanently');
+      fetchAstrologers();
+      if (selectedAstrologer && (selectedAstrologer.id === ast.id || selectedAstrologer._id === ast._id)) {
+        setSelectedAstrologer(null);
       }
+    } catch (err) {
+      showToast('Failed to delete astrologer');
+    } finally {
+      setDeleteConfirmAstrologer(null);
+    }
+  };
+
+  const viewProfile = async (astId) => {
+    setLoadingProfile(true);
+    try {
+      const res = await getAdminAstrologerById(astId);
+      setSelectedAstrologer(res.data?.data?.astrologer || res.data?.astrologer);
+    } catch (err) {
+      showToast('Failed to load astrologer details');
+    } finally {
+      setLoadingProfile(false);
     }
   };
 
@@ -184,8 +212,8 @@ const AdminAstrologers = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible">
+            <div className="w-full overflow-visible">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-100">
@@ -202,11 +230,11 @@ const AdminAstrologers = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {paginatedActive.map((ast) => (
-                    <tr key={ast.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <tr key={ast._id} className="hover:bg-gray-50/50 transition-colors group">
                       <td className="py-4 px-5">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm shrink-0 border border-orange-100">
-                            {ast.avatar}
+                          <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm shrink-0 border border-orange-100 overflow-hidden">
+                            <img src={ast.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name || 'A')}&background=ffedD5&color=f97316`} alt={ast.name} className="w-full h-full object-cover" />
                           </div>
                           <div>
                             <p className="font-bold text-sm text-gray-800">{ast.name}</p>
@@ -245,19 +273,37 @@ const AdminAstrologers = () => {
                         </span>
                       </td>
                       <td className="py-4 px-5">
-                        <button onClick={() => toggleStatus(ast.id)} className={`transition-colors ${ast.enabled ? 'text-green-500' : 'text-gray-300'}`}>
+                        <button onClick={() => toggleStatus(ast._id)} className={`transition-colors ${ast.enabled ? 'text-green-500' : 'text-gray-300'}`}>
                           {ast.enabled ? <FiToggleRight size={22} /> : <FiToggleLeft size={22} />}
                         </button>
                       </td>
-                      <td className="py-4 px-5 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => suspendAstrologer(ast)} className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1" title="Suspend Astrologer">
-                            <FiSlash size={12} />
-                          </button>
-                          <button onClick={() => permanentlyBan(ast)} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-red-600 rounded-lg transition-colors text-[11px] font-bold flex items-center gap-1" title="Delete Astrologer">
-                            <FiX size={12} />
-                          </button>
-                        </div>
+                      <td className={`py-4 px-5 text-right relative ${openActionDropdown === ast._id ? 'z-50' : ''}`}>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenActionDropdown(openActionDropdown === ast._id ? null : ast._id);
+                          }}
+                          className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <FiMoreHorizontal size={18} />
+                        </button>
+
+                        {openActionDropdown === ast._id && (
+                          <>
+                            <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
+                            <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right">
+                              <button onClick={() => { viewProfile(ast._id); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50">
+                                <FiEye size={16} className="text-blue-500" /> View Profile
+                              </button>
+                              <button onClick={() => { suspendAstrologer(ast); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2 transition-colors border-b border-gray-50">
+                                <FiSlash size={16} /> Suspend
+                              </button>
+                              <button onClick={() => { permanentlyBan(ast); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                                <FiX size={16} /> Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -307,8 +353,8 @@ const AdminAstrologers = () => {
               <div key={ast._id} className="bg-white rounded-2xl border border-orange-100 p-6 hover:border-orange-200 transition-all group">
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center font-black text-xl shrink-0 border border-orange-100">
-                      {ast.name ? ast.name[0] : 'A'}
+                    <div className="w-14 h-14 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center font-black text-xl shrink-0 border border-orange-100 overflow-hidden">
+                      <img src={ast.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name || 'A')}&background=ffedD5&color=f97316`} alt={ast.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -326,11 +372,10 @@ const AdminAstrologers = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {ast.identityProof && (
-                      <a href={ast.identityProof} target="_blank" rel="noreferrer" className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5">
-                        <FiEye size={14} /> ID Proof
-                      </a>
-                    )}
+                    <button onClick={() => viewProfile(ast._id)} disabled={loadingProfile} className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
+                      {loadingProfile ? <span className="w-3.5 h-3.5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" /> : <FiEye size={14} />}
+                      Profile View
+                    </button>
                     <button onClick={() => rejectAstrologer(ast)} className="px-4 py-2.5 bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5">
                       <FiX size={14} /> Reject
                     </button>
@@ -354,11 +399,11 @@ const AdminAstrologers = () => {
             </div>
           ) : (
             suspendedAstrologers.map((ast) => (
-              <div key={ast.id} className="bg-white rounded-2xl border border-red-100 p-6">
+              <div key={ast._id} className="bg-white rounded-2xl border border-red-100 p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center font-black text-lg shrink-0 border border-red-100">
-                      {ast.avatar}
+                    <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center font-black text-lg shrink-0 border border-red-100 overflow-hidden">
+                      <img src={ast.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name || 'A')}&background=fef2f2&color=ef4444`} alt={ast.name} className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <p className="font-bold text-gray-800">{ast.name}</p>
@@ -371,6 +416,9 @@ const AdminAstrologers = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <button onClick={() => viewProfile(ast.id || ast._id)} disabled={loadingProfile} className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
+                      {loadingProfile ? <span className="w-3.5 h-3.5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin" /> : <FiEye size={14} />} View Profile
+                    </button>
                     <button onClick={() => reinstateAstrologer(ast)} className="px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl transition-colors text-xs font-bold flex items-center gap-1.5">
                       <FiUserCheck size={14} /> Reinstate
                     </button>
@@ -382,6 +430,174 @@ const AdminAstrologers = () => {
               </div>
             ))
           )}
+        </div>
+      )}
+      {/* ═══ PROFILE VIEW MODAL ═══ */}
+      {selectedAstrologer && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedAstrologer(null)} />
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white/90 backdrop-blur-md px-8 py-6 border-b border-gray-100 flex items-center justify-between z-20">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-lg overflow-hidden border border-orange-100">
+                  <img src={selectedAstrologer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedAstrologer.name)}&background=ffedD5&color=f97316`} alt={selectedAstrologer.name} className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">{selectedAstrologer.name}</h2>
+                  <p className="text-sm font-medium text-gray-500">{selectedAstrologer.phone} • {selectedAstrologer.email}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedAstrologer(null)} className="w-10 h-10 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-full flex items-center justify-center transition-colors">
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8 space-y-8">
+              
+              {/* Grid 1: Personal & Professional */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Personal Details */}
+                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2">Personal Details</h3>
+                  <div className="space-y-3 text-sm">
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">DOB:</span> <span className="font-medium text-gray-700">{selectedAstrologer.dob || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">Gender:</span> <span className="font-medium text-gray-700">{selectedAstrologer.gender || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">Address:</span> <span className="font-medium text-gray-700">{selectedAstrologer.address || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">City/State:</span> <span className="font-medium text-gray-700">{selectedAstrologer.city}, {selectedAstrologer.state} - {selectedAstrologer.pincode}</span></p>
+                  </div>
+                </div>
+
+                {/* Professional Details */}
+                <div className="bg-orange-50/50 rounded-2xl p-6 border border-orange-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b border-orange-200 pb-2">Professional Summary</h3>
+                  <div className="space-y-3 text-sm">
+                    <p><span className="text-gray-400 font-bold w-28 inline-block">Experience:</span> <span className="font-medium text-gray-700">{selectedAstrologer.experience} Years</span></p>
+                    <p><span className="text-gray-400 font-bold w-28 inline-block">Education:</span> <span className="font-medium text-gray-700">{selectedAstrologer.education || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-28 inline-block">Style:</span> <span className="font-medium text-gray-700">{selectedAstrologer.consultationStyle || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-28 inline-block">Languages:</span> <span className="font-medium text-gray-700">{selectedAstrologer.languages?.join(', ') || 'N/A'}</span></p>
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {(selectedAstrologer.skills || selectedAstrologer.categories || []).map(skill => (
+                        <span key={skill} className="px-2 py-1 bg-white border border-orange-200 rounded text-[10px] font-bold text-orange-600 uppercase">{skill}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid 2: Pricing & Bank Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Pricing Details */}
+                <div className="bg-green-50/50 rounded-2xl p-6 border border-green-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b border-green-200 pb-2">Pricing Setup</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Chat Rate</p>
+                      <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.chat || 5}/min</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Audio Call</p>
+                      <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.audioCall || 5}/min</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Video Call</p>
+                      <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.videoCall || 10}/min</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Report</p>
+                      <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.report || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bank Details */}
+                <div className="bg-blue-50/50 rounded-2xl p-6 border border-blue-100">
+                  <h3 className="font-bold text-gray-800 mb-4 border-b border-blue-200 pb-2">Bank Information</h3>
+                  <div className="space-y-3 text-sm">
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">Account Name:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.accountHolderName || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">Bank Name:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.bankName || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">A/C Number:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.accountNumber || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">IFSC Code:</span> <span className="font-medium text-gray-700 uppercase">{selectedAstrologer.bankDetails?.ifscCode || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">UPI ID:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.upiId || 'N/A'}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Documents */}
+              <div>
+                <h3 className="font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2">Verification Documents</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {[
+                    { label: 'Aadhaar Front', doc: selectedAstrologer.aadhaarFront },
+                    { label: 'Aadhaar Back', doc: selectedAstrologer.aadhaarBack },
+                    { label: 'PAN Card', doc: selectedAstrologer.panCard },
+                    { label: 'Certificate', doc: selectedAstrologer.certificate },
+                    { label: 'Selfie', doc: selectedAstrologer.selfieVerification },
+                    { label: 'Legacy ID', doc: selectedAstrologer.identityProof }
+                  ].map((item, idx) => item.doc ? (
+                    <a key={idx} href={item.doc} target="_blank" rel="noreferrer" className="block relative group overflow-hidden rounded-xl border border-gray-200 aspect-square bg-gray-50">
+                      {item.doc.endsWith('.pdf') ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-red-500">
+                          <span className="font-black text-xl mb-1">PDF</span>
+                          <span className="text-[10px] text-gray-500">Document</span>
+                        </div>
+                      ) : (
+                        <img src={item.doc} alt={item.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                      )}
+                      <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-center text-white text-[10px] font-bold backdrop-blur-sm">
+                        {item.label}
+                      </div>
+                    </a>
+                  ) : null)}
+                </div>
+              </div>
+
+            </div>
+            
+            {/* Footer Action Buttons if pending */}
+            {selectedAstrologer.approvalStatus === 'pending' && (
+              <div className="sticky bottom-0 bg-gray-50 px-8 py-6 border-t border-gray-200 flex items-center justify-end gap-3 z-20">
+                <button onClick={() => { setSelectedAstrologer(null); rejectAstrologer(selectedAstrologer); }} className="px-6 py-3 bg-white border border-red-200 hover:bg-red-50 text-red-600 rounded-xl transition-colors font-bold flex items-center gap-2">
+                  <FiX size={16} /> Reject Application
+                </button>
+                <button onClick={() => { setSelectedAstrologer(null); approveAstrologer(selectedAstrologer); }} className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg shadow-green-600/30 transition-all font-black flex items-center gap-2">
+                  <FiCheck size={16} /> Approve Astrologer
+                </button>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      )}
+      {/* ═══ DELETE CONFIRM MODAL ═══ */}
+      {deleteConfirmAstrologer && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setDeleteConfirmAstrologer(null)} />
+          <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl p-6 text-center animate-scale-in">
+            <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
+              <FiX size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Astrologer?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to permanently delete <b className="text-gray-800">{deleteConfirmAstrologer.name}</b> from the database? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmAstrologer(null)}
+                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-500/30"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -8,6 +8,7 @@ import ChatSession from '../models/chatSession.model.js';
 import { CallSession } from '../models/callSession.model.js';
 import SystemSettings from '../models/systemSettings.model.js';
 import Notification from '../models/notification.model.js';
+import { getFirebaseAdmin } from '../config/firebase.config.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -30,7 +31,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     Order.countDocuments(),
     Order.countDocuments({ orderStatus: 'pending' }),
     Transaction.find().sort({ createdAt: -1 }).limit(10).lean(),
-    ChatSession.find({ status: 'ongoing' }).populate('userId', 'name').populate('astrologerId', 'name').lean(),
+    ChatSession.find({ status: 'ongoing' }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
     Order.find().populate('userId', 'name').sort({ createdAt: -1 }).limit(5).lean(),
     Astrologer.countDocuments({ approvalStatus: 'pending' })
   ]);
@@ -47,7 +48,9 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
   // Format liveSessions
   const liveSessions = liveSessionsRaw.map(s => ({
     user: s.userId?.name || 'User',
+    userAvatar: s.userId?.avatar || '',
     astrologer: s.astrologerId?.name || 'Astrologer',
+    astrologerAvatar: s.astrologerId?.avatar || '',
     type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
     duration: 'Ongoing',
     rate: s.isFreeChat ? 0 : (s.amountDeducted > 0 ? 'Paid' : 'Free')
@@ -130,6 +133,74 @@ export const deleteAdminUser = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, {}, 'User deleted successfully'));
 });
 
+// POST /api/admin/broadcast
+export const sendBroadcast = asyncHandler(async (req, res) => {
+  const { title, message, audience } = req.body;
+  if (!title || !message) throw new ApiError(400, 'Title and message are required');
+
+  let filter = { role: 'user' };
+  if (audience === 'New Users') {
+    // Users created in the last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    filter.createdAt = { $gte: sevenDaysAgo };
+  }
+
+  const users = await User.find(filter).select('_id fcmToken');
+  if (users.length === 0) {
+    return res.status(200).json(new ApiResponse(200, { sent: 0 }, 'No users matched the criteria'));
+  }
+
+  const notifications = users.map(user => ({
+    userId: user._id,
+    title,
+    message,
+    type: 'info'
+  }));
+
+  await Notification.insertMany(notifications);
+
+  // Send real Push Notifications via Firebase
+  const adminSDK = getFirebaseAdmin();
+  if (adminSDK) {
+    const tokens = users.map(u => u.fcmToken).filter(t => t);
+    
+    if (tokens.length > 0) {
+      const payload = {
+        notification: {
+          title: title,
+          body: message
+        },
+        tokens: tokens
+      };
+
+      adminSDK.messaging().sendEachForMulticast(payload)
+        .then((response) => {
+          console.log(`Push Notifications Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
+        })
+        .catch((error) => {
+          console.error('Error sending push notifications:', error);
+        });
+    }
+  }
+
+  const io = req.app.get('io');
+  if (io) {
+    // Notify connected users in real time
+    // For "All Users" or "New Users", we can broadcast to all connections, 
+    // and let frontend filter, but standard approach is iterating users or just broadcasting.
+    // For simplicity, emit a global event and let active user connections pick it up if they match.
+    io.emit('new_notification', {
+      title,
+      message,
+      type: 'info',
+      audience
+    });
+  }
+
+  return res.status(200).json(new ApiResponse(200, { sent: users.length }, 'Broadcast sent successfully'));
+});
+
 // GET /api/admin/astrologers
 export const getAdminAstrologers = asyncHandler(async (req, res) => {
   const astrologers = await Astrologer.find()
@@ -138,19 +209,61 @@ export const getAdminAstrologers = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { astrologers }, 'Astrologers fetched'));
 });
 
+// GET /api/admin/astrologer/:id
+export const getAdminAstrologerById = asyncHandler(async (req, res) => {
+  const astrologer = await Astrologer.findById(req.params.id)
+    .populate('approvedBy', 'name email')
+    .lean();
+  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  return res.status(200).json(new ApiResponse(200, { astrologer }, 'Astrologer details fetched'));
+});
+
 // PUT /api/admin/astrologers/:id/status
 export const updateAstrologerStatus = asyncHandler(async (req, res) => {
-  const { status } = req.body;
+  const { status, reason } = req.body;
   
-  const astrologer = await Astrologer.findByIdAndUpdate(
-    req.params.id,
-    { 
-      approvalStatus: status === 'blocked' ? 'rejected' : status,
-      isVerified: status === 'approved' 
-    },
-    { new: true }
-  );
+  const astrologer = await Astrologer.findById(req.params.id);
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  
+  let newStatus = status;
+  let isVerified = astrologer.isVerified;
+  
+  if (status === 'approved') {
+    isVerified = true;
+    astrologer.registrationStatus = 'approved';
+    astrologer.approvedBy = req.user._id;
+    astrologer.approvedAt = new Date();
+  } else if (status === 'rejected') {
+    isVerified = false;
+    astrologer.registrationStatus = 'rejected';
+    astrologer.rejectionReason = reason;
+  } else if (status === 'blocked') {
+    isVerified = false;
+    newStatus = 'rejected'; // Map 'blocked' to rejected approvalStatus for backward compatibility
+    astrologer.registrationStatus = 'rejected';
+    astrologer.rejectionReason = reason || 'Suspended by admin';
+  }
+  
+  astrologer.approvalStatus = newStatus;
+  astrologer.isVerified = isVerified;
+  await astrologer.save();
+  
+  // Log Audit
+  const { default: AuditLog } = await import('../models/auditLog.model.js');
+  let action = 'ASTROLOGER_UPDATED';
+  if (status === 'approved') action = 'ADMIN_APPROVED_ASTROLOGER';
+  if (status === 'rejected') action = 'ADMIN_REJECTED_ASTROLOGER';
+  if (status === 'blocked') action = 'ADMIN_SUSPENDED_ASTROLOGER';
+  
+  await AuditLog.create({
+    userId: req.user._id,
+    userModel: 'Admin',
+    targetId: astrologer._id,
+    action,
+    resource: 'Astrologer',
+    details: { status, reason, astrologerName: astrologer.name },
+    ipAddress: req.ip
+  });
 
   return res.status(200).json(new ApiResponse(200, { astrologer }, 'Status updated'));
 });
@@ -175,9 +288,17 @@ export const getAdminOrders = asyncHandler(async (req, res) => {
 // PUT /api/admin/orders/:id/status
 export const updateOrderStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
+  
+  const updateFields = { orderStatus: status.toLowerCase() };
+  if (status.toLowerCase() === 'delivered') {
+    updateFields.paymentStatus = 'paid';
+  } else if (status.toLowerCase() === 'cancelled') {
+    updateFields.paymentStatus = 'refunded';
+  }
+
   const order = await Order.findByIdAndUpdate(
     req.params.id,
-    { orderStatus: status.toLowerCase() },
+    updateFields,
     { new: true }
   );
   if (!order) throw new ApiError(404, 'Order not found');
@@ -517,7 +638,7 @@ export const getAdminBanners = asyncHandler(async (req, res) => {
 
 // POST /api/admin/banners
 export const createAdminBanner = asyncHandler(async (req, res) => {
-  const { imageUrl, isActive } = req.body;
+  const { imageUrl, isActive, pages } = req.body;
   if (!imageUrl) throw new ApiError(400, 'Image is required');
 
   let uploadedUrl = imageUrl;
@@ -533,8 +654,13 @@ export const createAdminBanner = asyncHandler(async (req, res) => {
   const banner = await Banner.create({ 
     imageUrl: uploadedUrl, 
     cloudinaryPublicId: publicId,
-    isActive 
+    isActive,
+    pages: pages || ['Home']
   });
+  
+  const io = req.app.get('io');
+  if (io) io.emit('banners_updated');
+  
   return res.status(201).json(new ApiResponse(201, { banner }, 'Banner created'));
 });
 
@@ -542,6 +668,10 @@ export const createAdminBanner = asyncHandler(async (req, res) => {
 export const updateAdminBanner = asyncHandler(async (req, res) => {
   const banner = await Banner.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!banner) throw new ApiError(404, 'Banner not found');
+  
+  const io = req.app.get('io');
+  if (io) io.emit('banners_updated');
+  
   return res.status(200).json(new ApiResponse(200, { banner }, 'Banner updated'));
 });
 
@@ -555,6 +685,9 @@ export const deleteAdminBanner = asyncHandler(async (req, res) => {
   }
 
   await Banner.findByIdAndDelete(req.params.id);
+  
+  const io = req.app.get('io');
+  if (io) io.emit('banners_updated');
 
   return res.status(200).json(new ApiResponse(200, {}, 'Banner deleted'));
 });
@@ -566,22 +699,36 @@ export const getAdminAuditLogs = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { logs }, 'Audit logs fetched successfully'));
 });
 
+// DELETE /api/admin/audit-logs/:id
+export const deleteAdminAuditLog = asyncHandler(async (req, res) => {
+  const log = await AuditLog.findByIdAndDelete(req.params.id);
+  if (!log) throw new ApiError(404, 'Audit log not found');
+  return res.status(200).json(new ApiResponse(200, null, 'Audit log deleted successfully'));
+});
+
 // GET /api/admin/sessions
 export const getAdminSessions = asyncHandler(async (req, res) => {
   const sessions = await ChatSession.find()
-    .populate('userId', 'name')
-    .populate('astrologerId', 'name')
+    .populate('userId', 'name avatar')
+    .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
 
   return res.status(200).json(new ApiResponse(200, { sessions }, 'Sessions fetched successfully'));
 });
 
+// DELETE /api/admin/sessions/:id
+export const deleteAdminSession = asyncHandler(async (req, res) => {
+  const session = await ChatSession.findByIdAndDelete(req.params.id);
+  if (!session) throw new ApiError(404, 'Session not found');
+  return res.status(200).json(new ApiResponse(200, null, 'Session deleted successfully'));
+});
+
 // GET /api/admin/poojas
 export const getAdminPoojas = asyncHandler(async (req, res) => {
   const poojas = await PoojaBooking.find()
-    .populate('userId', 'name')
-    .populate('astrologerId', 'name')
+    .populate('userId', 'name avatar')
+    .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -644,12 +791,19 @@ export const getAdminCalls = asyncHandler(async (req, res) => {
   }
 
   const calls = await CallSession.find(query)
-    .populate('userId', 'name email phone')
-    .populate('astrologerId', 'name email phone')
+    .populate('userId', 'name email phone avatar')
+    .populate('astrologerId', 'name email phone avatar')
     .sort({ createdAt: -1 })
     .lean();
     
   return res.status(200).json(new ApiResponse(200, { calls }, 'Calls fetched successfully'));
+});
+
+// DELETE /api/admin/calls/:id
+export const deleteAdminCall = asyncHandler(async (req, res) => {
+  const call = await CallSession.findByIdAndDelete(req.params.id);
+  if (!call) throw new ApiError(404, 'Call not found');
+  return res.status(200).json(new ApiResponse(200, null, 'Call deleted successfully'));
 });
 
 // GET /api/admin/calls/analytics

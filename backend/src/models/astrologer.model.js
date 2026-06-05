@@ -28,10 +28,23 @@ const astrologerSchema = new mongoose.Schema(
       enum: ['astrologer'],
       default: 'astrologer',
     },
+    
+    // Personal Details
+    dob: { type: String }, // DD/MM/YYYY or Date
+    gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+    address: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pincode: { type: String },
+    
     avatar: {
       type: String,
       default: '',
     },
+    avatarPublicId: {
+      type: String,
+    },
+
     wallet: {
       type: Number,
       default: 0,
@@ -46,6 +59,8 @@ const astrologerSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
     },
+
+    // Professional Details
     skills: {
       type: [String],
       default: ['Vedic'],
@@ -53,19 +68,6 @@ const astrologerSchema = new mongoose.Schema(
     languages: {
       type: [String],
       default: ['Hindi', 'English'],
-    },
-    avatar: {
-      type: String,
-      default: '',
-    },
-    avatarPublicId: {
-      type: String,
-    },
-    identityProof: {
-      type: String,
-    },
-    identityProofPublicId: {
-      type: String,
     },
     categories: {
       type: [String],
@@ -75,6 +77,29 @@ const astrologerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    about: {
+      type: String,
+      default: '',
+    },
+    consultationStyle: { type: String },
+    education: { type: String },
+    certificationDetails: { type: String },
+
+    // Documents
+    identityProof: { type: String }, // Legacy
+    identityProofPublicId: { type: String }, // Legacy
+    aadhaarFront: { type: String },
+    aadhaarFrontPublicId: { type: String },
+    aadhaarBack: { type: String },
+    aadhaarBackPublicId: { type: String },
+    panCard: { type: String },
+    panCardPublicId: { type: String },
+    certificate: { type: String },
+    certificatePublicId: { type: String },
+    selfieVerification: { type: String },
+    selfieVerificationPublicId: { type: String },
+
+    // Metrics & Counters
     rating: {
       type: Number,
       default: 5,
@@ -83,29 +108,55 @@ const astrologerSchema = new mongoose.Schema(
       type: String,
       default: '0k+',
     },
+    averageRating: { type: Number, default: 0 },
+    totalRatings: { type: Number, default: 0 },
+    totalChats: { type: Number, default: 0 },
+    totalAudioCalls: { type: Number, default: 0 },
+    totalVideoCalls: { type: Number, default: 0 },
+    totalEarnings: { type: Number, default: 0 },
+
+    // Verification & Status
     isVerified: {
       type: Boolean,
       default: false,
     },
     approvalStatus: {
       type: String,
+      enum: ['incomplete', 'pending', 'approved', 'rejected'],
+      default: 'incomplete',
+    },
+    registrationStatus: {
+      type: String,
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
-    about: {
-      type: String,
-      default: '',
-    },
+    rejectionReason: { type: String },
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+    approvedAt: { type: Date },
+
+    // Service Settings
     pricing: {
       chat: { type: Number, default: 5 },
       audioCall: { type: Number, default: 5 },
       videoCall: { type: Number, default: 10 },
+      report: { type: Number, default: 0 }
     },
+    availabilitySchedule: { type: String }, // Can be a structured JSON string or basic text
+    
     onlineStatus: {
       type: String,
       enum: ['online', 'offline', 'busy'],
       default: 'offline',
     },
+
+    // Bank Details
+    bankDetails: {
+      accountHolderName: { type: String },
+      bankName: { type: String },
+      accountNumber: { type: String },
+      ifscCode: { type: String },
+      upiId: { type: String },
+    }
   },
   {
     timestamps: true,

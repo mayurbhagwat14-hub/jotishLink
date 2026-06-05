@@ -12,11 +12,14 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
+  const { isAuthenticated } = useSelector((state) => state.auth);
   const astrologerState = useSelector((state) => state.astrologer);
   const incomingRequests = astrologerState?.incomingRequests || [];
 
   useEffect(() => {
-    fetchNotifications();
+    if (isAuthenticated) {
+      fetchNotifications();
+    }
     
     // Set up socket listener for real-time notifications
     try {

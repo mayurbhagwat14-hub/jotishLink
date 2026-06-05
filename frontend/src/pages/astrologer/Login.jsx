@@ -214,9 +214,9 @@ const AstrologerLogin = () => {
                 <FiCheckCircle size={32} className="text-blue-500" />
                 <span className="absolute top-0 right-0 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center animate-pulse" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Access Denied</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Your application is under review</h2>
               <p className="text-gray-500 font-medium leading-relaxed mb-8">
-                {error || "Your application is currently pending admin approval."}
+                {error || "Your application is currently under review by our admin team."}
               </p>
               <button 
                 onClick={() => setStep(1)}

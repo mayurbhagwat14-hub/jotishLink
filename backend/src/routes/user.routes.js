@@ -15,6 +15,7 @@ import {
   getUserWallet,
   deleteUserHistory,
   rateAstrologer,
+  updateFcmToken,
 } from '../controllers/user.controller.js';
 import { verifyJWT, authorizeRoles, optionalAuth } from '../middlewares/auth.middleware.js';
 
@@ -43,5 +44,8 @@ router.get('/user/sessions', verifyJWT, getUserSessions);
 router.get('/user/wallet', verifyJWT, getUserWallet);
 router.post('/user/history/delete', verifyJWT, deleteUserHistory);
 router.post('/user/rate-astrologer', verifyJWT, rateAstrologer);
+
+// FCM Token
+router.put('/user/fcm-token', verifyJWT, updateFcmToken);
 
 export default router;

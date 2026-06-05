@@ -18,8 +18,8 @@ export const uploadMedia = async (base64String, folder = 'astrotalk_banners') =>
       publicId: result.public_id,
     };
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    throw error;
+    console.error('Cloudinary upload error:', error.message);
+    return { url: '', publicId: '' };
   }
 };
 

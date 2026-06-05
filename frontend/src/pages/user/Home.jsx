@@ -15,7 +15,7 @@ const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   const { userHome } = useSelector((state) => state.dashboard);
 
   const [showBalanceModal, setShowBalanceModal] = useState(false);
@@ -36,11 +36,16 @@ const Home = () => {
   }, [userHome?.banners]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
     const s = getSocket();
     setSocket(s);
-    return () => {  };
-  }, []);
+    if (s) {
+      const refreshHomeData = () => dispatch(fetchUserHomeDataThunk());
+      s.on('banners_updated', refreshHomeData);
+      return () => {
+        s.off('banners_updated', refreshHomeData);
+      };
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     if (setHideBottomBanner) {
@@ -53,10 +58,12 @@ const Home = () => {
 
   useEffect(() => {
     const t = setTimeout(() => setIsLoaded(true), 0);
-    dispatch(fetchProfileThunk());
+    if (isAuthenticated) {
+      dispatch(fetchProfileThunk());
+    }
     dispatch(fetchUserHomeDataThunk());
     return () => clearTimeout(t);
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     if (user && user.hasUsedFreeChat === false) {
@@ -97,7 +104,7 @@ const Home = () => {
 
   const handleViewChat = (session) => {
     if (session.astrologer) {
-      navigate('/user/chat', { state: { astrologer: session.astrologer } });
+      navigate('/user/chat', { state: { astrologer: session.astrologer, viewOnly: true, roomId: session.roomId } });
     } else {
       navigate('/user/astrologers');
     }
@@ -109,30 +116,8 @@ const Home = () => {
       navigate('/user/astrologers');
       return;
     }
-
-    const rate = astro.pricing?.chat || astro.rate || 5;
-    const requiredAmount = rate * 5;
-    const walletBalance = user?.wallet || 0;
-    const astroName = astro.name || session.name || 'Astrologer';
-
-    const isFreeChatEligible = user?.hasUsedFreeChat === false;
-
-    if (walletBalance < requiredAmount && !isFreeChatEligible) {
-      setShortBalanceInfo({ required: requiredAmount, current: walletBalance, name: astroName });
-      setShowBalanceModal(true);
-    } else {
-      if (isFreeChatEligible) {
-        navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: true, roomId: `room_${user._id}_bot_${Date.now()}` } });
-        return;
-      }
-
-      navigate('/user/waiting', {
-        state: {
-          astrologer: astro,
-          type: 'chat'
-        }
-      });
-    }
+    const astroId = astro.userId?._id || astro.userId || astro._id;
+    navigate('/user/astrologers?type=chat', { state: { autoConnectAstro: astroId } });
   };
 
   return (

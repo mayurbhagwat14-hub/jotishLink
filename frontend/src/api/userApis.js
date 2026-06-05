@@ -18,6 +18,7 @@ export const login = (phoneNumber, otp) => axios.post('/user/auth/login', { phon
 export const changePassword = (data) => axios.post('/user/auth/change-password', data);
 export const deleteAccount = () => axios.delete('/user/profile/delete');
 export const getUserHomeData = () => axios.get('/user/homepage-data');
+export const updateFcmToken = (fcmToken) => axios.put('/user/fcm-token', { fcmToken });
 export const getUserProfile = () => axios.get('/user/profile');
 export const updateUserProfile = (data) => axios.put('/user/profile', data);
 export const getUserWallet = () => axios.get('/user/wallet');

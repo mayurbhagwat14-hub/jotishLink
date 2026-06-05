@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import Cart from '../models/cart.model.js';
+import Coupon from '../models/coupon.model.js';
 import Order from '../models/order.model.js';
 import Product from '../models/product.model.js';
 import User from '../models/user.model.js';
@@ -47,9 +48,32 @@ export const updateCart = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { cart: populatedCart }, 'Cart updated'));
 });
 
+// POST /api/store/coupon/verify
+export const verifyCoupon = asyncHandler(async (req, res) => {
+  const { couponCode, totalAmount } = req.body;
+  if (!couponCode || !totalAmount) throw new ApiError(400, 'Coupon code and total amount are required');
+
+  const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+  if (!coupon) throw new ApiError(400, 'Invalid or inactive coupon');
+  if (new Date(coupon.expiryDate) < new Date()) throw new ApiError(400, 'Coupon has expired');
+  if (coupon.usageLimit > 0 && coupon.currentUsage >= coupon.usageLimit) throw new ApiError(400, 'Coupon usage limit reached');
+
+  const calculatedDiscount = (totalAmount * coupon.discountPercent) / 100;
+  let discountAmount = coupon.maxDiscount > 0 ? Math.min(calculatedDiscount, coupon.maxDiscount) : calculatedDiscount;
+  discountAmount = Math.round(discountAmount);
+
+  const finalAmount = Math.max(0, totalAmount - discountAmount);
+
+  return res.status(200).json(new ApiResponse(200, {
+    discountAmount,
+    finalAmount,
+    couponCode: coupon.code,
+  }, 'Coupon applied successfully'));
+});
+
 // POST /api/store/order
 export const createOrder = asyncHandler(async (req, res) => {
-  const { shippingAddress, paymentMethod } = req.body;
+  const { shippingAddress, paymentMethod, couponCode } = req.body;
   
   if (!['wallet', 'online', 'cod'].includes(paymentMethod)) {
     throw new ApiError(400, 'Invalid payment method');
@@ -71,6 +95,29 @@ export const createOrder = asyncHandler(async (req, res) => {
       price: price
     };
   });
+
+  let discountAmount = 0;
+  let appliedCoupon = null;
+
+  if (couponCode) {
+    appliedCoupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+    if (!appliedCoupon) {
+      throw new ApiError(400, 'Invalid or inactive coupon');
+    }
+    if (new Date(appliedCoupon.expiryDate) < new Date()) {
+      throw new ApiError(400, 'Coupon has expired');
+    }
+    if (appliedCoupon.usageLimit > 0 && appliedCoupon.currentUsage >= appliedCoupon.usageLimit) {
+      throw new ApiError(400, 'Coupon usage limit reached');
+    }
+
+    const calculatedDiscount = (totalAmount * appliedCoupon.discountPercent) / 100;
+    discountAmount = appliedCoupon.maxDiscount > 0 ? Math.min(calculatedDiscount, appliedCoupon.maxDiscount) : calculatedDiscount;
+    discountAmount = Math.round(discountAmount);
+
+    totalAmount -= discountAmount;
+    if (totalAmount < 0) totalAmount = 0;
+  }
 
   const user = await User.findById(req.user._id);
 
@@ -128,7 +175,14 @@ export const createOrder = asyncHandler(async (req, res) => {
     totalAmount,
     paymentMethod,
     paymentStatus,
+    couponCode: appliedCoupon ? appliedCoupon.code : null,
+    discountAmount,
   });
+
+  if (appliedCoupon) {
+    appliedCoupon.currentUsage += 1;
+    await appliedCoupon.save();
+  }
 
   // Increment sold count in Products
   for (const item of orderItems) {
