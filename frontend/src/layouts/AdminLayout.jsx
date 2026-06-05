@@ -6,7 +6,7 @@ import {
   FiHome, FiUsers, FiCreditCard, FiLogOut, FiLayout, FiBarChart2,
   FiMenu, FiChevronLeft, FiChevronRight, FiChevronDown, FiMessageSquare,
   FiShield, FiStar, FiBell, FiSearch, FiSettings, FiBox, FiShoppingCart,
-  FiPackage, FiGrid, FiTruck, FiDatabase, FiX
+  FiPackage, FiGrid, FiTruck, FiDatabase, FiX, FiDollarSign
 } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
 import NotificationDropdown from '../components/NotificationDropdown';
@@ -80,6 +80,7 @@ const AdminLayout = () => {
       children: [
         { path: '/admin/sessions', name: 'Live Sessions', icon: <FiMessageSquare size={16} />, badge: '3' },
         { path: '/admin/finance', name: 'Finance', icon: <FiCreditCard size={16} /> },
+        { path: '/admin/earnings', name: 'Earnings', icon: <FiDollarSign size={16} /> },
         { path: '/admin/services', name: 'Services', icon: <GiFlowerPot size={16} /> },
       ],
     },

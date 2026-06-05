@@ -6,12 +6,17 @@ const systemSettingsSchema = new mongoose.Schema(
     tagline: { type: String, default: 'Connect with the Stars' },
     supportEmail: { type: String, default: 'support@jyotishlink.com' },
     supportPhone: { type: String, default: '+91 9999999999' },
-    commissionPercent: { type: Number, default: 30 }, // 30% platform cut
+    commissionRates: {
+      chat: { type: Number, default: 20 },
+      audioCall: { type: Number, default: 15 },
+      videoCall: { type: Number, default: 25 },
+    },
     newUserWalletBonus: { type: Number, default: 150 },
     minChatBalance: { type: Number, default: 10 },
     maintenanceMode: { type: Boolean, default: false },
     razorpayEnabled: { type: Boolean, default: false },
     smsEnabled: { type: Boolean, default: false },
+    freeChatDuration: { type: Number, default: 1 },
   },
   {
     timestamps: true,

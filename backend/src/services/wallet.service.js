@@ -1,6 +1,7 @@
 import User from '../models/user.model.js';
 import Astrologer from '../models/astrologer.model.js';
 import Transaction from '../models/transaction.model.js';
+import RevenueLog from '../models/revenueLog.model.js';
 import { ApiError } from '../utils/apiError.js';
 
 class WalletService {
@@ -37,7 +38,7 @@ class WalletService {
   /**
    * Credit balance to a user's wallet
    */
-  static async credit(userId, amount, desc) {
+  static async credit(userId, amount, desc, razorpayReference = null, paymentStatus = 'success') {
     if (amount <= 0) {
       throw new ApiError(400, 'Invalid recharge/refund amount');
     }
@@ -55,6 +56,8 @@ class WalletService {
       type: 'recharge', // Or refund based on desc/context
       amount,
       desc,
+      razorpayReference,
+      paymentStatus
     });
 
     return { user, transaction };
@@ -70,7 +73,7 @@ class WalletService {
   /**
    * Credit balance to an astrologer's wallet (after platform commission)
    */
-  static async creditAstrologer(astrologerId, grossAmount, desc, commissionPercent = 30) {
+  static async creditAstrologer(astrologerId, userId, sessionId, sessionType, grossAmount, desc, commissionPercent = 30) {
     if (grossAmount <= 0) return null;
 
     try {
@@ -80,7 +83,12 @@ class WalletService {
       const netAmount = grossAmount * (1 - commissionPercent / 100);
       const commissionAmount = grossAmount - netAmount;
 
-      astrologer.wallet = (astrologer.wallet || 0) + netAmount;
+      // Update structured earnings
+      if (!astrologer.earnings) {
+        astrologer.earnings = { total: 0, pending: 0, withdrawn: 0, available: 0 };
+      }
+      astrologer.earnings.total += netAmount;
+      astrologer.earnings.available += netAmount;
       await astrologer.save();
 
       const transaction = await Transaction.create({
@@ -88,6 +96,19 @@ class WalletService {
         type: 'recharge',
         amount: netAmount,
         desc: `[Earning] ${desc} | Gross: ₹${grossAmount} | Commission: ${commissionPercent}% | Net: ₹${netAmount.toFixed(2)}`,
+      });
+
+      // Insert Revenue Log for Admin Tracking
+      await RevenueLog.create({
+        sessionId,
+        userId,
+        astrologerId,
+        sessionType,
+        durationSeconds: 0, // This can be updated by caller if needed, but totalCost matters more here. Or pass it down.
+        totalCost: grossAmount,
+        commissionPercent,
+        adminShare: commissionAmount,
+        astrologerShare: netAmount
       });
 
       return { astrologer, netAmount, commissionAmount };

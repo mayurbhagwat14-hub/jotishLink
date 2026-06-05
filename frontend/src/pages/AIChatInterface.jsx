@@ -192,14 +192,14 @@ const AIChatInterface = () => {
                {/* Grid */}
                <div className="grid grid-cols-4 gap-2 mb-6">
                   {[
-                    { amt: 10, extra: '100% Extra' },
-                    { amt: 50, extra: '100% Extra', selected: true },
-                    { amt: 100, extra: '100% Extra', popular: true },
-                    { amt: 200, extra: '100% Extra' },
-                    { amt: 500, extra: '50% Extra' },
-                    { amt: 1000, extra: '5% Extra' },
-                    { amt: 2000, extra: '10% Extra' },
-                    { amt: 3000, extra: '10% Extra' },
+                    { amt: 10 },
+                    { amt: 50, selected: true },
+                    { amt: 100, popular: true },
+                    { amt: 200 },
+                    { amt: 500 },
+                    { amt: 1000 },
+                    { amt: 2000 },
+                    { amt: 3000 },
                   ].map((plan, i) => (
                     <div key={i} className={`relative rounded-xl border flex flex-col items-center justify-center pt-3 pb-0 overflow-hidden cursor-pointer ${plan.selected ? 'border-orange-400 bg-orange-50/30' : 'border-gray-200 bg-white'}`}>
                        {plan.popular && (
@@ -208,9 +208,6 @@ const AIChatInterface = () => {
                          </div>
                        )}
                        <span className="font-bold text-[14px] text-gray-900 mb-2 mt-1">₹ {plan.amt}</span>
-                       <div className="w-full text-center text-[8px] font-bold py-1 bg-[#e8f7f2] text-[#3eb382]">
-                         {plan.extra}
-                       </div>
                     </div>
                   ))}
                </div>

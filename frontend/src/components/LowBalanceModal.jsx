@@ -3,11 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FiX } from 'react-icons/fi';
 
 const rechargeOptions = [
-  { amount: 200, extra: '100% Extra' },
-  { amount: 500, extra: '50% Extra' },
-  { amount: 1000, extra: '5% Extra' },
-  { amount: 2000, extra: '10% Extra' },
-  { amount: 3000, extra: '10% Extra' },
+  { amount: 200 },
+  { amount: 500 },
+  { amount: 1000 },
+  { amount: 2000 },
+  { amount: 3000 },
 ];
 
 const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targetName = "Astrologer", redirectTo }) => {
@@ -18,7 +18,7 @@ const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targ
 
   const handleProceed = () => {
     onClose();
-    navigate('/user/payment', { 
+    navigate('/user/recharge', { 
       state: { 
         amount: selectedAmount,
         redirectTo: redirectTo || location.pathname
@@ -67,9 +67,6 @@ const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targ
               >
                 <div className="py-2.5 font-bold text-gray-800 text-[15px]">
                   ₹ {opt.amount}
-                </div>
-                <div className="w-full bg-green-100/50 text-green-600 text-[9px] font-bold text-center py-1 border-t border-green-100 uppercase tracking-wider">
-                  {opt.extra}
                 </div>
               </div>
             ))}

@@ -25,12 +25,39 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 instance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise(function(resolve, reject) {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = 'Bearer ' + token;
+          return instance(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
+
       try {
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/refresh`,
@@ -38,12 +65,20 @@ instance.interceptors.response.use(
           { withCredentials: true }
         );
         const newAccessToken = res.data.accessToken;
+        
         if (store) {
           store.dispatch({ type: 'auth/login', payload: { user: store.getState().auth.user, token: newAccessToken } });
         }
+        
+        processQueue(null, newAccessToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        isRefreshing = false;
+        
         return instance(originalRequest);
       } catch (refreshError) {
+        processQueue(refreshError, null);
+        isRefreshing = false;
+        
         if (store) {
           store.dispatch({ type: 'auth/logout' });
         }

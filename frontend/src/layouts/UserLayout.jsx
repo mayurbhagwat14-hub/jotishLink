@@ -20,7 +20,7 @@ const UserLayout = () => {
   const { user } = useSelector((state) => state.auth);
 
   const isFullWidth = location.pathname.includes('/user/store') || location.pathname.includes('/user/chat') || location.pathname.includes('/user/details') || location.pathname.includes('/user/video-room');
-  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search');
+  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/recharge') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search');
 
   const handleLogout = () => {
     dispatch(logout());
@@ -134,7 +134,7 @@ const UserLayout = () => {
       </main>
 
       {/* ═══ FREE CHAT BOTTOM BANNER ═══ */}
-      {user?.hasUsedFreeChat === false && localStorage.getItem('claimedFreeChat') !== 'true' && !isBannerDismissed && !hideBottomNav && !isBottomBannerHidden && (
+      {user?.freeChatUsed === false && localStorage.getItem('claimedFreeChat') !== 'true' && !isBannerDismissed && !hideBottomNav && !isBottomBannerHidden && (
         <div className="fixed bottom-[64px] lg:bottom-0 left-0 right-0 z-40 bg-white border-t border-orange-100 shadow-[0_-4px_20px_rgba(255,106,26,0.1)] px-4 py-3 flex items-center gap-4 animate-slide-up rounded-t-2xl sm:rounded-none">
           <button onClick={() => setIsBannerDismissed(true)} className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600">
             <X size={16} />

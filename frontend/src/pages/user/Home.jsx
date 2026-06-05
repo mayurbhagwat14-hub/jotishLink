@@ -66,7 +66,7 @@ const Home = () => {
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
-    if (user && user.hasUsedFreeChat === false) {
+    if (user && user.freeChatUsed === false) {
       setShowFreeChatPopup(true);
     }
   }, [user]);
@@ -143,7 +143,7 @@ const Home = () => {
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => navigate('/user/wallet')}
+            onClick={() => navigate('/user/recharge')}
             className="flex items-center gap-1.5 px-3 py-1.5 border border-white/40 rounded-full text-[12px] font-bold text-white bg-white/20 shadow-sm hover:bg-white/30 transition-colors"
           >
             <span className="text-base leading-none">👛</span> Add Cash
@@ -252,7 +252,7 @@ const Home = () => {
 
       {/* ═══ MY SESSIONS ═══ */}
       {/* ═══ MY SESSIONS / EXCLUSIVE OFFER ═══ */}
-      {(userHome?.activeSession || (user && user.hasUsedFreeChat === false)) && (
+      {(userHome?.activeSession || (user && user.freeChatUsed === false)) && (
         <div className="px-4 py-5 bg-white">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-[17px] font-bold text-gray-800">

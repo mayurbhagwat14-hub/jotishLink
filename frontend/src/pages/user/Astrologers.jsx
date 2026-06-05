@@ -92,7 +92,7 @@ const Astrologers = () => {
     const minBalance = (rate || 5) * 5; // minimum 5 minutes worth
     
     // Free Chat Offer eligibility
-    const isFreeChatEligible = type === 'chat' && user?.hasUsedFreeChat === false;
+    const isFreeChatEligible = type === 'chat' && user?.freeChatUsed === false;
     
     if ((user?.wallet || 0) < minBalance && !isFreeChatEligible) {
       setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0, name: astro.name || astro.userId?.name || 'Astrologer' });

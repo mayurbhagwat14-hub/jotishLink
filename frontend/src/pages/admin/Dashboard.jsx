@@ -11,6 +11,10 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     dispatch(fetchAdminDashboardThunk());
+    const interval = setInterval(() => {
+      dispatch(fetchAdminDashboardThunk());
+    }, 5000);
+    return () => clearInterval(interval);
   }, [dispatch]);
 
   const dbData = adminDashboard || {

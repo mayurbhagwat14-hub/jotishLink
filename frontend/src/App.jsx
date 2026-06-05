@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
 // Layouts
 import AuthLayout from './layouts/AuthLayout';
@@ -16,7 +17,7 @@ import Login from './pages/Login';
 // User Pages
 import Home from './pages/user/Home';
 import Wallet from './pages/user/Wallet';
-import PaymentInformation from './pages/user/PaymentInformation';
+import RechargeWallet from './pages/user/RechargeWallet';
 import UserDetails from './pages/user/UserDetails';
 import Astrologers from './pages/user/Astrologers';
 import AstrologerProfile from './pages/user/AstrologerProfile';
@@ -58,6 +59,7 @@ import AdminOrders from './pages/admin/Orders';
 import AdminInventory from './pages/admin/Inventory';
 import AdminSettings from './pages/admin/Settings';
 import AdminAuditLogs from './pages/admin/AuditLogs';
+import AdminEarnings from './pages/admin/Earnings';
 
 // Astrologer Pages
 import AstrologerDashboard from './pages/astrologer/Dashboard';
@@ -72,6 +74,7 @@ import Earnings from './pages/astrologer/Earnings';
 import Analytics from './pages/astrologer/Analytics';
 import AstrologerDashboardProfile from './pages/astrologer/Profile';
 import AstrologerVideoRoom from './pages/astrologer/VideoRoom';
+import BankDetails from './pages/astrologer/BankDetails';
 
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from './store/slices/authSlice';
@@ -144,7 +147,7 @@ const AppContent = () => {
           <Route path="coming-soon" element={<ComingSoon />} />
           <Route path="free-chat-offer" element={<FreeChatOffer />} />
           <Route path="wallet" element={<Wallet />} />
-          <Route path="payment" element={<PaymentInformation />} />
+          <Route path="recharge" element={<RechargeWallet />} />
           <Route path="details" element={<UserDetails />} />
           <Route path="video-call" element={<VideoCallList />} />
           <Route path="video-booking/:id" element={<VideoCallBookingForm />} />
@@ -176,6 +179,7 @@ const AppContent = () => {
         <Route path="users" element={<AdminUsers />} />
         <Route path="astrologers" element={<AdminAstrologers />} />
         <Route path="finance" element={<AdminFinance />} />
+        <Route path="earnings" element={<AdminEarnings />} />
         <Route path="services" element={<AdminServices />} />
         <Route path="sessions" element={<AdminSessions />} />
         <Route path="content" element={<AdminContent />} />
@@ -205,6 +209,7 @@ const AppContent = () => {
         <Route path="earnings" element={<Earnings />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="profile" element={<AstrologerDashboardProfile />} />
+        <Route path="bank-details" element={<BankDetails />} />
       </Route>
       
       {/* Full-screen Astrologer Chat Room */}
@@ -237,6 +242,7 @@ const AppContent = () => {
 function App() {
   return (
     <Router>
+      <Toaster position="top-center" />
       <AppContent />
     </Router>
   );

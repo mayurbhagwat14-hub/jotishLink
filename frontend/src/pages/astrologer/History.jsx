@@ -95,7 +95,10 @@ const History = () => {
                         </div>
                         <div>
                           <h4 className="font-bold text-gray-800 text-sm capitalize">{item.userName}</h4>
-                          <p className="text-xs text-gray-500 flex items-center gap-1 font-medium">
+                          <p className="text-[10px] uppercase font-bold tracking-wider mt-0.5 text-gray-400">
+                            {item.type.replace('_', ' ')}
+                          </p>
+                          <p className="text-xs text-gray-500 flex items-center gap-1 font-medium mt-1">
                             <FiClock size={10} /> 
                             {new Date(item.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                             {item.duration > 0 && ` • ${formatDuration(item.duration)}`}

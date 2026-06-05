@@ -128,8 +128,8 @@ const OrderDetails = () => {
             </div>
             <div className="flex flex-col text-right">
               <span className="text-[10px] text-gray-400 font-bold uppercase">Status</span>
-              <span className={`text-[13px] font-bold capitalize ${order.paymentStatus === 'paid' ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
-                {order.paymentStatus}
+              <span className={`text-[13px] font-bold capitalize ${(order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
+                {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : order.paymentStatus}
               </span>
             </div>
           </div>

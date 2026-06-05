@@ -225,7 +225,7 @@ const OrderHistory = () => {
               const astroName = item.astrologerId?.name || 'Astrologer';
               const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
               const lastMsg = item.messages?.length > 0 ? item.messages[item.messages.length - 1]?.text : 'No messages';
-              const duration = item.duration || (item.messages?.length ? `${item.messages.length} msgs` : '');
+              const duration = item.durationSeconds ? `${Math.floor(item.durationSeconds / 60)}m ${item.durationSeconds % 60}s` : (item.messages?.length ? `${item.messages.length} msgs` : '');
 
               return (
                 <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors flex items-start gap-2 relative">
@@ -293,7 +293,7 @@ const OrderHistory = () => {
             calls.map((item, i) => {
               const astroName = item.astrologerId?.name || 'Astrologer';
               const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
-              const duration = item.duration ? `${Math.floor(item.duration / 60)}m ${item.duration % 60}s` : '0m 0s';
+              const duration = item.durationSeconds ? `${Math.floor(item.durationSeconds / 60)}m ${item.durationSeconds % 60}s` : '0m 0s';
 
               return (
                 <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors flex items-start gap-2 relative">
@@ -320,7 +320,7 @@ const OrderHistory = () => {
                           }`}>
                             {item.status}
                           </span>
-                          {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{duration} • ₹{item.totalAmount}</span>}
+                          {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{duration} • ₹{item.amountDeducted || 0}</span>}
                         </div>
                       </div>
                     </div>
@@ -468,8 +468,8 @@ const OrderHistory = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 font-bold uppercase">STATUS</p>
-                      <p className={`text-[12px] font-bold capitalize ${order.paymentStatus === 'paid' ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
-                        {order.paymentStatus}
+                      <p className={`text-[12px] font-bold capitalize ${(order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
+                        {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : order.paymentStatus}
                       </p>
                     </div>
                   </div>

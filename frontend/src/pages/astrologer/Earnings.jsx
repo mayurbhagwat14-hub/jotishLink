@@ -1,16 +1,45 @@
 import { useState, useEffect } from 'react';
 import { FiTrendingUp, FiDownload, FiCreditCard, FiClock } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAstrologerEarningsThunk } from '../../store/slices/astrologerSlice';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { fetchAstrologerEarningsThunk, fetchAstrologerProfileThunk, requestWithdrawalThunk } from '../../store/slices/astrologerSlice';
 
 const Earnings = () => {
   const dispatch = useDispatch();
-  const { earnings: { earnings = [], total = 0 }, loading } = useSelector((state) => state.astrologer);
+  const navigate = useNavigate();
+  const { earnings: { earnings = [], total = 0, thisMonth = 0, percentageChange = 0 }, profile, loading } = useSelector((state) => state.astrologer);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   useEffect(() => {
     dispatch(fetchAstrologerEarningsThunk());
+    dispatch(fetchAstrologerProfileThunk());
   }, [dispatch]);
+
+  const handleWithdraw = async () => {
+    if (!withdrawAmount || Number(withdrawAmount) <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    if (Number(withdrawAmount) > total) {
+      toast.error(`Amount exceeds available balance of ₹${total}`);
+      return;
+    }
+
+    setIsWithdrawing(true);
+    try {
+      await dispatch(requestWithdrawalThunk(Number(withdrawAmount))).unwrap();
+      toast.success('Withdrawal request submitted successfully');
+      setWithdrawAmount('');
+      dispatch(fetchAstrologerEarningsThunk());
+    } catch (err) {
+      toast.error(err.message || 'Failed to submit withdrawal request');
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-8 animate-fade-in">
@@ -31,16 +60,24 @@ const Earnings = () => {
           <p className="text-orange-100 font-medium mb-1">Available Balance</p>
           <h2 className="text-4xl font-black mb-6">₹{total.toLocaleString()}</h2>
           
-          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 flex gap-3">
-            <input 
-              type="number" 
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              placeholder="Amount to withdraw" 
-              className="bg-transparent text-white placeholder-orange-200 outline-none w-full font-bold"
-            />
-            <button className="bg-white text-orange-600 px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-orange-50 transition-colors shrink-0 shadow-sm">
-              Withdraw
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 flex gap-3 items-center border border-white/30 shadow-inner">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-200 font-black">₹</span>
+              <input 
+                type="number" 
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="Enter amount..." 
+                className="bg-black/10 rounded-lg pl-8 pr-3 py-2 text-white placeholder-orange-200 outline-none w-full font-bold focus:bg-black/20 focus:ring-2 focus:ring-white/50 transition-all"
+                disabled={isWithdrawing}
+              />
+            </div>
+            <button 
+              onClick={handleWithdraw}
+              disabled={isWithdrawing}
+              className="bg-white text-orange-600 px-5 py-2.5 rounded-lg font-black text-sm hover:bg-orange-50 transition-colors shrink-0 shadow-md disabled:opacity-50"
+            >
+              {isWithdrawing ? 'Processing...' : 'Withdraw'}
             </button>
           </div>
         </div>
@@ -53,8 +90,10 @@ const Earnings = () => {
             <h3 className="font-bold text-gray-700">This Month</h3>
           </div>
           <div>
-            <h2 className="text-3xl font-black text-gray-800 mb-1">₹45,200</h2>
-            <p className="text-sm font-bold text-green-500 flex items-center gap-1">+12.5% from last month</p>
+            <h2 className="text-3xl font-black text-gray-800 mb-1">₹{thisMonth.toLocaleString()}</h2>
+            <p className={`text-sm font-bold flex items-center gap-1 ${percentageChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {percentageChange >= 0 ? '+' : ''}{percentageChange}% from last month
+            </p>
           </div>
         </div>
 
@@ -66,9 +105,11 @@ const Earnings = () => {
             <h3 className="font-bold text-gray-700">Bank Account</h3>
           </div>
           <div>
-            <p className="text-gray-500 text-sm mb-1">HDFC Bank ending in</p>
-            <h2 className="text-xl font-black text-gray-800">**** **** **** 4592</h2>
-            <button className="text-orange-500 text-sm font-bold mt-3 hover:underline">Manage Accounts</button>
+            <p className="text-gray-500 text-sm mb-1">{profile?.astrologer?.bankDetails?.bankName || 'No bank added'}</p>
+            <h2 className="text-xl font-black text-gray-800">
+              {profile?.astrologer?.bankDetails?.accountNumber ? `**** **** **** ${profile.astrologer.bankDetails.accountNumber.slice(-4)}` : '**** **** **** ****'}
+            </h2>
+            <button onClick={() => navigate('/astrologer/bank-details')} className="text-orange-500 text-sm font-bold mt-3 hover:underline cursor-pointer">Manage Accounts</button>
           </div>
         </div>
       </div>
@@ -89,10 +130,13 @@ const Earnings = () => {
           {earnings.length > 0 ? earnings.map((earn, idx) => (
             <div key={idx} className="flex items-center justify-between p-3 border border-gray-50 rounded-xl hover:bg-gray-50">
               <div>
-                <p className="font-bold text-gray-800 flex items-center gap-2">Session <span className="text-xs font-normal text-gray-400">({earn.sessionId.slice(-6)})</span></p>
+                <p className="font-bold text-gray-800 flex items-center gap-2 capitalize">
+                  {earn.type === 'audio_call' ? 'Audio Call' : earn.type === 'video_call' ? 'Video Call' : earn.type || 'Session'}
+                  <span className="text-xs font-normal text-gray-400">({String(earn.sessionId).slice(-6)})</span>
+                </p>
                 <p className="text-sm text-gray-500 flex items-center gap-1">
                   <FiClock size={12} />
-                  {Math.floor((earn.durationSeconds || 0) / 60)}m {(earn.durationSeconds || 0) % 60}s
+                  {earn.type === 'pooja' ? 'N/A' : `${Math.floor((earn.durationSeconds || 0) / 60)}m ${(earn.durationSeconds || 0) % 60}s`}
                   <span className="ml-2 text-xs text-gray-400">{new Date(earn.date).toLocaleDateString()}</span>
                 </p>
               </div>

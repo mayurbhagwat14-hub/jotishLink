@@ -453,8 +453,8 @@ const AdminUsers = () => {
                   </div>
                   <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                     <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Free Chat Used</p>
-                    <p className={`text-sm font-bold mt-1 inline-flex px-2 py-0.5 rounded-lg ${detailUser.hasUsedFreeChat ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
-                      {detailUser.hasUsedFreeChat ? 'Yes' : 'No'}
+                    <p className={`text-sm font-bold mt-1 inline-flex px-2 py-0.5 rounded-lg ${detailUser.freeChatUsed ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                      {detailUser.freeChatUsed ? 'Yes' : 'No'}
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">

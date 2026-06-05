@@ -18,12 +18,45 @@ const AdminSettings = () => {
   const [lowStockAlert, setLowStockAlert] = useState(true);
   const [celebrities, setCelebrities] = useState([]);
   const [newCeleb, setNewCeleb] = useState({ name: '', role: '', img: '', isActive: true });
+  
+  const [generalSettings, setGeneralSettings] = useState({
+    appName: 'JyotishLink',
+    tagline: 'Connect with the Stars',
+    supportEmail: 'support@jyotishlink.com',
+    supportPhone: '+91 1800 000 000',
+    minChatBalance: 50,
+    freeChatDuration: 1
+  });
 
   useEffect(() => {
     if (activeTab === 'Celebrities') {
       fetchCelebrities();
+    } else if (activeTab === 'General') {
+      fetchGeneralSettings();
     }
   }, [activeTab]);
+
+  const fetchGeneralSettings = async () => {
+    try {
+      const res = await adminApis.getAdminSettings();
+      if (res.data?.data?.settings) {
+        setGeneralSettings(prev => ({ ...prev, ...res.data.data.settings }));
+        setMaintenanceMode(res.data.data.settings.maintenanceMode || false);
+      }
+    } catch (err) {
+      console.error('Failed to fetch settings', err);
+    }
+  };
+
+  const handleSaveGeneral = async () => {
+    try {
+      await adminApis.updateAdminSettings({ ...generalSettings, maintenanceMode });
+      alert('Settings saved successfully');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save settings');
+    }
+  };
 
   const fetchCelebrities = async () => {
     try {
@@ -99,12 +132,12 @@ const AdminSettings = () => {
 
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Platform Name</label>
-              <input type="text" defaultValue="JyotishLink" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <input type="text" value={generalSettings.appName} onChange={e => setGeneralSettings({...generalSettings, appName: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Tagline</label>
-              <input type="text" defaultValue="Your Trusted Astrology Platform" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <input type="text" value={generalSettings.tagline} onChange={e => setGeneralSettings({...generalSettings, tagline: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -112,19 +145,19 @@ const AdminSettings = () => {
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Support Email</label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                  <input type="email" defaultValue="support@jyotishlink.com" className="w-full pl-9 pr-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="email" value={generalSettings.supportEmail} onChange={e => setGeneralSettings({...generalSettings, supportEmail: e.target.value})} className="w-full pl-9 pr-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Support Phone</label>
                 <div className="relative">
                   <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                  <input type="tel" defaultValue="+91 1800 000 000" className="w-full pl-9 pr-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="tel" value={generalSettings.supportPhone} onChange={e => setGeneralSettings({...generalSettings, supportPhone: e.target.value})} className="w-full pl-9 pr-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
             </div>
 
-            <button className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
+            <button onClick={handleSaveGeneral} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
               <FiSave size={14} /> Save Changes
             </button>
           </div>
@@ -149,15 +182,20 @@ const AdminSettings = () => {
 
             <div className="space-y-1.5 pt-2">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Min Wallet Balance for Chat (₹)</label>
-              <input type="number" defaultValue="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <input type="number" value={generalSettings.minChatBalance} onChange={e => setGeneralSettings({...generalSettings, minChatBalance: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Free Chat Duration (minutes)</label>
-              <input type="number" defaultValue="5" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <select value={generalSettings.freeChatDuration} onChange={e => setGeneralSettings({...generalSettings, freeChatDuration: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+                <option value={1}>1 minute</option>
+                <option value={2}>2 minutes</option>
+                <option value={5}>5 minutes</option>
+                <option value={10}>10 minutes</option>
+              </select>
             </div>
 
-            <button className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
+            <button onClick={handleSaveGeneral} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
               <FiSave size={14} /> Save Changes
             </button>
           </div>

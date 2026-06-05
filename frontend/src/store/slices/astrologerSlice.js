@@ -37,6 +37,18 @@ export const fetchAstrologerEarningsThunk = createAsyncThunk(
   }
 );
 
+export const requestWithdrawalThunk = createAsyncThunk(
+  'astrologer/requestWithdrawal',
+  async (amount, { rejectWithValue }) => {
+    try {
+      const response = await astrologerApis.requestWithdrawal(amount);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 export const updateAstrologerOnlineStatusThunk = createAsyncThunk(
   'astrologer/updateStatus',
   async (status, { rejectWithValue }) => {

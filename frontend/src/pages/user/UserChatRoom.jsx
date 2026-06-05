@@ -68,10 +68,9 @@ const UserChatRoom = () => {
         const details = `Hi, here are my details for the consultation:
 Name: ${user?.name || 'Not provided'}
 DOB: ${user?.dob || 'Not provided'}
-Time of Birth: ${user?.tob || 'Not provided'}
-Place of Birth: ${user?.pob || 'Not provided'}
+Time of Birth: ${user?.timeOfBirth || 'Not provided'}
+Place of Birth: ${user?.placeOfBirth || 'Not provided'}
 Gender: ${user?.gender || 'Not provided'}
-Marital Status: ${user?.maritalStatus || 'Not provided'}
 
 Please analyze my chart based on this information.`;
         

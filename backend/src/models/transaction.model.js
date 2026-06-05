@@ -25,6 +25,14 @@ const transactionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    paymentStatus: {
+      type: String,
+      enum: ['success', 'failed', 'pending'],
+      default: 'success'
+    },
+    razorpayReference: {
+      type: String
+    }
   },
   {
     timestamps: true,

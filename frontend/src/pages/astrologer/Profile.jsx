@@ -16,6 +16,14 @@ const Profile = () => {
   const [newExpertise, setNewExpertise] = useState('');
 
   const [formData, setFormData] = useState({
+    name: '',
+    experience: '',
+    dob: '',
+    gender: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
     bio: '',
     chatPrice: '',
     audioPrice: '',
@@ -30,6 +38,14 @@ const Profile = () => {
   useEffect(() => {
     if (profile?.astrologer) {
        setFormData({
+         name: profile.astrologer.name || '',
+         experience: profile.astrologer.experience?.toString() || '',
+         dob: profile.astrologer.dob ? new Date(profile.astrologer.dob).toISOString().split('T')[0] : '',
+         gender: profile.astrologer.gender || '',
+         address: profile.astrologer.address || '',
+         city: profile.astrologer.city || '',
+         state: profile.astrologer.state || '',
+         pincode: profile.astrologer.pincode || '',
          bio: profile.astrologer.about || '',
          chatPrice: profile.astrologer.pricing?.chat?.toString() || '15',
          audioPrice: profile.astrologer.pricing?.audioCall?.toString() || '20',
@@ -88,6 +104,14 @@ const Profile = () => {
 
     try {
       const res = await dispatch(updateAstrologerProfileThunk({
+        name: formData.name,
+        experience: Number(formData.experience) || 0,
+        dob: formData.dob || undefined,
+        gender: formData.gender,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
         about: formData.bio,
         languages,
         skills: expertise,
@@ -147,6 +171,94 @@ const Profile = () => {
             <div>
               <h2 className="text-lg font-bold text-gray-800">Profile Photo</h2>
               <p className="text-sm text-gray-500 font-medium">Update your profile picture to build trust with users.</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Personal Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Full Name</label>
+                <input 
+                  type="text" 
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Experience (Years)</label>
+                <input 
+                  type="number" 
+                  value={formData.experience}
+                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Date of Birth</label>
+                <input 
+                  type="date" 
+                  value={formData.dob}
+                  onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Gender</label>
+                <select 
+                  value={formData.gender}
+                  onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Location Details</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Address</label>
+                <input 
+                  type="text" 
+                  value={formData.address}
+                  onChange={(e) => setFormData({...formData, address: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">City</label>
+                <input 
+                  type="text" 
+                  value={formData.city}
+                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">State</label>
+                <input 
+                  type="text" 
+                  value={formData.state}
+                  onChange={(e) => setFormData({...formData, state: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Pincode</label>
+                <input 
+                  type="text" 
+                  value={formData.pincode}
+                  onChange={(e) => setFormData({...formData, pincode: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
             </div>
           </div>
 

@@ -16,7 +16,7 @@ export const startChatSession = asyncHandler(async (req, res) => {
   if (astrologer.onlineStatus !== 'online') throw new ApiError(400, 'Astrologer is not available');
 
   const user = await User.findById(req.user._id);
-  const isFreeChat = !user.hasUsedFreeChat;
+  const isFreeChat = !user.freeChatUsed;
 
   if (!isFreeChat) {
     const requiredBalance = astrologer.pricing.chat * 2; // Minimum 2 min balance required
@@ -78,8 +78,10 @@ export const endChatSession = asyncHandler(async (req, res) => {
     
     // Mark the user as having used their free chat
     const user = await User.findById(session.userId);
-    if (user && !user.hasUsedFreeChat) {
-      user.hasUsedFreeChat = true;
+    if (user && !user.freeChatUsed) {
+      user.freeChatUsed = true;
+      user.freeChatUsedAt = new Date();
+      // duration will just be left undefined or 0 here if it wasn't tracked properly by socket
       await user.save();
     }
   } else {

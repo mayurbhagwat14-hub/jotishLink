@@ -165,12 +165,15 @@ const AstrologerProfile = () => {
 
       {/* Floating Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40 pb-safe">
-        <div className="max-w-md mx-auto flex gap-3">
-          <button onClick={() => handleActionClick('chat')} className="flex-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-colors">
+        <div className="max-w-md mx-auto flex gap-2">
+          <button onClick={() => handleActionClick('chat')} className="flex-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-[13px] sm:text-[14px]">
             <FiMessageSquare /> Chat
           </button>
-          <button onClick={() => handleActionClick('call')} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30 transition-colors">
+          <button onClick={() => handleActionClick('call')} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/30 transition-colors text-[13px] sm:text-[14px]">
             <FiPhoneCall /> Call
+          </button>
+          <button onClick={() => handleActionClick('video')} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/30 transition-colors text-[13px] sm:text-[14px]">
+            <FiVideo /> Video
           </button>
         </div>
       </div>

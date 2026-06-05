@@ -7,6 +7,7 @@ import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
 import { fetchAstrologersThunk } from '../../store/slices/userSlice';
 import { addWalletCash } from '../../store/slices/authSlice';
+import LowBalanceModal from '../../components/LowBalanceModal';
 import getSocket from '../../socket/socketManager';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -55,7 +56,7 @@ const VideoCallList = () => {
     const minBalance = (rate || 5) * 5;
     
     if ((user?.wallet || 0) < minBalance) {
-      setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0 });
+      setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0, name: astro.name });
       setShowBalanceModal(true);
       return;
     }
@@ -161,32 +162,13 @@ const VideoCallList = () => {
         )}
       </div>
 
-      {/* ═══ INSUFFICIENT BALANCE MODAL ═══ */}
-      {showBalanceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowBalanceModal(false)} />
-          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 overflow-hidden animate-scale-in text-center">
-            <button onClick={() => setShowBalanceModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-              <FiX size={20} />
-            </button>
-            <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">👛</span>
-            </div>
-            <h3 className="font-bold text-gray-900 text-[18px] mb-2">Insufficient Balance</h3>
-            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-              Your wallet balance is <strong>₹{shortBalanceInfo.current}</strong>, but this session requires at least <strong>₹{shortBalanceInfo.required}</strong>. Please recharge to connect.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowBalanceModal(false)} className="flex-1 py-3 border border-gray-200 text-gray-700 font-bold rounded-xl text-[13px] hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleRecharge} className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl text-[13px] hover:bg-orange-600 shadow-md shadow-orange-200 transition-colors">
-                Recharge (₹500)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <LowBalanceModal 
+        isOpen={showBalanceModal} 
+        onClose={() => setShowBalanceModal(false)}
+        requiredAmount={shortBalanceInfo.required}
+        currentBalance={shortBalanceInfo.current}
+        targetName={shortBalanceInfo.name || 'Astrologer'}
+      />
 
 
 

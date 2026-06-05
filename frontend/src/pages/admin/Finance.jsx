@@ -77,6 +77,8 @@ const AdminFinance = () => {
       return;
     }
 
+    if (isProcessingPayout) return;
+
     setIsProcessingPayout(true);
     try {
       await processAstrologerPayout(selectedAstrologer._id, { amount: Number(payoutAmount) });
@@ -151,7 +153,7 @@ const AdminFinance = () => {
           onClick={() => setActiveTab('payouts')}
           className={`pb-3 font-bold text-sm transition-colors ${activeTab === 'payouts' ? 'border-b-2 border-orange-500 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          Astrologer Payouts
+          Withdrawal Requests
         </button>
       </div>
 
@@ -222,7 +224,7 @@ const AdminFinance = () => {
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-            <h2 className="font-bold text-gray-900">Astrologer Balances & Payouts</h2>
+            <h2 className="font-bold text-gray-900">Withdrawal Requests</h2>
           </div>
 
           <div className="overflow-x-auto">
@@ -230,26 +232,46 @@ const AdminFinance = () => {
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
                   <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Astrologer</th>
-                  <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Phone</th>
-                  <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Available Wallet Balance</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Bank Details</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Requested Amount</th>
+                  <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
                   <th className="py-3 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {payouts.map((astro, i) => (
                   <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-3.5 px-6 text-sm font-bold text-gray-800">{astro.name}</td>
-                    <td className="py-3.5 px-6 text-sm text-gray-500 font-medium">{astro.phone}</td>
+                    <td className="py-3.5 px-6">
+                      <p className="text-sm font-bold text-gray-800">{astro.name}</p>
+                      <p className="text-xs text-gray-500 font-medium">{astro.phone}</p>
+                    </td>
+                    <td className="py-3.5 px-6">
+                      {astro.bankDetails ? (
+                        <div>
+                          <p className="text-xs font-bold text-gray-700">{astro.bankDetails.bankName || 'N/A'}</p>
+                          <p className="text-[10px] font-mono text-gray-500">A/C: {astro.bankDetails.accountNumber || 'N/A'}</p>
+                          <p className="text-[10px] font-mono text-gray-500">IFSC: {astro.bankDetails.ifscCode || 'N/A'}</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-red-500 font-bold">No Bank Added</p>
+                      )}
+                    </td>
                     <td className="py-3.5 px-6">
                       <span className="font-black text-green-600">₹{astro.wallet?.toLocaleString() || 0}</span>
+                      <p className="text-[10px] text-gray-400 mt-1">{new Date(astro.date).toLocaleDateString()}</p>
+                    </td>
+                    <td className="py-3.5 px-6">
+                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${astro.status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                        {astro.status}
+                      </span>
                     </td>
                     <td className="py-3.5 px-6">
                       <button 
                         onClick={() => handleOpenPayoutModal(astro)}
-                        disabled={!astro.wallet || astro.wallet <= 0}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${astro.wallet > 0 ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                        disabled={!astro.wallet || astro.wallet <= 0 || astro.status === 'completed' || !astro.bankDetails}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${astro.wallet > 0 && astro.status !== 'completed' && astro.bankDetails ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                       >
-                        <FiDollarSign size={12} /> Process Payout
+                        <FiDollarSign size={12} /> {astro.status === 'completed' ? 'Paid' : 'Process'}
                       </button>
                     </td>
                   </tr>
@@ -277,9 +299,19 @@ const AdminFinance = () => {
                 <p className="text-xs text-orange-600 font-bold uppercase mb-1">Paying To</p>
                 <p className="text-lg font-black text-gray-900">{selectedAstrologer.name}</p>
                 <p className="text-sm text-gray-500">{selectedAstrologer.phone}</p>
-                <div className="mt-3 pt-3 border-t border-orange-200 flex justify-between">
-                  <span className="text-sm font-bold text-gray-600">Available Balance:</span>
-                  <span className="text-sm font-black text-green-600">₹{selectedAstrologer.wallet?.toLocaleString()}</span>
+                <div className="mt-3 pt-3 border-t border-orange-200 flex flex-col gap-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-bold text-gray-600">Requested Amount:</span>
+                    <span className="text-sm font-black text-green-600">₹{selectedAstrologer.wallet?.toLocaleString()}</span>
+                  </div>
+                  {selectedAstrologer.bankDetails && (
+                    <div className="bg-white/50 p-2 rounded-lg mt-2 text-xs">
+                      <p><strong className="text-gray-700">Bank:</strong> {selectedAstrologer.bankDetails.bankName}</p>
+                      <p><strong className="text-gray-700">A/C:</strong> {selectedAstrologer.bankDetails.accountNumber}</p>
+                      <p><strong className="text-gray-700">IFSC:</strong> {selectedAstrologer.bankDetails.ifscCode}</p>
+                      <p><strong className="text-gray-700">Name:</strong> {selectedAstrologer.bankDetails.accountHolderName}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

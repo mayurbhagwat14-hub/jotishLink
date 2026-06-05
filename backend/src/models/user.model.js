@@ -41,7 +41,7 @@ const userSchema = new mongoose.Schema(
     },
     wallet: {
       type: Number,
-      default: 150, // Initial wallet balance incentive
+      default: 0,
     },
     ratedAstrologers: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -78,9 +78,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    hasUsedFreeChat: {
+    freeChatUsed: {
       type: Boolean,
       default: false,
+    },
+    freeChatUsedAt: {
+      type: Date,
+    },
+    freeChatDuration: {
+      type: Number,
     },
     otpHash: {
       type: String,

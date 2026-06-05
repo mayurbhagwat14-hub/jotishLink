@@ -5,6 +5,7 @@ import Astrologer from '../models/astrologer.model.js';
 import PoojaBooking from '../models/poojaBooking.model.js';
 import ChatSession from '../models/chatSession.model.js';
 import Transaction from '../models/transaction.model.js';
+import WithdrawalRequest from '../models/withdrawalRequest.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -15,12 +16,12 @@ const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
     { id: userId, role },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRY || '1h' }
+    { expiresIn: process.env.JWT_ACCESS_EXPIRY || '365d' }
   );
   const refreshToken = jwt.sign(
     { id: userId, role },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRY || '30d' }
+    { expiresIn: process.env.JWT_REFRESH_EXPIRY || '365d' }
   );
   return { accessToken, refreshToken };
 };
@@ -410,23 +411,107 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
 
 // GET /api/astrologer/earnings
 export const getAstrologerEarnings = asyncHandler(async (req, res) => {
-  const sessions = await ChatSession.find({
-    astrologerId: req.user._id,
-    status: 'completed',
-  }).sort({ createdAt: -1 }).lean();
+  const [sessions, poojas] = await Promise.all([
+    ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
+    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['completed', 'confirmed'] } }).lean()
+  ]);
 
-  const earnings = sessions.map((s) => ({
-    sessionId: s._id,
-    date: s.createdAt,
-    durationSeconds: s.durationSeconds,
-    amount: parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2)),
-  }));
+  const allEarnings = [
+    ...sessions.map((s) => ({
+      sessionId: s._id,
+      date: s.createdAt,
+      type: s.type || 'session',
+      durationSeconds: s.durationSeconds,
+      amount: parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2)),
+    })),
+    ...poojas.map((p) => ({
+      sessionId: p._id,
+      date: p.createdAt,
+      type: 'pooja',
+      durationSeconds: 0,
+      amount: parseFloat(((p.price || 0) * 0.7).toFixed(2)),
+    }))
+  ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const total = earnings.reduce((sum, e) => sum + e.amount, 0);
+  const totalEarnings = allEarnings.reduce((sum, e) => sum + e.amount, 0);
+
+  // Calculate Available Balance by deducting pending and completed withdrawals
+  const withdrawals = await WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean();
+  const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+  const total = totalEarnings - totalWithdrawnOrPending;
+
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  let thisMonthTotal = 0;
+  let lastMonthTotal = 0;
+
+  allEarnings.forEach(e => {
+    const d = new Date(e.date);
+    if (d >= currentMonthStart) {
+      thisMonthTotal += e.amount;
+    } else if (d >= lastMonthStart && d < currentMonthStart) {
+      lastMonthTotal += e.amount;
+    }
+  });
+
+  let percentageChange = 0;
+  if (lastMonthTotal === 0) {
+    percentageChange = thisMonthTotal > 0 ? 100 : 0;
+  } else {
+    percentageChange = ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100;
+  }
 
   return res.status(200).json(
-    new ApiResponse(200, { earnings, total: parseFloat(total.toFixed(2)) }, 'Earnings fetched')
+    new ApiResponse(200, { 
+      earnings: allEarnings, 
+      total: parseFloat(total.toFixed(2)),
+      totalEarnings: parseFloat(totalEarnings.toFixed(2)),
+      thisMonth: parseFloat(thisMonthTotal.toFixed(2)),
+      percentageChange: parseFloat(percentageChange.toFixed(1))
+    }, 'Earnings fetched')
   );
+});
+
+// POST /api/astrologer/withdraw
+export const requestWithdrawal = asyncHandler(async (req, res) => {
+  const { amount } = req.body;
+  if (!amount || amount < 0.01) throw new ApiError(400, 'Invalid withdrawal amount');
+
+  const astrologer = await Astrologer.findById(req.user._id);
+  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  if (!astrologer.bankDetails || !astrologer.bankDetails.accountNumber) {
+    throw new ApiError(400, 'Please complete your bank details before withdrawing');
+  }
+
+  // Verify balance
+  const [sessions, poojas, withdrawals] = await Promise.all([
+    ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
+    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['completed', 'confirmed'] } }).lean(),
+    WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean()
+  ]);
+
+  const totalEarnings = [
+    ...sessions.map(s => parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2))),
+    ...poojas.map(p => parseFloat(((p.price || 0) * 0.7).toFixed(2)))
+  ].reduce((a, b) => a + b, 0);
+
+  const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+  const availableBalance = totalEarnings - totalWithdrawnOrPending;
+
+  if (amount > availableBalance) {
+    throw new ApiError(400, `Insufficient balance. Available to withdraw: ₹${availableBalance.toFixed(2)}`);
+  }
+
+  const withdrawal = await WithdrawalRequest.create({
+    astrologerId: astrologer._id,
+    amount: Number(amount),
+    status: 'pending',
+    bankDetailsSnapshot: astrologer.bankDetails
+  });
+
+  return res.status(201).json(new ApiResponse(201, { withdrawal }, 'Withdrawal request submitted successfully. Admin will process it shortly.'));
 });
 
 // GET /api/astrologer/pooja-requests
@@ -464,7 +549,10 @@ export const updatePoojaStatus = asyncHandler(async (req, res) => {
 
 // GET /api/astrologer/chats
 export const getAstrologerChats = asyncHandler(async (req, res) => {
-  const sessions = await ChatSession.find({ astrologerId: req.user._id })
+  const sessions = await ChatSession.find({ 
+    astrologerId: req.user._id,
+    type: { $nin: ['audio_call', 'video_call', 'audio', 'video'] }
+  })
     .populate('userId', 'name avatar phone')
     .sort({ createdAt: -1 })
     .lean();

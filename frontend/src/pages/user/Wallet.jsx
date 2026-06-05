@@ -155,21 +155,48 @@ const Wallet = () => {
           ) : transactions && transactions.length > 0 ? (
             <div className="space-y-4">
               {transactions.map((tx) => (
-                <div key={tx._id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'recharge' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                      {tx.type === 'recharge' ? <FiArrowDownLeft size={18} /> : <FiArrowUpRight size={18} />}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm text-gray-800 capitalize">{tx.desc || 'Wallet Transaction'}</h4>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                        <FiClock size={10} />
-                        <span>{new Date(tx.createdAt).toLocaleString()}</span>
+                <div key={tx._id} className="flex flex-col gap-3 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${tx.type === 'recharge' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                        {tx.type === 'recharge' ? <FiArrowDownLeft size={18} /> : <FiArrowUpRight size={18} />}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-800 capitalize">{tx.type === 'recharge' ? 'Wallet Recharge' : 'Wallet Deduction'}</h4>
+                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                          <FiClock size={10} />
+                          <span>{new Date(tx.createdAt).toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="text-right">
+                      <div className={`font-bold text-base ${tx.type === 'recharge' ? 'text-green-600' : 'text-red-600'}`}>
+                        {tx.type === 'recharge' ? '+' : '-'}₹{Math.abs(tx.amount)}
+                      </div>
+                      <span className={`inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${tx.paymentStatus === 'success' || !tx.paymentStatus ? 'bg-green-100 text-green-700' : tx.paymentStatus === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}`}>
+                        {tx.paymentStatus || 'Success'}
+                      </span>
+                    </div>
                   </div>
-                  <div className={`font-bold text-sm ${tx.type === 'recharge' ? 'text-green-600' : 'text-red-600'}`}>
-                    {tx.type === 'recharge' ? '+' : '-'}₹{Math.abs(tx.amount)}
+                  
+                  {/* Detailed Transaction Info */}
+                  <div className="bg-white rounded-lg p-3 border border-gray-100 text-xs mt-1 space-y-1.5 shadow-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 font-medium">Transaction ID:</span>
+                      <span className="text-gray-800 font-mono">{tx._id}</span>
+                    </div>
+                    {tx.razorpayReference && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500 font-medium">Razorpay Ref:</span>
+                        <span className="text-gray-800 font-mono">{tx.razorpayReference}</span>
+                      </div>
+                    )}
+                    {tx.desc && !tx.razorpayReference && (
+                       <div className="flex justify-between">
+                        <span className="text-gray-500 font-medium">Details:</span>
+                        <span className="text-gray-800 text-right max-w-[200px] truncate" title={tx.desc}>{tx.desc}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

@@ -45,9 +45,11 @@ const astrologerSchema = new mongoose.Schema(
       type: String,
     },
 
-    wallet: {
-      type: Number,
-      default: 0,
+    earnings: {
+      total: { type: Number, default: 0 },
+      pending: { type: Number, default: 0 },
+      withdrawn: { type: Number, default: 0 },
+      available: { type: Number, default: 0 },
     },
     isBlocked: {
       type: Boolean,

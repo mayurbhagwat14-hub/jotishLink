@@ -46,6 +46,7 @@ import {
   processAstrologerPayout,
   getAdminAstrologerById,
   sendBroadcast,
+  getAdminEarnings,
 } from '../controllers/admin.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { auditLogMiddleware } from '../middlewares/audit.middleware.js';
@@ -61,8 +62,9 @@ router.post('/admin/auth/change-password', adminChangePassword);
 router.put('/admin/profile', updateAdminProfile);
 router.delete('/admin/profile', deleteAdminProfile);
 
-// Dashboard
+// Dashboard & Earnings
 router.get('/admin/dashboard-stats', getAdminDashboard);
+router.get('/admin/earnings', getAdminEarnings);
 
 // User management
 router.get('/admin/users', getAdminUsers);

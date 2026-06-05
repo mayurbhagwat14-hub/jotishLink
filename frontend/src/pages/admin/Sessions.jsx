@@ -22,6 +22,10 @@ const AdminSessions = () => {
 
   useEffect(() => {
     fetchSessions();
+    const interval = setInterval(() => {
+      fetchSessions();
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchSessions = async () => {
@@ -40,7 +44,9 @@ const AdminSessions = () => {
         userAvatar: s.userId?.avatar || '',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
         astrologerAvatar: s.astrologerId?.avatar || '',
-        type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
+        type: s.isBotSession ? 'Chat (Bot)' : 
+               s.type === 'video_call' || s.type === 'video' ? 'Video Call' :
+               s.type === 'audio_call' || s.type === 'audio' ? 'Audio Call' : 'Chat',
         typeIcon: <FiMessageSquare />,
         duration: 'Ongoing',
         rate: s.isFreeChat ? 0 : 'Paid',
@@ -68,7 +74,9 @@ const AdminSessions = () => {
         userAvatar: s.userId?.avatar || '',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
         astrologerAvatar: s.astrologerId?.avatar || '',
-        type: s.isBotSession ? 'Chat (Bot)' : 'Chat',
+        type: s.isBotSession ? 'Chat (Bot)' : 
+               s.type === 'video_call' || s.type === 'video' ? 'Video Call' :
+               s.type === 'audio_call' || s.type === 'audio' ? 'Audio Call' : 'Chat',
         duration: `${Math.floor((s.durationSeconds || 0) / 60)}m ${(s.durationSeconds || 0) % 60}s`,
         total: s.amountDeducted || 0,
         status: s.status === 'completed' ? 'Completed' : 'Missed',
@@ -85,7 +93,7 @@ const AdminSessions = () => {
         type: 'Audio Call',
         duration: `${Math.floor((c.duration || 0) / 60)}m ${(c.duration || 0) % 60}s`,
         total: c.totalAmount || 0,
-        status: c.status.charAt(0).toUpperCase() + c.status.slice(1),
+        status: c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : 'Unknown',
         time: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date(c.createdAt).getTime()
       }));

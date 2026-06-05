@@ -12,12 +12,12 @@ const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
     { id: userId, role },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRY || '1h' }
+    { expiresIn: process.env.JWT_ACCESS_EXPIRY || '365d' }
   );
   const refreshToken = jwt.sign(
     { id: userId, role },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRY || '30d' }
+    { expiresIn: process.env.JWT_REFRESH_EXPIRY || '365d' }
   );
   return { accessToken, refreshToken };
 };
@@ -160,10 +160,19 @@ export const refreshToken = asyncHandler(async (req, res) => {
     throw new ApiError(401, 'Invalid or expired refresh token');
   }
 
-  const user = await User.findById(decoded.id).select('-password -otpHash');
+  let user;
+  if (decoded.role === 'astrologer') {
+    const { default: Astrologer } = await import('../models/astrologer.model.js');
+    user = await Astrologer.findById(decoded.id).select('-password');
+  } else if (decoded.role === 'admin') {
+    user = await Admin.findById(decoded.id).select('-password');
+  } else {
+    user = await User.findById(decoded.id).select('-password -otpHash');
+  }
+
   if (!user) throw new ApiError(401, 'User not found');
 
-  const { accessToken, refreshToken: newRefresh } = generateTokens(user._id, user.role);
+  const { accessToken, refreshToken: newRefresh } = generateTokens(user._id, decoded.role || user.role);
   setRefreshCookie(res, newRefresh);
 
   return res.status(200).json(new ApiResponse(200, { accessToken }, 'Token refreshed'));

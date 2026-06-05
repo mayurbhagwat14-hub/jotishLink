@@ -17,6 +17,7 @@ import {
   updateOnlineStatus,
   getAstrologerHistory,
   getAstrologerAnalytics,
+  requestWithdrawal,
 } from '../controllers/astrologer.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { uploadFields } from '../middlewares/upload.middleware.js';
@@ -47,6 +48,7 @@ router.delete('/astrologer/profile/delete', astroAuth, deleteAstrologerAccount);
 
 router.get('/astrologer/dashboard', astroAuth, getAstrologerDashboard);
 router.get('/astrologer/earnings', astroAuth, getAstrologerEarnings);
+router.post('/astrologer/withdraw', astroAuth, requestWithdrawal);
 router.get('/astrologer/pooja-requests', astroAuth, getAstrologerPoojaRequests);
 router.put('/astrologer/poojas/:id/status', astroAuth, updatePoojaStatus);
 router.get('/astrologer/chats', astroAuth, getAstrologerChats);
