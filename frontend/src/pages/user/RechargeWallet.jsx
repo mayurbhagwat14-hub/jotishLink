@@ -68,7 +68,7 @@ const RechargeWallet = () => {
         return;
       }
 
-      const total = numAmount + Math.round(numAmount * 0.18); // Including GST
+      const total = numAmount; // No extra GST added from frontend
 
       const { data } = await api.post('/payment/create-order', { amount: total });
       const order = data.data;

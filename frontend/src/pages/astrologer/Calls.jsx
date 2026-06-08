@@ -1,9 +1,9 @@
 import { FiPhone, FiVideo, FiCheck, FiX, FiLoader } from 'react-icons/fi';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import getSocket from '../../socket/socketManager';
-import { removeIncomingRequest, addActiveSession } from '../../store/slices/astrologerSlice';
+import { removeIncomingRequest, addActiveSession, removeActiveSession } from '../../store/slices/astrologerSlice';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,22 @@ const Calls = () => {
   const { token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const socket = getSocket();
+    const onSessionEnded = (data) => {
+      if (data.roomId) {
+        dispatch(removeActiveSession(data.roomId));
+      }
+    };
+    socket.on('session_ended', onSessionEnded);
+    socket.on('call_ended', onSessionEnded);
+    
+    return () => {
+      socket.off('session_ended', onSessionEnded);
+      socket.off('call_ended', onSessionEnded);
+    };
+  }, [dispatch]);
 
   const callRequests = incomingRequests.filter(req => req.type === 'audio' || req.type === 'video');
   const callSessions = activeSessions.filter(req => req.type === 'audio' || req.type === 'video');

@@ -33,6 +33,7 @@ const UserChatRoom = () => {
   const [showSummary, setShowSummary] = useState(false);
   const [endReason, setEndReason] = useState('');
   const [finalDuration, setFinalDuration] = useState(0);
+  const [finalAmount, setFinalAmount] = useState(0);
   const [viewOnly, setViewOnly] = useState(location.state?.viewOnly || false);
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
@@ -113,6 +114,7 @@ Please analyze my chart based on this information.`;
       setSessionEnded(true);
       setEndReason(data.reason);
       setFinalDuration(data.durationSeconds || timer);
+      setFinalAmount(data.amountDeducted || 0);
 
       if (data.reason === 'insufficient_balance') {
         setShowLowBalance(true);
@@ -395,7 +397,9 @@ Please analyze my chart based on this information.`;
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 font-medium">Amount Deducted</span>
-                <span className="font-bold text-orange-500">₹{Math.floor((finalDuration || timer) / 60) * (astrologer.pricing?.chat || astrologer.rate || 5)}</span>
+                <span className="font-bold text-orange-500">
+                  {isBotSession ? '₹0 (Free)' : `₹${finalAmount > 0 ? finalAmount.toFixed(2) : (((finalDuration || timer) / 60) * (astrologer.pricing?.chat || astrologer.rate || 5)).toFixed(2)}`}
+                </span>
               </div>
             </div>
             <button

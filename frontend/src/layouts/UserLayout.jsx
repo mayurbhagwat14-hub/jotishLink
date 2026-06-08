@@ -56,13 +56,13 @@ const UserLayout = () => {
       {/* ═══ SIDEBAR OVERLAY ═══ */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 transition-opacity animate-fade-in" 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] transition-opacity animate-fade-in" 
           onClick={() => setIsSidebarOpen(false)} 
         />
       )}
 
       {/* ═══ SIDEBAR DRAWER ═══ */}
-      <div className={`fixed top-0 bottom-0 left-0 w-[280px] bg-white z-50 transform transition-transform duration-300 shadow-2xl flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed top-0 bottom-0 left-0 w-[280px] bg-white z-[100] transform transition-transform duration-300 shadow-2xl flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="bg-gradient-to-br from-orange-500 to-orange-400 p-6 flex flex-col items-center justify-center relative">
           <button onClick={() => setIsSidebarOpen(false)} className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors">
             <X size={22} />

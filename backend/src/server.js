@@ -22,6 +22,7 @@ import storeRoutes from './routes/store.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import callRoutes from './routes/call.routes.js';
+import toolsRoutes from './routes/tools.routes.js';
 
 // Models (needed for Socket.IO session persistence)
 import ChatSession from './models/chatSession.model.js';
@@ -664,6 +665,7 @@ app.use('/api', storeRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api', callRoutes);
+app.use('/api', toolsRoutes);
 
 // Health check & Root
 app.get('/health', (req, res) => {

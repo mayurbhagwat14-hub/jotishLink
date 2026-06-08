@@ -11,7 +11,7 @@ const systemSettingsSchema = new mongoose.Schema(
       audioCall: { type: Number, default: 15 },
       videoCall: { type: Number, default: 25 },
     },
-    newUserWalletBonus: { type: Number, default: 150 },
+    newUserWalletBonus: { type: Number, default: 0 },
     minChatBalance: { type: Number, default: 10 },
     maintenanceMode: { type: Boolean, default: false },
     razorpayEnabled: { type: Boolean, default: false },

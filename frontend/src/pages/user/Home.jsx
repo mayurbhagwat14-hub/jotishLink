@@ -11,6 +11,7 @@ import getSocket from '../../socket/socketManager';
 const Home = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showFreeChatPopup, setShowFreeChatPopup] = useState(false);
+  const [hasShownPopup, setHasShownPopup] = useState(false);
   const { openSidebar, setHideBottomBanner } = useOutletContext();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -68,10 +69,15 @@ const Home = () => {
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
-    if (user && user.freeChatUsed === false) {
-      setShowFreeChatPopup(true);
+    if (user) {
+      if (user.freeChatUsed) {
+        setShowFreeChatPopup(false);
+      } else if (!hasShownPopup) {
+        setShowFreeChatPopup(true);
+        setHasShownPopup(true);
+      }
     }
-  }, [user]);
+  }, [user, hasShownPopup]);
 
   const handleChatCallAction = (path) => {
     if (!user || user?.name === 'Guest User') {
@@ -514,7 +520,11 @@ const Home = () => {
         </div>
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
           {(userHome?.liveAstrologers || []).map((astro, i) => (
-            <div key={i} className="shrink-0 flex flex-col items-center gap-2 w-[80px] cursor-pointer group">
+            <div 
+              key={i} 
+              className="shrink-0 flex flex-col items-center gap-2 w-[80px] cursor-pointer group"
+              onClick={() => navigate(`/user/search?q=${encodeURIComponent(astro.name)}`)}
+            >
               <div className="relative">
                 <div className="w-[64px] h-[64px] rounded-full border-2 border-orange-400 p-0.5 group-hover:border-orange-500 transition-colors">
                   <img src={astro.img} alt={astro.name} className="w-full h-full rounded-full object-cover" />
@@ -528,18 +538,18 @@ const Home = () => {
       </div>
 
       {/* ═══ FLOATING STICKY ACTION BUTTONS ═══ */}
-      <div className="fixed bottom-[76px] left-0 right-0 px-4 flex gap-4 justify-center z-40 lg:hidden">
+      <div className="fixed bottom-[76px] left-0 right-0 px-2 sm:px-4 flex gap-2 sm:gap-4 justify-center z-40 lg:hidden">
         <button
           onClick={() => handleChatCallAction('/user/astrologers?type=chat')}
-          className="flex-1 bg-orange-500 text-white shadow-lg shadow-orange-300/50 rounded-full py-3 flex items-center justify-center gap-2 font-bold text-[13px] hover:bg-orange-600 active:scale-[0.98] transition-all"
+          className="flex-1 bg-orange-500 text-white shadow-lg shadow-orange-300/50 rounded-full py-2.5 sm:py-3 px-1 flex items-center justify-center gap-1 sm:gap-2 font-bold text-[11px] sm:text-[13px] hover:bg-orange-600 active:scale-[0.98] transition-all whitespace-nowrap"
         >
-          <MessageCircle size={16} fill="currentColor" /> Chat with Astrologer
+          <MessageCircle size={15} fill="currentColor" className="shrink-0" /> <span className="truncate">Chat with Astrologer</span>
         </button>
         <button
           onClick={() => handleChatCallAction('/user/astrologers?type=call')}
-          className="flex-1 bg-orange-500 text-white shadow-lg shadow-orange-300/50 rounded-full py-3 flex items-center justify-center gap-2 font-bold text-[13px] hover:bg-orange-600 active:scale-[0.98] transition-all"
+          className="flex-1 bg-orange-500 text-white shadow-lg shadow-orange-300/50 rounded-full py-2.5 sm:py-3 px-1 flex items-center justify-center gap-1 sm:gap-2 font-bold text-[11px] sm:text-[13px] hover:bg-orange-600 active:scale-[0.98] transition-all whitespace-nowrap"
         >
-          <Phone size={16} fill="currentColor" /> Call with Astrologer
+          <Phone size={15} fill="currentColor" className="shrink-0" /> <span className="truncate">Call with Astrologer</span>
         </button>
       </div>
 

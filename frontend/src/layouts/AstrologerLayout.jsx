@@ -45,11 +45,11 @@ const AstrologerLayout = () => {
           icon: '🔔',
         });
         
-        // Play notification sound
-        try {
-          const audio = new Audio('/notification.mp3');
-          audio.play().catch(e => console.log('Audio play failed:', e));
-        } catch (err) {}
+        // Play notification sound (Commented out because notification.mp3 is missing from public folder)
+        // try {
+        //   const audio = new Audio('/notification.mp3');
+        //   audio.play().catch(e => console.log('Audio play failed:', e));
+        // } catch (err) {}
 
         import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
           dispatch(fetchAstrologerDashboardThunk());
@@ -78,8 +78,11 @@ const AstrologerLayout = () => {
       socket.on('session_request_cancelled', onCancelled);
       socket.on('session_ended', onSessionEnded);
       socket.on('call_ended', onSessionEnded);
-      // Also refresh on accepted
-      socket.on('session_accept_confirmed', onSessionEnded);
+      socket.on('session_accept_confirmed', () => {
+         import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
+          dispatch(fetchAstrologerDashboardThunk());
+         });
+      });
 
       return () => {
         socket.off('connect', joinRoom);
@@ -194,7 +197,7 @@ const AstrologerLayout = () => {
 
       {/* Side Drawer Navbar */}
       {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[100] flex">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
@@ -263,8 +266,8 @@ const AstrologerLayout = () => {
         </div>
       )}
 
-      {/* Floating Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 z-50 pointer-events-none md:max-w-md md:mx-auto">
+      {/* Mobile Top Up Banner - Absolute positioned overlay */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 z-[90] pointer-events-none md:max-w-md md:mx-auto">
         <nav className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-orange-500/10 rounded-3xl flex justify-around items-center h-16 px-2 pointer-events-auto relative overflow-hidden">
           {/* Subtle gradient glow inside the navbar */}
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-orange-500/5 pointer-events-none"></div>

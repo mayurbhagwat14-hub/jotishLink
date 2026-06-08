@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FiMessageSquare, FiCheck, FiX, FiLoader } from 'react-icons/fi';
 import getSocket from '../../socket/socketManager';
-import { removeIncomingRequest, addActiveSession } from '../../store/slices/astrologerSlice';
+import { removeIncomingRequest, addActiveSession, removeActiveSession } from '../../store/slices/astrologerSlice';
 
 const Chats = () => {
   const [activeTab, setActiveTab] = useState('Requests');
@@ -13,6 +13,23 @@ const Chats = () => {
   const { token } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const socket = getSocket();
+    const onSessionEnded = (data) => {
+      if (data.roomId) {
+        dispatch(removeActiveSession(data.roomId));
+        // toast.success('Debug: Removed ' + data.roomId);
+      }
+    };
+    socket.on('session_ended', onSessionEnded);
+    socket.on('call_ended', onSessionEnded);
+    
+    return () => {
+      socket.off('session_ended', onSessionEnded);
+      socket.off('call_ended', onSessionEnded);
+    };
+  }, [dispatch]);
 
   const chatRequests = incomingRequests.filter(req => req.type === 'chat');
   const chatSessions = activeSessions.filter(req => req.type === 'chat');
