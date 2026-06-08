@@ -66,7 +66,7 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
 // GET /api/user/homepage-data
 export const getHomepageData = asyncHandler(async (req, res) => {
   const [astrologers, products, celebrities, liveAstrologersRaw, storeCategories, banners] = await Promise.all([
-    Astrologer.find({ isVerified: true, name: { $ne: 'Temp Astrologer' } })
+    Astrologer.find({ isVerified: true, isTopVerified: true, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
       .lean(),

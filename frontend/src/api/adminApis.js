@@ -15,6 +15,7 @@ export const updateAdminAstrologerStatus = (id, status) => axios.put(`/admin/ast
 export const approveAstrologer = (id) => axios.put(`/admin/astrologer/approve/${id}`);
 export const rejectAstrologer = (id, reason) => axios.put(`/admin/astrologer/reject/${id}`, { reason });
 export const suspendAstrologer = (id, reason) => axios.put(`/admin/astrologer/suspend/${id}`, { reason });
+export const toggleAdminAstrologerTopVerified = (id) => axios.put(`/admin/astrologer/${id}/toggle-top-verified`);
 export const deleteAdminAstrologer = (id) => axios.delete(`/admin/astrologers/${id}`);
 export const refundUser = (id, data) => axios.post(`/admin/users/${id}/refund`, data);
 export const getAdminOrders = () => axios.get('/admin/orders');

@@ -28,6 +28,10 @@ const astrologerSchema = new mongoose.Schema(
       enum: ['astrologer'],
       default: 'astrologer',
     },
+    isTopVerified: {
+      type: Boolean,
+      default: false,
+    },
     
     // Personal Details
     dob: { type: String }, // DD/MM/YYYY or Date

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, Sun, Grid, Target, MessageCircle, Phone, Lock, BadgeCheck, ShieldCheck, Bell, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { Search, Sun, Grid, Target, MessageCircle, Phone, Lock, BadgeCheck, ShieldCheck, Bell, ChevronRight, Calendar, Clock, Star } from 'lucide-react';
 import { fetchProfileThunk } from '../../store/slices/authSlice';
 import { fetchUserHomeDataThunk } from '../../store/slices/dashboardSlice';
 import NotificationDropdown from '../../components/NotificationDropdown';
@@ -41,8 +41,10 @@ const Home = () => {
     if (s) {
       const refreshHomeData = () => dispatch(fetchUserHomeDataThunk());
       s.on('banners_updated', refreshHomeData);
+      s.on('topAstrologersUpdated', refreshHomeData);
       return () => {
         s.off('banners_updated', refreshHomeData);
+        s.off('topAstrologersUpdated', refreshHomeData);
       };
     }
   }, [dispatch]);
@@ -121,10 +123,11 @@ const Home = () => {
   };
 
   return (
-    <div className={`w-full font-sans pb-24 bg-white relative transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`w-full min-h-screen font-sans pb-24 relative transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+         style={{ backgroundColor: '#fffaf5', backgroundImage: 'radial-gradient(#f4dcb9 1.5px, transparent 1.5px)', backgroundSize: '40px 40px' }}>
 
       {/* ═══ PREMIUM HEADER (NAV + SEARCH) ═══ */}
-      <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-[#FF8C38] rounded-b-[32px] pb-6 pt-3 px-4 shadow-[0_10px_30px_rgba(249,115,22,0.2)] mb-6 relative">
+      <div className="bg-gradient-to-r from-[#ff9b26] to-[#f47025] rounded-b-[32px] pt-3 pb-8 px-4 shadow-[0_10px_30px_rgba(249,115,22,0.2)] mb-2 relative">
         {/* Top Navbar */}
         <div className="flex items-center justify-between mb-5 relative z-20">
           <div
@@ -163,7 +166,7 @@ const Home = () => {
 
         {/* Floating Search Bar */}
         <div 
-          className="relative cursor-pointer group" 
+          className="relative cursor-pointer group mt-2" 
           onClick={() => navigate('/user/search')}
         >
           <div className="w-full bg-white/95 backdrop-blur-xl rounded-2xl py-3.5 px-5 pr-12 text-[14px] text-gray-500 font-medium shadow-[0_8px_20px_rgba(0,0,0,0.08)] border border-white/50 group-hover:shadow-[0_8px_25px_rgba(249,115,22,0.2)] transition-shadow">
@@ -176,7 +179,7 @@ const Home = () => {
       </div>
 
       {/* ═══ QUICK SERVICES ═══ */}
-      <div className="flex justify-between px-3 py-6 bg-white w-full">
+      <div className="flex justify-between px-3 pt-2 pb-6 w-full relative z-10 mt-1">
         {[
           { name: 'Daily\nHoroscope', icon: <Sun size={28} strokeWidth={2} className="text-white" />, path: '/user/horoscope' },
           { name: 'Free\nKundli', icon: <Grid size={28} strokeWidth={2} className="text-white" />, path: '/user/kundli' },
@@ -242,9 +245,9 @@ const Home = () => {
       )}
 
       {/* ═══ CHAT BANNER ═══ */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 mt-2">
         <div
-          className="w-full rounded-2xl overflow-hidden shadow-card cursor-pointer hover:shadow-card-hover transition-shadow duration-300 relative bg-gradient-to-r from-orange-500 to-orange-400 p-4 flex items-center gap-4"
+          className="w-full rounded-[20px] overflow-hidden shadow-[0_8px_20px_rgba(0,0,0,0.15)] cursor-pointer relative bg-gradient-to-r from-[#4a152e] via-[#852b31] to-[#d65f1a] p-5 flex items-center gap-4"
           onClick={() => handleChatCallAction('/user/astrologers')}
         >
           <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -335,45 +338,64 @@ const Home = () => {
 
       {/* ═══ ASTROLOGERS SECTION ═══ */}
       {userHome?.featuredAstrologers?.length > 0 && (
-        <div className="px-4 py-5 bg-white mt-1">
+        <div className="px-4 py-5 mt-1 bg-transparent relative z-10">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-[17px] font-bold text-gray-800">Astrologers</h2>
+            <h2 className="text-[18px] font-bold text-gray-900 flex items-center gap-1">
+              Top Verified Astrologers <ChevronRight size={20} className="text-gray-900" />
+            </h2>
             <span 
               onClick={() => navigate('/user/astrologers')} 
-              className="text-[13px] text-gray-400 font-semibold cursor-pointer hover:text-orange-500 transition-colors"
+              className="text-[13px] text-[#b36b39] font-bold cursor-pointer"
             >
               View All
             </span>
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 -mx-4 px-4">
             {userHome.featuredAstrologers.map((astro, i) => (
               <div 
                 key={i} 
                 onClick={() => navigate('/user/astrologers')}
-                className="shrink-0 w-[140px] bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative flex flex-col items-center p-3 cursor-pointer hover:shadow-md transition-shadow"
+                className="shrink-0 w-[290px] bg-white rounded-[20px] shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden relative flex p-3 pr-4 cursor-pointer hover:shadow-[0_4px_25px_rgba(0,0,0,0.1)] transition-shadow"
               >
-                {/* Celebrity Ribbon */}
-                <div className="absolute top-0 left-0 bg-[#2d2d2d] text-yellow-500 text-[8px] font-bold py-0.5 px-6 -rotate-45 -translate-x-5 translate-y-2 shadow-sm">
-                  *Celebrity*
+                {/* Top Rated Badge */}
+                <div className="absolute top-0 right-3 bg-gradient-to-r from-[#d4af37] to-[#aa7c11] text-white text-[10px] font-bold px-2 py-0.5 rounded-b-[4px] shadow-sm flex items-center gap-1 z-10">
+                  <Star size={10} fill="currentColor" /> Top Rated
+                  {/* Ribbon tails (CSS trick) */}
+                  <div className="absolute -left-1 top-0 border-t-4 border-t-transparent border-r-4 border-r-[#8a650d]"></div>
+                  <div className="absolute -right-1 top-0 border-t-4 border-t-transparent border-l-4 border-l-[#8a650d]"></div>
                 </div>
-                
-                {/* Avatar */}
-                <div className="w-[72px] h-[72px] rounded-full p-[2px] border-[2px] border-yellow-400 mb-2 mt-3">
+
+                {/* Left Image */}
+                <div className="relative w-[95px] h-[115px] rounded-xl overflow-hidden shrink-0 mr-3 shadow-inner">
                   <img 
                     src={astro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astro.name)}&background=ffedD5&color=f97316`} 
                     alt={astro.name} 
-                    className="w-full h-full rounded-full object-cover"
+                    className="w-full h-full object-cover"
                   />
+                  {/* Celebrity Sash */}
+                  <div className="absolute top-3 -left-7 bg-gradient-to-r from-[#d4af37] to-[#aa7c11] text-black text-[9px] font-bold py-0.5 px-8 -rotate-45 shadow-md">
+                    #Celebrity
+                  </div>
                 </div>
                 
-                {/* Info */}
-                <h3 className="font-semibold text-[14px] text-gray-800 text-center w-full truncate">{astro.name}</h3>
-                <p className="text-[11px] text-gray-500 mb-3 font-medium">₹ {astro.pricing?.chat || 5}/min</p>
-                
-                {/* Chat Button */}
-                <button className="w-full py-1.5 rounded-full border border-green-600 text-green-700 text-[13px] font-semibold hover:bg-green-50 transition-colors">
-                  Chat
-                </button>
+                {/* Right Content */}
+                <div className="flex flex-col flex-1 pt-2">
+                  <h3 className="font-bold text-[16px] text-gray-900 leading-tight mb-1">{astro.name}</h3>
+                  <div className="flex items-center text-[12px] text-gray-600 font-medium mb-3 truncate w-full">
+                    <Star size={12} fill="#eab308" className="text-yellow-500 mr-1 shrink-0" />
+                    <span className="text-gray-800 font-bold mr-1">{astro.rating || 4.9}</span> <span className="mx-1 text-gray-300">|</span> <span className="truncate">{astro.skills?.slice(0,2)?.join(', ') || 'Vedic, Palmistry'}</span>
+                  </div>
+                  
+                  {/* Buttons */}
+                  <div className="mt-auto flex gap-2">
+                    <button className="flex-1 py-1.5 rounded-full border border-orange-200 text-[#c87635] text-[13px] font-bold hover:bg-orange-50 transition-colors shadow-sm">
+                      Chat
+                    </button>
+                    <button className="flex-1 py-1.5 rounded-full border border-orange-200 text-[#c87635] text-[13px] font-bold hover:bg-orange-50 transition-colors shadow-sm">
+                      Call
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -381,7 +403,7 @@ const Home = () => {
       )}
 
       {/* ═══ JYOTISHLINK STORE ═══ */}
-      <div className="px-4 py-5 bg-white mt-1">
+      <div className="px-4 py-5 mt-1 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[17px] font-bold text-gray-800">JyotishLink Services</h2>
           <span
@@ -409,7 +431,7 @@ const Home = () => {
 
       {/* ═══ CELEBRITIES SECTION ═══ */}
       {userHome?.celebrities?.length > 0 && (
-        <div className="px-4 py-5 bg-white mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700">
+        <div className="px-4 py-5 mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700 relative z-10">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-[17px] font-bold text-gray-800">What Celebrities Says</h2>
             <span className="text-[13px] text-orange-500 font-semibold cursor-pointer">View All</span>
@@ -447,7 +469,7 @@ const Home = () => {
       </div>
 
       {/* ═══ NEWS & BLOGS ═══ */}
-      <div className="px-4 py-5 bg-white mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700 delay-100">
+      <div className="px-4 py-5 mt-1 scroll-animate opacity-0 translate-y-4 transition-all duration-700 delay-100 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[17px] font-bold text-gray-800">News & Blogs</h2>
           <span className="text-[13px] text-orange-500 font-semibold cursor-pointer">View All</span>

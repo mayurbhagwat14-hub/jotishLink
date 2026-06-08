@@ -1096,3 +1096,16 @@ export const getAdminCallAnalytics = asyncHandler(async (req, res) => {
     revenueGenerated 
   }, 'Call analytics fetched'));
 });
+
+
+export const toggleTopVerifiedAstrologer = asyncHandler(async (req, res) => {
+  const astrologer = await Astrologer.findById(req.params.id);
+  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  astrologer.isTopVerified = !astrologer.isTopVerified;
+  await astrologer.save();
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('topAstrologersUpdated');
+  }
+  return res.status(200).json(new ApiResponse(200, { astrologer }, `Astrologer ${astrologer.isTopVerified ? 'added to' : 'removed from'} Top Verified`));
+});

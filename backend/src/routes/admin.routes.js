@@ -48,6 +48,7 @@ import {
   getAdminAstrologerById,
   sendBroadcast,
   getAdminEarnings,
+  toggleTopVerifiedAstrologer
 } from '../controllers/admin.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { auditLogMiddleware } from '../middlewares/audit.middleware.js';
@@ -76,9 +77,9 @@ router.post('/admin/users/:id/refund', validate(refundUserSchema), refundUserWal
 // Astrologer management
 router.get('/admin/astrologers', getAdminAstrologers);
 router.get('/admin/astrologer/:id', getAdminAstrologerById);
-
-// Legacy UI status update
-router.put('/admin/astrologers/:id/status', updateAstrologerStatus);
+router.put('/admin/astrologer/:id/status', updateAstrologerStatus);
+router.put('/admin/astrologer/:id/toggle-top-verified', toggleTopVerifiedAstrologer);
+router.delete('/admin/astrologer/:id', deleteAdminAstrologer);
 
 // New explicit endpoints
 router.put('/admin/astrologer/approve/:id', (req, res, next) => { req.body.status = 'approved'; next(); }, updateAstrologerStatus);

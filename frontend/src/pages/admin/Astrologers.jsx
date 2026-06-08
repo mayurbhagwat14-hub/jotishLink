@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiCheck, FiX, FiStar, FiPhone, FiMessageSquare, FiVideo, FiCalendar, FiMoreHorizontal, FiEye, FiChevronDown, FiChevronLeft, FiChevronRight, FiUserCheck, FiClock, FiToggleLeft, FiToggleRight, FiSlash } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminAstrologers, getAdminAstrologerById, updateAdminAstrologerStatus, deleteAdminAstrologer } from '../../api/adminApis';
+import { getAdminAstrologers, getAdminAstrologerById, updateAdminAstrologerStatus, deleteAdminAstrologer, toggleAdminAstrologerTopVerified } from '../../api/adminApis';
 
 const AdminAstrologers = () => {
   const [activeTab, setActiveTab] = useState('Active');
@@ -43,6 +43,7 @@ const AdminAstrologers = () => {
         speciality: a.categories && a.categories.length > 0 ? a.categories.join(', ') : (a.skills && a.skills.length > 0 ? a.skills[0] : 'General'),
         avatar: a.avatar || '',
         enabled: a.isVerified,
+        isTopVerified: a.isTopVerified || false,
         raw: a
       })));
       setSuspendedAstrologers(allAstrologers.filter(a => a.approvalStatus === 'rejected').map(a => ({
@@ -108,6 +109,16 @@ const AdminAstrologers = () => {
       fetchAstrologers();
     } catch (err) {
       showToast(`Failed to suspend ${ast.name}`);
+    }
+  };
+
+  const toggleTopVerified = async (ast) => {
+    try {
+      await toggleAdminAstrologerTopVerified(ast._id || ast.id);
+      showToast(`${ast.name} top verified status toggled.`);
+      fetchAstrologers();
+    } catch (err) {
+      showToast(`Failed to toggle top verified for ${ast.name}`);
     }
   };
 
@@ -237,7 +248,10 @@ const AdminAstrologers = () => {
                             <img src={ast.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name || 'A')}&background=ffedD5&color=f97316`} alt={ast.name} className="w-full h-full object-cover" />
                           </div>
                           <div>
-                            <p className="font-bold text-sm text-gray-800">{ast.name}</p>
+                            <div className="flex items-center gap-1">
+                              <p className="font-bold text-sm text-gray-800">{ast.name}</p>
+                              {ast.isTopVerified && <FiStar size={12} className="text-yellow-500 fill-yellow-500" title="Top Verified" />}
+                            </div>
                             <p className="text-[10px] text-gray-400 font-medium">{ast.phone}</p>
                           </div>
                         </div>
@@ -294,6 +308,9 @@ const AdminAstrologers = () => {
                             <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right">
                               <button onClick={() => { viewProfile(ast._id); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50">
                                 <FiEye size={16} className="text-blue-500" /> View Profile
+                              </button>
+                              <button onClick={() => { toggleTopVerified(ast); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-yellow-600 hover:bg-yellow-50 flex items-center gap-2 transition-colors border-b border-gray-50">
+                                <FiStar size={16} className={ast.isTopVerified ? "fill-yellow-600" : ""} /> {ast.isTopVerified ? "Remove Featured" : "Feature on Home"}
                               </button>
                               <button onClick={() => { suspendAstrologer(ast); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2 transition-colors border-b border-gray-50">
                                 <FiSlash size={16} /> Suspend
