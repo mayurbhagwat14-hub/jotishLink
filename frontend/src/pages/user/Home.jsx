@@ -123,8 +123,7 @@ const Home = () => {
   };
 
   return (
-    <div className={`w-full min-h-screen font-sans pb-24 relative transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-         style={{ backgroundColor: '#fffaf5', backgroundImage: 'radial-gradient(#f4dcb9 1.5px, transparent 1.5px)', backgroundSize: '40px 40px' }}>
+    <div className={`w-full min-h-screen font-sans pb-24 relative transition-opacity duration-500 bg-white ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ PREMIUM HEADER (NAV + SEARCH) ═══ */}
       <div className="bg-gradient-to-r from-[#ff9b26] to-[#f47025] rounded-b-[32px] pt-3 pb-8 px-4 shadow-[0_10px_30px_rgba(249,115,22,0.2)] mb-2 relative">
