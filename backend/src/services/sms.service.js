@@ -40,7 +40,7 @@ class SmsService {
         params.templateid = templateId;
       }
 
-      const response = await axios.get(baseUrl, { params });
+      const response = await axios.get(baseUrl, { params, timeout: 5000 });
 
       console.log(`[SMS SERVICE] INDIA SMS HUB Response:`, response.data);
       return { success: true, providerResponse: response.data };
