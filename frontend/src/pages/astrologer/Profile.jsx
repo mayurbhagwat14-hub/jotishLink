@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSave, FiPlus, FiX } from 'react-icons/fi';
+import { FiSave, FiPlus, FiX, FiCheck } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
+
+const POOJA_TYPES = ['Satyanarayan Pooja', 'Griha Pravesh', 'Navagraha Shanti', 'Rudrabhishek', 'Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya', 'Kaal Sarp Dosh Nivaran', 'Mangal Dosh Nivaran'];
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -28,8 +30,21 @@ const Profile = () => {
     chatPrice: '',
     audioPrice: '',
     videoPrice: '',
-    avatar: ''
+    avatar: '',
+    isPandit: false,
+    education: '',
+    certificationDetails: '',
+    consultationStyle: '',
+    accountHolderName: '',
+    bankName: '',
+    accountNumber: '',
+    ifscCode: '',
+    upiId: ''
   });
+
+  const [poojasOffered, setPoojasOffered] = useState([]);
+  const [newPoojaName, setNewPoojaName] = useState('');
+  const [newPoojaPrice, setNewPoojaPrice] = useState('');
 
   useEffect(() => {
     dispatch(fetchAstrologerProfileThunk());
@@ -50,10 +65,20 @@ const Profile = () => {
          chatPrice: profile.astrologer.pricing?.chat?.toString() || '15',
          audioPrice: profile.astrologer.pricing?.audioCall?.toString() || '20',
          videoPrice: profile.astrologer.pricing?.videoCall?.toString() || '50',
-         avatar: profile.astrologer.avatar || ''
+         avatar: profile.astrologer.avatar || '',
+         isPandit: profile.astrologer.isPandit || false,
+         education: profile.astrologer.education || '',
+         certificationDetails: profile.astrologer.certificationDetails || '',
+         consultationStyle: profile.astrologer.consultationStyle || '',
+         accountHolderName: profile.astrologer.bankDetails?.accountHolderName || '',
+         bankName: profile.astrologer.bankDetails?.bankName || '',
+         accountNumber: profile.astrologer.bankDetails?.accountNumber || '',
+         ifscCode: profile.astrologer.bankDetails?.ifscCode || '',
+         upiId: profile.astrologer.bankDetails?.upiId || ''
        });
        setLanguages(profile.astrologer.languages || []);
        setExpertise(profile.astrologer.skills || []);
+       setPoojasOffered(profile.astrologer.poojasOffered || []);
     }
   }, [profile]);
 
@@ -79,6 +104,21 @@ const Profile = () => {
 
   const removeExpertise = (exp) => {
     setExpertise(expertise.filter(e => e !== exp));
+  };
+
+  const togglePooja = (poojaName) => {
+    const currentPoojas = Array.isArray(poojasOffered) ? poojasOffered : [];
+    const exists = currentPoojas.find(p => p.poojaName === poojaName);
+    if (exists) {
+      setPoojasOffered(currentPoojas.filter(p => p.poojaName !== poojaName));
+    } else {
+      setPoojasOffered([...currentPoojas, { poojaName, price: 500 }]);
+    }
+  };
+
+  const updatePoojaPrice = (poojaName, price) => {
+    const currentPoojas = Array.isArray(poojasOffered) ? poojasOffered : [];
+    setPoojasOffered(currentPoojas.map(p => p.poojaName === poojaName ? { ...p, price: Number(price) } : p));
   };
 
   const handlePhotoUpload = (e) => {
@@ -116,6 +156,18 @@ const Profile = () => {
         languages,
         skills: expertise,
         avatar: formData.avatar,
+        isPandit: formData.isPandit,
+        education: formData.education,
+        certificationDetails: formData.certificationDetails,
+        consultationStyle: formData.consultationStyle,
+        bankDetails: {
+          accountHolderName: formData.accountHolderName,
+          bankName: formData.bankName,
+          accountNumber: formData.accountNumber,
+          ifscCode: formData.ifscCode,
+          upiId: formData.upiId
+        },
+        poojasOffered: JSON.stringify(poojasOffered),
         pricing: {
           chat: cPrice,
           audioCall: aPrice,
@@ -320,6 +372,78 @@ const Profile = () => {
               </button>
             </form>
           </div>
+
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+              <div>
+                <h2 className="text-lg font-bold text-gray-800">Are you a Pandit?</h2>
+                <p className="text-[13px] text-gray-500 font-medium mt-0.5">Do you perform poojas for users?</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer gap-3">
+                <span className={`text-sm font-bold ${formData.isPandit ? 'text-orange-500' : 'text-gray-400'}`}>
+                  {formData.isPandit ? 'Yes' : 'No'}
+                </span>
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={formData.isPandit}
+                    onChange={(e) => setFormData({...formData, isPandit: e.target.checked})}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                </div>
+              </label>
+            </div>
+            
+            {formData.isPandit && (
+              <div className="space-y-4 animate-fade-in mt-4">
+                <div>
+                  <label className="block text-gray-500 text-xs font-bold mb-3 uppercase tracking-wider">Select Poojas You Offer</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {POOJA_TYPES.map(pooja => {
+                      const currentPoojas = Array.isArray(poojasOffered) ? poojasOffered : [];
+                      const selectedPooja = currentPoojas.find(p => p.poojaName === pooja);
+                      const isSelected = !!selectedPooja;
+                      
+                      return (
+                        <div 
+                          key={pooja} 
+                          className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                            isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200'
+                          }`}
+                          onClick={(e) => {
+                            if(e.target.tagName !== 'INPUT') togglePooja(pooja);
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 ${
+                              isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'
+                            }`}>
+                              {isSelected && <FiCheck size={12} />}
+                            </div>
+                            <span className={`text-sm font-bold ${isSelected ? 'text-orange-700' : 'text-gray-600'}`}>{pooja}</span>
+                          </div>
+                          
+                          {isSelected && (
+                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                              <span className="text-gray-400 text-xs font-bold">₹</span>
+                              <input 
+                                type="number" 
+                                min="0"
+                                value={selectedPooja.price}
+                                onChange={(e) => updatePoojaPrice(pooja, e.target.value)}
+                                className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-orange-500"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Column: Pricing & Schedule */}
@@ -361,24 +485,86 @@ const Profile = () => {
           </div>
 
           <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Availability Schedule</h2>
-            <p className="text-sm text-gray-500 mb-4">Set your regular working hours so users know when to expect you online.</p>
-            
-            <div className="space-y-3">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
-                <div key={day} className="flex items-center justify-between">
-                  <span className="font-bold text-gray-700 w-10">{day}</span>
-                  <select className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-gray-50 outline-none">
-                    <option>09:00 AM</option>
-                    <option>10:00 AM</option>
-                  </select>
-                  <span className="text-gray-400 text-xs">to</span>
-                  <select className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-gray-50 outline-none">
-                    <option>05:00 PM</option>
-                    <option>06:00 PM</option>
-                  </select>
-                </div>
-              ))}
+            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Professional Info</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Education</label>
+                <input 
+                  type="text" 
+                  value={formData.education}
+                  onChange={(e) => setFormData({...formData, education: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Certifications</label>
+                <input 
+                  type="text" 
+                  value={formData.certificationDetails}
+                  onChange={(e) => setFormData({...formData, certificationDetails: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Consultation Style</label>
+                <input 
+                  type="text" 
+                  value={formData.consultationStyle}
+                  onChange={(e) => setFormData({...formData, consultationStyle: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Bank Details</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Account Holder Name</label>
+                <input 
+                  type="text" 
+                  value={formData.accountHolderName}
+                  onChange={(e) => setFormData({...formData, accountHolderName: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Bank Name</label>
+                <input 
+                  type="text" 
+                  value={formData.bankName}
+                  onChange={(e) => setFormData({...formData, bankName: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Account Number</label>
+                <input 
+                  type="password" 
+                  value={formData.accountNumber}
+                  onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">IFSC Code</label>
+                <input 
+                  type="text" 
+                  value={formData.ifscCode}
+                  onChange={(e) => setFormData({...formData, ifscCode: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800 uppercase"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">UPI ID (Optional)</label>
+                <input 
+                  type="text" 
+                  value={formData.upiId}
+                  onChange={(e) => setFormData({...formData, upiId: e.target.value})}
+                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                />
+              </div>
             </div>
           </div>
         </div>

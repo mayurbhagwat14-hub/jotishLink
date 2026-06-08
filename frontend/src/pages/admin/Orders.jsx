@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiDollarSign, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi } from '../../api/adminApis';
 
@@ -11,6 +12,8 @@ const AdminOrders = () => {
   const [showShipModal, setShowShipModal] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [shippingProvider, setShippingProvider] = useState('DHL Express');
+  const [isCustomProvider, setIsCustomProvider] = useState(false);
+  const [customProviderName, setCustomProviderName] = useState('');
   const [successToast, setSuccessToast] = useState(null);
   const itemsPerPage = 8;
 
@@ -90,6 +93,8 @@ const AdminOrders = () => {
   // ═══ SHIP ORDER ═══
   const confirmShipping = async () => {
     if (!trackingNumber) return;
+    const finalProvider = isCustomProvider ? customProviderName.trim() : shippingProvider;
+    if (!finalProvider) return; // Prevent empty provider
     
     try {
       await updateAdminOrderStatus(showShipModal.dbId, 'Shipped');
@@ -99,8 +104,8 @@ const AdminOrders = () => {
             ...o,
             status: 'Shipped',
             tracking: trackingNumber,
-            shippingProvider: shippingProvider,
-            timeline: [...o.timeline, { label: 'Shipped', time: now(), icon: 'truck', detail: `Tracking: ${trackingNumber} via ${shippingProvider}` }]
+            shippingProvider: finalProvider,
+            timeline: [...o.timeline, { label: 'Shipped', time: now(), icon: 'truck', detail: `Tracking: ${trackingNumber} via ${finalProvider}` }]
           };
         }
         return o;
@@ -108,6 +113,8 @@ const AdminOrders = () => {
       const orderId = showShipModal.id;
       setShowShipModal(null);
       setTrackingNumber('');
+      setCustomProviderName('');
+      setIsCustomProvider(false);
       showToast(`${orderId} shipped! Tracking: ${trackingNumber}`);
     } catch (err) {
       console.error(err);
@@ -264,7 +271,7 @@ const AdminOrders = () => {
           { label: 'Total Orders', value: orders.length, icon: <FiPackage size={16} />, color: 'blue' },
           { label: 'Pending Review', value: tabCounts.Pending, icon: <FiClock size={16} />, color: 'orange', pulse: tabCounts.Pending > 0 },
           { label: 'In Transit', value: tabCounts.Shipped, icon: <FiTruck size={16} />, color: 'purple' },
-          { label: 'Total Revenue', value: `₹${orders.filter(o => o.status !== 'Cancelled').reduce((s, o) => s + o.total, 0).toLocaleString()}`, icon: <FiDollarSign size={16} />, color: 'green' },
+          { label: 'Total Revenue', value: `₹${orders.filter(o => o.status !== 'Cancelled').reduce((s, o) => s + o.total, 0).toLocaleString()}`, icon: <FaRupeeSign size={14} />, color: 'green' },
         ].map((s, i) => (
           <div key={i} className={`bg-white rounded-2xl p-5 border ${s.pulse ? 'border-orange-200' : 'border-gray-100'} flex items-center gap-4 transition-all`}>
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative ${
@@ -428,7 +435,7 @@ const AdminOrders = () => {
 
                           {order.status === 'Processing' && (
                             <button
-                              onClick={() => { setShowShipModal(order); setTrackingNumber(''); setShippingProvider('DHL Express'); }}
+                              onClick={() => { setShowShipModal(order); setTrackingNumber(''); setShippingProvider('DHL Express'); setIsCustomProvider(false); setCustomProviderName(''); }}
                               className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 active:scale-95"
                             ><FiTruck size={12} /> Ship</button>
                           )}
@@ -600,7 +607,7 @@ const AdminOrders = () => {
                       )}
                       {order.status === 'Processing' && (
                         <button
-                          onClick={() => { setShowShipModal(order); setSelectedOrder(null); setTrackingNumber(''); setShippingProvider('DHL Express'); }}
+                          onClick={() => { setShowShipModal(order); setSelectedOrder(null); setTrackingNumber(''); setShippingProvider('DHL Express'); setIsCustomProvider(false); setCustomProviderName(''); }}
                           className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-600/20 active:scale-[0.98]"
                         ><FiTruck size={14} /> Mark as Shipped</button>
                       )}
@@ -715,17 +722,36 @@ const AdminOrders = () => {
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Shipping Provider</label>
                 <select
-                  value={shippingProvider}
-                  onChange={e => setShippingProvider(e.target.value)}
+                  value={isCustomProvider ? 'Other' : shippingProvider}
+                  onChange={e => {
+                    if (e.target.value === 'Other') {
+                      setIsCustomProvider(true);
+                    } else {
+                      setIsCustomProvider(false);
+                      setShippingProvider(e.target.value);
+                    }
+                  }}
                   className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 >
-                  <option>DHL Express</option>
-                  <option>Blue Dart</option>
-                  <option>Delhivery</option>
-                  <option>India Post</option>
-                  <option>FedEx</option>
-                  <option>DTDC</option>
+                  <option value="DHL Express">DHL Express</option>
+                  <option value="Blue Dart">Blue Dart</option>
+                  <option value="Delhivery">Delhivery</option>
+                  <option value="India Post">India Post</option>
+                  <option value="FedEx">FedEx</option>
+                  <option value="DTDC">DTDC</option>
+                  <option value="Other">Other (Custom)</option>
                 </select>
+
+                {isCustomProvider && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom shipping provider"
+                    value={customProviderName}
+                    onChange={e => setCustomProviderName(e.target.value)}
+                    className="w-full mt-2 px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    autoFocus
+                  />
+                )}
               </div>
               <div className="flex gap-2 pt-1">
                 <button
@@ -736,7 +762,7 @@ const AdminOrders = () => {
                 </button>
                 <button
                   onClick={confirmShipping}
-                  disabled={!trackingNumber.trim()}
+                  disabled={!trackingNumber.trim() || (isCustomProvider && !customProviderName.trim())}
                   className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   <FiTruck size={14} /> Confirm Ship

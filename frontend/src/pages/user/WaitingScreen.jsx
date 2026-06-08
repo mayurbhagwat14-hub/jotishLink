@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { getSocket } from '../../socket/socketManager';
 import { updateUser } from '../../store/slices/authSlice';
 import { FiX } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 const WaitingScreen = () => {
   const navigate = useNavigate();
@@ -49,8 +50,20 @@ const WaitingScreen = () => {
 
     const onRejected = ({ reason }) => {
       clearInterval(timerRef.current);
+      
+      const rejectReasonStr = reason || 'Astrologer is busy right now.';
+      
+      if (rejectReasonStr.toLowerCase().includes('busy')) {
+        toast.error('Astrologer is already busy in another session.', {
+          duration: 4000,
+          position: 'top-center'
+        });
+        navigate(-1);
+        return;
+      }
+
       setStatus('rejected');
-      setRejectReason(reason || 'Astrologer is busy right now.');
+      setRejectReason(rejectReasonStr);
     };
 
     socket.on('session_accepted', onAccepted);

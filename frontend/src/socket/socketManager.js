@@ -7,11 +7,7 @@ let socket = null;
 export const getSocket = () => {
   const token = localStorage.getItem('accessToken');
   
-  if (!socket || !socket.connected) {
-    if (socket) {
-      socket.removeAllListeners();
-      socket.disconnect();
-    }
+  if (!socket) {
     socket = io(SOCKET_URL, {
       auth: { token },
       withCredentials: true,
@@ -21,7 +17,14 @@ export const getSocket = () => {
     });
     socket.on('connect', () => console.log('[Socket] Connected:', socket.id));
     socket.on('connect_error', (e) => console.error('[Socket] Error:', e.message));
+  } else if (socket.disconnected) {
+    socket.connect();
   }
+  
+  if (socket && token && socket.auth?.token !== token) {
+    socket.auth = { token };
+  }
+  
   return socket;
 };
 

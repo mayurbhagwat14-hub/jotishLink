@@ -55,6 +55,7 @@ export const deleteAdminAuditLog = (id) => axios.delete(`/admin/audit-logs/${id}
 // Sessions, Poojas, Reports, Calls
 export const getAdminSessions = () => axios.get('/admin/sessions');
 export const deleteAdminSession = (id) => axios.delete(`/admin/sessions/${id}`);
+export const bulkDeleteAdminSessions = (data) => axios.post('/admin/sessions/bulk-delete', data);
 export const getAdminPoojas = () => axios.get('/admin/poojas');
 export const getAdminReports = () => axios.get('/admin/reports');
 export const getAdminCalls = () => axios.get('/admin/calls');

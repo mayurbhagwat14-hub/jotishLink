@@ -54,7 +54,8 @@ const Store = () => {
             if (data.banners) setBanners(data.banners);
           }
           if (panditsRes.status === 'fulfilled' && panditsRes.value?.data) {
-            const data = panditsRes.value.data;
+            const rawData = panditsRes.value.data;
+            const data = rawData.data || rawData;
             const fetchedPandits = Array.isArray(data) ? data : (data.pandits || []);
             if (fetchedPandits.length > 0) {
               setPandits(fetchedPandits);
@@ -87,11 +88,20 @@ const Store = () => {
     };
   }, [dispatch]);
 
-  const filteredPandits = (pandits || []).filter(p => 
-    p &&
-    Array.isArray(p.skills) && p.skills.includes(selectedPooja) && 
-    typeof p.name === 'string' && p.name.toLowerCase().includes(panditSearchQuery.toLowerCase())
-  );
+  const filteredPandits = (pandits || []).filter(p => {
+    if (!p) return false;
+    
+    let offersSelectedPooja = false;
+    if (p.poojasOffered && p.poojasOffered.length > 0) {
+      offersSelectedPooja = p.poojasOffered.some(pooja => pooja.poojaName === selectedPooja);
+    } else if (p.skills && p.skills.includes(selectedPooja)) {
+      offersSelectedPooja = true;
+    }
+
+    const matchesSearch = typeof p.name === 'string' && p.name.toLowerCase().includes(panditSearchQuery.toLowerCase());
+    
+    return offersSelectedPooja && matchesSearch;
+  });
   const filteredProducts = (products || []).filter(p => {
     if (!p) return false;
     const query = searchQuery.toLowerCase();
@@ -382,7 +392,7 @@ const Store = () => {
               <div key={pandit.id || pandit._id || idx} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col gap-3">
                 <div className="flex gap-3 items-center">
                   <div className="w-16 h-16 rounded-full border-2 border-orange-200 overflow-hidden shrink-0">
-                    <img src={pandit.image || pandit.img} alt={pandit.name} className="w-full h-full object-cover" />
+                    <img src={pandit.avatar || pandit.image || pandit.img} alt={pandit.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-[16px] font-bold text-gray-900 leading-tight">{pandit.name}</h3>
@@ -394,13 +404,15 @@ const Store = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] text-gray-400 font-semibold mb-0.5">Starting at</p>
-                    <p className="text-[18px] font-bold text-gray-900 leading-none">₹{pandit.pricing?.chat || pandit.price || 500}</p>
+                    <p className="text-[18px] font-bold text-gray-900 leading-none">
+                      ₹{pandit.poojasOffered?.find(p => p.poojaName === selectedPooja)?.price || pandit.pricing?.chat || pandit.price || 500}
+                    </p>
                   </div>
                 </div>
                 
                 <div className="flex gap-2 mt-1">
                   <button
-                    onClick={() => navigate(`/user/pooja-booking/${pandit.id || pandit._id}`, { state: { pandit, pooja: selectedPooja } })}
+                    onClick={() => navigate(`/user/pooja-booking/${pandit.id || pandit._id}`, { state: { pandit, pooja: selectedPooja, price: pandit.poojasOffered?.find(p => p.poojaName === selectedPooja)?.price || 500 } })}
                     className="flex-1 bg-orange-500 text-white font-bold py-2.5 rounded-xl text-[13px] hover:bg-orange-600 active:scale-[0.98] transition-all shadow-sm shadow-orange-200"
                   >
                     Book Now

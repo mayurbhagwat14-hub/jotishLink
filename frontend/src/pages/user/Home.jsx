@@ -123,46 +123,54 @@ const Home = () => {
   return (
     <div className={`w-full font-sans pb-24 bg-white relative transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
-      {/* ═══ TOP NAVBAR ═══ */}
-      <div className="flex items-center justify-between px-4 py-3 bg-orange-400 sticky top-0 z-30 border-b border-orange-500">
-        <div className="flex items-center gap-2">
+      {/* ═══ PREMIUM HEADER (NAV + SEARCH) ═══ */}
+      <div className="bg-gradient-to-r from-orange-500 via-orange-400 to-[#FF8C38] rounded-b-[32px] pb-6 pt-3 px-4 shadow-[0_10px_30px_rgba(249,115,22,0.2)] mb-6 relative">
+        {/* Top Navbar */}
+        <div className="flex items-center justify-between mb-5 relative z-20">
           <div
-            className="flex items-center gap-3 cursor-pointer hover:bg-orange-500 px-2 py-1 -ml-2 rounded-xl transition-colors"
+            className="flex items-center gap-3.5 cursor-pointer group"
             onClick={openSidebar}
           >
-            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/30">
-              {user?.avatar ? (
-                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white font-bold text-lg">{(user?.name || 'G')[0]}</span>
-              )}
+            <div className="relative">
+              <div className="w-[46px] h-[46px] bg-white/20 rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-sm group-hover:scale-105 transition-transform">
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white font-bold text-xl">{(user?.name || 'G')[0]}</span>
+                )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-green-500 w-3.5 h-3.5 rounded-full border-2 border-orange-500"></div>
             </div>
-            <span className="text-white font-semibold text-[15px]">Hi {user?.name || 'Guest'}</span>
+            <div className="flex flex-col justify-center">
+              <span className="text-white font-bold text-[17px] drop-shadow-sm">Hi, {user?.name || 'Guest'}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/user/recharge')}
+              className="flex items-center gap-2 px-3.5 py-1.5 border border-white/30 rounded-full text-[13px] font-bold text-white bg-white/10 backdrop-blur-md shadow-inner hover:bg-white/20 transition-all active:scale-95"
+            >
+              <span className="text-lg leading-none drop-shadow-sm">👛</span> 
+              <span className="tracking-wide">₹{Math.floor(user?.wallet || 0)}</span>
+              <span className="bg-gradient-to-br from-yellow-300 to-yellow-500 text-orange-800 rounded-full w-[18px] h-[18px] flex items-center justify-center text-[14px] font-black shadow-sm ml-0.5">+</span>
+            </button>
+            <div className="relative w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/30 flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer">
+              <NotificationDropdown iconSize={18} iconClassName="text-white drop-shadow-sm" />
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => navigate('/user/recharge')}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-white/40 rounded-full text-[12px] font-bold text-white bg-white/20 shadow-sm hover:bg-white/30 transition-colors"
-          >
-            <span className="text-base leading-none">👛</span> Add Cash
-            <span className="bg-white text-orange-500 rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">+</span>
-          </button>
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white hover:bg-white/30 transition-colors">
-            <NotificationDropdown iconSize={16} iconClassName="text-white" />
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ SEARCH BAR ═══ */}
-      <div className="px-4 py-3 bg-orange-400 rounded-b-3xl mb-4 shadow-sm">
-        <div className="relative cursor-pointer" onClick={() => navigate('/user/search')}>
-          <div className="w-full bg-white rounded-xl py-2.5 px-4 pr-10 text-[14px] text-gray-400 shadow-sm">
+        {/* Floating Search Bar */}
+        <div 
+          className="relative cursor-pointer group" 
+          onClick={() => navigate('/user/search')}
+        >
+          <div className="w-full bg-white/95 backdrop-blur-xl rounded-2xl py-3.5 px-5 pr-12 text-[14px] text-gray-500 font-medium shadow-[0_8px_20px_rgba(0,0,0,0.08)] border border-white/50 group-hover:shadow-[0_8px_25px_rgba(249,115,22,0.2)] transition-shadow">
             Search astrologers, products...
           </div>
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-orange-400">
-            <Search size={18} />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500 group-hover:bg-orange-100 group-hover:scale-105 transition-all">
+            <Search size={18} strokeWidth={2.5} />
           </div>
         </div>
       </div>
@@ -170,17 +178,17 @@ const Home = () => {
       {/* ═══ QUICK SERVICES ═══ */}
       <div className="flex justify-between px-3 py-6 bg-white w-full">
         {[
-          { name: 'Daily\nHoroscope', icon: <Sun size={24} className="text-white" />, path: '/user/horoscope', bg: 'bg-orange-400' },
-          { name: 'Free\nKundli', icon: <Grid size={24} className="text-white" />, path: '/user/kundli', bg: 'bg-orange-500' },
-          { name: 'Kundli\nMatching', icon: <Target size={24} className="text-white" />, path: '/user/matchmaking', bg: 'bg-orange-400' },
-          { name: 'Panchang', icon: <Calendar size={24} className="text-white" />, path: '/user/panchang', bg: 'bg-orange-500' },
-          { name: 'Shubh\nMuhurat', icon: <Clock size={24} className="text-white" />, path: '/user/muhurat', bg: 'bg-orange-400' },
+          { name: 'Daily\nHoroscope', icon: <Sun size={28} strokeWidth={2} className="text-white" />, path: '/user/horoscope' },
+          { name: 'Free\nKundli', icon: <Grid size={28} strokeWidth={2} className="text-white" />, path: '/user/kundli' },
+          { name: 'Kundli\nMatching', icon: <Target size={28} strokeWidth={2} className="text-white" />, path: '/user/matchmaking' },
+          { name: 'Panchang', icon: <Calendar size={28} strokeWidth={2} className="text-white" />, path: '/user/panchang' },
+          { name: 'Shubh\nMuhurat', icon: <Clock size={28} strokeWidth={2} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
-          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center group cursor-pointer flex-1">
-            <div className={`w-[52px] h-[52px] sm:w-[60px] sm:h-[60px] ${service.bg} rounded-2xl flex items-center justify-center mb-2 shadow-md shadow-orange-200/50 group-hover:scale-105 group-hover:shadow-lg transition-all duration-300`}>
+          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer flex-1 gap-2">
+            <div className="w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] bg-[#FF8C38] rounded-[20px] flex items-center justify-center shadow-[0_4px_10px_rgba(255,140,56,0.3)] hover:opacity-90 transition-opacity">
               {service.icon}
             </div>
-            <span className="text-[9.5px] sm:text-[11px] text-gray-600 font-semibold whitespace-pre-line leading-tight">{service.name}</span>
+            <span className="text-[11px] sm:text-[12px] text-[#4b5563] font-semibold whitespace-pre-line leading-[1.2]">{service.name}</span>
           </div>
         ))}
       </div>

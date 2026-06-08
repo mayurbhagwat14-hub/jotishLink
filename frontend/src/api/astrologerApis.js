@@ -12,6 +12,7 @@ export const updateAstrologerProfile = (data) => axios.put('/astrologer/profile/
 export const getAstrologerEarnings = () => axios.get('/astrologer/earnings');
 export const getAstrologerPoojaRequests = () => axios.get('/astrologer/pooja-requests');
 export const updatePoojaStatus = (id, status) => axios.put(`/astrologer/poojas/${id}/status`, { status });
+export const uploadPoojaProof = (id, data) => axios.post(`/astrologer/poojas/${id}/proof`, data);
 export const getAstrologerChats = () => axios.get('/astrologer/chats');
 export const getAstrologerCalls = () => axios.get('/astrologer/calls');
 export const deleteAstrologerAccount = () => axios.delete('/astrologer/profile/delete');
@@ -19,3 +20,4 @@ export const updateAstrologerOnlineStatus = (status) => axios.put('/astrologer/s
 export const getAstrologerHistory = () => axios.get('/astrologer/history');
 export const getAstrologerAnalytics = () => axios.get('/astrologer/analytics');
 export const requestWithdrawal = (amount) => axios.post('/astrologer/withdraw', { amount });
+export const deleteAstrologerHistoryBulk = (ids) => axios.post('/astrologer/history/delete', { ids });

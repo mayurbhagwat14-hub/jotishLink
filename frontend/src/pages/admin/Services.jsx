@@ -32,7 +32,9 @@ const AdminServices = () => {
         type: p.poojaName || 'General Pooja',
         date: `${p.date} • ${p.time}`,
         amount: p.price || 0,
-        status: p.status === 'completed' ? 'Completed' : p.status === 'confirmed' ? 'Scheduled' : 'Pending'
+        status: p.status,
+        proofMedia: p.proofMedia,
+        proofNotes: p.proofNotes
       })));
 
       setOrders(ordersData.map(o => ({
@@ -63,7 +65,7 @@ const AdminServices = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Active Poojas</p>
-          <h3 className="text-2xl font-black text-gray-900">{poojas.filter(p => p.status === 'Scheduled').length}</h3>
+          <h3 className="text-2xl font-black text-gray-900">{poojas.filter(p => p.status === 'Accepted' || p.status === 'In Progress').length}</h3>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-gray-100">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Completed Poojas</p>
@@ -110,22 +112,48 @@ const AdminServices = () => {
                   <tr><td colSpan="5" className="py-8 text-center text-gray-400 text-sm">No poojas found</td></tr>
                 ) : poojas.map((p) => (
                   <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-sm text-gray-800 font-mono">PJ-{p.id}</p>
-                      <p className="text-xs text-orange-500 font-bold mt-0.5 flex items-center gap-1"><GiFlowerPot size={12} /> {p.type}</p>
-                    </td>
-                    <td className="py-4 px-6">
-                      <p className="text-sm font-bold text-gray-800">{p.user}</p>
-                      <p className="text-[10px] text-gray-400 font-medium mt-0.5">By: {p.pandit}</p>
-                    </td>
-                    <td className="py-4 px-6 text-xs text-gray-500 font-medium flex items-center gap-1"><FiClock size={10} /> {p.date}</td>
-                    <td className="py-4 px-6 text-sm font-black text-gray-900">₹{p.amount.toLocaleString()}</td>
-                    <td className="py-4 px-6">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                        p.status === 'Completed' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'
-                      }`}>
-                        {p.status}
-                      </span>
+                    <td colSpan="5" className="p-0 border-0">
+                      <div className="flex w-full items-center">
+                        <div className="py-4 px-6 w-1/5">
+                          <p className="font-bold text-sm text-gray-800 font-mono">PJ-{p.id}</p>
+                          <p className="text-xs text-orange-500 font-bold mt-0.5 flex items-center gap-1"><GiFlowerPot size={12} /> {p.type}</p>
+                        </div>
+                        <div className="py-4 px-6 w-1/5">
+                          <p className="text-sm font-bold text-gray-800">{p.user}</p>
+                          <p className="text-[10px] text-gray-400 font-medium mt-0.5">By: {p.pandit}</p>
+                        </div>
+                        <div className="py-4 px-6 w-1/5 text-xs text-gray-500 font-medium flex items-center gap-1"><FiClock size={10} /> {p.date}</div>
+                        <div className="py-4 px-6 w-1/5 text-sm font-black text-gray-900">₹{p.amount.toLocaleString()}</div>
+                        <div className="py-4 px-6 w-1/5">
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                            p.status === 'Completed' ? 'bg-green-50 text-green-600' : 
+                            p.status === 'Accepted' || p.status === 'In Progress' ? 'bg-blue-50 text-blue-600' : 
+                            p.status === 'Rejected' || p.status === 'Expired' || p.status === 'Refunded' ? 'bg-red-50 text-red-600' :
+                            'bg-orange-50 text-orange-600'
+                          }`}>
+                            {p.status}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {p.status === 'Completed' && p.proofMedia && p.proofMedia.length > 0 && (
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 mt-2 rounded-b-xl mb-4 ml-6 mr-6">
+                          <h5 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Completion Proofs & Notes</h5>
+                          {p.proofNotes && <p className="text-sm text-gray-600 italic mb-3">"{p.proofNotes}"</p>}
+                          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                            {p.proofMedia.map((mediaUrl, idx) => {
+                              const isVideo = mediaUrl.match(/\.(mp4|mov|avi|webm)$/i);
+                              return isVideo ? (
+                                <video key={idx} src={mediaUrl} controls className="w-24 h-24 object-cover rounded-xl shrink-0 bg-gray-900"></video>
+                              ) : (
+                                <a key={idx} href={mediaUrl} target="_blank" rel="noreferrer">
+                                  <img src={mediaUrl} alt="Proof" className="w-24 h-24 object-cover rounded-xl shrink-0 border border-gray-200 hover:opacity-80 transition-opacity" />
+                                </a>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

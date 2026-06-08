@@ -29,6 +29,7 @@ import Astrologer from './models/astrologer.model.js';
 import User from './models/user.model.js';
 import WalletService from './services/wallet.service.js';
 import SystemSettings from './models/systemSettings.model.js';
+import { initCronJobs } from './services/cron.service.js';
 
 // ──────────────────────────────────────────────
 //  App & HTTP Server Setup
@@ -71,10 +72,25 @@ const pendingRequests = new Map();
 io.on('connection', (socket) => {
   console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
-  // ── Astrologer joins their notification room
+  // ── Global Room Joins for App-wide Real-Time Sync
+  socket.on('join_global_room', ({ userId, role }) => {
+    if (role === 'admin' || role === 'superadmin') {
+      socket.join('admin_room');
+      console.log(`[Socket.IO] Admin ${userId} joined admin_room`);
+    } else if (role === 'astrologer') {
+      socket.join(`room_astro_${userId}`);
+      console.log(`[Socket.IO] Astrologer ${userId} joined room_astro_${userId}`);
+    } else if (role === 'user') {
+      socket.join(`room_user_${userId}`);
+      console.log(`[Socket.IO] User ${userId} joined room_user_${userId}`);
+    }
+  });
+
+  // ── Legacy Astrologer joins their notification room (Keeping for backward compatibility)
   socket.on('join_astrologer_room', ({ astrologerId }) => {
     socket.join(`astro_${astrologerId}`);
-    console.log(`[Socket.IO] Astrologer ${astrologerId} joined their notification room`);
+    socket.join(`room_astro_${astrologerId}`);
+    console.log(`[Socket.IO] Astrologer ${astrologerId} joined their legacy notification room`);
   });
 
   // ── User requests a session
@@ -120,7 +136,17 @@ io.on('connection', (socket) => {
   });
 
   // ── Astrologer accepts session
-  socket.on('accept_session', ({ roomId, userSocketId, astrologerId }) => {
+  socket.on('accept_session', async ({ roomId, userSocketId }) => {
+    const reqData = pendingRequests.get(roomId);
+    if (reqData && reqData.astrologerId) {
+      try {
+        const Astrologer = (await import('./models/astrologer.model.js')).default;
+        await Astrologer.findByIdAndUpdate(reqData.astrologerId, { onlineStatus: 'busy' });
+        io.emit('astro_status_changed', { astrologerId: reqData.astrologerId, status: 'busy' });
+      } catch (err) {
+        console.error('Failed to set busy status:', err.message);
+      }
+    }
     pendingRequests.delete(roomId);
     // Notify user
     io.to(userSocketId).emit('session_accepted', { roomId });
@@ -437,6 +463,7 @@ io.on('connection', (socket) => {
       }
       if (session) {
         await Astrologer.findOneAndUpdate({ _id: session.astrologerId }, { onlineStatus: 'online' });
+        io.emit('astro_status_changed', { astrologerId: session.astrologerId, status: 'online' });
       }
     } catch (err) {
       console.error('[Socket.IO] Session end error:', err.message);
@@ -538,6 +565,7 @@ io.on('connection', (socket) => {
            }
         }
         await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
+        io.emit('astro_status_changed', { astrologerId: session.astrologerId, status: 'online' });
       }
     } catch (err) {
       console.error('[Socket.IO] Call end error:', err.message);
@@ -566,7 +594,7 @@ io.on('connection', (socket) => {
         );
       }
 
-      io.emit('astrologer_status_changed', { astrologerId, status });
+      io.emit('astro_status_changed', { astrologerId, status });
     } catch (err) {
       console.error('[Socket.IO] Status update error:', err.message);
     }
@@ -663,6 +691,9 @@ connectDB().then(() => {
     console.log(`\n🚀 JyotishLink backend running on http://localhost:${PORT}`);
     console.log(`📡 Socket.IO ready for real-time chat`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+    
+    // Initialize background cron jobs
+    initCronJobs(io);
   });
 }).catch((err) => {
   console.error('Failed to connect to MongoDB:', err.message);

@@ -7,6 +7,7 @@ import { checkAstrologerPhone, requestOtp, astrologerSignup } from '../../api/as
 
 const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career'];
 const SPECIALITIES = ['Vedic Astrology', 'Tarot Reading', 'Numerology', 'Palmistry', 'Vastu Shastra'];
+const POOJA_TYPES = ['Satyanarayan Pooja', 'Griha Pravesh', 'Navagraha Shanti', 'Rudrabhishek', 'Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya', 'Kaal Sarp Dosh Nivaran', 'Mangal Dosh Nivaran'];
 
 const ApplyAstrologer = () => {
   const navigate = useNavigate();
@@ -49,7 +50,9 @@ const ApplyAstrologer = () => {
     bankName: '',
     accountNumber: '',
     ifscCode: '',
-    upiId: ''
+    upiId: '',
+    isPandit: false,
+    poojasOffered: []
   });
 
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -109,6 +112,22 @@ const ApplyAstrologer = () => {
       } else {
         return { ...prev, specialities: [...prev.specialities, speciality] };
       }
+    });
+  };
+
+  const togglePooja = (poojaName) => {
+    const exists = formData.poojasOffered.find(p => p.poojaName === poojaName);
+    if (exists) {
+      setFormData({ ...formData, poojasOffered: formData.poojasOffered.filter(p => p.poojaName !== poojaName) });
+    } else {
+      setFormData({ ...formData, poojasOffered: [...formData.poojasOffered, { poojaName, price: 500 }] });
+    }
+  };
+
+  const updatePoojaPrice = (poojaName, price) => {
+    setFormData({ 
+      ...formData, 
+      poojasOffered: formData.poojasOffered.map(p => p.poojaName === poojaName ? { ...p, price: Number(price) } : p)
     });
   };
 
@@ -195,6 +214,8 @@ const ApplyAstrologer = () => {
         panCard,
         certificate,
         selfieVerification,
+        isPandit: formData.isPandit,
+        poojasOffered: formData.poojasOffered,
         pricing: {
           chat: Number(formData.chatPrice) || 5,
           audioCall: Number(formData.callPrice) || 5,
@@ -457,6 +478,70 @@ const ApplyAstrologer = () => {
                   </div>
                 </div>
 
+                {/* Pandit Details */}
+                <div className="md:col-span-2 bg-orange-50 border border-orange-100 p-5 rounded-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-orange-800 text-sm mb-1">Are you a Pandit?</h3>
+                      <p className="text-xs text-orange-600">Do you perform poojas for users?</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={formData.isPandit}
+                        onChange={(e) => setFormData({...formData, isPandit: e.target.checked})}
+                      />
+                      <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
+                  
+                  {formData.isPandit && (
+                    <div className="mt-4 pt-4 border-t border-orange-200 animate-fade-in">
+                      <label className="block text-xs font-bold text-orange-700 uppercase tracking-wider mb-3">Select Poojas You Offer</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {POOJA_TYPES.map(pooja => {
+                          const selectedPooja = formData.poojasOffered.find(p => p.poojaName === pooja);
+                          const isSelected = !!selectedPooja;
+                          return (
+                            <div 
+                              key={pooja} 
+                              className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer bg-white ${
+                                isSelected ? 'border-orange-500' : 'border-gray-100 hover:border-orange-200'
+                              }`}
+                              onClick={(e) => {
+                                if(e.target.tagName !== 'INPUT') togglePooja(pooja);
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 ${
+                                  isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'
+                                }`}>
+                                  {isSelected && <FiCheckCircle size={12} />}
+                                </div>
+                                <span className={`text-sm font-bold ${isSelected ? 'text-orange-700' : 'text-gray-600'}`}>{pooja}</span>
+                              </div>
+                              
+                              {isSelected && (
+                                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                  <span className="text-gray-400 text-xs font-bold">₹</span>
+                                  <input 
+                                    type="number" 
+                                    min="0"
+                                    value={selectedPooja.price}
+                                    onChange={(e) => updatePoojaPrice(pooja, e.target.value)}
+                                    className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-orange-500"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Experience */}
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Experience (Years) <span className="text-red-500">*</span></label>
@@ -526,7 +611,7 @@ const ApplyAstrologer = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">IFSC Code <span className="text-red-500">*</span></label>
-                      <input type="text" name="ifscCode" required value={formData.ifscCode} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium uppercase" />
+                      <input type="text" name="ifscCode" required value={formData.ifscCode} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">UPI ID (Optional)</label>

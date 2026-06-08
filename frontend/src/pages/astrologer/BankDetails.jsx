@@ -115,7 +115,7 @@ const BankDetails = () => {
                 required
                 value={formData.ifscCode}
                 onChange={(e) => setFormData({...formData, ifscCode: e.target.value})}
-                className="w-full border-2 border-gray-100 rounded-xl py-3 px-4 outline-none focus:border-blue-400 bg-gray-50 transition-all font-medium text-gray-800 uppercase"
+                className="w-full border-2 border-gray-100 rounded-xl py-3 px-4 outline-none focus:border-blue-400 bg-gray-50 transition-all font-medium text-gray-800"
                 placeholder="HDFC0001234"
               />
             </div>

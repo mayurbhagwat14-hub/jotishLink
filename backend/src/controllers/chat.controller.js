@@ -134,7 +134,7 @@ export const getSessionMessages = asyncHandler(async (req, res) => {
   // Authorize: only session participants
   const isParticipant =
     session.userId._id.toString() === req.user._id.toString() ||
-    session.astrologerId.toString() === req.user._id.toString();
+    session.astrologerId._id.toString() === req.user._id.toString();
 
   if (!isParticipant) throw new ApiError(403, 'Not authorized');
 

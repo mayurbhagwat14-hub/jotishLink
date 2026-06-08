@@ -101,35 +101,27 @@ const VideoCallBookingForm = () => {
           {/* Date Picker */}
           <div>
             <label className="block text-gray-700 text-[13px] font-bold mb-2">Select Date</label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400">
-                <FiCalendar size={18} />
-              </div>
-              <input
-                type="date"
-                required
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
-            </div>
+            <input
+              type="date"
+              required
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              onClick={(e) => e.target.showPicker && e.target.showPicker()}
+            />
           </div>
 
           {/* Time Picker */}
           <div>
             <label className="block text-gray-700 text-[13px] font-bold mb-2">Select Time</label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400">
-                <FiClock size={18} />
-              </div>
-              <input
-                type="time"
-                required
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              />
-            </div>
+            <input
+              type="time"
+              required
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              value={formData.time}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              onClick={(e) => e.target.showPicker && e.target.showPicker()}
+            />
           </div>
 
         </form>

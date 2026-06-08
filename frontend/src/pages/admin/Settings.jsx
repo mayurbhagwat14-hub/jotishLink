@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiDollarSign, FiStar, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
 import * as adminApis from '../../api/adminApis';
 import { GiFlowerPot } from 'react-icons/gi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
@@ -17,7 +18,7 @@ const AdminSettings = () => {
   const [astrologerApproval, setAstrologerApproval] = useState(true);
   const [lowStockAlert, setLowStockAlert] = useState(true);
   const [celebrities, setCelebrities] = useState([]);
-  const [newCeleb, setNewCeleb] = useState({ name: '', role: '', img: '', isActive: true });
+  const [newCeleb, setNewCeleb] = useState({ name: '', role: '', img: '', quote: '', isActive: true });
   
   const [generalSettings, setGeneralSettings] = useState({
     appName: 'JyotishLink',
@@ -71,7 +72,7 @@ const AdminSettings = () => {
     if (!newCeleb.name || !newCeleb.role || !newCeleb.img) return alert("Fill all fields");
     try {
       await adminApis.createAdminCelebrity(newCeleb);
-      setNewCeleb({ name: '', role: '', img: '', isActive: true });
+      setNewCeleb({ name: '', role: '', img: '', quote: '', isActive: true });
       fetchCelebrities();
     } catch (err) {
       console.error(err);
@@ -215,7 +216,7 @@ const AdminSettings = () => {
               { service: 'Audio Calls', icon: <FiPhoneCall size={16} />, rate: 25, description: 'Platform commission on audio call revenue', color: 'green' },
               { service: 'Video Calls', icon: <FiVideo size={16} />, rate: 25, description: 'Platform commission on video call revenue', color: 'purple' },
               { service: 'E-Pooja Bookings', icon: <GiFlowerPot size={16} />, rate: 20, description: 'Platform commission on e-pooja bookings', color: 'orange' },
-              { service: 'Store Products', icon: <FiDollarSign size={16} />, rate: 100, description: 'Full margin on store product sales', color: 'pink' },
+              { service: 'Store Products', icon: <FaRupeeSign size={14} />, rate: 100, description: 'Full margin on store product sales', color: 'pink' },
             ].map((item, i) => (
               <div key={i} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex items-center gap-4 flex-1">
@@ -290,7 +291,7 @@ const AdminSettings = () => {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2"><FiDollarSign size={16} className="text-orange-500" /> Payout Settings</h3>
+            <h3 className="font-bold text-gray-900 flex items-center gap-2"><FaRupeeSign size={14} className="text-orange-500" /> Payout Settings</h3>
 
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payout Frequency</label>
@@ -392,6 +393,10 @@ const AdminSettings = () => {
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Image URL</label>
                 <input type="text" value={newCeleb.img} onChange={e => setNewCeleb({...newCeleb, img: e.target.value})} placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
               </div>
+              <div className="space-y-1.5 md:col-span-3">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Review / Quote</label>
+                <textarea rows="3" value={newCeleb.quote} onChange={e => setNewCeleb({...newCeleb, quote: e.target.value})} placeholder="Write what the celebrity says about JyotishLink..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"></textarea>
+              </div>
             </div>
             
             <button onClick={handleAddCeleb} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
@@ -410,6 +415,7 @@ const AdminSettings = () => {
                     <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Image</th>
                     <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Name</th>
                     <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Role</th>
+                    <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Quote</th>
                     <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
@@ -421,6 +427,7 @@ const AdminSettings = () => {
                       </td>
                       <td className="py-3 px-6 font-bold text-sm text-gray-800">{c.name}</td>
                       <td className="py-3 px-6 text-sm text-gray-500">{c.role}</td>
+                      <td className="py-3 px-6 text-[12px] text-gray-500 max-w-[250px] truncate">{c.quote || '-'}</td>
                       <td className="py-3 px-6 text-right">
                         <button onClick={() => handleDeleteCeleb(c._id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors inline-flex ml-auto">
                           <FiTrash2 size={14} />
@@ -430,7 +437,7 @@ const AdminSettings = () => {
                   ))}
                   {celebrities.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="py-8 text-center text-gray-400 text-sm font-medium">No celebrities added yet.</td>
+                      <td colSpan="5" className="py-8 text-center text-gray-400 text-sm font-medium">No celebrities added yet.</td>
                     </tr>
                   )}
                 </tbody>

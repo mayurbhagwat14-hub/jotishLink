@@ -11,6 +11,7 @@ import {
   getProductById,
   bookPooja,
   getUserPoojas,
+  getUserPoojaById,
   getUserSessions,
   getUserWallet,
   deleteUserHistory,
@@ -38,6 +39,7 @@ router.delete('/user/profile/delete', verifyJWT, deleteUserAccount);
 // Pooja booking
 router.post('/pooja/book', verifyJWT, bookPooja);
 router.get('/user/poojas', verifyJWT, getUserPoojas);
+router.get('/user/poojas/:id', verifyJWT, getUserPoojaById);
 
 // Sessions & wallet history
 router.get('/user/sessions', verifyJWT, getUserSessions);

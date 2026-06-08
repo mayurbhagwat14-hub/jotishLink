@@ -40,3 +40,19 @@ export const markAsRead = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, { notification }, 'Notification marked as read'));
 });
+
+// DELETE /api/notifications
+export const deleteNotifications = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new ApiError(400, 'Please provide an array of notification IDs to delete');
+  }
+
+  await Notification.deleteMany({
+    _id: { $in: ids },
+    userId: req.user._id
+  });
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Notifications deleted successfully'));
+});

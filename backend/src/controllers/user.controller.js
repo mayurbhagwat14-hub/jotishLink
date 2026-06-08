@@ -137,10 +137,11 @@ export const getHomepageData = asyncHandler(async (req, res) => {
 
 // GET /api/astrologers
 export const getAstrologers = asyncHandler(async (req, res) => {
-  const { search, skill, language, sort } = req.query;
+  const { search, skill, category, language, sort } = req.query;
   let filter = { isVerified: true, name: { $ne: 'Temp Astrologer' } };
 
   if (skill) filter.skills = { $in: [skill] };
+  if (category) filter.categories = { $in: [category] };
   if (language) filter.languages = { $in: [language] };
 
   let query = Astrologer.find(filter);
@@ -220,18 +221,25 @@ export const getStoreProducts = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { products, categories, topSelling, newLaunch, banners }, 'Products fetched'));
 });
 
-// GET /api/pandits  (same as astrologers but filter by pandit skill)
+// GET /api/pandits
 export const getStorePandits = asyncHandler(async (req, res) => {
   const pandits = await Astrologer.find({
     isVerified: true,
-    skills: { $in: ['Pandit', 'Vedic Rituals', 'Pooja'] },
-  })
-    .lean();
+    $or: [
+      { isPandit: true },
+      { skills: { $in: ['Pandit', 'Vedic Rituals', 'Pooja'] } }
+    ]
+  }).lean();
 
-  // Extract unique poojas from pandit skills
+  // Extract unique poojas from pandit poojasOffered
   const poojaSet = new Set();
   pandits.forEach(p => {
-    if (p.skills) {
+    if (p.poojasOffered && p.poojasOffered.length > 0) {
+      p.poojasOffered.forEach(pooja => {
+        poojaSet.add(pooja.poojaName);
+      });
+    } else if (p.skills) {
+      // Legacy fallback
       p.skills.forEach(s => {
         if (!['Pandit', 'Vedic Rituals', 'Pooja'].includes(s)) {
           poojaSet.add(s);
@@ -248,8 +256,28 @@ export const getStorePandits = asyncHandler(async (req, res) => {
 
 // POST /api/pooja/book
 export const bookPooja = asyncHandler(async (req, res) => {
-  const { poojaName, astrologerId, date, time, address, mode } = req.body;
+  const { poojaName, astrologerId, date, time, address, mode, notes, price } = req.body;
   if (!poojaName || !astrologerId) throw new ApiError(400, 'poojaName and astrologerId required');
+
+  const poojaPrice = price || 500;
+
+  const user = await User.findById(req.user._id);
+  if (user.wallet < poojaPrice) {
+    throw new ApiError(400, `Insufficient wallet balance. You need ₹${poojaPrice} to book this Pooja.`);
+  }
+
+  // Deduct from User Wallet
+  user.wallet -= poojaPrice;
+  await user.save();
+
+  // Record Transaction
+  const transaction = await Transaction.create({
+    userId: user._id,
+    amount: poojaPrice, // Mongoose schema has `amount` which usually doesn't need to be negative for deduction if the type is 'deduction', but we can keep it negative or positive depending on other uses. Wait, looking at OrderHistory, it uses `txn.amount`, let's keep it `-poojaPrice` if that's what was intended, but let's just change type.
+    type: 'deduction',
+    paymentStatus: 'success',
+    desc: `Pooja Booking: ${poojaName}`
+  });
 
   const booking = await PoojaBooking.create({
     userId: req.user._id,
@@ -258,11 +286,23 @@ export const bookPooja = asyncHandler(async (req, res) => {
     date,
     time,
     address,
+    proofNotes: notes || '',
     mode: mode || 'offline',
-    status: 'pending',
+    status: 'Pending',
+    price: poojaPrice,
+    amountHold: poojaPrice,
+    paymentStatus: 'held',
+    paymentMethod: 'wallet'
   });
 
-  return res.status(201).json(new ApiResponse(201, { booking }, 'Pooja booked successfully'));
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`astro_${astrologerId}`).emit('pooja_booking_created', { booking });
+    io.to(`room_astro_${astrologerId}`).emit('pooja_booking_created', { booking });
+    io.to('admin_room').emit('dashboard_updated');
+  }
+
+  return res.status(201).json(new ApiResponse(201, { booking, transaction }, 'Pooja booked successfully'));
 });
 
 // GET /api/user/poojas
@@ -275,6 +315,17 @@ export const getUserPoojas = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { poojas }, 'User poojas fetched'));
 });
 
+// GET /api/user/poojas/:id
+export const getUserPoojaById = asyncHandler(async (req, res) => {
+  const pooja = await PoojaBooking.findOne({ _id: req.params.id, userId: req.user._id, deletedByUser: { $ne: true } })
+    .populate('astrologerId', 'name avatar')
+    .lean();
+
+  if (!pooja) throw new ApiError(404, 'Pooja not found');
+  
+  return res.status(200).json(new ApiResponse(200, { pooja }, 'Pooja details fetched'));
+});
+
 // GET /api/user/sessions
 export const getUserSessions = asyncHandler(async (req, res) => {
   const sessions = await ChatSession.find({ 
@@ -282,7 +333,7 @@ export const getUserSessions = asyncHandler(async (req, res) => {
     deletedByUser: { $ne: true },
     $or: [{ type: 'chat' }, { type: { $exists: false } }]
   })
-    .populate('astrologerId', 'name')
+    .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
 

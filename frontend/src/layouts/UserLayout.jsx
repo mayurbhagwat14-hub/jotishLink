@@ -20,7 +20,7 @@ const UserLayout = () => {
   const { user } = useSelector((state) => state.auth);
 
   const isFullWidth = location.pathname.includes('/user/store') || location.pathname.includes('/user/chat') || location.pathname.includes('/user/details') || location.pathname.includes('/user/video-room');
-  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/recharge') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search');
+  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/recharge') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search') || location.pathname.includes('/user/pooja-booking');
 
   const handleLogout = () => {
     dispatch(logout());
@@ -84,11 +84,9 @@ const UserLayout = () => {
           <div className="px-4 space-y-1">
             {[
               { label: 'My Profile', emoji: '👤', path: '/user/profile' },
-              { label: 'My Chats', emoji: '💬', path: '/user/chat' },
               { label: 'Order History', emoji: '📋', path: '/user/history' },
               { label: 'Wallet', emoji: '👛', path: '/user/history?tab=wallet' },
               { label: 'Notifications', emoji: '🔔', path: '/user/notifications' },
-              { label: 'Settings', emoji: '⚙️', path: '/user/settings' },
             ].map((item) => (
               <button
                 key={item.label}

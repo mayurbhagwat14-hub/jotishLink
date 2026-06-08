@@ -86,7 +86,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   const { 
     name, phone, password, otp, skills, categories, languages, experience, about, pricing, 
     identityProof, avatar, dob, gender, address, city, state, pincode, consultationStyle, 
-    education, certificationDetails, bankDetails, email
+    education, certificationDetails, bankDetails, email, isPandit, poojasOffered
   } = req.body;
 
   if (!name || !phone || !password || !otp) throw new ApiError(400, 'name, phone, password, and otp required');
@@ -145,7 +145,15 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     if (education) astrologer.education = education;
     if (certificationDetails) astrologer.certificationDetails = certificationDetails;
     if (email) astrologer.email = email;
-    if (bankDetails) astrologer.bankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+    if (isPandit !== undefined) astrologer.isPandit = isPandit;
+    if (poojasOffered) astrologer.poojasOffered = typeof poojasOffered === 'string' ? JSON.parse(poojasOffered) : poojasOffered;
+    
+    if (bankDetails) {
+      const parsedBankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+      if (parsedBankDetails.ifscCode) parsedBankDetails.ifscCode = parsedBankDetails.ifscCode.toUpperCase();
+      if (parsedBankDetails.panNumber) parsedBankDetails.panNumber = parsedBankDetails.panNumber.toUpperCase();
+      astrologer.bankDetails = parsedBankDetails;
+    }
 
     // Helper for base64 uploads
     const handleBase64Upload = async (dataStr) => {
@@ -227,6 +235,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   return res.status(201).json(
     new ApiResponse(201, {
       accessToken,
+      refreshToken,
       user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', avatar: astrologer.avatar },
       astrologer,
     }, 'Astrologer account created. Pending verification.')
@@ -276,6 +285,7 @@ export const astrologerLogin = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       accessToken,
+      refreshToken,
       user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', onlineStatus: astrologer.onlineStatus, avatar: astrologer.avatar },
       astrologer,
     }, 'Login successful')
@@ -305,7 +315,7 @@ export const getAstrologerProfile = asyncHandler(async (req, res) => {
 
 // PUT /api/astrologer/profile/update
 export const updateAstrologerProfile = asyncHandler(async (req, res) => {
-  const { name, skills, languages, experience, about, pricing, avatar, dob, gender, address, city, state, pincode, bankDetails } = req.body;
+  const { name, skills, languages, experience, about, pricing, avatar, dob, gender, address, city, state, pincode, bankDetails, isPandit, poojasOffered, serviceLocations, education, certificationDetails, consultationStyle } = req.body;
   const astrologer = await Astrologer.findById(req.user._id);
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
@@ -314,13 +324,25 @@ export const updateAstrologerProfile = asyncHandler(async (req, res) => {
   if (languages !== undefined) astrologer.languages = typeof languages === 'string' ? JSON.parse(languages) : languages;
   if (experience !== undefined) astrologer.experience = experience;
   if (about !== undefined) astrologer.about = about;
+  if (education !== undefined) astrologer.education = education;
+  if (certificationDetails !== undefined) astrologer.certificationDetails = certificationDetails;
+  if (consultationStyle !== undefined) astrologer.consultationStyle = consultationStyle;
   if (dob !== undefined) astrologer.dob = dob;
   if (gender !== undefined) astrologer.gender = gender;
   if (address !== undefined) astrologer.address = address;
   if (city !== undefined) astrologer.city = city;
   if (state !== undefined) astrologer.state = state;
   if (pincode !== undefined) astrologer.pincode = pincode;
-  if (bankDetails !== undefined) astrologer.bankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+  if (bankDetails !== undefined) {
+    const parsedBankDetails = typeof bankDetails === 'string' ? JSON.parse(bankDetails) : bankDetails;
+    if (parsedBankDetails.ifscCode) parsedBankDetails.ifscCode = parsedBankDetails.ifscCode.toUpperCase();
+    if (parsedBankDetails.panNumber) parsedBankDetails.panNumber = parsedBankDetails.panNumber.toUpperCase();
+    astrologer.bankDetails = parsedBankDetails;
+  }
+  
+  if (isPandit !== undefined) astrologer.isPandit = isPandit === 'true' || isPandit === true;
+  if (poojasOffered !== undefined) astrologer.poojasOffered = typeof poojasOffered === 'string' ? JSON.parse(poojasOffered) : poojasOffered;
+  if (serviceLocations !== undefined) astrologer.serviceLocations = typeof serviceLocations === 'string' ? JSON.parse(serviceLocations) : serviceLocations;
   
   if (pricing !== undefined) {
     let parsedPricing = typeof pricing === 'string' ? JSON.parse(pricing) : pricing;
@@ -413,7 +435,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
 export const getAstrologerEarnings = asyncHandler(async (req, res) => {
   const [sessions, poojas] = await Promise.all([
     ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
-    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['completed', 'confirmed'] } }).lean()
+    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } }).lean()
   ]);
 
   const allEarnings = [
@@ -437,7 +459,11 @@ export const getAstrologerEarnings = asyncHandler(async (req, res) => {
 
   // Calculate Available Balance by deducting pending and completed withdrawals
   const withdrawals = await WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean();
-  const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+  
+  const pendingWithdrawalAmount = withdrawals.filter(w => w.status === 'pending').reduce((sum, w) => sum + w.amount, 0);
+  const completedWithdrawalAmount = withdrawals.filter(w => w.status === 'completed').reduce((sum, w) => sum + w.amount, 0);
+  
+  const totalWithdrawnOrPending = pendingWithdrawalAmount + completedWithdrawalAmount;
   const total = totalEarnings - totalWithdrawnOrPending;
 
   const now = new Date();
@@ -468,6 +494,8 @@ export const getAstrologerEarnings = asyncHandler(async (req, res) => {
       earnings: allEarnings, 
       total: parseFloat(total.toFixed(2)),
       totalEarnings: parseFloat(totalEarnings.toFixed(2)),
+      pendingWithdrawalAmount: parseFloat(pendingWithdrawalAmount.toFixed(2)),
+      completedWithdrawalAmount: parseFloat(completedWithdrawalAmount.toFixed(2)),
       thisMonth: parseFloat(thisMonthTotal.toFixed(2)),
       percentageChange: parseFloat(percentageChange.toFixed(1))
     }, 'Earnings fetched')
@@ -488,7 +516,7 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
   // Verify balance
   const [sessions, poojas, withdrawals] = await Promise.all([
     ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
-    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['completed', 'confirmed'] } }).lean(),
+    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } }).lean(),
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean()
   ]);
 
@@ -511,7 +539,12 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
     bankDetailsSnapshot: astrologer.bankDetails
   });
 
-  return res.status(201).json(new ApiResponse(201, { withdrawal }, 'Withdrawal request submitted successfully. Admin will process it shortly.'));
+  const io = req.app.get('io');
+  if (io) {
+    io.to('admin_room').emit('dashboard_updated');
+  }
+
+  return res.status(201).json(new ApiResponse(201, { withdrawal }, 'Withdrawal request sent successfully. Money will come to your account in 1-2 working days.'));
 });
 
 // GET /api/astrologer/pooja-requests
@@ -532,19 +565,125 @@ export const updatePoojaStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!['confirmed', 'cancelled', 'completed'].includes(status)) {
-    throw new ApiError(400, 'Invalid status');
+  if (!['Accepted', 'Rejected', 'Completed'].includes(status)) {
+    throw new ApiError(400, 'Invalid status update');
   }
 
-  const booking = await PoojaBooking.findOneAndUpdate(
-    { _id: id, astrologerId: req.user._id },
-    { status },
-    { new: true }
-  );
-
+  const booking = await PoojaBooking.findOne({ _id: id, astrologerId: req.user._id });
   if (!booking) throw new ApiError(404, 'Booking not found');
 
+  if (booking.status === 'Completed' || booking.status === 'Rejected' || booking.status === 'Refunded' || booking.status === 'Expired') {
+    throw new ApiError(400, `Booking is already ${booking.status}`);
+  }
+
+  if (status === 'Completed') {
+    // Check if proof is uploaded
+    if (!booking.proofMedia || booking.proofMedia.length < 3) {
+      throw new ApiError(400, `Cannot mark as complete. Found ${booking.proofMedia?.length || 0} media files. Minimum 2 photos and 1 video required.`);
+    }
+    booking.paymentStatus = 'released';
+  }
+
+  if (status === 'Rejected') {
+    if (booking.paymentStatus === 'held' && booking.amountHold > 0) {
+      const User = (await import('../models/user.model.js')).default;
+      const Transaction = (await import('../models/transaction.model.js')).default;
+      
+      const user = await User.findById(booking.userId);
+      if (user) {
+        user.wallet += booking.amountHold;
+        await user.save();
+
+        await Transaction.create({
+          userId: user._id,
+          amount: booking.amountHold,
+          type: 'pooja_refund',
+          status: 'completed',
+          paymentMethod: 'wallet',
+          desc: `Refund for Rejected Pooja: ${booking.poojaName}`
+        });
+
+        booking.paymentStatus = 'refunded';
+      }
+    }
+  }
+
+  booking.status = status;
+  await booking.save();
+
+  // Populate astrologer details so the user's frontend UI doesn't break in real-time
+  await booking.populate('astrologerId', 'name avatar');
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`room_user_${booking.userId}`).emit(`pooja_booking_${status.toLowerCase()}`, { booking });
+    io.to('admin_room').emit('dashboard_updated');
+  }
+
   return res.status(200).json(new ApiResponse(200, { booking }, `Pooja booking marked as ${status}`));
+});
+
+// POST /api/astrologer/poojas/:id/proof
+export const uploadPoojaProof = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { notes } = req.body;
+
+  const booking = await PoojaBooking.findOne({ _id: id, astrologerId: req.user._id });
+  if (!booking) throw new ApiError(404, 'Booking not found');
+
+  if (booking.status !== 'Accepted' && booking.status !== 'In Progress') {
+    throw new ApiError(400, 'Proof can only be uploaded for active bookings.');
+  }
+
+  // Handle media uploads via base64 or multer
+  const mediaUrls = [];
+  const handleBase64Upload = async (dataStr) => {
+    if (dataStr && typeof dataStr === 'string' && dataStr.startsWith('data:')) {
+      try {
+        const { uploadMedia } = await import('../config/cloudinary.js');
+        const result = await uploadMedia(dataStr, 'astrotalk_pooja_proofs');
+        return result.secure_url || result.url;
+      } catch (err) {
+        console.error('Cloudinary upload failed:', err.message);
+        throw new ApiError(500, `Image/Video upload failed: ${err.message}`);
+      }
+    }
+    return null;
+  };
+
+  const files = req.files || {};
+  if (files['proofMedia']) {
+    for (const fileData of files['proofMedia']) {
+       const b64 = Buffer.from(fileData.buffer).toString('base64');
+       let dataURI = "data:" + fileData.mimetype + ";base64," + b64;
+       const url = await handleBase64Upload(dataURI);
+       if (url) mediaUrls.push(url);
+    }
+  }
+
+  // Also check if any base64 array was sent in body
+  if (req.body.proofMedia && Array.isArray(req.body.proofMedia)) {
+    for (const dataStr of req.body.proofMedia) {
+      const url = await handleBase64Upload(dataStr);
+      if (url) mediaUrls.push(url);
+    }
+  }
+
+  if (mediaUrls.length > 0) {
+    booking.proofMedia = mediaUrls;
+  }
+
+  if (mediaUrls.length < 3) {
+    throw new ApiError(400, `Debug: Only ${mediaUrls.length} URLs generated. Body array length: ${req.body.proofMedia?.length || 'undefined'}. Files length: ${files['proofMedia']?.length || 'undefined'}`);
+  }
+
+  if (notes) {
+    booking.proofNotes = notes;
+  }
+
+  await booking.save();
+
+  return res.status(200).json(new ApiResponse(200, { booking }, 'Proof uploaded successfully'));
 });
 
 // GET /api/astrologer/chats
@@ -574,7 +713,7 @@ export const getAstrologerCalls = asyncHandler(async (req, res) => {
 // PUT /api/astrologer/status
 export const updateOnlineStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
-  if (!status || !['online', 'offline'].includes(status)) {
+  if (!['online', 'offline', 'busy'].includes(status)) {
     throw new ApiError(400, 'Invalid status');
   }
 
@@ -583,6 +722,12 @@ export const updateOnlineStatus = asyncHandler(async (req, res) => {
 
   astrologer.onlineStatus = status;
   await astrologer.save();
+
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('astro_status_changed', { astrologerId: astrologer._id, status });
+    io.to('admin_room').emit('dashboard_updated');
+  }
 
   return res.status(200).json(new ApiResponse(200, { onlineStatus: astrologer.onlineStatus }, 'Status updated'));
 });
@@ -594,7 +739,7 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .lean(),
-    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['completed', 'confirmed'] } })
+    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .lean()
@@ -613,15 +758,31 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
     ...poojas.map(p => ({
       _id: p._id,
       type: 'pooja',
-      userName: p.poojaName || p.userId?.name || 'Pooja',
+      userName: p.userId?.name || 'User',
+      poojaName: p.poojaName || 'Pooja',
       date: p.createdAt,
       duration: 0,
       amount: parseFloat(((p.price || 0) * 0.7).toFixed(2)),
-      status: p.status
+      status: p.status.toLowerCase()
     }))
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return res.status(200).json(new ApiResponse(200, { history }, 'History fetched'));
+});
+
+// POST /api/astrologer/history/delete
+export const deleteAstrologerHistoryBulk = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    throw new ApiError(400, 'Please provide an array of ids');
+  }
+
+  // Delete from ChatSessions
+  await ChatSession.deleteMany({ _id: { $in: ids }, astrologerId: req.user._id });
+  // Delete from PoojaBookings
+  await PoojaBooking.deleteMany({ _id: { $in: ids }, astrologerId: req.user._id });
+
+  return res.status(200).json(new ApiResponse(200, {}, 'History records deleted from database'));
 });
 
 // GET /api/astrologer/analytics

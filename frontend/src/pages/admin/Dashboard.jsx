@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiUsers, FiActivity, FiTrendingUp, FiArrowRight, FiArrowUp, FiArrowDown, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiClock, FiShoppingCart, FiBox, FiPackage, FiDollarSign, FiUserPlus, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FiUsers, FiActivity, FiTrendingUp, FiArrowRight, FiArrowUp, FiArrowDown, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiClock, FiShoppingCart, FiBox, FiPackage, FiUserPlus, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
 import { GiFlowerPot } from 'react-icons/gi';
 import { Link } from 'react-router-dom';
 import { fetchAdminDashboardThunk } from '../../store/slices/dashboardSlice';
@@ -11,10 +12,6 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     dispatch(fetchAdminDashboardThunk());
-    const interval = setInterval(() => {
-      dispatch(fetchAdminDashboardThunk());
-    }, 5000);
-    return () => clearInterval(interval);
   }, [dispatch]);
 
   const dbData = adminDashboard || {
@@ -68,7 +65,7 @@ const AdminDashboard = () => {
         <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-orange-200 hover:shadow-sm transition-all">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total Revenue</p>
-            <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiDollarSign size={16} /></div>
+            <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FaRupeeSign size={14} /></div>
           </div>
           <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.totalRevenue || 0}</h3>
           <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +14.5% vs last month</span>

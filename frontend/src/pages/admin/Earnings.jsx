@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FiDollarSign, FiTrendingUp, FiActivity, FiVideo, FiPhone, FiMessageCircle } from 'react-icons/fi';
+import { FiTrendingUp, FiActivity, FiVideo, FiPhone, FiMessageCircle } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -35,8 +36,8 @@ const Earnings = () => {
   const stats = [
     { label: "Today's Earnings", value: data.today, icon: <FiActivity />, color: 'bg-green-100 text-green-600' },
     { label: "Weekly Earnings", value: data.weekly, icon: <FiTrendingUp />, color: 'bg-blue-100 text-blue-600' },
-    { label: "Monthly Earnings", value: data.monthly, icon: <FiDollarSign />, color: 'bg-purple-100 text-purple-600' },
-    { label: "Total Platform Earnings", value: data.total, icon: <FiDollarSign />, color: 'bg-orange-100 text-orange-600' },
+    { label: "Monthly Earnings", value: data.monthly, icon: <FaRupeeSign size={14} />, color: 'bg-purple-100 text-purple-600' },
+    { label: "Total Platform Earnings", value: data.total, icon: <FaRupeeSign size={14} />, color: 'bg-orange-100 text-orange-600' },
   ];
 
   return (

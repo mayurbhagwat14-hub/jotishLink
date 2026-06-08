@@ -1,4 +1,4 @@
-import { FiPhone, FiVideo, FiCheck, FiX } from 'react-icons/fi';
+import { FiPhone, FiVideo, FiCheck, FiX, FiMessageSquare } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { removeIncomingRequest, addActiveSession } from '../store/slices/astrologerSlice';
@@ -15,12 +15,13 @@ const IncomingCallPopup = ({ request, token }) => {
   const handleAccept = async () => {
     setProcessing(true);
     try {
-      const res = await api.post('/calls/accept', { callId: request.callId });
-      const { agora } = res.data.data;
+      let agora = null;
+      if (request.type === 'audio' || request.type === 'video') {
+        const res = await api.post('/calls/accept', { callId: request.callId });
+        agora = res.data.data.agora;
+      }
       
-      const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-      const socket = getSocket();
-      
+      const socket = getSocket(token);
       socket.emit('accept_session', { 
         roomId: request.roomId, 
         userSocketId: request.userSocketId 
@@ -29,10 +30,13 @@ const IncomingCallPopup = ({ request, token }) => {
       dispatch(removeIncomingRequest(request.roomId));
       dispatch(addActiveSession({ ...request, status: 'active', agora }));
       
-      
-      navigate(`/astrologer/video-room/${request.roomId}`, { state: { session: request, agora } });
+      if (request.type === 'chat') {
+        navigate(`/astrologer/chat/${request.roomId}`, { state: { roomId: request.roomId, userId: request.userId, userName: request.userName } });
+      } else {
+        navigate(`/astrologer/video-room/${request.roomId}`, { state: { session: request, agora } });
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to accept call');
+      toast.error(error.response?.data?.message || 'Failed to accept request');
     } finally {
       setProcessing(false);
     }
@@ -41,12 +45,13 @@ const IncomingCallPopup = ({ request, token }) => {
   const handleReject = async () => {
     setProcessing(true);
     try {
-      await api.post('/calls/reject', { callId: request.callId, reason: 'Astrologer declined' });
+      if (request.type === 'audio' || request.type === 'video') {
+        await api.post('/calls/reject', { callId: request.callId, reason: 'Astrologer declined' });
+      }
     } catch (e) {
       console.error(e);
     }
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    const socket = getSocket();
+    const socket = getSocket(token);
     socket.emit('reject_session', { 
       userSocketId: request.userSocketId 
     });
@@ -73,7 +78,7 @@ const IncomingCallPopup = ({ request, token }) => {
 
           <h2 className="text-2xl font-black text-gray-800 mb-1">{request.userName}</h2>
           <p className="text-orange-500 font-bold mb-8 uppercase tracking-widest text-sm flex items-center gap-2">
-            {request.type === 'video' ? <><FiVideo /> Video Call</> : <><FiPhone /> Audio Call</>}
+            {request.type === 'video' ? <><FiVideo /> Video Call</> : request.type === 'chat' ? <><FiMessageSquare /> Chat Request</> : <><FiPhone /> Audio Call</>}
           </p>
 
           <div className="flex w-full justify-between gap-6 px-4 mt-4">

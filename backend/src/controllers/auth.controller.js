@@ -89,6 +89,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       accessToken,
+      refreshToken,
       user: userObj,
     }, 'OTP verified successfully')
   );
@@ -150,7 +151,7 @@ export const register = asyncHandler(async (req, res) => {
 
 // POST /api/auth/refresh
 export const refreshToken = asyncHandler(async (req, res) => {
-  const token = req.cookies?.refreshToken;
+  const token = req.body.refreshToken || req.cookies?.refreshToken;
   if (!token) throw new ApiError(401, 'No refresh token');
 
   let decoded;
@@ -175,7 +176,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken: newRefresh } = generateTokens(user._id, decoded.role || user.role);
   setRefreshCookie(res, newRefresh);
 
-  return res.status(200).json(new ApiResponse(200, { accessToken }, 'Token refreshed'));
+  return res.status(200).json(new ApiResponse(200, { accessToken, refreshToken: newRefresh }, 'Token refreshed'));
 });
 
 // POST /api/user/auth/change-password
@@ -211,6 +212,7 @@ export const adminLogin = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       accessToken,
+      refreshToken,
       user: { _id: user._id, name: user.name, email: user.email, role: 'admin' },
     }, 'Admin login successful')
   );

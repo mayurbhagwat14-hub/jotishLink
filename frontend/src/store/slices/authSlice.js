@@ -21,7 +21,8 @@ export const refreshAccessTokenThunk = createAsyncThunk(
   'auth/refreshToken',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.post('/auth/refresh', {});
+      const refreshTokenStr = localStorage.getItem('refreshToken');
+      const response = await axios.post('/auth/refresh', { refreshToken: refreshTokenStr });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -217,12 +218,16 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
       state.error = null;
+      if (action.payload.refreshToken) {
+        localStorage.setItem('refreshToken', action.payload.refreshToken);
+      }
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
       state.error = null;
+      localStorage.removeItem('refreshToken');
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -261,11 +266,17 @@ const authSlice = createSlice({
         const data = action.payload?.data || action.payload;
         state.user = data.user || state.user;
         state.token = data.accessToken || state.token;
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
         if (data.user) state.isAuthenticated = true;
       })
       .addCase(refreshAccessTokenThunk.fulfilled, (state, action) => {
         const data = action.payload?.data || action.payload;
         state.token = data.accessToken || state.token;
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
         if (state.user) state.isAuthenticated = true;
       })
       .addCase(logoutUserThunk.fulfilled, (state) => {
@@ -273,33 +284,39 @@ const authSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         state.error = null;
+        localStorage.removeItem('refreshToken');
       })
       .addCase(astrologerLoginThunk.fulfilled, (state, action) => {
         const data = action.payload?.data || action.payload;
         state.user = data.user;
         state.token = data.accessToken;
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         state.isAuthenticated = true;
       })
       .addCase(adminLoginThunk.fulfilled, (state, action) => {
         const data = action.payload?.data || action.payload;
         state.user = data.user;
         state.token = data.accessToken;
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
         state.isAuthenticated = true;
       })
       .addCase(userDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        localStorage.removeItem('refreshToken');
       })
       .addCase(astrologerDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        localStorage.removeItem('refreshToken');
       })
       .addCase(adminDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        localStorage.removeItem('refreshToken');
       });
   }
 });

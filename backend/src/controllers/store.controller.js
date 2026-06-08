@@ -198,11 +198,8 @@ export const createOrder = asyncHandler(async (req, res) => {
   // Emit event to admins
   const io = req.app.get('io');
   if (io) {
-    io.emit('admin_new_order', {
-      orderId: order._id,
-      amount: totalAmount,
-      customerName: user.name || 'User'
-    });
+    io.to('admin_room').emit('dashboard_updated');
+    io.to(`room_user_${user._id}`).emit('order_updated', { order });
   }
 
   return res.status(201).json(new ApiResponse(201, { order }, 'Order placed successfully'));
@@ -257,12 +254,8 @@ export const requestCancelOrder = asyncHandler(async (req, res) => {
   // Notify admin via socket
   const io = req.app.get('io');
   if (io) {
-    io.emit('admin_cancel_request', {
-      orderId: order._id,
-      customerName: req.user.name || 'User',
-      reason: order.cancelRequest.reason,
-      amount: order.totalAmount,
-    });
+    io.to('admin_room').emit('dashboard_updated');
+    io.to(`room_user_${req.user._id}`).emit('order_updated', { order });
   }
 
   return res.status(200).json(new ApiResponse(200, { order }, 'Cancel request submitted'));

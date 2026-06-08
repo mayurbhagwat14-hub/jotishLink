@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle, FiTrash2, FiX, FiCheck } from 'react-icons/fi';
-import { getAdminSessions, getAdminCalls, deleteAdminSession, deleteAdminCall } from '../../api/adminApis';
+import { getSocket } from '../../socket/socketManager';
+import { getAdminSessions, getAdminCalls, deleteAdminSession, deleteAdminCall, bulkDeleteAdminSessions } from '../../api/adminApis';
 
 const AdminSessions = () => {
   const [liveSessions, setLiveSessions] = useState([]);
@@ -22,10 +23,17 @@ const AdminSessions = () => {
 
   useEffect(() => {
     fetchSessions();
-    const interval = setInterval(() => {
+    const socket = getSocket();
+    
+    const handleUpdate = () => {
       fetchSessions();
-    }, 5000);
-    return () => clearInterval(interval);
+    };
+
+    socket.on('dashboard_updated', handleUpdate);
+    
+    return () => {
+      socket.off('dashboard_updated', handleUpdate);
+    };
   }, []);
 
   const fetchSessions = async () => {
@@ -51,7 +59,8 @@ const AdminSessions = () => {
         duration: 'Ongoing',
         rate: s.isFreeChat ? 0 : 'Paid',
         started: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        billed: s.amountDeducted || 0
+        billed: s.amountDeducted || 0,
+        source: 'ChatSession'
       }));
 
       const liveCallsData = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status) && c.userId && c.astrologerId).map(c => ({
@@ -65,7 +74,8 @@ const AdminSessions = () => {
         duration: c.status === 'ringing' ? 'Ringing' : 'Ongoing',
         rate: c.ratePerMinute || 0,
         started: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        billed: c.totalAmount || 0
+        billed: c.totalAmount || 0,
+        source: 'CallSession'
       }));
 
       const recentChats = allSessions.filter(s => s.status === 'completed' || s.status === 'missed').map(s => ({
@@ -81,7 +91,8 @@ const AdminSessions = () => {
         total: s.amountDeducted || 0,
         status: s.status === 'completed' ? 'Completed' : 'Missed',
         time: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(s.createdAt).getTime()
+        timestamp: new Date(s.createdAt).getTime(),
+        source: 'ChatSession'
       }));
 
       const recentCallsData = allCalls.filter(c => ['completed', 'missed', 'rejected', 'cancelled'].includes(c.status)).map(c => ({
@@ -95,7 +106,8 @@ const AdminSessions = () => {
         total: c.totalAmount || 0,
         status: c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : 'Unknown',
         time: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: new Date(c.createdAt).getTime()
+        timestamp: new Date(c.createdAt).getTime(),
+        source: 'CallSession'
       }));
 
       setLiveSessions([...liveChats, ...liveCallsData]);
@@ -114,8 +126,8 @@ const AdminSessions = () => {
     return 'text-purple-500 bg-purple-50';
   };
 
-  const handleDeleteSession = (id, type) => {
-    setDeleteConfirmSession([{ id, type }]);
+  const handleDeleteSession = (id, type, source) => {
+    setDeleteConfirmSession([{ id, type, source }]);
   };
 
   const handleBulkDelete = () => {
@@ -128,10 +140,14 @@ const AdminSessions = () => {
     
     setIsBulkDeleting(true);
     try {
-      await Promise.all(deleteConfirmSession.map(s => {
-        if (s.type.includes('Call')) return deleteAdminCall(s.id);
-        return deleteAdminSession(s.id);
-      }));
+      // Separate session IDs and call IDs to send in a single bulk request based on source
+      const sessionIds = deleteConfirmSession.filter(s => s.source === 'ChatSession').map(s => s.id);
+      const callIds = deleteConfirmSession.filter(s => s.source === 'CallSession').map(s => s.id);
+
+      if (sessionIds.length > 0 || callIds.length > 0) {
+        await bulkDeleteAdminSessions({ sessionIds, callIds });
+      }
+
       fetchSessions();
       setSelectedSessions([]);
     } catch (err) {
@@ -147,7 +163,7 @@ const AdminSessions = () => {
     if (selectedSessions.length === filtered.length && filtered.length > 0) {
       setSelectedSessions([]);
     } else {
-      setSelectedSessions(filtered.map(s => ({ id: s.id, type: s.type })));
+      setSelectedSessions(filtered.map(s => ({ id: s.id, type: s.type, source: s.source })));
     }
   };
 
@@ -155,7 +171,7 @@ const AdminSessions = () => {
     setSelectedSessions(prev => 
       prev.some(s => s.id === session.id) 
         ? prev.filter(s => s.id !== session.id) 
-        : [...prev, { id: session.id, type: session.type }]
+        : [...prev, { id: session.id, type: session.type, source: session.source }]
     );
   };
 
@@ -228,7 +244,7 @@ const AdminSessions = () => {
                   <p className="text-[11px] text-gray-400 font-medium">₹{s.rate}/min • Billed: <span className="text-green-600 font-bold">₹{s.billed}</span></p>
                 </div>
                 <button
-                  onClick={() => handleDeleteSession(s.id, s.type)}
+                  onClick={() => handleDeleteSession(s.id, s.type, s.source)}
                   disabled={deletingId === s.id}
                   className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
                   title="Force Delete Stuck Session"
@@ -348,7 +364,7 @@ const AdminSessions = () => {
                   </td>
                   <td className="py-3.5 px-6 text-right">
                     <button
-                      onClick={() => handleDeleteSession(s.id, s.type)}
+                      onClick={() => handleDeleteSession(s.id, s.type, s.source)}
                       disabled={deletingId === s.id}
                       className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Delete Session"

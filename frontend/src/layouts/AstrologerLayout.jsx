@@ -9,6 +9,7 @@ import { login } from '../store/slices/authSlice';
 import { addIncomingRequest, removeIncomingRequestByUserId, removeActiveSession } from '../store/slices/astrologerSlice';
 import getSocket from '../socket/socketManager';
 import NotificationDropdown from '../components/NotificationDropdown';
+import toast from 'react-hot-toast';
 
 const AstrologerLayout = () => {
   const dispatch = useDispatch();
@@ -23,13 +24,33 @@ const AstrologerLayout = () => {
 
   useEffect(() => {
     if (user && user.role === 'astrologer') {
-      const socket = getSocket();
+      const socket = getSocket(token);
       socketRef.current = socket;
 
-      socket.emit('join_astrologer_room', { astrologerId: user._id });
+      const joinRoom = () => {
+        socket.emit('join_astrologer_room', { astrologerId: user._id });
+      };
+
+      // Join immediately if connected, or when it connects
+      if (socket.connected) {
+        joinRoom();
+      }
+      socket.on('connect', joinRoom);
 
       const onIncoming = (data) => {
         dispatch(addIncomingRequest(data));
+        toast.success(`Incoming ${data.type} request from ${data.userName}!`, {
+          duration: 5000,
+          position: 'top-center',
+          icon: '🔔',
+        });
+        
+        // Play notification sound
+        try {
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(e => console.log('Audio play failed:', e));
+        } catch (err) {}
+
         import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
           dispatch(fetchAstrologerDashboardThunk());
         });
@@ -61,6 +82,7 @@ const AstrologerLayout = () => {
       socket.on('session_accept_confirmed', onSessionEnded);
 
       return () => {
+        socket.off('connect', joinRoom);
         socket.off('incoming_session_request', onIncoming);
         socket.off('session_request_cancelled', onCancelled);
         socket.off('session_ended', onSessionEnded);
@@ -72,8 +94,9 @@ const AstrologerLayout = () => {
 
   useEffect(() => {
     if (user && user.role === 'astrologer') {
-      import('../store/slices/astrologerSlice').then(({ fetchAstrologerProfileThunk }) => {
+      import('../store/slices/astrologerSlice').then(({ fetchAstrologerProfileThunk, fetchAstrologerPoojaRequestsThunk }) => {
         dispatch(fetchAstrologerProfileThunk());
+        dispatch(fetchAstrologerPoojaRequestsThunk());
       });
     }
   }, [dispatch, user]);
@@ -102,17 +125,18 @@ const AstrologerLayout = () => {
     }
   };
 
-  const { incomingRequests } = useSelector((state) => state.astrologer);
+  const { incomingRequests, poojaRequests = [] } = useSelector((state) => state.astrologer);
   
   const chatRequestsCount = incomingRequests.filter(req => req.type === 'chat').length;
   const callRequestsCount = incomingRequests.filter(req => req.type === 'audio' || req.type === 'video').length;
+  const poojaRequestsCount = poojaRequests.filter(req => req.status === 'Pending').length;
 
   const navLinks = [
     { path: '/astrologer/dashboard', name: 'Home', icon: <FiHome size={22} /> },
     { path: '/astrologer/chats', name: 'Chats', icon: <FiMessageSquare size={22} />, badge: chatRequestsCount > 0 ? chatRequestsCount : null },
     { path: '/astrologer/calls', name: 'Calls', icon: <FiPhoneCall size={22} />, badge: callRequestsCount > 0 ? callRequestsCount : null },
     { path: '/astrologer/history', name: 'History', icon: <FiClock size={22} /> },
-    { path: '/astrologer/pooja', name: 'Pooja', icon: <GiFlowerPot size={22} /> },
+    { path: '/astrologer/pooja', name: 'Pooja', icon: <GiFlowerPot size={22} />, badge: poojaRequestsCount > 0 ? poojaRequestsCount : null },
   ];
 
   return (

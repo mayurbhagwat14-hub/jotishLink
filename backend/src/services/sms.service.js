@@ -34,10 +34,10 @@ class SmsService {
         text: message,
         route: '1'
       };
-      
+
       // If a DLT Template ID is provided in .env, pass it along. (Usually key is templateid or dlttemplateid depending on provider)
       if (templateId) {
-        params.templateid = templateId; 
+        params.templateid = templateId;
       }
 
       const response = await axios.get(baseUrl, { params });

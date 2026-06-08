@@ -1,19 +1,39 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiVideo, FiPhone, FiMessageCircle, FiCheckCircle, FiClock, FiCalendar, FiXCircle } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiVideo, FiPhone, FiMessageCircle, FiCheckCircle, FiClock, FiCalendar, FiXCircle, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
-import { fetchAstrologerHistoryThunk } from '../../store/slices/astrologerSlice';
+import { fetchAstrologerHistoryThunk, deleteAstrologerHistoryBulkThunk } from '../../store/slices/astrologerSlice';
 
 const History = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { history, loading } = useSelector((state) => state.astrologer);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     dispatch(fetchAstrologerHistoryThunk());
   }, [dispatch]);
 
+  const handleCardClick = (e, item) => {
+    if (e.target.type === 'checkbox') return;
+    if (item.type === 'chat') {
+      navigate(`/astrologer/chat/${item._id}`, { state: { viewOnly: true, userName: item.userName } });
+    }
+  };
+
+  // Filter history based on active tab
+  const filteredHistory = history.filter(item => {
+    if (activeTab === 'pooja') return item.type === 'pooja';
+    if (activeTab === 'consultations') return item.type === 'chat' || item.type.includes('call');
+    return true;
+  });
+
   // Group history by date string (e.g. "Today, May 27", "Yesterday, May 26", etc)
-  const groupedHistory = history.reduce((acc, item) => {
+  const groupedHistory = filteredHistory.reduce((acc, item) => {
     const d = new Date(item.date);
     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     
@@ -60,6 +80,25 @@ const History = () => {
     return `${m}m ${s}s`;
   };
 
+  const toggleSelection = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    setIsConfirmModalOpen(true);
+  };
+
+  const executeDelete = async () => {
+    setIsDeleting(true);
+    await dispatch(deleteAstrologerHistoryBulkThunk(selectedIds)).unwrap();
+    setIsDeleting(false);
+    setSelectedIds([]);
+    setIsConfirmModalOpen(false);
+  };
+
   return (
     <div className="p-4 animate-fade-in mb-6 flex flex-col h-[calc(100vh-130px)]">
       
@@ -68,13 +107,35 @@ const History = () => {
         <p className="text-sm text-gray-500 font-medium">Log of all your past activities</p>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 shrink-0 overflow-x-auto no-scrollbar">
+        <button 
+          onClick={() => { setActiveTab('all'); setSelectedIds([]); }} 
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'all' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+        >
+          All History
+        </button>
+        <button 
+          onClick={() => { setActiveTab('consultations'); setSelectedIds([]); }} 
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'consultations' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+        >
+          Consultations
+        </button>
+        <button 
+          onClick={() => { setActiveTab('pooja'); setSelectedIds([]); }} 
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'pooja' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+        >
+          Poojas
+        </button>
+      </div>
+
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {loading ? (
           <div className="flex justify-center p-8">
             <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : history.length === 0 ? (
+        ) : filteredHistory.length === 0 ? (
           <div className="text-center p-8 text-gray-500">
             No history found.
           </div>
@@ -87,16 +148,31 @@ const History = () => {
               
               <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item._id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm relative">
+                  <div 
+                    key={item._id} 
+                    onClick={(e) => handleCardClick(e, item)}
+                    className={`bg-white p-4 rounded-2xl border shadow-sm relative transition-colors ${item.type === 'chat' ? 'cursor-pointer hover:border-orange-200 hover:shadow-md' : ''} ${selectedIds.includes(item._id) ? 'border-red-400 bg-red-50/30' : 'border-gray-100'}`}
+                  >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500 cursor-pointer"
+                          checked={selectedIds.includes(item._id)}
+                          onChange={() => toggleSelection(item._id)}
+                        />
                         <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center border border-orange-200">
                           {getIconForType(item.type)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-800 text-sm capitalize">{item.userName}</h4>
-                          <p className="text-[10px] uppercase font-bold tracking-wider mt-0.5 text-gray-400">
+                          <h4 className="font-bold text-gray-800 text-sm capitalize">
+                            {item.type === 'pooja' ? item.poojaName : item.userName}
+                          </h4>
+                          <p className="text-[10px] uppercase font-bold tracking-wider mt-0.5 text-gray-400 flex items-center gap-1">
                             {item.type.replace('_', ' ')}
+                            {item.type === 'pooja' && item.userName && (
+                              <span className="normal-case text-gray-500 font-medium">• for {item.userName}</span>
+                            )}
                           </p>
                           <p className="text-xs text-gray-500 flex items-center gap-1 font-medium mt-1">
                             <FiClock size={10} /> 
@@ -105,7 +181,7 @@ const History = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-1">
                         <p className="font-black text-gray-800 text-lg">₹{item.amount}</p>
                         {item.status === 'completed' || item.status === 'confirmed' ? (
                           <span className="text-[10px] text-green-500 font-bold flex items-center gap-1 justify-end">
@@ -125,6 +201,60 @@ const History = () => {
           ))
         )}
       </div>
+
+      {/* Bulk Delete Bar */}
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 animate-fade-in-up">
+          <div className="bg-gray-800 text-white rounded-2xl shadow-xl p-3 flex justify-between items-center max-w-lg mx-auto border border-gray-700">
+            <span className="font-medium text-sm ml-2">
+              {selectedIds.length} selected
+            </span>
+            <button 
+              onClick={handleDeleteSelected}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
+            >
+              <FiTrash2 size={16} /> Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-up">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <FiAlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Delete History</h3>
+              <p className="text-gray-500 text-sm">
+                Are you sure you want to delete {selectedIds.length} item{selectedIds.length > 1 ? 's' : ''} from your history? This action cannot be undone.
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 flex gap-3 border-t border-gray-100">
+              <button 
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="flex-1 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-500 rounded-xl font-bold text-white shadow-md hover:bg-red-600 transition-colors disabled:opacity-70 flex items-center justify-center"
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  'Yes, Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

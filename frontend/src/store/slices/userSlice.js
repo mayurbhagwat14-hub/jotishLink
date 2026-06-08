@@ -22,7 +22,15 @@ const initialState = {
 const userSlice = createSlice({
   name: 'user',
   initialState,
-  reducers: {},
+  reducers: {
+    updateAstrologerStatus: (state, action) => {
+      const { astrologerId, status } = action.payload;
+      const index = state.astrologers.findIndex(a => a._id === astrologerId);
+      if (index !== -1) {
+        state.astrologers[index].onlineStatus = status;
+      }
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchAstrologersThunk.pending, (state) => {
@@ -47,4 +55,5 @@ const userSlice = createSlice({
   }
 });
 
+export const { updateAstrologerStatus } = userSlice.actions;
 export default userSlice.reducer;

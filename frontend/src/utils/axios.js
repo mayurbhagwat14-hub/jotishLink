@@ -57,13 +57,19 @@ instance.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const refreshTokenStr = localStorage.getItem('refreshToken');
         const res = await axios.post(
           `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auth/refresh`,
-          {},
+          { refreshToken: refreshTokenStr },
           { withCredentials: true }
         );
         
         const newAccessToken = res.data.accessToken;
+        const newRefreshToken = res.data.refreshToken;
+        
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
         
         // Update store with new token
         store.dispatch(login({ user: store.getState().auth.user, token: newAccessToken }));

@@ -43,8 +43,25 @@ const poojaBookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-      default: 'pending',
+      enum: ['Pending', 'Accepted', 'In Progress', 'Completed', 'Rejected', 'Refunded', 'Expired'],
+      default: 'Pending',
+    },
+    amountHold: {
+      type: Number,
+      default: 0,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['held', 'released', 'refunded'],
+      default: 'held',
+    },
+    proofMedia: {
+      type: [String],
+      default: [],
+    },
+    proofNotes: {
+      type: String,
+      default: '',
     },
     price: {
       type: Number,

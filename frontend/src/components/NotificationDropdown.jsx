@@ -116,6 +116,12 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
   const allNotifications = [...requestNotifications, ...notifications];
   const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
+  const formatMessage = (msg) => {
+    if (!msg) return '';
+    // Formats any number with more than 2 decimal places to 2 decimal places
+    return msg.replace(/(\d+\.\d{3,})/g, (match) => parseFloat(match).toFixed(2));
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button 
@@ -183,7 +189,7 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
                         </span>
                       </div>
                       <p className={`text-xs mt-1 line-clamp-2 ${notification.isRead ? 'text-gray-500' : 'text-gray-700 font-medium'}`}>
-                        {notification.message}
+                        {formatMessage(notification.message)}
                       </p>
                     </div>
                     {!notification.isRead && (

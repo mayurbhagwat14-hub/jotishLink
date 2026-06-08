@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiVideo } from 'react-icons/fi';
 import api from '../../api/axios';
+import toast from 'react-hot-toast';
 
 const PoojaBookingForm = () => {
   // const { panditId } = useParams();
@@ -13,10 +14,11 @@ const PoojaBookingForm = () => {
   const [formData, setFormData] = useState({
     date: '',
     time: '',
-    address: '',
-    mode: 'offline', // 'online' or 'offline'
+    notes: '',
   });
   const [loading, setLoading] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [errorModalMessage, setErrorModalMessage] = useState('');
 
   if (!pandit) {
     return (
@@ -29,8 +31,14 @@ const PoojaBookingForm = () => {
     );
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmitClick = (e) => {
     e.preventDefault();
+    if (!isFormValid) return;
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirmModal(false);
     setLoading(true);
     try {
       await api.post('/pooja/book', {
@@ -38,19 +46,20 @@ const PoojaBookingForm = () => {
         astrologerId: pandit.id || pandit._id,
         date: formData.date,
         time: formData.time,
-        address: formData.mode === 'online' ? 'Online Video Call' : formData.address,
-        mode: formData.mode,
+        notes: formData.notes,
+        mode: 'offline', // We default it so it doesn't break backend schemas
+        price: location.state?.price || 500
       });
-      alert('Pooja booked successfully!');
-      navigate('/user/history'); // Navigate to history to see the booking
+      toast.success('Pooja booked successfully!');
+      navigate('/user/history?tab=Poojas'); // Navigate to history and open Poojas tab
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to book pooja');
+      setErrorModalMessage(error.response?.data?.message || 'Failed to book pooja');
     } finally {
       setLoading(false);
     }
   };
 
-  const isFormValid = formData.date && formData.time && (formData.mode === 'online' || formData.address.length > 5);
+  const isFormValid = formData.date && formData.time;
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans pb-6">
@@ -63,15 +72,19 @@ const PoojaBookingForm = () => {
       </div>
 
       {/* Booking Summary */}
-      <div className="px-4 py-5 bg-gradient-to-br from-orange-50 to-white border-b border-orange-100">
-        <p className="text-orange-500 font-bold text-[13px] uppercase tracking-wide mb-1">{pooja}</p>
-        <div className="flex items-center gap-3 mt-3">
-          <div className="w-14 h-14 rounded-full border-2 border-orange-200 overflow-hidden shrink-0 shadow-sm">
-            <img src={pandit.image || pandit.img} alt={pandit.name} className="w-full h-full object-cover" />
+      <div className="px-5 py-6 bg-gradient-to-br from-orange-50 to-white border-b border-orange-100 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100 rounded-full blur-3xl opacity-50 -mr-10 -mt-10"></div>
+        <p className="text-orange-500 font-bold text-[12px] uppercase tracking-widest mb-1.5">{pooja}</p>
+        <div className="flex items-center gap-4 mt-3 relative z-10">
+          <div className="w-16 h-16 rounded-full border-[3px] border-white shadow-md overflow-hidden shrink-0 bg-orange-100">
+            <img src={pandit.avatar || pandit.image || pandit.img} alt={pandit.name} className="w-full h-full object-cover" />
           </div>
           <div>
-            <h2 className="text-[16px] font-bold text-gray-900 leading-tight">{pandit.name}</h2>
-            <p className="text-[13px] text-gray-600 font-medium">Price: ₹{pandit.price}</p>
+            <h2 className="text-[18px] font-bold text-gray-900 leading-tight mb-1">{pandit.name}</h2>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[13px] text-gray-500 font-medium">Price:</span>
+              <span className="text-[15px] font-bold text-orange-600">₹{location.state?.price || 500}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -80,109 +93,143 @@ const PoojaBookingForm = () => {
       <div className="flex-1 px-5 pt-6">
         <h3 className="text-[18px] font-bold text-gray-800 mb-5 leading-snug">When & Where should the Pooja happen?</h3>
         
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmitClick} className="space-y-5">
           
-          {/* Mode Selection */}
-          <div>
-            <label className="block text-gray-700 text-[13px] font-bold mb-2">Pooja Mode</label>
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, mode: 'offline' })}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
-                  formData.mode === 'offline' 
-                    ? 'border-orange-500 bg-orange-50 text-orange-600' 
-                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                <FiMapPin /> In-Person
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, mode: 'online' })}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 font-bold transition-all ${
-                  formData.mode === 'online' 
-                    ? 'border-orange-500 bg-orange-50 text-orange-600' 
-                    : 'border-gray-200 text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                <FiVideo /> Live Stream
-              </button>
-            </div>
-          </div>
-          
+
           {/* Date Picker */}
           <div>
             <label className="block text-gray-700 text-[13px] font-bold mb-2">Select Date</label>
-            <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400">
-                <FiCalendar size={18} />
-              </div>
-              <input
-                type="date"
-                required
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              />
-            </div>
+            <input
+              type="date"
+              required
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              onClick={(e) => e.target.showPicker && e.target.showPicker()}
+            />
           </div>
 
           {/* Time Picker */}
           <div>
             <label className="block text-gray-700 text-[13px] font-bold mb-2">Select Time</label>
+            <input
+              type="time"
+              required
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              value={formData.time}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              onClick={(e) => e.target.showPicker && e.target.showPicker()}
+            />
+          </div>
+
+
+          {/* Additional Notes */}
+          <div>
+            <label className="block text-gray-700 text-[13px] font-bold mb-2">Additional Notes (Optional)</label>
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-400">
-                <FiClock size={18} />
-              </div>
-              <input
-                type="time"
-                required
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              <textarea
+                rows="2"
+                placeholder="Any special requests or details..."
+                className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white resize-none"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
           </div>
-
-          {/* Address */}
-          {formData.mode === 'offline' && (
-            <div>
-              <label className="block text-gray-700 text-[13px] font-bold mb-2">Full Address</label>
-              <div className="relative">
-                <div className="absolute left-4 top-4 text-orange-400">
-                  <FiMapPin size={18} />
-                </div>
-                <textarea
-                  required
-                  rows="3"
-                  placeholder="Enter complete address for the pooja..."
-                  className="w-full border-2 border-gray-200 rounded-xl py-3.5 pl-11 pr-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white resize-none"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
 
         </form>
       </div>
 
       {/* Footer Action */}
-      <div className="px-5 mt-auto pt-6">
+      <div className="px-5 pb-6 pt-4 bg-white border-t border-gray-50 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
         <button
-          onClick={handleSubmit}
+          onClick={handleSubmitClick}
           disabled={!isFormValid || loading}
-          className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm ${
+          className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm flex justify-center items-center gap-2 ${
             isFormValid && !loading
               ? 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >
-          {loading ? 'BOOKING...' : 'CONFIRM POOJA BOOKING'}
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              BOOKING...
+            </span>
+          ) : 'CONFIRM POOJA BOOKING'}
         </button>
         <p className="text-center text-gray-400 text-[12px] font-medium mt-3">You won't be charged yet</p>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden animate-scale-in">
+            <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-bold text-gray-900 text-[16px]">Confirm Booking</h3>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <p className="text-[14px] text-gray-700 font-medium leading-relaxed">
+                The booking amount of <span className="font-bold text-orange-600">₹{location.state?.price || 500}</span> will be reserved from your wallet. 
+                The amount will only be transferred after the Pooja is successfully completed and verified. 
+              </p>
+              <p className="text-[13px] text-gray-500 font-bold">Do you want to continue?</p>
+            </div>
+
+            <div className="p-5 border-t border-gray-100 flex gap-3">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmSubmit}
+                className="flex-1 px-4 py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                Yes, Book Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error / Insufficient Balance Modal */}
+      {errorModalMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden animate-scale-in">
+            <div className="p-5 border-b border-red-100 bg-red-50/50 flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-500 flex items-center justify-center font-bold text-xl">!</div>
+              <h3 className="font-bold text-gray-900 text-[18px]">Booking Failed</h3>
+            </div>
+            
+            <div className="p-6 text-center">
+              <p className="text-[14px] text-gray-700 font-medium leading-relaxed">
+                {errorModalMessage}
+              </p>
+            </div>
+
+            <div className="p-5 border-t border-gray-100 flex gap-3">
+              <button 
+                onClick={() => setErrorModalMessage('')}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Close
+              </button>
+              {errorModalMessage.toLowerCase().includes('wallet') && (
+                <button 
+                  onClick={() => navigate('/user/wallet')}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm"
+                >
+                  Recharge Now
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

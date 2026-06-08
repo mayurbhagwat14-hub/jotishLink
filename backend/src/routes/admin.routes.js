@@ -41,6 +41,7 @@ import {
   getAdminCalls,
   getAdminCallAnalytics,
   deleteAdminSession,
+  bulkDeleteAdminSessions,
   deleteAdminCall,
   getAstrologerPayouts,
   processAstrologerPayout,
@@ -135,6 +136,7 @@ router.delete('/admin/audit-logs/:id', deleteAdminAuditLog);
 
 // Sessions, Poojas, Reports, Calls
 router.get('/admin/sessions', getAdminSessions);
+router.post('/admin/sessions/bulk-delete', bulkDeleteAdminSessions);
 router.delete('/admin/sessions/:id', deleteAdminSession);
 router.get('/admin/poojas', getAdminPoojas);
 router.get('/admin/reports', getAdminReports);

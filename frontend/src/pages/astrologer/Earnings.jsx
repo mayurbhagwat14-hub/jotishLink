@@ -4,11 +4,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { fetchAstrologerEarningsThunk, fetchAstrologerProfileThunk, requestWithdrawalThunk } from '../../store/slices/astrologerSlice';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import getSocket from '../../socket/socketManager';
 
 const Earnings = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { earnings: { earnings = [], total = 0, thisMonth = 0, percentageChange = 0 }, profile, loading } = useSelector((state) => state.astrologer);
+  const { earnings: { earnings = [], total = 0, thisMonth = 0, percentageChange = 0, pendingWithdrawalAmount = 0, completedWithdrawalAmount = 0 }, profile, loading } = useSelector((state) => state.astrologer);
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -16,6 +19,20 @@ const Earnings = () => {
   useEffect(() => {
     dispatch(fetchAstrologerEarningsThunk());
     dispatch(fetchAstrologerProfileThunk());
+
+    const token = localStorage.getItem('token') || localStorage.getItem('refreshToken');
+    const socket = getSocket(token);
+
+    const onWithdrawalProcessed = () => {
+      toast.success('Your withdrawal has been successfully processed!', { duration: 5000 });
+      dispatch(fetchAstrologerEarningsThunk());
+    };
+
+    socket.on('withdrawal_processed', onWithdrawalProcessed);
+
+    return () => {
+      socket.off('withdrawal_processed', onWithdrawalProcessed);
+    };
   }, [dispatch]);
 
   const handleWithdraw = async () => {
@@ -30,14 +47,74 @@ const Earnings = () => {
 
     setIsWithdrawing(true);
     try {
-      await dispatch(requestWithdrawalThunk(Number(withdrawAmount))).unwrap();
-      toast.success('Withdrawal request submitted successfully');
+      const res = await dispatch(requestWithdrawalThunk(Number(withdrawAmount))).unwrap();
+      toast.success(res?.message || 'Withdrawal request sent. Money will come to your account in 1-2 working days.', { duration: 5000 });
       setWithdrawAmount('');
       dispatch(fetchAstrologerEarningsThunk());
     } catch (err) {
       toast.error(err.message || 'Failed to submit withdrawal request');
     } finally {
       setIsWithdrawing(false);
+    }
+  };
+
+  const handleDownloadStatement = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(249, 115, 22); // Orange
+      doc.text('JyotishLink Earnings Statement', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Astrologer: ${profile?.astrologer?.name || 'N/A'}`, 14, 35);
+      doc.text(`Date Generated: ${new Date().toLocaleDateString()}`, 14, 42);
+      
+      // Summary Box
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(14, 50, pageWidth - 28, 30, 3, 3, 'FD');
+      
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`Available Balance: Rs. ${total.toLocaleString()}`, 20, 60);
+      doc.text(`Earnings This Month: Rs. ${thisMonth.toLocaleString()}`, 20, 70);
+      
+      // Table Data
+      const tableColumn = ["Date", "Type", "Session ID", "Duration", "Net Earnings (Rs)"];
+      const tableRows = [];
+      
+      if (earnings && earnings.length > 0) {
+        earnings.forEach(earn => {
+          const date = new Date(earn.date).toLocaleDateString();
+          const type = earn.type === 'audio_call' ? 'Audio Call' : earn.type === 'video_call' ? 'Video Call' : earn.type || 'Session';
+          const sessionId = String(earn.sessionId || '').slice(-8);
+          const duration = earn.type === 'pooja' ? 'N/A' : `${Math.floor((earn.durationSeconds || 0) / 60)}m ${(earn.durationSeconds || 0) % 60}s`;
+          const amount = earn.amount;
+          
+          tableRows.push([date, type, sessionId, duration, amount]);
+        });
+      } else {
+        tableRows.push(["-", "No recent earnings", "-", "-", "-"]);
+      }
+      
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 90,
+        theme: 'grid',
+        headStyles: { fillColor: [249, 115, 22] },
+        styles: { fontSize: 10 }
+      });
+      
+      doc.save(`JyotishLink_Statement_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Statement downloaded successfully');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate statement');
     }
   };
 
@@ -48,7 +125,10 @@ const Earnings = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-1">Earnings & Wallet</h1>
           <p className="text-gray-500 font-medium">Manage your revenue and payouts</p>
         </div>
-        <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 shadow-sm transition-all">
+        <button 
+          onClick={handleDownloadStatement}
+          className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 shadow-sm transition-all"
+        >
           <FiDownload /> Download Statement
         </button>
       </div>
@@ -79,6 +159,17 @@ const Earnings = () => {
             >
               {isWithdrawing ? 'Processing...' : 'Withdraw'}
             </button>
+          </div>
+          
+          <div className="flex items-center gap-4 text-sm mt-5 pt-4 border-t border-orange-400/50 relative z-10">
+             <div className="flex-1">
+               <p className="text-orange-200 text-xs font-medium uppercase tracking-wider mb-1">Pending Request</p>
+               <p className="font-bold text-lg">₹{pendingWithdrawalAmount.toLocaleString()}</p>
+             </div>
+             <div className="flex-1 border-l border-orange-400/50 pl-4">
+               <p className="text-orange-200 text-xs font-medium uppercase tracking-wider mb-1">Total Withdrawn</p>
+               <p className="font-bold text-lg">₹{completedWithdrawalAmount.toLocaleString()}</p>
+             </div>
           </div>
         </div>
 

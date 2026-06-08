@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { FiArrowUpRight, FiArrowDownLeft, FiRefreshCcw, FiSearch, FiChevronDown, FiCalendar, FiDownload, FiDollarSign } from 'react-icons/fi';
-import { getAdminTransactions, getAstrologerPayouts, processAstrologerPayout } from '../../api/adminApis';
+import { FiArrowUpRight, FiArrowDownLeft, FiRefreshCcw, FiSearch, FiChevronDown, FiCalendar, FiDownload, FiX } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
+import { getAdminTransactions, getAstrologerPayouts, processAstrologerPayout, getAdminAstrologerById } from '../../api/adminApis';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { getSocket } from '../../socket/socketManager';
 
 const AdminFinance = () => {
   const [typeFilter, setTypeFilter] = useState('All');
@@ -17,9 +21,33 @@ const AdminFinance = () => {
   const [payoutAmount, setPayoutAmount] = useState('');
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
+  // Astrologer Details Modal
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailedAstrologer, setDetailedAstrologer] = useState(null);
+
+  // Export Report Modal State
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportFilter, setExportFilter] = useState('all'); // 'all', 'thisMonth', 'custom'
+  const [exportMonth, setExportMonth] = useState(''); // 'YYYY-MM'
+
   useEffect(() => {
     fetchTransactions();
     fetchPayouts();
+
+    const token = localStorage.getItem('token') || localStorage.getItem('refreshToken');
+    const socket = getSocket(token);
+
+    const onUpdate = () => {
+      fetchTransactions();
+      fetchPayouts();
+    };
+
+    socket.on('dashboard_updated', onUpdate);
+
+    return () => {
+      socket.off('dashboard_updated', onUpdate);
+    };
   }, []);
 
   const fetchTransactions = async () => {
@@ -35,6 +63,7 @@ const AdminFinance = () => {
           amount: t.amount,
           status: 'Success',
           date: new Date(t.createdAt).toLocaleString(),
+          rawDate: t.createdAt,
           isCredit: t.type === 'recharge',
           rawType: t.type
         };
@@ -67,6 +96,19 @@ const AdminFinance = () => {
     setIsPayoutModalOpen(true);
   };
 
+  const handleViewDetails = async (id) => {
+    try {
+      setIsDetailsModalOpen(true);
+      setLoadingDetails(true);
+      const res = await getAdminAstrologerById(id);
+      setDetailedAstrologer(res.data?.data?.astrologer || res.data?.astrologer);
+    } catch (err) {
+      toast.error('Failed to fetch details');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   const handleProcessPayout = async () => {
     if (!payoutAmount || isNaN(payoutAmount) || Number(payoutAmount) <= 0) {
       toast.error('Please enter a valid amount');
@@ -94,6 +136,117 @@ const AdminFinance = () => {
     }
   };
 
+  const handleExportReport = () => {
+    let filteredTransactions = [...transactions];
+    
+    if (exportFilter === 'thisMonth') {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      filteredTransactions = transactions.filter(t => {
+        const d = new Date(t.rawDate);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+      });
+    } else if (exportFilter === 'custom' && exportMonth) {
+      const [year, month] = exportMonth.split('-');
+      
+      filteredTransactions = transactions.filter(t => {
+        const d = new Date(t.rawDate);
+        return d.getMonth() === parseInt(month) - 1 && d.getFullYear() === parseInt(year);
+      });
+    }
+
+    if (filteredTransactions.length === 0) {
+      toast.error('No transactions found for the selected period');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.width;
+      
+      // Header
+      doc.setFontSize(22);
+      doc.setTextColor(17, 24, 39); // Gray 900
+      doc.text('JyotishLink Finance Ledger', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+      
+      let periodText = 'All Time';
+      if (exportFilter === 'thisMonth') periodText = 'This Month';
+      if (exportFilter === 'custom') periodText = `Month: ${exportMonth}`;
+      doc.text(`Period: ${periodText}`, 14, 37);
+
+      // Calculate Totals
+      let totalInflow = 0;
+      let totalOutflow = 0;
+
+      filteredTransactions.forEach(t => {
+        if (t.isCredit) {
+          totalInflow += t.amount;
+        } else {
+          totalOutflow += Math.abs(t.amount);
+        }
+      });
+
+      // Summary Box
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(14, 45, pageWidth - 28, 30, 3, 3, 'FD');
+      
+      doc.setFontSize(12);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`Total Inflow (Recharges): Rs. ${totalInflow.toLocaleString()}`, 20, 55);
+      doc.text(`Total Outflow (Payouts/Deductions): Rs. ${totalOutflow.toLocaleString()}`, 20, 65);
+      
+      const net = totalInflow - totalOutflow;
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      if (net >= 0) {
+        doc.setTextColor(34, 197, 94); // Green 500
+      } else {
+        doc.setTextColor(239, 68, 68); // Red 500
+      }
+      doc.text(`Net Amount: ${net >= 0 ? '+' : ''}Rs. ${net.toLocaleString()}`, pageWidth - 20, 60, { align: 'right' });
+
+      // Table Data
+      const tableColumn = ["TXN ID", "User/Entity", "Type", "Amount (Rs)", "Status", "Date"];
+      const tableRows = [];
+
+      filteredTransactions.forEach(t => {
+        const amountStr = t.isCredit ? `+${t.amount}` : `-${Math.abs(t.amount)}`;
+        tableRows.push([
+          t.id, 
+          t.user, 
+          t.type, 
+          amountStr, 
+          t.status, 
+          t.date
+        ]);
+      });
+      
+      doc.setFont("helvetica", "normal");
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 85,
+        theme: 'grid',
+        headStyles: { fillColor: [17, 24, 39] },
+        styles: { fontSize: 9 }
+      });
+      
+      doc.save(`JyotishLink_Ledger_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Report downloaded successfully');
+      setIsExportModalOpen(false);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate report');
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
 
@@ -103,7 +256,10 @@ const AdminFinance = () => {
           <h1 className="text-2xl font-bold text-gray-900">Finance Ledger</h1>
           <p className="text-sm text-gray-400 font-medium mt-1">Track wallet recharges, session billing, astrologer payouts, and refunds</p>
         </div>
-        <button className="px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm">
+        <button 
+          onClick={() => setIsExportModalOpen(true)}
+          className="px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all shadow-sm"
+        >
           <FiDownload size={14} /> Export Report
         </button>
       </div>
@@ -247,10 +403,14 @@ const AdminFinance = () => {
                     </td>
                     <td className="py-3.5 px-6">
                       {astro.bankDetails ? (
-                        <div>
-                          <p className="text-xs font-bold text-gray-700">{astro.bankDetails.bankName || 'N/A'}</p>
-                          <p className="text-[10px] font-mono text-gray-500">A/C: {astro.bankDetails.accountNumber || 'N/A'}</p>
-                          <p className="text-[10px] font-mono text-gray-500">IFSC: {astro.bankDetails.ifscCode || 'N/A'}</p>
+                        <div 
+                          onClick={() => handleViewDetails(astro.astrologerId)} 
+                          className="cursor-pointer p-2 -ml-2 rounded-lg hover:bg-gray-100 transition-colors group"
+                          title="Click to view full astrologer details"
+                        >
+                          <p className="text-xs font-bold text-gray-700 group-hover:text-orange-600 transition-colors">{astro.bankDetails.bankName || 'N/A'}</p>
+                          <p className="text-[10px] font-mono text-gray-500 group-hover:text-orange-500">A/C: {astro.bankDetails.accountNumber || 'N/A'}</p>
+                          <p className="text-[10px] font-mono text-gray-500 group-hover:text-orange-500">IFSC: {astro.bankDetails.ifscCode || 'N/A'}</p>
                         </div>
                       ) : (
                         <p className="text-xs text-red-500 font-bold">No Bank Added</p>
@@ -271,7 +431,7 @@ const AdminFinance = () => {
                         disabled={!astro.wallet || astro.wallet <= 0 || astro.status === 'completed' || !astro.bankDetails}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${astro.wallet > 0 && astro.status !== 'completed' && astro.bankDetails ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                       >
-                        <FiDollarSign size={12} /> {astro.status === 'completed' ? 'Paid' : 'Process'}
+                        <FaRupeeSign size={12} /> {astro.status === 'completed' ? 'Paid' : 'Process'}
                       </button>
                     </td>
                   </tr>
@@ -349,6 +509,156 @@ const AdminFinance = () => {
                     Processing...
                   </>
                 ) : 'Confirm Payout'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Astrologer Details Modal */}
+      {isDetailsModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full mx-4 shadow-2xl relative max-h-[90vh] overflow-y-auto animate-slide-up">
+            <button 
+              onClick={() => setIsDetailsModalOpen(false)}
+              className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <FiX size={20} />
+            </button>
+            <h3 className="text-xl font-black text-gray-900 mb-6">Astrologer Details</h3>
+            
+            {loadingDetails ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+              </div>
+            ) : detailedAstrologer ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center text-orange-500 text-2xl font-bold overflow-hidden">
+                    {detailedAstrologer.avatar ? (
+                      <img src={detailedAstrologer.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      detailedAstrologer.name?.[0]?.toUpperCase()
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg text-gray-900">{detailedAstrologer.name}</h4>
+                    <p className="text-sm text-gray-500">{detailedAstrologer.phone}</p>
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] rounded uppercase font-bold mt-1 inline-block">
+                      {detailedAstrologer.approvalStatus}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 font-bold mb-1">Bank Name</p>
+                    <p className="text-sm font-mono text-gray-900">{detailedAstrologer.bankDetails?.bankName || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 font-bold mb-1">Account Number</p>
+                    <p className="text-sm font-mono text-gray-900">{detailedAstrologer.bankDetails?.accountNumber || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 font-bold mb-1">IFSC Code</p>
+                    <p className="text-sm font-mono text-gray-900">{detailedAstrologer.bankDetails?.ifscCode || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 font-bold mb-1">UPI ID</p>
+                    <p className="text-sm font-mono text-gray-900">{detailedAstrologer.bankDetails?.upiId || 'N/A'}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 font-bold mb-1">Wallet Balance</p>
+                    <p className="text-sm font-black text-green-600">₹{detailedAstrologer.wallet?.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-500 font-bold mb-1">Total Earnings</p>
+                    <p className="text-sm font-black text-gray-900">₹{detailedAstrologer.earnings?.total?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-10">Details not found.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Export Report Modal */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-xl overflow-hidden animate-scale-in">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <h3 className="font-bold text-gray-900">Export Report</h3>
+              <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Select Period</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="radio" 
+                      name="exportFilter" 
+                      value="all" 
+                      checked={exportFilter === 'all'} 
+                      onChange={() => setExportFilter('all')} 
+                      className="text-gray-900 focus:ring-gray-900 w-4 h-4"
+                    />
+                    <span className="font-bold text-sm text-gray-700">All Time</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="radio" 
+                      name="exportFilter" 
+                      value="thisMonth" 
+                      checked={exportFilter === 'thisMonth'} 
+                      onChange={() => setExportFilter('thisMonth')} 
+                      className="text-gray-900 focus:ring-gray-900 w-4 h-4"
+                    />
+                    <span className="font-bold text-sm text-gray-700">This Month</span>
+                  </label>
+                  <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input 
+                      type="radio" 
+                      name="exportFilter" 
+                      value="custom" 
+                      checked={exportFilter === 'custom'} 
+                      onChange={() => setExportFilter('custom')} 
+                      className="text-gray-900 focus:ring-gray-900 w-4 h-4"
+                    />
+                    <span className="font-bold text-sm text-gray-700">Specific Month</span>
+                  </label>
+                </div>
+              </div>
+
+              {exportFilter === 'custom' && (
+                <div className="animate-fade-in mt-4">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Choose Month</label>
+                  <input 
+                    type="month" 
+                    value={exportMonth}
+                    onChange={(e) => setExportMonth(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-900 focus:ring-1 focus:ring-gray-900 font-bold"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 border-t border-gray-100 flex gap-3">
+              <button 
+                onClick={() => setIsExportModalOpen(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleExportReport}
+                disabled={exportFilter === 'custom' && !exportMonth}
+                className="flex-1 px-4 py-3 rounded-xl font-bold bg-gray-900 text-white hover:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                Download PDF
               </button>
             </div>
           </div>

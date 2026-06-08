@@ -12,10 +12,12 @@ import {
   getAstrologerEarnings,
   getAstrologerPoojaRequests,
   updatePoojaStatus,
+  uploadPoojaProof,
   getAstrologerChats,
   getAstrologerCalls,
   updateOnlineStatus,
   getAstrologerHistory,
+  deleteAstrologerHistoryBulk,
   getAstrologerAnalytics,
   requestWithdrawal,
 } from '../controllers/astrologer.controller.js';
@@ -51,9 +53,11 @@ router.get('/astrologer/earnings', astroAuth, getAstrologerEarnings);
 router.post('/astrologer/withdraw', astroAuth, requestWithdrawal);
 router.get('/astrologer/pooja-requests', astroAuth, getAstrologerPoojaRequests);
 router.put('/astrologer/poojas/:id/status', astroAuth, updatePoojaStatus);
+router.post('/astrologer/poojas/:id/proof', astroAuth, uploadFields, uploadPoojaProof);
 router.get('/astrologer/chats', astroAuth, getAstrologerChats);
 router.get('/astrologer/calls', astroAuth, getAstrologerCalls);
 router.get('/astrologer/history', astroAuth, getAstrologerHistory);
+router.post('/astrologer/history/delete', astroAuth, deleteAstrologerHistoryBulk);
 router.get('/astrologer/analytics', astroAuth, getAstrologerAnalytics);
 router.put('/astrologer/status', astroAuth, updateOnlineStatus);
 

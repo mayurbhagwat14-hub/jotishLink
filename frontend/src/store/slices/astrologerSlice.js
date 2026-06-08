@@ -97,6 +97,18 @@ export const fetchAstrologerHistoryThunk = createAsyncThunk(
   }
 );
 
+export const deleteAstrologerHistoryBulkThunk = createAsyncThunk(
+  'astrologer/deleteHistoryBulk',
+  async (ids, { rejectWithValue }) => {
+    try {
+      await astrologerApis.deleteAstrologerHistoryBulk(ids);
+      return ids;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const initialState = {
   profile: null,
   earnings: { earnings: [], total: 0 },
@@ -200,6 +212,9 @@ const astrologerSlice = createSlice({
       .addCase(fetchAstrologerHistoryThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(deleteAstrologerHistoryBulkThunk.fulfilled, (state, action) => {
+        state.history = state.history.filter(item => !action.payload.includes(item._id));
       });
   }
 });

@@ -236,6 +236,12 @@ const AstrologerLogin = () => {
               Apply Here
             </Link>
           </p>
+          <p className="text-[13px] font-medium text-gray-500">
+            Are you a user?{' '}
+            <Link to="/user/login" className="text-orange-500 font-bold hover:underline transition-colors">
+              Login Here
+            </Link>
+          </p>
         </div>
 
       </div>

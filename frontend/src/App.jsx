@@ -36,6 +36,7 @@ import Checkout from './pages/user/Checkout';
 import OrderSuccess from './pages/user/OrderSuccess';
 import OrderHistory from './pages/user/OrderHistory';
 import OrderDetails from './pages/user/OrderDetails';
+import PoojaDetails from './pages/user/PoojaDetails';
 import Profile from './pages/user/Profile';
 import UserChatRoom from './pages/user/UserChatRoom';
 import ComingSoon from './pages/user/ComingSoon';
@@ -43,6 +44,7 @@ import FreeChatOffer from './pages/user/FreeChatOffer';
 import PoojaBookingForm from './pages/user/PoojaBookingForm';
 import GlobalSearch from './pages/user/GlobalSearch';
 import WaitingScreen from './pages/user/WaitingScreen';
+import Notifications from './pages/user/Notifications';
 
 // Admin Pages
 import AdminLogin from './pages/admin/Login';
@@ -79,11 +81,15 @@ import BankDetails from './pages/astrologer/BankDetails';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from './store/slices/authSlice';
 import { useEffect } from 'react';
+import { useGlobalSocket } from './hooks/useGlobalSocket';
 
 const AppContent = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user, token } = useSelector((state) => state.auth);
   const userRole = user?.role || 'user';
+
+  // Initialize Global Sockets
+  useGlobalSocket();
 
   // Clear legacy mock guest state from local storage/Redux
   useEffect(() => {
@@ -142,6 +148,7 @@ const AppContent = () => {
           <Route path="cart" element={<Cart />} />
           <Route path="history" element={<OrderHistory />} />
           <Route path="order/:id" element={<OrderDetails />} />
+          <Route path="pooja/:id" element={<PoojaDetails />} />
           <Route path="checkout" element={<Checkout />} />
           <Route path="order-success/:orderId" element={<OrderSuccess />} />
           <Route path="coming-soon" element={<ComingSoon />} />
@@ -157,6 +164,7 @@ const AppContent = () => {
           <Route path="history" element={<OrderHistory />} />
           <Route path="pooja-booking/:panditId" element={<PoojaBookingForm />} />
           <Route path="search" element={<GlobalSearch />} />
+          <Route path="notifications" element={<Notifications />} />
           
           {/* Coming Soon Links */}
           <Route path="live" element={<ComingSoon />} />

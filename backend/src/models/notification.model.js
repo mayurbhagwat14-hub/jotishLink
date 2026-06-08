@@ -35,5 +35,19 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
+notificationSchema.post('save', async function (doc, next) {
+  try {
+    const { io } = await import('../server.js');
+    if (io && doc.userId) {
+      // Broadcast to both user and astrologer room to cover all bases
+      io.to(`room_user_${doc.userId}`).emit('new_notification', doc);
+      io.to(`room_astro_${doc.userId}`).emit('new_notification', doc);
+    }
+  } catch (error) {
+    console.error('Socket notification emit failed:', error);
+  }
+  next();
+});
+
 const Notification = mongoose.model('Notification', notificationSchema);
 export default Notification;

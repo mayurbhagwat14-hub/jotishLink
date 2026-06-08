@@ -5,6 +5,9 @@ import { FiArrowLeft, FiVideo, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCre
 import { GiFlowerPot } from 'react-icons/gi';
 import { getUserSessions, getUserPoojas, getUserCalls, deleteUserHistory } from '../../api/userApis';
 import { getUserOrders } from '../../api/storeApis';
+import { getSocket } from '../../socket/socketManager';
+import { useGlobalSocket } from '../../hooks/useGlobalSocket';
+import { formatTime12Hour } from '../../utils/formatTime';
 
 const historyTabs = ['Chat', 'Calls', 'Wallet', 'Orders', 'Poojas'];
 
@@ -27,9 +30,18 @@ const formatTxnDate = (isoString) => {
 
 const OrderHistory = () => {
   const { user } = useSelector((state) => state.auth);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'wallet' ? 'Wallet' : (searchParams.get('tab') || 'Chat');
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && historyTabs.includes(tab)) {
+      setActiveTab(tab);
+    } else if (tab === 'wallet') {
+      setActiveTab('Wallet');
+    }
+  }, [searchParams]);
   const navigate = useNavigate();
   const { openSidebar } = useOutletContext();
   
@@ -45,10 +57,25 @@ const OrderHistory = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
 
+  const socket = useGlobalSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleStatusUpdate = (data) => {
+      setPoojas(prev => prev.map(p => p._id === data.poojaId ? data.pooja : p));
+    };
+    socket.on('pooja_status_updated', handleStatusUpdate);
+    return () => socket.off('pooja_status_updated', handleStatusUpdate);
+  }, [socket]);
+
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+
   // Reset selection when tab changes
   useEffect(() => {
     setIsSelectionMode(false);
     setSelectedIds([]);
+    setIsConfirmModalOpen(false);
   }, [activeTab]);
 
   useEffect(() => {
@@ -110,14 +137,37 @@ const OrderHistory = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const updateLocalPooja = (data) => {
+      if (data && data.booking) {
+        setPoojas(prev => prev.map(p => p._id === data.booking._id ? data.booking : p));
+      }
+    };
+
+    socket.on('pooja_booking_accepted', updateLocalPooja);
+    socket.on('pooja_booking_rejected', updateLocalPooja);
+    socket.on('pooja_booking_completed', updateLocalPooja);
+
+    return () => {
+      socket.off('pooja_booking_accepted', updateLocalPooja);
+      socket.off('pooja_booking_rejected', updateLocalPooja);
+      socket.off('pooja_booking_completed', updateLocalPooja);
+    };
+  }, []);
+
   const handleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedIds.length === 0) return;
-    const confirmDelete = window.confirm(`Delete ${selectedIds.length} items from history?`);
-    if (!confirmDelete) return;
+    setIsConfirmModalOpen(true);
+  };
+
+  const executeDelete = async () => {
 
     let type;
     if (activeTab === 'Chat') type = 'chat';
@@ -139,6 +189,7 @@ const OrderHistory = () => {
       
       setIsSelectionMode(false);
       setSelectedIds([]);
+      setIsConfirmModalOpen(false);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete history');
     } finally {
@@ -189,7 +240,7 @@ const OrderHistory = () => {
             key={tab}
             onClick={() => {
               setActiveTab(tab);
-              navigate(`/user/history?tab=${tab}`, { replace: true });
+              setSearchParams({ tab });
             }}
             className={`flex-1 min-w-[70px] py-3 text-[12px] font-bold transition-all relative whitespace-nowrap px-2 ${
               activeTab === tab ? 'text-orange-500' : 'text-gray-400'
@@ -238,7 +289,15 @@ const OrderHistory = () => {
                     </div>
                   )}
                   <div className="flex-1 min-w-0" onClick={() => isSelectionMode && handleSelect(item._id)}>
-                    <div className="flex items-center gap-3 mb-3">
+                    <div 
+                      className="flex items-center gap-3 mb-3 cursor-pointer hover:bg-white rounded-lg transition-colors p-1 -m-1"
+                      onClick={(e) => {
+                        if (!isSelectionMode && item.astrologerId?._id) {
+                          e.stopPropagation();
+                          navigate(`/user/astrologer/${item.astrologerId._id}`);
+                        }
+                      }}
+                    >
                       <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
                         <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
                       </div>
@@ -306,7 +365,15 @@ const OrderHistory = () => {
                     </div>
                   )}
                   <div className="flex-1 min-w-0" onClick={() => isSelectionMode && handleSelect(item._id)}>
-                    <div className="flex items-center gap-3 mb-3">
+                    <div 
+                      className="flex items-center gap-3 mb-3 cursor-pointer hover:bg-white rounded-lg transition-colors p-1 -m-1"
+                      onClick={(e) => {
+                        if (!isSelectionMode && item.astrologerId?._id) {
+                          e.stopPropagation();
+                          navigate(`/user/astrologer/${item.astrologerId._id}`);
+                        }
+                      }}
+                    >
                       <div className="w-[48px] h-[48px] rounded-full overflow-hidden border-2 border-orange-100 shrink-0">
                         <img src={astroAvatar} alt={astroName} className="w-full h-full object-cover" />
                       </div>
@@ -343,14 +410,40 @@ const OrderHistory = () => {
       {/* ═══ WALLET TAB ═══ */}
       {activeTab === 'Wallet' && (
         <div>
-          {/* Balance Card */}
+          {/* Premium Balance Card */}
           <div className="px-4 pt-4 pb-2">
-            <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-2xl p-5 text-white shadow-lg">
-              <p className="text-orange-100 text-[12px] font-medium mb-1">Available Balance</p>
-              <h2 className="text-[32px] font-black mb-3">₹{user?.wallet || 0}</h2>
-              <button onClick={() => navigate('/user/wallet')} className="bg-white text-orange-600 text-[12px] font-bold px-5 py-2 rounded-full shadow-sm hover:shadow-md transition-shadow">
-                Recharge
-              </button>
+            <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-6 text-white shadow-xl overflow-hidden border border-gray-700">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-orange-500/20 blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-blue-500/20 blur-xl"></div>
+              
+              <div className="relative z-10 flex justify-between items-start">
+                <div>
+                  <p className="text-gray-400 text-[11px] font-bold tracking-wider uppercase mb-1">Available Balance</p>
+                  <div className="flex items-end gap-1">
+                    <span className="text-xl font-medium text-gray-300 pb-1">₹</span>
+                    <h2 className="text-[36px] font-black leading-none tracking-tight">
+                      {Number(user?.wallet || 0).toFixed(2)}
+                    </h2>
+                  </div>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-inner">
+                  <FiCreditCard size={20} className="text-orange-400" />
+                </div>
+              </div>
+              
+              <div className="relative z-10 mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                  <span className="text-[11px] text-gray-300 font-medium">Wallet Active</span>
+                </div>
+                <button 
+                  onClick={() => navigate('/user/wallet')} 
+                  className="bg-orange-500 hover:bg-orange-400 text-white text-[12px] font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95"
+                >
+                  Recharge
+                </button>
+              </div>
             </div>
           </div>
 
@@ -358,34 +451,43 @@ const OrderHistory = () => {
           <div className="px-4 pt-3">
             <h3 className="text-[14px] font-bold text-gray-800 mb-2">Wallet Transactions</h3>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50/50 space-y-2 px-4 pb-4">
             {isLoading ? (
                <div className="p-8 text-center text-gray-400">Loading...</div>
             ) : transactions.length === 0 ? (
                <div className="p-8 text-center text-gray-400">No transactions found.</div>
             ) : (
               transactions.map((txn, i) => (
-                <div key={i} className="flex items-center justify-between px-4 py-3.5 hover:bg-orange-50/30 transition-colors">
+                <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.1)] transition-all">
                   <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      txn.type === 'deduction' ? 'bg-red-50 text-red-500' :
-                      txn.type === 'refund' ? 'bg-blue-50 text-blue-500' :
-                      'bg-green-50 text-green-500'
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                      txn.type === 'deduction' ? 'bg-gradient-to-br from-red-50 to-red-100/50 text-red-500 border border-red-100' :
+                      txn.type === 'refund' ? 'bg-gradient-to-br from-blue-50 to-blue-100/50 text-blue-500 border border-blue-100' :
+                      'bg-gradient-to-br from-green-50 to-green-100/50 text-green-500 border border-green-100'
                     }`}>
-                      {txn.type === 'deduction' ? '↓' : txn.type === 'refund' ? '↩' : '↑'}
+                      {txn.type === 'deduction' ? <span className="font-bold text-lg">↓</span> : 
+                       txn.type === 'refund' ? <span className="font-bold text-lg">↩</span> : 
+                       <span className="font-bold text-lg">↑</span>}
                     </div>
                     <div>
-                      <h4 className="font-medium text-gray-800 text-[13px] line-clamp-1">{txn.desc}</h4>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <h4 className="font-bold text-gray-800 text-[14px] line-clamp-1">{txn.desc}</h4>
+                      <p className="text-[11px] text-gray-400 font-medium mt-0.5">
                         {txn.type.charAt(0).toUpperCase() + txn.type.slice(1)} • {formatTxnDate(txn.createdAt)}
                       </p>
                     </div>
                   </div>
-                  <span className={`text-[14px] font-bold shrink-0 ${
-                    txn.type === 'deduction' ? 'text-red-500' : 'text-green-500'
-                  }`}>
-                    {txn.type === 'deduction' ? '-' : '+'}₹{txn.amount}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[15px] font-black shrink-0 tracking-tight ${
+                      txn.type === 'deduction' ? 'text-gray-800' : 'text-green-500'
+                    }`}>
+                      {txn.type === 'deduction' ? '-' : '+'}₹{Number(Math.abs(txn.amount)).toFixed(2)}
+                    </span>
+                    {txn.type === 'deduction' && (
+                      <span className="text-[10px] text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded-md mt-1">
+                        Deducted
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))
             )}
@@ -504,9 +606,17 @@ const OrderHistory = () => {
                     {selectedIds.includes(pooja._id) && <FiCheckSquare size={14} />}
                   </div>
                 )}
-                <div className="flex-1 min-w-0 bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex flex-col gap-3" onClick={() => isSelectionMode && handleSelect(pooja._id)}>
+                <div className={`flex-1 min-w-0 bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow ${isSelectionMode && selectedIds.includes(pooja._id) ? 'border-orange-500 bg-orange-50/10' : ''}`} onClick={() => isSelectionMode ? handleSelect(pooja._id) : navigate(`/user/pooja/${pooja._id}`)}>
                   <div className="flex justify-between items-start">
-                    <div className="flex gap-3">
+                    <div 
+                      className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={(e) => {
+                        if (!isSelectionMode && pooja.astrologerId?._id) {
+                          e.stopPropagation();
+                          navigate(`/user/astrologer/${pooja.astrologerId._id}`);
+                        }
+                      }}
+                    >
                       <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-200">
                         <img src={pooja.astrologerId?.avatar || 'https://ui-avatars.com/api/?name=Pandit&background=ffedD5&color=f97316'} alt="Pandit" className="w-full h-full object-cover" />
                       </div>
@@ -516,9 +626,10 @@ const OrderHistory = () => {
                       </div>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
-                      pooja.status === 'pending' ? 'bg-orange-50 text-orange-500' :
-                      pooja.status === 'confirmed' ? 'bg-green-50 text-green-600' :
-                      pooja.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
+                      pooja.status === 'Pending' ? 'bg-orange-50 text-orange-500' :
+                      pooja.status === 'Accepted' || pooja.status === 'In Progress' ? 'bg-blue-50 text-blue-600' :
+                      pooja.status === 'Completed' ? 'bg-green-50 text-green-600' :
+                      pooja.status === 'Rejected' || pooja.status === 'Expired' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
                     }`}>
                       {pooja.status}
                     </span>
@@ -527,24 +638,9 @@ const OrderHistory = () => {
                 <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center mt-1 border border-gray-100">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-gray-400 font-bold uppercase">Date & Time</span>
-                    <span className="text-[13px] text-gray-800 font-bold">{pooja.date} at {pooja.time}</span>
-                  </div>
-                  <div className="flex flex-col text-right">
-                    <span className="text-[10px] text-gray-400 font-bold uppercase">Mode</span>
-                    <span className={`text-[13px] font-bold ${pooja.mode === 'online' ? 'text-purple-600' : 'text-orange-600'}`}>
-                      {pooja.mode === 'online' ? 'Live Stream' : 'In-Person'}
-                    </span>
+                    <span className="text-[13px] text-gray-800 font-bold">{pooja.date} at {formatTime12Hour(pooja.time)}</span>
                   </div>
                 </div>
-
-                {pooja.mode === 'online' && pooja.status === 'confirmed' && (
-                  <button 
-                    onClick={() => navigate(`/user/video-room/${pooja._id}`, { state: { astrologerId: pooja.astrologerId?._id } })}
-                    className="mt-2 w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-purple-500/20 transition-all"
-                  >
-                    <FiVideo size={18} /> Join Live Pooja
-                  </button>
-                )}
                 </div>
               </div>
             ))
@@ -564,6 +660,58 @@ const OrderHistory = () => {
           >
             <FiTrash2 size={16} /> Delete Selected
           </button>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scale-up">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <FiAlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">Delete History</h3>
+              <p className="text-gray-500 text-sm">
+                Are you sure you want to delete {selectedIds.length} item{selectedIds.length > 1 ? 's' : ''} from your {activeTab.toLowerCase()} history? This action cannot be undone.
+              </p>
+            </div>
+            <div className="p-4 bg-gray-50 flex gap-3 border-t border-gray-100">
+              <button 
+                onClick={() => setIsConfirmModalOpen(false)}
+                className="flex-1 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDelete}
+                disabled={isLoading}
+                className="flex-1 py-3 bg-red-500 rounded-xl font-bold text-white shadow-md hover:bg-red-600 transition-colors disabled:opacity-70 flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  'Yes, Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {selectedMedia && (
+        <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setSelectedMedia(null)}>
+          <button className="absolute top-6 right-6 text-white hover:text-gray-300 p-2 bg-black/50 rounded-full backdrop-blur-sm transition-colors" onClick={() => setSelectedMedia(null)}>
+            <FiX size={24} />
+          </button>
+          <div className="relative max-w-full max-h-full flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
+            {selectedMedia.type === 'video' ? (
+              <video src={selectedMedia.url} controls autoPlay className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl" />
+            ) : (
+              <img src={selectedMedia.url} alt="Proof Fullscreen" className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl" />
+            )}
+          </div>
         </div>
       )}
 

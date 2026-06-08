@@ -59,23 +59,32 @@ instance.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        console.log('🔄 [Axios] Token expired. Attempting to refresh token...');
+        const refreshTokenStr = localStorage.getItem('refreshToken');
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/refresh`,
-          {},
+          { refreshToken: refreshTokenStr },
           { withCredentials: true }
         );
-        const newAccessToken = res.data.accessToken;
+        const newAccessToken = res.data?.data?.accessToken || res.data?.accessToken;
+        const newRefreshToken = res.data?.data?.refreshToken || res.data?.refreshToken;
+        
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
         
         if (store) {
           store.dispatch({ type: 'auth/login', payload: { user: store.getState().auth.user, token: newAccessToken } });
         }
         
+        console.log('✅ [Axios] Token refreshed successfully! Retrying failed requests.');
         processQueue(null, newAccessToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         isRefreshing = false;
         
         return instance(originalRequest);
       } catch (refreshError) {
+        console.error('❌ [Axios] Token refresh failed:', refreshError.message);
         processQueue(refreshError, null);
         isRefreshing = false;
         

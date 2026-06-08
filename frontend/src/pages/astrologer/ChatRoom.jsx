@@ -9,6 +9,7 @@ const ChatRoom = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: sessionId } = useParams();
+  const isViewOnly = location.state?.viewOnly;
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -29,6 +30,14 @@ const ChatRoom = () => {
       try {
         const socket = getSocket();
         const isMongoId = /^[0-9a-fA-F]{24}$/.test(sessionId);
+
+        if (isViewOnly && isMongoId) {
+          const { data } = await api.get(`/chat/${sessionId}/messages`);
+          setSessionData(data.data.session);
+          setMessages(data.data.session.messages || []);
+          setSessionEnded(true);
+          return;
+        }
 
         if (sessionId === 'new' && !location.state?.roomId) {
           navigate('/astrologer/chats');
@@ -157,10 +166,11 @@ const ChatRoom = () => {
           </div>
           <div>
             <h3 className="font-bold text-gray-800 leading-tight">{userName}</h3>
-            <p className="text-xs text-green-500 font-bold">Session Active • {formatTime(timer)}</p>
+            <p className="text-xs text-orange-500 font-bold">{isViewOnly ? 'View Only' : `Session Active • ${formatTime(timer)}`}</p>
           </div>
         </div>
         
+        {!isViewOnly && (
         <div className="flex gap-2 items-center">
           <button className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition-colors disabled:opacity-50" disabled={sessionEnded}>
              <FiVideo size={18} />
@@ -172,6 +182,7 @@ const ChatRoom = () => {
             End Chat
           </button>
         </div>
+        )}
       </header>
 
       {/* Chat Messages */}
@@ -210,6 +221,7 @@ const ChatRoom = () => {
       </main>
 
       {/* Chat Input */}
+      {!isViewOnly && (
       <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
         <div className="flex items-end gap-2">
           <button className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-orange-500 transition-colors shrink-0 bg-gray-50 rounded-full">
@@ -237,6 +249,7 @@ const ChatRoom = () => {
           </button>
         </div>
       </footer>
+      )}
 
       {/* ═══ END SESSION MODAL ═══ */}
       {endSessionInfo && (

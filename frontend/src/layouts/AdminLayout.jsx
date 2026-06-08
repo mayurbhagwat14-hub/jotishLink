@@ -6,10 +6,13 @@ import {
   FiHome, FiUsers, FiCreditCard, FiLogOut, FiLayout, FiBarChart2,
   FiMenu, FiChevronLeft, FiChevronRight, FiChevronDown, FiMessageSquare,
   FiShield, FiStar, FiBell, FiSearch, FiSettings, FiBox, FiShoppingCart,
-  FiPackage, FiGrid, FiTruck, FiDatabase, FiX, FiDollarSign
+  FiPackage, FiGrid, FiTruck, FiDatabase, FiX
 } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
 import { GiFlowerPot } from 'react-icons/gi';
 import NotificationDropdown from '../components/NotificationDropdown';
+import { getAdminSessions, getAdminCalls } from '../api/adminApis';
+import { getSocket } from '../socket/socketManager';
 
 const AdminLayout = () => {
   const dispatch = useDispatch();
@@ -20,6 +23,7 @@ const AdminLayout = () => {
   const [expandedSections, setExpandedSections] = useState({});
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [liveSessionsCount, setLiveSessionsCount] = useState(0);
   const searchRef = useRef(null);
 
   const handleLogout = () => {
@@ -60,6 +64,41 @@ const AdminLayout = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
+  const fetchLiveCount = async () => {
+    try {
+      const [sessionsRes, callsRes] = await Promise.all([
+        getAdminSessions(),
+        getAdminCalls()
+      ]);
+      const allSessions = sessionsRes.data?.data?.sessions || [];
+      const allCalls = callsRes.data?.data?.calls || [];
+      
+      const liveChats = allSessions.filter(s => s.status === 'ongoing' && s.userId && s.astrologerId).length;
+      const liveCalls = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status) && c.userId && c.astrologerId).length;
+      
+      setLiveSessionsCount(liveChats + liveCalls);
+    } catch (err) {
+      console.error('Failed to fetch live count for sidebar', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveCount();
+    const token = localStorage.getItem('token') || localStorage.getItem('refreshToken');
+    const socket = getSocket(token);
+    
+    if (user && user.role === 'admin') {
+      socket.emit('join_global_room', { userId: user._id, role: user.role });
+    }
+    
+    socket.on('dashboard_updated', fetchLiveCount);
+    
+    return () => {
+      socket.off('dashboard_updated', fetchLiveCount);
+    };
+  }, [user]);
+
+
   const navSections = [
     {
       title: 'Overview',
@@ -78,9 +117,9 @@ const AdminLayout = () => {
       title: 'Operations',
       icon: <FiMessageSquare size={18} />,
       children: [
-        { path: '/admin/sessions', name: 'Live Sessions', icon: <FiMessageSquare size={16} />, badge: '3' },
+        { path: '/admin/sessions', name: 'Live Sessions', icon: <FiMessageSquare size={16} />, badge: liveSessionsCount > 0 ? liveSessionsCount.toString() : null },
         { path: '/admin/finance', name: 'Finance', icon: <FiCreditCard size={16} /> },
-        { path: '/admin/earnings', name: 'Earnings', icon: <FiDollarSign size={16} /> },
+        { path: '/admin/earnings', name: 'Earnings', icon: <FaRupeeSign size={14} /> },
         { path: '/admin/services', name: 'Services', icon: <GiFlowerPot size={16} /> },
       ],
     },

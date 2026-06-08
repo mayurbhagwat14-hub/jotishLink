@@ -287,6 +287,28 @@ export const getAdminAstrologerById = asyncHandler(async (req, res) => {
     .populate('approvedBy', 'name email')
     .lean();
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+
+  // Calculate earnings dynamically
+  const [sessions, poojas] = await Promise.all([
+    ChatSession.find({ astrologerId: astrologer._id, status: 'completed' }).lean(),
+    PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['completed', 'confirmed'] } }).lean()
+  ]);
+
+  const allEarnings = [
+    ...sessions.map((s) => parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2))),
+    ...poojas.map((p) => parseFloat(((p.price || 0) * 0.7).toFixed(2)))
+  ];
+
+  const totalEarnings = allEarnings.reduce((sum, amount) => sum + amount, 0);
+
+  // Calculate Available Balance by deducting pending and completed withdrawals
+  const withdrawals = await WithdrawalRequest.find({ astrologerId: astrologer._id, status: { $in: ['pending', 'completed'] } }).lean();
+  const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
+  const wallet = totalEarnings - totalWithdrawnOrPending;
+
+  astrologer.earnings = { total: parseFloat(totalEarnings.toFixed(2)) };
+  astrologer.wallet = parseFloat(wallet.toFixed(2));
+
   return res.status(200).json(new ApiResponse(200, { astrologer }, 'Astrologer details fetched'));
 });
 
@@ -593,7 +615,7 @@ export const getAdminCelebrities = asyncHandler(async (req, res) => {
 
 // POST /api/admin/celebrities
 export const createAdminCelebrity = asyncHandler(async (req, res) => {
-  const { name, role, img, isActive } = req.body;
+  const { name, role, img, isActive, quote } = req.body;
   if (!name || !role || !img) throw new ApiError(400, 'Name, role, and image are required');
 
   let uploadedImg = img;
@@ -604,15 +626,20 @@ export const createAdminCelebrity = asyncHandler(async (req, res) => {
     pubId = result.publicId;
   }
 
-  const celebrity = await Celebrity.create({ name, role, img: uploadedImg, cloudinaryPublicId: pubId, isActive });
+  const celebrity = await Celebrity.create({ name, role, img: uploadedImg, cloudinaryPublicId: pubId, isActive, quote });
   return res.status(201).json(new ApiResponse(201, { celebrity }, 'Celebrity created'));
 });
 
 // PUT /api/admin/celebrities/:id
 export const updateAdminCelebrity = asyncHandler(async (req, res) => {
-  const { name, role, img, isActive } = req.body;
+  const { name, role, img, isActive, quote } = req.body;
   const celebToUpdate = await Celebrity.findById(req.params.id);
   if (!celebToUpdate) throw new ApiError(404, 'Celebrity not found');
+
+  celebToUpdate.name = name || celebToUpdate.name;
+  celebToUpdate.role = role || celebToUpdate.role;
+  celebToUpdate.quote = quote !== undefined ? quote : celebToUpdate.quote;
+  if (isActive !== undefined) celebToUpdate.isActive = isActive;
 
   let newImg = img;
   let newPubId = celebToUpdate.cloudinaryPublicId;
@@ -628,7 +655,7 @@ export const updateAdminCelebrity = asyncHandler(async (req, res) => {
 
   const celebrity = await Celebrity.findByIdAndUpdate(
     req.params.id,
-    { name, role, img: newImg, cloudinaryPublicId: newPubId, isActive },
+    { name: celebToUpdate.name, role: celebToUpdate.role, quote: celebToUpdate.quote, img: newImg, cloudinaryPublicId: newPubId, isActive: celebToUpdate.isActive },
     { new: true, runValidators: true }
   );
 
@@ -661,11 +688,17 @@ export const getAdminTransactions = asyncHandler(async (req, res) => {
 
   for (let t of transactions) {
     if (t.userId) {
-      let user = await User.findById(t.userId).select('name');
-      if (!user) {
-        user = await Astrologer.findById(t.userId).select('name');
+      let user = await User.findById(t.userId).select('name role');
+      if (user) {
+        t.userId = { name: `User: ${user.name}` };
+      } else {
+        let astro = await Astrologer.findById(t.userId).select('name role');
+        if (astro) {
+          t.userId = { name: `Astro: ${astro.name}` };
+        } else {
+          t.userId = { name: 'Unknown' };
+        }
       }
-      t.userId = user || { name: 'Unknown' };
     } else {
       t.userId = { name: 'Unknown' };
     }
@@ -809,6 +842,21 @@ export const deleteAdminSession = asyncHandler(async (req, res) => {
   const session = await ChatSession.findByIdAndDelete(req.params.id);
   if (!session) throw new ApiError(404, 'Session not found');
   return res.status(200).json(new ApiResponse(200, null, 'Session deleted successfully'));
+});
+
+// POST /api/admin/sessions/bulk-delete
+export const bulkDeleteAdminSessions = asyncHandler(async (req, res) => {
+  const { sessionIds = [], callIds = [] } = req.body;
+  
+  if (sessionIds.length > 0) {
+    await ChatSession.deleteMany({ _id: { $in: sessionIds } });
+  }
+  
+  if (callIds.length > 0) {
+    await CallSession.deleteMany({ _id: { $in: callIds } });
+  }
+  
+  return res.status(200).json(new ApiResponse(200, null, 'Sessions bulk deleted successfully'));
 });
 
 // GET /api/admin/poojas
@@ -1019,6 +1067,12 @@ export const processAstrologerPayout = asyncHandler(async (req, res) => {
   astrologer.earnings.withdrawn = (astrologer.earnings.withdrawn || 0) + withdrawal.amount;
   astrologer.earnings.available = Math.max(0, (astrologer.earnings.available || 0) - withdrawal.amount);
   await astrologer.save();
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`astro_${astrologer._id}`).emit('withdrawal_processed', { withdrawal });
+    io.to(`room_astro_${astrologer._id}`).emit('withdrawal_processed', { withdrawal });
+  }
 
   return res.status(200).json(new ApiResponse(200, { withdrawal, payout: payoutResponse }, 'Payout processed successfully'));
 });

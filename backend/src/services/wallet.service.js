@@ -3,6 +3,7 @@ import Astrologer from '../models/astrologer.model.js';
 import Transaction from '../models/transaction.model.js';
 import RevenueLog from '../models/revenueLog.model.js';
 import { ApiError } from '../utils/apiError.js';
+import { io } from '../server.js';
 
 class WalletService {
   /**
@@ -32,6 +33,11 @@ class WalletService {
       desc,
     });
 
+    if (io) {
+      io.to(`room_user_${userId}`).emit('wallet_updated', { wallet: user.wallet, transaction });
+      io.to('admin_room').emit('dashboard_updated');
+    }
+
     return { user, transaction };
   }
 
@@ -59,6 +65,11 @@ class WalletService {
       razorpayReference,
       paymentStatus
     });
+
+    if (io) {
+      io.to(`room_user_${userId}`).emit('wallet_updated', { wallet: user.wallet, transaction });
+      io.to('admin_room').emit('dashboard_updated');
+    }
 
     return { user, transaction };
   }
@@ -89,6 +100,21 @@ class WalletService {
       }
       astrologer.earnings.total += netAmount;
       astrologer.earnings.available += netAmount;
+
+      // Update public counters
+      astrologer.totalEarnings = (astrologer.totalEarnings || 0) + netAmount;
+      if (sessionType === 'chat') {
+        astrologer.totalChats = (astrologer.totalChats || 0) + 1;
+      } else if (sessionType === 'audio' || sessionType === 'audio_call') {
+        astrologer.totalAudioCalls = (astrologer.totalAudioCalls || 0) + 1;
+      } else if (sessionType === 'video' || sessionType === 'video_call') {
+        astrologer.totalVideoCalls = (astrologer.totalVideoCalls || 0) + 1;
+      }
+
+      // Update orders string
+      const totalOrdersNum = (astrologer.totalChats || 0) + (astrologer.totalAudioCalls || 0) + (astrologer.totalVideoCalls || 0);
+      astrologer.orders = totalOrdersNum > 999 ? `${Math.floor(totalOrdersNum/1000)}k+` : `${totalOrdersNum}`;
+
       await astrologer.save();
 
       const transaction = await Transaction.create({
@@ -110,6 +136,11 @@ class WalletService {
         adminShare: commissionAmount,
         astrologerShare: netAmount
       });
+
+      if (io) {
+        io.to(`room_astro_${astrologer._id}`).emit('wallet_updated', { wallet: astrologer.earnings.available, transaction });
+        io.to('admin_room').emit('dashboard_updated');
+      }
 
       return { astrologer, netAmount, commissionAmount };
     } catch (error) {

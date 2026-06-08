@@ -12,6 +12,7 @@ export const uploadMedia = async (base64String, folder = 'astrotalk_banners') =>
   try {
     const result = await cloudinary.uploader.upload(base64String, {
       folder: folder,
+      resource_type: 'auto',
     });
     return {
       url: result.secure_url,

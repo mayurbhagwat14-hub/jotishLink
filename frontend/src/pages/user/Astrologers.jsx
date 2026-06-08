@@ -5,7 +5,7 @@ import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
 import { BiCategoryAlt, BiHeart, BiBookHeart } from 'react-icons/bi';
 import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
-import { fetchAstrologersThunk } from '../../store/slices/userSlice';
+import { fetchAstrologersThunk, updateAstrologerStatus } from '../../store/slices/userSlice';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import getSocket from '../../socket/socketManager';
 import toast from 'react-hot-toast';
@@ -49,14 +49,26 @@ const Astrologers = () => {
   useEffect(() => {
     const params = {};
     if (activeCategory !== 'All' && activeCategory !== 'NEW!') {
-      params.skill = activeCategory;
+      params.category = activeCategory;
     }
     dispatch(fetchAstrologersThunk(params));
     
     const token = localStorage.getItem('accessToken');
     const s = getSocket();
     setSocket(s);
-    return () => {  };
+    
+    // Listen for real-time status updates
+    const handleStatusChange = (data) => {
+      dispatch(updateAstrologerStatus({ astrologerId: data.astrologerId, status: data.status }));
+    };
+
+    s.on('astro_status_changed', handleStatusChange);
+    s.on('astrologer_status_changed', handleStatusChange);
+
+    return () => {  
+      s.off('astro_status_changed', handleStatusChange);
+      s.off('astrologer_status_changed', handleStatusChange);
+    };
   }, [dispatch, activeCategory]);
 
   const { state } = useLocation();
@@ -110,9 +122,15 @@ const Astrologers = () => {
   };
 
   const filteredAstrologers = astrologers.filter(a => {
-    const isOnline = a.onlineStatus === 'online';
     const astroName = a.name || a.userId?.name || '';
-    return isOnline && astroName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = astroName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (searchQuery.trim().length > 0) {
+      return matchesSearch;
+    } else {
+      const isOnlineOrBusy = a.onlineStatus === 'online' || a.onlineStatus === 'busy';
+      return isOnlineOrBusy && matchesSearch;
+    }
   });
 
   return (
@@ -207,8 +225,11 @@ const Astrologers = () => {
         {filteredAstrologers.map((astro, idx) => {
           const astroName = astro.name || astro.userId?.name || 'Astrologer';
           const avatarUrl = astro.avatar || astro.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
+          const isOffline = astro.onlineStatus === 'offline';
+          const isBusy = astro.onlineStatus === 'busy';
+          
           return (
-          <div key={astro._id || idx} className="bg-white rounded-2xl shadow-card border border-gray-100 relative overflow-hidden hover:shadow-card-hover transition-shadow duration-300">
+          <div key={astro._id || idx} className={`bg-white rounded-2xl shadow-card border border-gray-100 relative overflow-hidden hover:shadow-card-hover transition-all duration-500 ${isOffline ? 'grayscale opacity-60' : ''}`}>
             <div className="p-4 cursor-pointer" onClick={() => navigate(`/user/astrologer/${astro._id}`)}>
               <div className="flex gap-3">
                 {/* Avatar & rating */}
@@ -246,18 +267,28 @@ const Astrologers = () => {
 
                 {/* Action Button */}
                 <div className="flex flex-col items-end justify-center">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      let emitType = activeTab;
-                      if (activeTab === 'call') emitType = 'audio';
-                      if (activeTab === 'video call') emitType = 'video';
-                      handleSessionRequest(astro, emitType);
-                    }}
-                    className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
-                  >
-                    {activeTab === 'call' ? 'Audio Call' : activeTab}
-                  </button>
+                  {isOffline ? (
+                    <button disabled className="bg-gray-400 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm transition-all capitalize cursor-not-allowed">
+                      Offline
+                    </button>
+                  ) : isBusy ? (
+                    <button disabled className="bg-red-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm transition-all capitalize cursor-not-allowed">
+                      Busy
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        let emitType = activeTab;
+                        if (activeTab === 'call') emitType = 'audio';
+                        if (activeTab === 'video call') emitType = 'video';
+                        handleSessionRequest(astro, emitType);
+                      }}
+                      className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
+                    >
+                      {activeTab === 'call' ? 'Audio Call' : activeTab}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

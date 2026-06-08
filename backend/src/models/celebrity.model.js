@@ -12,6 +12,10 @@ const celebritySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    quote: {
+      type: String,
+      trim: true,
+    },
     img: {
       type: String,
       required: true,

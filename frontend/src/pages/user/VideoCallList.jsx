@@ -5,7 +5,7 @@ import { FiVideo, FiSearch, FiX } from 'react-icons/fi';
 import { BiCategoryAlt, BiHeart, BiBookHeart } from 'react-icons/bi';
 import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
-import { fetchAstrologersThunk } from '../../store/slices/userSlice';
+import { fetchAstrologersThunk, updateAstrologerStatus } from '../../store/slices/userSlice';
 import { addWalletCash } from '../../store/slices/authSlice';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import getSocket from '../../socket/socketManager';
@@ -40,12 +40,29 @@ const VideoCallList = () => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchAstrologersThunk());
+    const params = {};
+    if (activeCategory !== 'All' && activeCategory !== 'NEW!') {
+      params.category = activeCategory;
+    }
+    dispatch(fetchAstrologersThunk(params));
+
     const token = localStorage.getItem('accessToken');
     const s = getSocket();
     setSocket(s);
-    return () => {  };
-  }, [dispatch]);
+    
+    // Listen for real-time status updates
+    const handleStatusChange = (data) => {
+      dispatch(updateAstrologerStatus({ astrologerId: data.astrologerId, status: data.status }));
+    };
+
+    s.on('astro_status_changed', handleStatusChange);
+    s.on('astrologer_status_changed', handleStatusChange);
+
+    return () => {  
+      s.off('astro_status_changed', handleStatusChange);
+      s.off('astrologer_status_changed', handleStatusChange);
+    };
+  }, [dispatch, activeCategory]);
 
   const handleSessionRequest = (astro, type) => {
     if (!isAuthenticated) return navigate('/user/login');
@@ -69,9 +86,17 @@ const VideoCallList = () => {
     setShowBalanceModal(false);
   };
 
-  const filteredAstrologers = astrologers.filter(astro => 
-    astro.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredAstrologers = astrologers.filter(astro => {
+    const astroName = astro.name || '';
+    const matchesSearch = astroName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (searchQuery.trim().length > 0) {
+      return matchesSearch;
+    } else {
+      const isOnlineOrBusy = astro.onlineStatus === 'online' || astro.onlineStatus === 'busy';
+      return isOnlineOrBusy && matchesSearch;
+    }
+  });
 
   return (
     <div className="w-full bg-gray-50 min-h-screen font-sans pb-24">
@@ -117,8 +142,12 @@ const VideoCallList = () => {
 
       {/* List */}
       <div className="px-4 py-4 space-y-3">
-        {filteredAstrologers.map((astro) => (
-          <div key={astro._id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+        {filteredAstrologers.map((astro) => {
+          const isOffline = astro.onlineStatus === 'offline';
+          const isBusy = astro.onlineStatus === 'busy';
+          
+          return (
+          <div key={astro._id} className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 transition-all duration-500 ${isOffline ? 'grayscale opacity-60' : ''}`}>
             
             <div className="relative shrink-0">
               <div className="w-16 h-16 rounded-full border-2 border-orange-200 overflow-hidden">
@@ -144,16 +173,26 @@ const VideoCallList = () => {
 
             <div className="flex flex-col items-end gap-2 shrink-0">
               <span className="text-[14px] font-bold text-gray-900">₹{astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10)}/min</span>
-              <button 
-                onClick={() => handleSessionRequest(astro, 'video')}
-                className="bg-orange-500 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm hover:bg-orange-600 active:scale-95 transition-all"
-              >
-                Call
-              </button>
+              {isOffline ? (
+                <button disabled className="bg-gray-400 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm transition-all cursor-not-allowed">
+                  Offline
+                </button>
+              ) : isBusy ? (
+                <button disabled className="bg-red-500 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm transition-all cursor-not-allowed">
+                  Busy
+                </button>
+              ) : (
+                <button 
+                  onClick={() => handleSessionRequest(astro, 'video')}
+                  className="bg-orange-500 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm hover:bg-orange-600 active:scale-95 transition-all"
+                >
+                  Call
+                </button>
+              )}
             </div>
 
           </div>
-        ))}
+        )})}
 
         {filteredAstrologers.length === 0 && (
           <div className="text-center py-10">

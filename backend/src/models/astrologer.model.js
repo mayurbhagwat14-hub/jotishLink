@@ -143,6 +143,24 @@ const astrologerSchema = new mongoose.Schema(
       videoCall: { type: Number, default: 10 },
       report: { type: Number, default: 0 }
     },
+
+    // Pandit & Pooja Settings
+    isPandit: {
+      type: Boolean,
+      default: false,
+    },
+    poojasOffered: {
+      type: [{
+        poojaName: { type: String, required: true },
+        price: { type: Number, required: true, default: 0 }
+      }],
+      default: [],
+    },
+    serviceLocations: {
+      type: [String],
+      default: ['Online', 'Offline'],
+    },
+
     availabilitySchedule: { type: String }, // Can be a structured JSON string or basic text
     
     onlineStatus: {

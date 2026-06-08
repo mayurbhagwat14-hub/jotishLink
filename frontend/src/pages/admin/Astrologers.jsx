@@ -519,7 +519,7 @@ const AdminAstrologers = () => {
                     <p><span className="text-gray-400 font-bold w-24 inline-block">Account Name:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.accountHolderName || 'N/A'}</span></p>
                     <p><span className="text-gray-400 font-bold w-24 inline-block">Bank Name:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.bankName || 'N/A'}</span></p>
                     <p><span className="text-gray-400 font-bold w-24 inline-block">A/C Number:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.accountNumber || 'N/A'}</span></p>
-                    <p><span className="text-gray-400 font-bold w-24 inline-block">IFSC Code:</span> <span className="font-medium text-gray-700 uppercase">{selectedAstrologer.bankDetails?.ifscCode || 'N/A'}</span></p>
+                    <p><span className="text-gray-400 font-bold w-24 inline-block">IFSC Code:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.ifscCode || 'N/A'}</span></p>
                     <p><span className="text-gray-400 font-bold w-24 inline-block">UPI ID:</span> <span className="font-medium text-gray-700">{selectedAstrologer.bankDetails?.upiId || 'N/A'}</span></p>
                   </div>
                 </div>
