@@ -350,7 +350,7 @@ const Home = () => {
               View All
             </span>
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 -mx-4 px-4">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-4 px-4">
             {userHome.featuredAstrologers.map((astro, i) => (
               <div 
                 key={i} 
@@ -379,8 +379,8 @@ const Home = () => {
                 </div>
                 
                 {/* Right Content */}
-                <div className="flex flex-col flex-1 pt-2">
-                  <h3 className="font-bold text-[16px] text-gray-900 leading-tight mb-1">{astro.name}</h3>
+                <div className="flex flex-col flex-1 pt-2 min-w-0">
+                  <h3 className="font-bold text-[16px] text-gray-900 leading-tight mb-1 truncate">{astro.name}</h3>
                   <div className="flex items-center text-[12px] text-gray-600 font-medium mb-3 truncate w-full">
                     <Star size={12} fill="#eab308" className="text-yellow-500 mr-1 shrink-0" />
                     <span className="text-gray-800 font-bold mr-1">{astro.rating || 4.9}</span> <span className="mx-1 text-gray-300">|</span> <span className="truncate">{astro.skills?.slice(0,2)?.join(', ') || 'Vedic, Palmistry'}</span>
@@ -403,7 +403,7 @@ const Home = () => {
       )}
 
       {/* ═══ JYOTISHLINK STORE ═══ */}
-      <div className="px-4 py-5 mt-1 relative z-10">
+      <div className="px-4 pt-1 pb-5 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[17px] font-bold text-gray-800">JyotishLink Services</h2>
           <span
