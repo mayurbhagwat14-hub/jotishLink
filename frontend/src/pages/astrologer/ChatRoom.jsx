@@ -3,10 +3,12 @@ import { FiVideo, FiPhone, FiPaperclip, FiSend, FiArrowLeft } from 'react-icons/
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import getSocket from '../../socket/socketManager';
 import api from '../../api/axios';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeActiveSession } from '../../store/slices/astrologerSlice';
 
 const ChatRoom = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const location = useLocation();
   const { id: sessionId } = useParams();
   const isViewOnly = location.state?.viewOnly;
@@ -83,9 +85,20 @@ const ChatRoom = () => {
         const onSessionEnded = ({ reason, durationSeconds }) => {
           if (sessionEnded) return;
           setSessionEnded(true);
-          const earned = Math.floor((durationSeconds || 0) / 60) * (astrologer?.rate || 5);
+          const mins = Math.floor((durationSeconds || 0) / 60);
+          const secs = (durationSeconds || 0) % 60;
           setEndSessionInfo({
-            message: `Session ended. Duration: ${Math.floor((durationSeconds || 0)/60)} min. Estimated earning: ₹${earned}`
+            message: `Session ended. Duration: ${mins}m ${secs}s. Processing earning...`
+          });
+          dispatch(removeActiveSession(roomIdToJoin));
+        };
+
+        const onEarningCredited = ({ netAmount, sessionId: earnedSessionId }) => {
+          setEndSessionInfo(prev => {
+            if (prev && prev.message.includes('Processing earning...')) {
+              return { ...prev, message: prev.message.replace('Processing earning...', `Estimated earning: ₹${Number(netAmount).toFixed(2)}`) };
+            }
+            return prev;
           });
         };
 
@@ -93,12 +106,14 @@ const ChatRoom = () => {
         socket.on('receive_message', onReceiveMessage);
         socket.on('timer_tick', onTimerTick);
         socket.on('session_ended', onSessionEnded);
+        socket.on('earning_credited', onEarningCredited);
 
         return () => {
           socket.off('session_created', onSessionCreated);
           socket.off('receive_message', onReceiveMessage);
           socket.off('timer_tick', onTimerTick);
           socket.off('session_ended', onSessionEnded);
+          socket.off('earning_credited', onEarningCredited);
         };
       } catch (err) {
         console.error('Failed to load session:', err);

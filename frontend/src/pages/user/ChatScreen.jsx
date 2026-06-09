@@ -28,7 +28,7 @@ const ChatScreen = () => {
   const navigate = useNavigate();
 
   const { astrologers: reduxAstrologers } = useSelector((state) => state.user);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
 
   const [activeCategory, setActiveCategory] = useState('All');
   
@@ -50,10 +50,7 @@ const ChatScreen = () => {
   const handleSessionRequest = (astro, type) => {
     if (!isAuthenticated) return navigate('/user/login');
     
-    const rate = type === 'chat' ? astro.pricing?.chat
-               : type === 'audio' ? astro.pricing?.audioCall
-               : astro.pricing?.videoCall;
-    const minBalance = (rate || 5) * 5;
+    const minBalance = settings?.minChatBalance || 10;
     
     if ((user?.wallet || 0) < minBalance) {
       setLowBalanceInfo({ required: minBalance, current: user?.wallet || 0 });

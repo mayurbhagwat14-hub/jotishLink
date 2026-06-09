@@ -3,6 +3,7 @@ import { FiTrendingUp, FiActivity, FiVideo, FiPhone, FiMessageCircle } from 'rea
 import { FaRupeeSign } from 'react-icons/fa';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
+import getSocket from '../../socket/socketManager';
 
 const Earnings = () => {
   const [data, setData] = useState({
@@ -11,6 +12,7 @@ const Earnings = () => {
     monthly: 0,
     total: 0,
     breakdown: { chat: 0, audio: 0, video: 0 },
+    astroBreakdown: { chat: 0, audio: 0, video: 0 },
     history: []
   });
   const [loading, setLoading] = useState(true);
@@ -27,6 +29,13 @@ const Earnings = () => {
       }
     };
     fetchEarnings();
+
+    const socket = getSocket();
+    socket.on('dashboard_updated', fetchEarnings);
+
+    return () => {
+      socket.off('dashboard_updated', fetchEarnings);
+    };
   }, []);
 
   if (loading) {
@@ -60,9 +69,9 @@ const Earnings = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-1">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Revenue Breakdown</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Admin Cut Breakdown</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
@@ -88,13 +97,40 @@ const Earnings = () => {
           </div>
         </div>
 
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-1">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Astro Cut Breakdown</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><FiMessageCircle /></div>
+                <span className="font-medium text-gray-700">Chat</span>
+              </div>
+              <span className="font-bold text-blue-600">₹{(data.astroBreakdown?.chat || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><FiPhone /></div>
+                <span className="font-medium text-gray-700">Audio Calls</span>
+              </div>
+              <span className="font-bold text-blue-600">₹{(data.astroBreakdown?.audio || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><FiVideo /></div>
+                <span className="font-medium text-gray-700">Video Calls</span>
+              </div>
+              <span className="font-bold text-blue-600">₹{(data.astroBreakdown?.video || 0).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
           <div className="p-6 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">Recent Transactions</h2>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
+              <thead className="sticky top-0 bg-gray-50 shadow-sm z-10">
                 <tr className="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
                   <th className="p-4 font-medium">Date</th>
                   <th className="p-4 font-medium">Astrologer</th>
@@ -105,7 +141,7 @@ const Earnings = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {data.history.slice(0, 10).map((log) => (
+                {data.history.map((log) => (
                   <tr key={log._id} className="hover:bg-gray-50/50">
                     <td className="p-4 text-sm text-gray-600">
                       {new Date(log.date).toLocaleString()}

@@ -46,7 +46,7 @@ const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targ
         <div className="p-4 space-y-4">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-center">
             <p className="text-[14px] text-gray-800 font-medium mb-1">
-              Minimum balance required: ₹{requiredAmount} (for 5 minutes)
+              Minimum balance required: ₹{requiredAmount}
             </p>
             <p className="text-[12px] text-gray-500">
               You need ₹{Math.max(0, requiredAmount - (currentBalance || 0))} more to start chat with {targetName}

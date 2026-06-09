@@ -28,7 +28,7 @@ const Astrologers = () => {
   const { openSidebar } = useOutletContext();
   
   const { astrologers } = useSelector((state) => state.user);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
 
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,10 +98,7 @@ const Astrologers = () => {
     if (!isAuthenticated) return navigate('/user/login');
     
     // 2. Check wallet balance
-    const rate = type === 'chat' ? astro.pricing?.chat
-               : type === 'audio' ? astro.pricing?.audioCall
-               : astro.pricing?.videoCall;
-    const minBalance = (rate || 5) * 5; // minimum 5 minutes worth
+    const minBalance = settings?.minChatBalance || 10;
     
     // Free Chat Offer eligibility
     const isFreeChatEligible = type === 'chat' && user?.freeChatUsed === false;

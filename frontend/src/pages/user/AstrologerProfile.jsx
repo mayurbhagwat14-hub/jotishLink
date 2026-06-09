@@ -8,7 +8,7 @@ import LowBalanceModal from '../../components/LowBalanceModal';
 const AstrologerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
   
   const [astrologer, setAstrologer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ const AstrologerProfile = () => {
       ? (astrologer.pricing?.audioCall || astrologer.rate || 5) 
       : (astrologer.pricing?.chat || astrologer.rate || 5);
       
-    const requiredAmount = rate * 5;
+    const requiredAmount = settings?.minChatBalance || 10;
     const walletBalance = user?.wallet || 0;
     const astroName = astrologer.name || astrologer.userId?.name || 'Astrologer';
 

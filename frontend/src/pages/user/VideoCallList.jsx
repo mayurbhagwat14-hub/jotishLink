@@ -27,7 +27,7 @@ const VideoCallList = () => {
   const navigate = useNavigate();
   
   const { astrologers, loading, error } = useSelector((state) => state.user);
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -67,10 +67,7 @@ const VideoCallList = () => {
   const handleSessionRequest = (astro, type) => {
     if (!isAuthenticated) return navigate('/user/login');
     
-    const rate = type === 'chat' ? astro.pricing?.chat
-               : type === 'audio' ? astro.pricing?.audioCall
-               : astro.pricing?.videoCall;
-    const minBalance = (rate || 5) * 5;
+    const minBalance = settings?.minChatBalance || 10;
     
     if ((user?.wallet || 0) < minBalance) {
       setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0, name: astro.name });

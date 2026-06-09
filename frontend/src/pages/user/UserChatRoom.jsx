@@ -283,7 +283,7 @@ Please analyze my chart based on this information.`;
       <main className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/80">
         <div className="text-center my-4">
           <span className="bg-orange-100/80 text-orange-600 text-[11px] font-bold px-3 py-1 rounded-full">
-            {isBotActive ? 'Free AI Chat' : 'Chat Started'}
+            {isBotActive ? 'Free Chat Started' : 'Chat Started'}
           </span>
         </div>
         {messages.map((msg, idx) => {

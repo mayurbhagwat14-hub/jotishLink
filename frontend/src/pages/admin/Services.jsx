@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiClock, FiBox, FiTruck, FiCheck, FiMoreHorizontal } from 'react-icons/fi';
+import { FiClock, FiBox, FiTruck, FiCheck, FiMoreHorizontal, FiX } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminPoojas, getAdminOrders } from '../../api/adminApis';
@@ -9,6 +9,7 @@ const AdminServices = () => {
   const [poojas, setPoojas] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [proofsModalPooja, setProofsModalPooja] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -111,7 +112,15 @@ const AdminServices = () => {
                 ) : poojas.length === 0 ? (
                   <tr><td colSpan="5" className="py-8 text-center text-gray-400 text-sm">No poojas found</td></tr>
                 ) : poojas.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr 
+                    key={p.id} 
+                    className={`hover:bg-gray-50/50 transition-colors ${p.status === 'Completed' ? 'cursor-pointer' : ''}`}
+                    onClick={() => {
+                      if (p.status === 'Completed' && p.proofMedia && p.proofMedia.length > 0) {
+                        setProofsModalPooja(p);
+                      }
+                    }}
+                  >
                     <td colSpan="5" className="p-0 border-0">
                       <div className="flex w-full items-center">
                         <div className="py-4 px-6 w-1/5">
@@ -124,7 +133,7 @@ const AdminServices = () => {
                         </div>
                         <div className="py-4 px-6 w-1/5 text-xs text-gray-500 font-medium flex items-center gap-1"><FiClock size={10} /> {p.date}</div>
                         <div className="py-4 px-6 w-1/5 text-sm font-black text-gray-900">₹{p.amount.toLocaleString()}</div>
-                        <div className="py-4 px-6 w-1/5">
+                        <div className="py-4 px-6 w-1/5 flex items-center justify-between">
                           <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
                             p.status === 'Completed' ? 'bg-green-50 text-green-600' : 
                             p.status === 'Accepted' || p.status === 'In Progress' ? 'bg-blue-50 text-blue-600' : 
@@ -133,27 +142,11 @@ const AdminServices = () => {
                           }`}>
                             {p.status}
                           </span>
+                          {p.status === 'Completed' && p.proofMedia && p.proofMedia.length > 0 && (
+                            <button className="text-xs font-bold text-blue-600 hover:text-blue-800 px-3 py-1 bg-blue-50 rounded-lg hover:bg-blue-100 transition">View Proofs</button>
+                          )}
                         </div>
                       </div>
-                      
-                      {p.status === 'Completed' && p.proofMedia && p.proofMedia.length > 0 && (
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 mt-2 rounded-b-xl mb-4 ml-6 mr-6">
-                          <h5 className="text-[11px] font-bold text-gray-400 uppercase mb-2">Completion Proofs & Notes</h5>
-                          {p.proofNotes && <p className="text-sm text-gray-600 italic mb-3">"{p.proofNotes}"</p>}
-                          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                            {p.proofMedia.map((mediaUrl, idx) => {
-                              const isVideo = mediaUrl.match(/\.(mp4|mov|avi|webm)$/i);
-                              return isVideo ? (
-                                <video key={idx} src={mediaUrl} controls className="w-24 h-24 object-cover rounded-xl shrink-0 bg-gray-900"></video>
-                              ) : (
-                                <a key={idx} href={mediaUrl} target="_blank" rel="noreferrer">
-                                  <img src={mediaUrl} alt="Proof" className="w-24 h-24 object-cover rounded-xl shrink-0 border border-gray-200 hover:opacity-80 transition-opacity" />
-                                </a>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </td>
                   </tr>
                 ))}
@@ -211,6 +204,62 @@ const AdminServices = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Proofs Modal */}
+      {proofsModalPooja && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Completion Proofs & Notes</h3>
+                <p className="text-xs text-gray-500 font-medium mt-1">Pooja ID: PJ-{proofsModalPooja.id} • Pandit: {proofsModalPooja.pandit}</p>
+              </div>
+              <button 
+                onClick={() => setProofsModalPooja(null)}
+                className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+              >
+                <FiX size={16} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              {proofsModalPooja.proofNotes && (
+                <div className="mb-6 bg-orange-50 border border-orange-100 rounded-xl p-4">
+                  <h4 className="text-xs font-bold text-orange-800 uppercase mb-2">Pandit's Note</h4>
+                  <p className="text-sm text-gray-700 italic">"{proofsModalPooja.proofNotes}"</p>
+                </div>
+              )}
+              
+              <h4 className="text-xs font-bold text-gray-500 uppercase mb-3">Media Uploads ({proofsModalPooja.proofMedia.length})</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {proofsModalPooja.proofMedia.map((mediaUrl, idx) => {
+                  const isVideo = mediaUrl.match(/\.(mp4|mov|avi|webm)$/i);
+                  return (
+                    <div key={idx} className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 border border-gray-200 group">
+                      {isVideo ? (
+                        <video src={mediaUrl} controls className="w-full h-full object-cover"></video>
+                      ) : (
+                        <a href={mediaUrl} target="_blank" rel="noreferrer" className="block w-full h-full">
+                          <img src={mediaUrl} alt="Proof" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
+              <button 
+                onClick={() => setProofsModalPooja(null)}
+                className="px-5 py-2 bg-gray-900 text-white rounded-xl text-sm font-bold hover:bg-gray-800 transition"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -30,7 +30,7 @@ export const getAdminEarnings = async (req, res, next) => {
     thisMonth.setDate(1);
     thisMonth.setHours(0, 0, 0, 0);
 
-    const logs = await RevenueLog.find().populate('astrologerId', 'name');
+    const logs = await RevenueLog.find().populate('astrologerId', 'name').sort({ date: -1 });
 
     const result = {
       today: 0,
@@ -42,20 +42,33 @@ export const getAdminEarnings = async (req, res, next) => {
         audio: 0,
         video: 0,
       },
+      astroBreakdown: {
+        chat: 0,
+        audio: 0,
+        video: 0,
+      },
       history: logs
     };
 
     logs.forEach(log => {
       const share = log.adminShare || 0;
+      const astroShare = log.astrologerShare || 0;
       result.total += share;
       
       if (log.date >= today) result.today += share;
       if (log.date >= thisWeek) result.weekly += share;
       if (log.date >= thisMonth) result.monthly += share;
 
-      if (log.sessionType === 'chat') result.breakdown.chat += share;
-      else if (log.sessionType === 'audio' || log.sessionType === 'audio_call') result.breakdown.audio += share;
-      else if (log.sessionType === 'video' || log.sessionType === 'video_call') result.breakdown.video += share;
+      if (log.sessionType === 'chat') {
+        result.breakdown.chat += share;
+        result.astroBreakdown.chat += astroShare;
+      } else if (log.sessionType === 'audio' || log.sessionType === 'audio_call') {
+        result.breakdown.audio += share;
+        result.astroBreakdown.audio += astroShare;
+      } else if (log.sessionType === 'video' || log.sessionType === 'video_call') {
+        result.breakdown.video += share;
+        result.astroBreakdown.video += astroShare;
+      }
     });
 
     res.json({ success: true, data: result });
@@ -91,7 +104,9 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
 
   const deductionTransactions = await Transaction.find({ type: 'deduction' }).lean();
   const totalDeductions = deductionTransactions.reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
-  const chatRevenue = totalDeductions * 0.10; // Admin takes 10%
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const chatCommission = (settings.commissionRates?.chat || 30) / 100;
+  const chatRevenue = totalDeductions * chatCommission; // Admin takes dynamic %
 
   const orders = await Order.find().lean();
   const storeRevenue = orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
@@ -294,9 +309,20 @@ export const getAdminAstrologerById = asyncHandler(async (req, res) => {
     PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['completed', 'confirmed'] } }).lean()
   ]);
 
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
+
+  const getAstroShare = (type) => {
+    let comm = rates.chat;
+    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
+    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
+    return (100 - (comm || 30)) / 100;
+  };
+  const poojaShare = (100 - (rates.pooja || 20)) / 100;
+
   const allEarnings = [
-    ...sessions.map((s) => parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2))),
-    ...poojas.map((p) => parseFloat(((p.price || 0) * 0.7).toFixed(2)))
+    ...sessions.map((s) => parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2))),
+    ...poojas.map((p) => parseFloat(((p.price || 0) * poojaShare).toFixed(2)))
   ];
 
   const totalEarnings = allEarnings.reduce((sum, amount) => sum + amount, 0);
@@ -879,7 +905,9 @@ export const getAdminReports = asyncHandler(async (req, res) => {
   const poojas = await PoojaBooking.find().lean();
 
   const totalDeductions = transactions.filter(t => t.type === 'deduction').reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
-  const platformCommission = totalDeductions * 0.10; // 10%
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const chatCommission = (settings.commissionRates?.chat || 30) / 100;
+  const platformCommission = totalDeductions * chatCommission;
 
   const storeRevenue = orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
   const totalRevenue = (totalDeductions + storeRevenue) || 0;

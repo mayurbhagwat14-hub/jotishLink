@@ -11,6 +11,7 @@ import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import SmsService from '../services/sms.service.js';
 import { uploadMedia, deleteMedia } from '../config/cloudinary.js';
+import SystemSettings from '../models/systemSettings.model.js';
 
 const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
@@ -412,9 +413,18 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       .lean(),
   ]);
 
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
+  const getAstroShare = (type) => {
+    let comm = rates.chat;
+    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
+    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
+    return (100 - (comm || 30)) / 100;
+  };
+
   const totalEarnings = sessions
     .filter((s) => s.status === 'completed')
-    .reduce((sum, s) => sum + (s.amountDeducted || 0) * 0.7, 0); // 70% to astrologer
+    .reduce((sum, s) => sum + (s.amountDeducted || 0) * getAstroShare(s.type), 0);
 
   return res.status(200).json(
     new ApiResponse(200, {
@@ -438,20 +448,30 @@ export const getAstrologerEarnings = asyncHandler(async (req, res) => {
     PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } }).lean()
   ]);
 
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
+  const getAstroShare = (type) => {
+    let comm = rates.chat;
+    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
+    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
+    return (100 - (comm || 30)) / 100;
+  };
+  const poojaShare = (100 - (rates.pooja || 20)) / 100;
+
   const allEarnings = [
     ...sessions.map((s) => ({
       sessionId: s._id,
       date: s.createdAt,
       type: s.type || 'session',
       durationSeconds: s.durationSeconds,
-      amount: parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2)),
+      amount: parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2)),
     })),
     ...poojas.map((p) => ({
       sessionId: p._id,
       date: p.createdAt,
       type: 'pooja',
       durationSeconds: 0,
-      amount: parseFloat(((p.price || 0) * 0.7).toFixed(2)),
+      amount: parseFloat(((p.price || 0) * poojaShare).toFixed(2)),
     }))
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -520,9 +540,19 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean()
   ]);
 
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
+  const getAstroShare = (type) => {
+    let comm = rates.chat;
+    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
+    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
+    return (100 - (comm || 30)) / 100;
+  };
+  const poojaShare = (100 - (rates.pooja || 20)) / 100;
+
   const totalEarnings = [
-    ...sessions.map(s => parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2))),
-    ...poojas.map(p => parseFloat(((p.price || 0) * 0.7).toFixed(2)))
+    ...sessions.map(s => parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2))),
+    ...poojas.map(p => parseFloat(((p.price || 0) * poojaShare).toFixed(2)))
   ].reduce((a, b) => a + b, 0);
 
   const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
@@ -745,6 +775,16 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
       .lean()
   ]);
 
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
+  const getAstroShare = (type) => {
+    let comm = rates.chat;
+    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
+    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
+    return (100 - (comm || 30)) / 100;
+  };
+  const poojaShare = (100 - (rates.pooja || 20)) / 100;
+
   const history = [
     ...sessions.map(s => ({
       _id: s._id,
@@ -752,7 +792,7 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
       userName: s.userId?.name || 'User',
       date: s.createdAt,
       duration: s.durationSeconds || 0,
-      amount: parseFloat(((s.amountDeducted || 0) * 0.7).toFixed(2)),
+      amount: parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2)),
       status: s.status
     })),
     ...poojas.map(p => ({
@@ -762,7 +802,7 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
       poojaName: p.poojaName || 'Pooja',
       date: p.createdAt,
       duration: 0,
-      amount: parseFloat(((p.price || 0) * 0.7).toFixed(2)),
+      amount: parseFloat(((p.price || 0) * poojaShare).toFixed(2)),
       status: p.status.toLowerCase()
     }))
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
