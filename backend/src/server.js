@@ -355,9 +355,9 @@ io.on('connection', (socket) => {
       if (timerData) timerData.seconds = seconds;
       io.to(roomId).emit('timer_tick', { seconds });
 
-      const currentCost = (seconds * astrologerRate) / 60;
+      const currentCost = Number(((seconds * astrologerRate) / 60).toFixed(2));
       if (!timerData) return;
-      const deltaCost = currentCost - (timerData.lastDeducted || 0);
+      const deltaCost = Number((currentCost - (timerData.lastDeducted || 0)).toFixed(2));
 
       try {
         const user = await User.findById(userId);
@@ -373,7 +373,7 @@ io.on('connection', (socket) => {
         }
 
         if (seconds % 5 === 0) {
-          user.wallet -= deltaCost;
+          user.wallet = Number(Math.max(0, user.wallet - deltaCost).toFixed(2));
           await user.save();
           timerData.lastDeducted = currentCost;
           io.to(roomId).emit('wallet_update', { deducted: deltaCost, newBalance: user.wallet });
@@ -399,9 +399,9 @@ io.on('connection', (socket) => {
 
     const duration = finalSeconds !== undefined ? finalSeconds : (timerData?.seconds || 0);
     const rate = timerData?.astrologerRate || 0;
-    const currentCost = (duration * rate) / 60;
+    const currentCost = Number(((duration * rate) / 60).toFixed(2));
     const lastDeducted = timerData?.lastDeducted || 0;
-    const remainingDelta = currentCost - lastDeducted;
+    const remainingDelta = Number((currentCost - lastDeducted).toFixed(2));
 
     const endPayload = {
       reason: `${endedBy}_ended`,
@@ -440,7 +440,7 @@ io.on('connection', (socket) => {
         if (currentCost > 0 && userId) {
            const user = await User.findById(userId);
            if (user && remainingDelta > 0) {
-             user.wallet = Math.max(0, user.wallet - remainingDelta);
+             user.wallet = Number(Math.max(0, user.wallet - remainingDelta).toFixed(2));
              await user.save();
            }
            const Transaction = (await import('./models/transaction.model.js')).default;
@@ -485,9 +485,9 @@ io.on('connection', (socket) => {
       if (timerData) timerData.seconds = seconds;
       io.to(roomId).emit('call_time_update', { seconds });
 
-      const currentCost = (seconds * astrologerRate) / 60;
+      const currentCost = Number(((seconds * astrologerRate) / 60).toFixed(2));
       if (!timerData) return;
-      const deltaCost = currentCost - (timerData.lastDeducted || 0);
+      const deltaCost = Number((currentCost - (timerData.lastDeducted || 0)).toFixed(2));
 
       try {
         const user = await User.findById(userId);
@@ -500,7 +500,7 @@ io.on('connection', (socket) => {
         }
 
         if (seconds % 5 === 0) {
-          user.wallet -= deltaCost;
+          user.wallet = Number(Math.max(0, user.wallet - deltaCost).toFixed(2));
           await user.save();
           timerData.lastDeducted = currentCost;
           io.to(roomId).emit('wallet_update', { deducted: deltaCost, newBalance: user.wallet });
@@ -524,9 +524,9 @@ io.on('connection', (socket) => {
     const duration = finalSeconds !== undefined ? finalSeconds : (timerData?.seconds || 0);
     const rate = timerData?.astrologerRate || 0;
     const type = timerData?.type || 'audio';
-    const currentCost = (duration * rate) / 60;
+    const currentCost = Number(((duration * rate) / 60).toFixed(2));
     const lastDeducted = timerData?.lastDeducted || 0;
-    const remainingDelta = currentCost - lastDeducted;
+    const remainingDelta = Number((currentCost - lastDeducted).toFixed(2));
 
     io.to(roomId).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
     try {

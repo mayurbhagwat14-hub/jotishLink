@@ -13,9 +13,12 @@ import AgoraRTC, {
 } from 'agora-rtc-react';
 import api from '../../api/axios';
 import { getSocket } from '../../socket/socketManager';
+import { useDispatch } from 'react-redux';
+import { removeActiveSession } from '../../store/slices/astrologerSlice';
 
 const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [sessionId, setSessionId] = useState(null);
@@ -63,6 +66,7 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
       setSessionEnded(true);
       localMicrophoneTrack?.close();
       localCameraTrack?.close();
+      dispatch(removeActiveSession(channelName));
       navigate('/astrologer/calls');
     };
 

@@ -93,7 +93,7 @@ const AdminOrders = () => {
   // ═══ SHIP ORDER ═══
   const confirmShipping = async () => {
     if (!trackingNumber) return;
-    const finalProvider = isCustomProvider ? customProviderName.trim() : shippingProvider;
+    const finalProvider = shippingProvider.trim();
     if (!finalProvider) return; // Prevent empty provider
     
     try {
@@ -113,8 +113,7 @@ const AdminOrders = () => {
       const orderId = showShipModal.id;
       setShowShipModal(null);
       setTrackingNumber('');
-      setCustomProviderName('');
-      setIsCustomProvider(false);
+      setShippingProvider('DHL Express');
       showToast(`${orderId} shipped! Tracking: ${trackingNumber}`);
     } catch (err) {
       console.error(err);
@@ -721,37 +720,22 @@ const AdminOrders = () => {
               </div>
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Shipping Provider</label>
-                <select
-                  value={isCustomProvider ? 'Other' : shippingProvider}
-                  onChange={e => {
-                    if (e.target.value === 'Other') {
-                      setIsCustomProvider(true);
-                    } else {
-                      setIsCustomProvider(false);
-                      setShippingProvider(e.target.value);
-                    }
-                  }}
+                <input 
+                  type="text"
+                  list="shipping-providers"
+                  value={shippingProvider}
+                  onChange={e => setShippingProvider(e.target.value)}
+                  placeholder="Select or type provider..."
                   className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                >
-                  <option value="DHL Express">DHL Express</option>
-                  <option value="Blue Dart">Blue Dart</option>
-                  <option value="Delhivery">Delhivery</option>
-                  <option value="India Post">India Post</option>
-                  <option value="FedEx">FedEx</option>
-                  <option value="DTDC">DTDC</option>
-                  <option value="Other">Other (Custom)</option>
-                </select>
-
-                {isCustomProvider && (
-                  <input
-                    type="text"
-                    placeholder="Enter custom shipping provider"
-                    value={customProviderName}
-                    onChange={e => setCustomProviderName(e.target.value)}
-                    className="w-full mt-2 px-4 py-3 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    autoFocus
-                  />
-                )}
+                />
+                <datalist id="shipping-providers">
+                  <option value="DHL Express" />
+                  <option value="Blue Dart" />
+                  <option value="Delhivery" />
+                  <option value="India Post" />
+                  <option value="FedEx" />
+                  <option value="DTDC" />
+                </datalist>
               </div>
               <div className="flex gap-2 pt-1">
                 <button
@@ -762,7 +746,7 @@ const AdminOrders = () => {
                 </button>
                 <button
                   onClick={confirmShipping}
-                  disabled={!trackingNumber.trim() || (isCustomProvider && !customProviderName.trim())}
+                  disabled={!trackingNumber.trim() || !shippingProvider.trim()}
                   className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
                 >
                   <FiTruck size={14} /> Confirm Ship

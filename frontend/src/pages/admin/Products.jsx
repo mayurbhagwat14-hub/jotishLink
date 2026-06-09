@@ -373,23 +373,25 @@ const AdminProducts = () => {
             </div>
             <div className="p-6 space-y-5 overflow-y-auto">
               {/* Image Upload */}
-              <label className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer block relative overflow-hidden group">
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                {formData.image ? (
-                  <div className="absolute inset-0 w-full h-full">
-                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-white font-bold text-sm">Change Image</p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm font-bold text-gray-600">Click to upload product image</p>
-                    <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-                  </>
-                )}
-              </label>
+              <div className="flex justify-center mb-2">
+                <label className={`border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center hover:border-orange-300 transition-colors cursor-pointer relative overflow-hidden group ${formData.image ? 'w-40 h-40 shrink-0' : 'w-full p-8'}`}>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  {formData.image ? (
+                    <>
+                      <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-white font-bold text-sm text-center px-2">Change Image</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm font-bold text-gray-600">Click to upload product image</p>
+                      <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                    </>
+                  )}
+                </label>
+              </div>
 
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Product Name</label>
@@ -404,7 +406,7 @@ const AdminProducts = () => {
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Featured Section</label>
                 <select value={formData.featuredSection} onChange={e => setFormData({...formData, featuredSection: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                  <option value="none">None (Default)</option>
+                  <option value="none">None (At the bottom)</option>
                   <option value="top_selling">Top Selling</option>
                   <option value="newly_launch">Newly Launch</option>
                 </select>
@@ -413,9 +415,17 @@ const AdminProducts = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Category</label>
-                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                    {categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}
-                  </select>
+                  <input 
+                    type="text"
+                    list="product-categories"
+                    value={formData.category} 
+                    onChange={e => setFormData({...formData, category: e.target.value})} 
+                    placeholder="Select or type..."
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                  />
+                  <datalist id="product-categories">
+                    {categories.filter(c => c !== 'All').map(c => <option key={c} value={c} />)}
+                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">SKU</label>

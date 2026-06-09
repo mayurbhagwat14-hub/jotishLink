@@ -18,7 +18,11 @@ import { uploadMedia, deleteMedia } from '../config/cloudinary.js';
 export const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('-password -otpHash -otpExpires');
   if (!user) throw new ApiError(404, 'User not found');
-  return res.status(200).json(new ApiResponse(200, { user }, 'Profile fetched'));
+  
+  const SystemSettings = (await import('../models/systemSettings.model.js')).default;
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  
+  return res.status(200).json(new ApiResponse(200, { user, settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration } }, 'Profile fetched'));
 });
 
 // PUT /api/user/profile
@@ -121,18 +125,22 @@ export const getHomepageData = asyncHandler(async (req, res) => {
     }
   }
 
-  return res.status(200).json(
-    new ApiResponse(200, {
-      user: user ? { name: user.name, wallet: user.wallet } : null,
-      activeSession,
-      featuredAstrologers: astrologers,
-      liveAstrologers,
-      featuredProducts: products,
-      services: storeCategories,
-      celebrities,
-      banners: banners || [],
-    }, 'Homepage data fetched')
-  );
+    const SystemSettings = (await import('../models/systemSettings.model.js')).default;
+    const settings = await SystemSettings.findOne({}) || new SystemSettings();
+
+    return res.status(200).json(
+      new ApiResponse(200, {
+        user: user ? { name: user.name, wallet: user.wallet } : null,
+        activeSession,
+        featuredAstrologers: astrologers,
+        liveAstrologers,
+        featuredProducts: products,
+        services: storeCategories,
+        celebrities,
+        banners: banners || [],
+        settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration },
+      }, 'Homepage data fetched')
+    );
 });
 
 // GET /api/astrologers

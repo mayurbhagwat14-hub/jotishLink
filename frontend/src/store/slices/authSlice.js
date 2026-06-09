@@ -207,6 +207,7 @@ const initialState = {
   isAuthenticated: false,
   loading: false,
   error: null,
+  settings: null,
 };
 
 const authSlice = createSlice({
@@ -248,7 +249,9 @@ const authSlice = createSlice({
         state.loading = false;
         // API response wrapped in { data: { user } }
         const u = action.payload?.data?.user || action.payload?.user || action.payload;
+        const settings = action.payload?.data?.settings || action.payload?.settings;
         state.user = { ...state.user, ...u };
+        if (settings) state.settings = settings;
       })
       .addCase(fetchProfileThunk.rejected, (state, action) => {
         state.loading = false;
@@ -266,6 +269,7 @@ const authSlice = createSlice({
         const data = action.payload?.data || action.payload;
         state.user = data.user || state.user;
         state.token = data.accessToken || state.token;
+        if (data.settings) state.settings = data.settings;
         if (data.refreshToken) {
           localStorage.setItem('refreshToken', data.refreshToken);
         }

@@ -91,8 +91,8 @@ class WalletService {
       const astrologer = await Astrologer.findById(astrologerId);
       if (!astrologer) return null; // Silently fail to not crash billing loops
 
-      const netAmount = grossAmount * (1 - commissionPercent / 100);
-      const commissionAmount = grossAmount - netAmount;
+      const netAmount = Number((grossAmount * (1 - commissionPercent / 100)).toFixed(2));
+      const commissionAmount = Number((grossAmount - netAmount).toFixed(2));
 
       // Update structured earnings
       if (!astrologer.earnings) {

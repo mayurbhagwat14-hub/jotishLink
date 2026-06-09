@@ -51,6 +51,11 @@ const UserLayout = () => {
     }
   }, [user, dispatch]);
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <div className="bg-white min-h-screen relative">
       {/* ═══ SIDEBAR OVERLAY ═══ */}

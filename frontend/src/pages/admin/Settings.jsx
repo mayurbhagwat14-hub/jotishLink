@@ -4,6 +4,7 @@ import { FaRupeeSign } from 'react-icons/fa';
 import * as adminApis from '../../api/adminApis';
 import { GiFlowerPot } from 'react-icons/gi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
+import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('General');
@@ -52,10 +53,33 @@ const AdminSettings = () => {
   const handleSaveGeneral = async () => {
     try {
       await adminApis.updateAdminSettings({ ...generalSettings, maintenanceMode });
-      alert('Settings saved successfully');
+      toast.success('Settings saved successfully');
     } catch (err) {
       console.error(err);
-      alert('Failed to save settings');
+      toast.error('Failed to save settings');
+    }
+  };
+
+  const handleCommissionChange = (key, value) => {
+    // Prevent empty string from turning into 0 when user deletes
+    const val = value === '' ? '' : Number(value);
+    
+    setGeneralSettings(prev => ({
+      ...prev,
+      commissionRates: {
+        ...prev.commissionRates,
+        [key]: val
+      }
+    }));
+  };
+
+  const handleSaveCommission = async () => {
+    try {
+      await adminApis.updateAdminSettings({ commissionRates: generalSettings.commissionRates });
+      toast.success('Commission rates saved successfully!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save commission rates');
     }
   };
 
@@ -69,14 +93,15 @@ const AdminSettings = () => {
   };
 
   const handleAddCeleb = async () => {
-    if (!newCeleb.name || !newCeleb.role || !newCeleb.img) return alert("Fill all fields");
+    if (!newCeleb.name || !newCeleb.role || !newCeleb.img) return toast.error("Fill all fields");
     try {
       await adminApis.createAdminCelebrity(newCeleb);
       setNewCeleb({ name: '', role: '', img: '', quote: '', isActive: true });
       fetchCelebrities();
+      toast.success("Celebrity added successfully");
     } catch (err) {
       console.error(err);
-      alert("Failed to add celebrity");
+      toast.error("Failed to add celebrity");
     }
   };
 
@@ -92,8 +117,6 @@ const AdminSettings = () => {
   const tabs = [
     { id: 'General', icon: <FiSettings size={14} /> },
     { id: 'Commission', icon: <FiPercent size={14} /> },
-    { id: 'Payments', icon: <FiCreditCard size={14} /> },
-    { id: 'Notifications', icon: <FiBell size={14} /> },
     { id: 'Celebrities', icon: <FiStar size={14} /> },
   ];
 
@@ -212,11 +235,11 @@ const AdminSettings = () => {
           </div>
           <div className="divide-y divide-gray-50">
             {[
-              { service: 'Chat Sessions', icon: <FiMessageSquare size={16} />, rate: 30, description: 'Platform commission on all chat session revenue', color: 'blue' },
-              { service: 'Audio Calls', icon: <FiPhoneCall size={16} />, rate: 25, description: 'Platform commission on audio call revenue', color: 'green' },
-              { service: 'Video Calls', icon: <FiVideo size={16} />, rate: 25, description: 'Platform commission on video call revenue', color: 'purple' },
-              { service: 'E-Pooja Bookings', icon: <GiFlowerPot size={16} />, rate: 20, description: 'Platform commission on e-pooja bookings', color: 'orange' },
-              { service: 'Store Products', icon: <FaRupeeSign size={14} />, rate: 100, description: 'Full margin on store product sales', color: 'pink' },
+              { id: 'chat', service: 'Chat Sessions', icon: <FiMessageSquare size={16} />, rate: 30, description: 'Platform commission on all chat session revenue', color: 'blue' },
+              { id: 'audioCall', service: 'Audio Calls', icon: <FiPhoneCall size={16} />, rate: 30, description: 'Platform commission on audio call revenue', color: 'green' },
+              { id: 'videoCall', service: 'Video Calls', icon: <FiVideo size={16} />, rate: 30, description: 'Platform commission on video call revenue', color: 'purple' },
+              { id: 'pooja', service: 'E-Pooja Bookings', icon: <GiFlowerPot size={16} />, rate: 20, description: 'Platform commission on e-pooja bookings', color: 'orange' },
+              { id: 'storeProduct', service: 'Store Products', icon: <FaRupeeSign size={14} />, rate: 10, description: 'Platform commission on store product sales', color: 'pink' },
             ].map((item, i) => (
               <div key={i} className="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex items-center gap-4 flex-1">
@@ -235,7 +258,8 @@ const AdminSettings = () => {
                   <div className="relative w-24">
                     <input
                       type="number"
-                      defaultValue={item.rate}
+                      value={generalSettings.commissionRates?.[item.id] !== undefined ? generalSettings.commissionRates[item.id] : item.rate}
+                      onChange={(e) => handleCommissionChange(item.id, e.target.value)}
                       min="0"
                       max="100"
                       className="w-full px-3 py-2.5 pr-8 rounded-xl bg-gray-50 border-0 text-sm font-black text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-right"
@@ -247,133 +271,13 @@ const AdminSettings = () => {
             ))}
           </div>
           <div className="px-6 py-5 border-t border-gray-100 flex justify-end">
-            <button className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
+            <button onClick={handleSaveCommission} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
               <FiSave size={14} /> Save Commission Rates
             </button>
           </div>
         </div>
       )}
 
-      {/* ═══ PAYMENTS TAB ═══ */}
-      {activeTab === 'Payments' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2"><FiCreditCard size={16} className="text-orange-500" /> Payment Gateway</h3>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Gateway Provider</label>
-              <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                <option>Razorpay</option>
-                <option>Paytm</option>
-                <option>PhonePe</option>
-                <option>Stripe</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">API Key</label>
-              <input type="password" defaultValue="rzp_live_xxxxxxxxxxxxx" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Secret Key</label>
-              <input type="password" defaultValue="xxxxxxxxxxxxxxxxxxxxx" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-
-            <div className="bg-green-50 rounded-xl p-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              <span className="text-xs font-bold text-green-700">Payment gateway is active and connected</span>
-            </div>
-
-            <button className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
-              <FiSave size={14} /> Save Gateway Config
-            </button>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2"><FaRupeeSign size={14} className="text-orange-500" /> Payout Settings</h3>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payout Frequency</label>
-              <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                <option>Weekly (Every Monday)</option>
-                <option>Bi-weekly</option>
-                <option>Monthly (1st of month)</option>
-                <option>On Demand</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Minimum Payout (₹)</label>
-              <input type="number" defaultValue="500" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Payout Method</label>
-              <select className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                <option>Bank Transfer (NEFT/IMPS)</option>
-                <option>UPI</option>
-                <option>PayPal</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Hold Period (days)</label>
-              <input type="number" defaultValue="7" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-              <p className="text-[10px] text-gray-400 font-medium">Days to hold earnings before making them available for payout</p>
-            </div>
-
-            <button className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
-              <FiSave size={14} /> Save Payout Settings
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ NOTIFICATIONS TAB ═══ */}
-      {activeTab === 'Notifications' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-2">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-3"><FiBell size={16} className="text-orange-500" /> Notification Channels</h3>
-            <ToggleSwitch enabled={emailNotifications} onToggle={() => setEmailNotifications(!emailNotifications)} label="Email Notifications" />
-            <ToggleSwitch enabled={smsNotifications} onToggle={() => setSmsNotifications(!smsNotifications)} label="SMS Notifications" />
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-2">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-3"><FiShield size={16} className="text-orange-500" /> Auto-Notification Triggers</h3>
-            <ToggleSwitch enabled={orderConfirmation} onToggle={() => setOrderConfirmation(!orderConfirmation)} label="Order Confirmation" />
-            <ToggleSwitch enabled={shippingUpdate} onToggle={() => setShippingUpdate(!shippingUpdate)} label="Shipping Updates" />
-            <ToggleSwitch enabled={deliveryConfirmation} onToggle={() => setDeliveryConfirmation(!deliveryConfirmation)} label="Delivery Confirmation" />
-            <ToggleSwitch enabled={newUserWelcome} onToggle={() => setNewUserWelcome(!newUserWelcome)} label="New User Welcome" />
-            <ToggleSwitch enabled={astrologerApproval} onToggle={() => setAstrologerApproval(!astrologerApproval)} label="Astrologer Approval" />
-            <ToggleSwitch enabled={lowStockAlert} onToggle={() => setLowStockAlert(!lowStockAlert)} label="Low Stock Alert (Admin)" />
-          </div>
-
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2"><FiMail size={16} className="text-orange-500" /> Email Templates</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { name: 'Welcome Email', status: 'Active', lastEdited: 'May 20, 2026' },
-                { name: 'Order Confirmation', status: 'Active', lastEdited: 'May 18, 2026' },
-                { name: 'Shipping Notification', status: 'Active', lastEdited: 'May 15, 2026' },
-                { name: 'Delivery Confirmation', status: 'Active', lastEdited: 'May 15, 2026' },
-                { name: 'Astrologer Approval', status: 'Active', lastEdited: 'May 10, 2026' },
-                { name: 'Password Reset', status: 'Draft', lastEdited: 'May 05, 2026' },
-              ].map((template, i) => (
-                <div key={i} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors cursor-pointer group">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-bold text-gray-800">{template.name}</p>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                      template.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-gray-200 text-gray-500'
-                    }`}>{template.status}</span>
-                  </div>
-                  <p className="text-[10px] text-gray-400 font-medium">Last edited: {template.lastEdited}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       {/* ═══ CELEBRITIES TAB ═══ */}
       {activeTab === 'Celebrities' && (
         <div className="space-y-6">
