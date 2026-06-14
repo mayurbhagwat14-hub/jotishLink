@@ -16,7 +16,7 @@ const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { user, isAuthenticated } = useSelector((state) => state.auth) || {};
+  const { user, isAuthenticated, settings } = useSelector((state) => state.auth) || {};
   const { userHome } = useSelector((state) => state.dashboard);
 
   const [showBalanceModal, setShowBalanceModal] = useState(false);
@@ -109,6 +109,31 @@ const Home = () => {
     } else {
       navigate(path);
     }
+  };
+
+  const handleSessionRequest = (astro, type) => {
+    if (!isAuthenticated) {
+      return navigate('/user/login', { state: { redirectTo: '/' } });
+    }
+    if (!user || user?.name === 'Guest User' || user?.isNewUser) {
+      return navigate('/user/details', { state: { redirectTo: '/' } });
+    }
+    
+    const minBalance = settings?.minChatBalance || 10;
+    const isFreeChatEligible = type === 'chat' && user?.freeChatUsed === false;
+    
+    if ((user?.wallet || 0) < minBalance && !isFreeChatEligible) {
+      setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0, name: astro.name || astro.userId?.name || 'Astrologer' });
+      setShowBalanceModal(true);
+      return;
+    }
+    
+    if (isFreeChatEligible) {
+      navigate(`/user/chat`, { state: { astrologer: astro, startWithBot: true, roomId: `room_${user._id}_bot_${Date.now()}` } });
+      return;
+    }
+    
+    navigate('/user/waiting', { state: { astrologer: astro, type } });
   };
 
   const handleViewChat = (session) => {
@@ -250,19 +275,19 @@ const Home = () => {
         </div>
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 pt-1 -mx-5 px-5">
           {[
-            { name: 'Chat', subtitle: 'Starting ₹5/min', icon: <MessageCircle size={20} className="text-[#ff8c00]" />, path: '/user/astrologers?type=chat' },
-            { name: 'Call', subtitle: 'Starting ₹10/min', icon: <Phone size={20} className="text-[#ff8c00]" />, path: '/user/astrologers?type=call' },
-            { name: 'Video Call', subtitle: 'Starting ₹20/min', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/astrologers?type=video' },
-            { name: 'Pooja', subtitle: 'Book Pooja', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>, path: '/user/store' },
+            { name: 'Chat', subtitle: '', icon: <MessageCircle size={20} className="text-[#ff8c00]" />, path: '/user/astrologers?type=chat' },
+            { name: 'Call', subtitle: '', icon: <Phone size={20} className="text-[#ff8c00]" />, path: '/user/astrologers?type=call' },
+            { name: 'Video Call', subtitle: '', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/video-call' },
+            { name: 'Pooja', subtitle: 'Book Pooja', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>, path: '/user/store', state: { category: 'Pooja' } },
             { name: 'Store', subtitle: 'Astro Products', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store' },
           ].map((service, idx) => (
-            <div key={idx} onClick={() => handleChatCallAction(service.path)} className="shrink-0 flex flex-col items-center cursor-pointer group w-[90px]">
+            <div key={idx} onClick={() => navigate(service.path, { state: service.state })} className="shrink-0 flex flex-col items-center cursor-pointer group w-[90px]">
               <div className="w-[85px] h-[105px] bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm border border-gray-100 group-hover:shadow-md transition-all relative overflow-hidden">
                  <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                     {service.icon}
                  </div>
                  <span className="text-[12px] text-gray-900 font-bold mb-0.5 whitespace-nowrap">{service.name}</span>
-                 <span className="text-[9px] text-gray-400 font-medium text-center px-1 leading-tight whitespace-nowrap">{service.subtitle}</span>
+                 {service.subtitle && <span className="text-[10px] text-gray-400 font-medium text-center px-1 leading-tight whitespace-nowrap">{service.subtitle}</span>}
               </div>
             </div>
           ))}
@@ -357,11 +382,15 @@ const Home = () => {
             </span>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pt-1 -mx-5 px-5">
-            {userHome.featuredAstrologers.map((astro, i) => (
+            {userHome.featuredAstrologers.map((astro, i) => {
+              const isOffline = astro.onlineStatus === 'offline';
+              const isBusy = astro.onlineStatus === 'busy';
+              
+              return (
               <div 
                 key={i} 
                 onClick={() => navigate('/user/astrologers')}
-                className="shrink-0 w-[290px] bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-gray-100 p-3 cursor-pointer group hover:-translate-y-1 transition-transform relative flex gap-3"
+                className={`shrink-0 w-[290px] bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-gray-100 p-3 cursor-pointer group hover:-translate-y-1 transition-transform relative flex gap-3 ${isOffline ? 'grayscale opacity-60' : ''}`}
               >
                 {/* Left Image */}
                 <div className="relative w-[90px] h-[95px] rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
@@ -370,6 +399,13 @@ const Home = () => {
                     alt={astro.name} 
                     className="w-full h-full object-cover"
                   />
+                  {isOffline ? (
+                    <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-gray-400 rounded-full border border-white"></div>
+                  ) : isBusy ? (
+                    <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></div>
+                  ) : (
+                    <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
+                  )}
                 </div>
                 
                 {/* Right Content */}
@@ -384,16 +420,34 @@ const Home = () => {
                   
                   {/* Buttons */}
                   <div className="mt-auto flex gap-2 w-full">
-                    <button className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors">
-                      Chat
-                    </button>
-                    <button className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors">
-                      Call
-                    </button>
+                    {isOffline ? (
+                      <button disabled className="flex-1 py-1.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-400 text-[13px] font-bold cursor-not-allowed">
+                        Offline
+                      </button>
+                    ) : isBusy ? (
+                      <button disabled className="flex-1 py-1.5 rounded-xl bg-red-50 border border-red-100 text-red-400 text-[13px] font-bold cursor-not-allowed">
+                        Busy
+                      </button>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'chat'); }}
+                          className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors"
+                        >
+                          Chat
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'call'); }}
+                          className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors"
+                        >
+                          Call
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       )}
