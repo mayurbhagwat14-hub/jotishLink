@@ -153,9 +153,6 @@ const Astrologers = () => {
             <button onClick={() => setShowSearch(!showSearch)} className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
               <FiSearch size={18} className="text-orange-500" />
             </button>
-            <button className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
-              <FiFilter size={16} className="text-orange-500" />
-            </button>
           </div>
         </div>
 

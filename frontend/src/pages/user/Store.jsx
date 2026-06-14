@@ -169,17 +169,7 @@ const Store = () => {
           <span className="text-gray-800 font-semibold text-[18px]">JyotishLink Services</span>
         </div>
         <div className="flex items-center gap-3">
-          <button className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
-            <FiClock size={16} className="text-orange-500" />
-          </button>
-          <button onClick={() => navigate('/user/cart')} className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors relative">
-            <FiShoppingBag size={16} className="text-orange-500" />
-            {cartItemCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                {cartItemCount}
-              </span>
-            )}
-          </button>
+          {/* Icons removed as per user request */}
         </div>
       </div>
 

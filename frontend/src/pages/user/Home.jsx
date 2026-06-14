@@ -133,23 +133,23 @@ const Home = () => {
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-[#ff8c00] rounded-b-[40px] pt-4 pb-6 px-5 relative z-20 shadow-md">
+      <div className="bg-gradient-to-b from-[#ff8c00] to-[#f97316] rounded-b-[30px] pt-3 pb-4 px-5 relative z-20 shadow-md">
         {/* Top Navbar */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="relative cursor-pointer" onClick={openSidebar}>
-              <div className="w-12 h-12 rounded-full border border-white flex items-center justify-center text-white font-bold text-xl bg-white/10">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
+              <div className="w-10 h-10 rounded-full border border-white flex items-center justify-center text-[#ff8c00] font-bold text-lg bg-white">
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'N'}
               </div>
-              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#ff8c00] rounded-full"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#ff8c00] rounded-full"></div>
             </div>
-            <span className="text-white font-bold text-[17px] tracking-wide drop-shadow-sm">Hi, {user?.name || 'Super Admin'}</span>
+            <span className="text-white font-bold text-[16px] tracking-wide drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'Naitik'}</span>
           </div>
 
           <div className="flex items-center gap-2.5">
             <button 
               onClick={() => navigate('/user/recharge')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 border border-white/30 transition-transform active:scale-95 shadow-sm"
+              className="flex items-center gap-2 pl-2.5 pr-1 py-1 rounded-full bg-white/20 border border-white/30 transition-transform active:scale-95 shadow-sm"
             >
               <div className="w-5 h-5 flex items-center justify-center">
                 {/* Pink Wallet Icon */}
@@ -159,14 +159,13 @@ const Home = () => {
                 </div>
               </div>
               <span className="text-white text-[13px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
-              <div className="w-4 h-4 rounded-full bg-yellow-400 flex items-center justify-center shadow-sm">
+              <div className="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center shadow-sm">
                 <Plus size={12} className="text-[#ff8c00] font-bold" strokeWidth={3} />
               </div>
             </button>
             
-            <div className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/20 border border-white/30 cursor-pointer shadow-sm">
-              <Bell size={20} className="text-white" />
-              <div className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white/20"></div>
+            <div className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white/20 border border-white/30 cursor-pointer shadow-sm">
+              <NotificationDropdown iconSize={18} iconClassName="text-white w-full h-full flex items-center justify-center" />
             </div>
           </div>
         </div>
@@ -176,25 +175,23 @@ const Home = () => {
           className="w-full bg-white rounded-full py-3.5 px-5 flex items-center justify-between shadow-sm cursor-pointer"
           onClick={() => navigate('/user/search')}
         >
-          <span className="text-gray-400 text-[14px] font-medium">Search astrologers, products...</span>
-          <Search size={20} className="text-[#ff8c00]" />
+          <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
+          <Search size={18} className="text-[#ff8c00]" />
         </div>
       </div>
 
       {/* ═══ QUICK SERVICES ═══ */}
       <div className="flex justify-between px-5 mb-8 mt-6 w-full relative z-10">
         {[
-          { name: 'Daily\nHoroscope', icon: <Sun size={26} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
-          { name: 'Free\nKundli', icon: <Grid size={26} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
-          { name: 'Kundli\nMatching', icon: <Target size={26} strokeWidth={2.5} className="text-white" />, path: '/user/matchmaking' },
-          { name: 'Panchang', icon: <Calendar size={26} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
-          { name: 'Shubh\nMuhurat', icon: <Clock size={26} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
+          { name: 'Daily\nHoroscope', icon: <Sun size={24} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
+          { name: 'Free\nKundli', icon: <Grid size={24} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
+          { name: 'Kundli\nMatching', icon: <Target size={24} strokeWidth={2.5} className="text-white" />, path: '/user/matchmaking' },
+          { name: 'Panchang', icon: <Calendar size={24} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
+          { name: 'Shubh\nMuhurat', icon: <Clock size={24} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
-          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 flex-1">
-            <div className="w-[56px] h-[56px] bg-white rounded-[20px] flex items-center justify-center shadow-sm border border-gray-100 hover:scale-105 transition-transform active:scale-95 p-1.5">
-              <div className="bg-[#ff8c00] rounded-xl w-full h-full flex items-center justify-center shadow-sm">
-                {service.icon}
-              </div>
+          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 flex-1 group">
+            <div className="w-[56px] h-[56px] bg-[#ff8c00] rounded-[20px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
+              {service.icon}
             </div>
             <span className="text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
           </div>
@@ -212,7 +209,7 @@ const Home = () => {
             {topBanners.map((banner, idx) => (
               <div 
                 key={banner._id || idx} 
-                className="w-[85vw] sm:w-[320px] h-[140px] shrink-0 snap-center rounded-[24px] overflow-hidden shadow-md relative cursor-pointer bg-gray-50"
+                className="w-[92vw] sm:w-[400px] h-[175px] shrink-0 snap-center rounded-[24px] overflow-hidden shadow-md relative cursor-pointer bg-gray-50"
                 onClick={() => {
                   if (banner.linkUrl) {
                     if (banner.linkUrl.startsWith('http')) {
@@ -240,23 +237,35 @@ const Home = () => {
         </div>
       )}
 
-      {/* ═══ GOT ANY QUESTIONS? BANNER ═══ */}
-      <div className="px-5 mb-8">
-        <div 
-          onClick={() => handleChatCallAction('/user/astrologers?type=chat')}
-          className="w-full rounded-[24px] p-4 flex items-center justify-between shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-          style={{ background: 'linear-gradient(90deg, #4a1c40 0%, #a63f1f 50%, #d95e1e 100%)' }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
-              <MessageCircle size={24} className="text-white/90" />
+      {/* ═══ OUR SERVICES GRID ═══ */}
+      <div className="px-5 mb-8 relative z-10">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-[18px] font-bold text-gray-900">Our Services</h2>
+          <span 
+            onClick={() => navigate('/user/astrologers')}
+            className="text-[13px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors"
+          >
+            View All
+          </span>
+        </div>
+        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 pt-1 -mx-5 px-5">
+          {[
+            { name: 'Chat', subtitle: 'Starting ₹5/min', icon: <MessageCircle size={20} className="text-[#ff8c00]" />, path: '/user/astrologers?type=chat' },
+            { name: 'Call', subtitle: 'Starting ₹10/min', icon: <Phone size={20} className="text-[#ff8c00]" />, path: '/user/astrologers?type=call' },
+            { name: 'Video Call', subtitle: 'Starting ₹20/min', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/astrologers?type=video' },
+            { name: 'Pooja', subtitle: 'Book Pooja', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>, path: '/user/store' },
+            { name: 'Store', subtitle: 'Astro Products', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store' },
+          ].map((service, idx) => (
+            <div key={idx} onClick={() => handleChatCallAction(service.path)} className="shrink-0 flex flex-col items-center cursor-pointer group w-[90px]">
+              <div className="w-[85px] h-[105px] bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm border border-gray-100 group-hover:shadow-md transition-all relative overflow-hidden">
+                 <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    {service.icon}
+                 </div>
+                 <span className="text-[12px] text-gray-900 font-bold mb-0.5 whitespace-nowrap">{service.name}</span>
+                 <span className="text-[9px] text-gray-400 font-medium text-center px-1 leading-tight whitespace-nowrap">{service.subtitle}</span>
+              </div>
             </div>
-            <div>
-              <h3 className="text-white font-bold text-[17px] mb-0.5">Got any questions?</h3>
-              <p className="text-white/80 text-[13px] font-medium">Chat with Astrologer @ ₹5/min</p>
-            </div>
-          </div>
-          <ChevronRight size={20} className="text-white/60 mr-2" />
+          ))}
         </div>
       </div>
 
@@ -375,10 +384,10 @@ const Home = () => {
                   
                   {/* Buttons */}
                   <div className="mt-auto flex gap-2 w-full">
-                    <button className="flex-1 py-1.5 rounded-full bg-white border border-[#ff8c00] text-[#ff8c00] text-[13px] font-semibold hover:bg-orange-50 transition-colors">
+                    <button className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors">
                       Chat
                     </button>
-                    <button className="flex-1 py-1.5 rounded-full bg-white border border-[#ff8c00] text-[#ff8c00] text-[13px] font-semibold hover:bg-orange-50 transition-colors">
+                    <button className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors">
                       Call
                     </button>
                   </div>
@@ -388,6 +397,8 @@ const Home = () => {
           </div>
         </div>
       )}
+
+
 
       {/* ═══ JYOTISHLINK SERVICES ═══ */}
       <div className="px-5 mb-8 relative z-10">
@@ -485,23 +496,7 @@ const Home = () => {
         </div>
       )}
 
-      {/* ═══ FLOATING STICKY ACTION BUTTONS ═══ */}
-      <div className="fixed bottom-[72px] left-0 right-0 z-40 lg:hidden">
-        <div className="px-4 pb-4 pt-2 flex gap-3 justify-center">
-          <button
-            onClick={() => handleChatCallAction('/user/astrologers?type=chat')}
-            className="flex-1 text-white bg-[#ff8c00] shadow-[0_4px_15px_rgba(255,140,0,0.3)] rounded-full py-3 px-2 flex items-center justify-center gap-2 font-bold text-[14px] whitespace-nowrap active:scale-95 transition-transform"
-          >
-            <MessageCircle size={18} fill="currentColor" /> <span>Chat with Astrologer</span>
-          </button>
-          <button
-            onClick={() => handleChatCallAction('/user/astrologers?type=call')}
-            className="flex-1 text-white bg-[#ff8c00] shadow-[0_4px_15px_rgba(255,140,0,0.3)] rounded-full py-3 px-2 flex items-center justify-center gap-2 font-bold text-[14px] whitespace-nowrap active:scale-95 transition-transform"
-          >
-            <Phone size={18} fill="currentColor" /> <span>Call with Astrologer</span>
-          </button>
-        </div>
-      </div>
+
 
       <LowBalanceModal 
         isOpen={showBalanceModal} 
