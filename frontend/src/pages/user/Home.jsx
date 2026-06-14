@@ -133,9 +133,9 @@ const Home = () => {
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-[#ff8c00] rounded-b-[40px] pt-4 pb-6 px-5 relative z-20">
+      <div className="bg-[#ff8c00] rounded-b-[40px] pt-4 pb-6 px-5 relative z-20 shadow-md">
         {/* Top Navbar */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="relative cursor-pointer" onClick={openSidebar}>
               <div className="w-12 h-12 rounded-full border border-white flex items-center justify-center text-white font-bold text-xl bg-white/10">
@@ -170,12 +170,10 @@ const Home = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Search Bar (Now on White Background) */}
-      <div className="px-5 mt-3 mb-5 relative z-10">
+        {/* Search Bar (Inside Header) */}
         <div 
-          className="w-full bg-white rounded-full py-3.5 px-5 flex items-center justify-between shadow-[0_4px_15px_rgba(255,140,0,0.1)] cursor-pointer border border-[#ff8c00]"
+          className="w-full bg-white rounded-full py-3.5 px-5 flex items-center justify-between shadow-sm cursor-pointer"
           onClick={() => navigate('/user/search')}
         >
           <span className="text-gray-400 text-[14px] font-medium">Search astrologers, products...</span>
@@ -183,9 +181,29 @@ const Home = () => {
         </div>
       </div>
 
+      {/* ═══ QUICK SERVICES ═══ */}
+      <div className="flex justify-between px-5 mb-8 mt-6 w-full relative z-10">
+        {[
+          { name: 'Daily\nHoroscope', icon: <Sun size={26} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
+          { name: 'Free\nKundli', icon: <Grid size={26} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
+          { name: 'Kundli\nMatching', icon: <Target size={26} strokeWidth={2.5} className="text-white" />, path: '/user/matchmaking' },
+          { name: 'Panchang', icon: <Calendar size={26} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
+          { name: 'Shubh\nMuhurat', icon: <Clock size={26} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
+        ].map((service, idx) => (
+          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 flex-1">
+            <div className="w-[56px] h-[56px] bg-white rounded-[20px] flex items-center justify-center shadow-sm border border-gray-100 hover:scale-105 transition-transform active:scale-95 p-1.5">
+              <div className="bg-[#ff8c00] rounded-xl w-full h-full flex items-center justify-center shadow-sm">
+                {service.icon}
+              </div>
+            </div>
+            <span className="text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
+          </div>
+        ))}
+      </div>
+
       {/* ═══ DYNAMIC BANNERS CAROUSEL (TOP) ═══ */}
       {topBanners.length > 0 && (
-        <div className="mb-6 relative z-10 mt-2">
+        <div className="mb-6 relative z-10">
           <div 
             ref={scrollRef}
             onScroll={handleBannerScroll}
@@ -221,26 +239,6 @@ const Home = () => {
           </div>
         </div>
       )}
-
-      {/* ═══ QUICK SERVICES ═══ */}
-      <div className="flex justify-between px-5 mb-8 w-full relative z-10">
-        {[
-          { name: 'Daily\nHoroscope', icon: <Sun size={26} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
-          { name: 'Free\nKundli', icon: <Grid size={26} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
-          { name: 'Kundli\nMatching', icon: <Target size={26} strokeWidth={2.5} className="text-white" />, path: '/user/matchmaking' },
-          { name: 'Panchang', icon: <Calendar size={26} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
-          { name: 'Shubh\nMuhurat', icon: <Clock size={26} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
-        ].map((service, idx) => (
-          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 flex-1">
-            <div className="w-[56px] h-[56px] bg-white rounded-[20px] flex items-center justify-center shadow-sm border border-gray-100 hover:scale-105 transition-transform active:scale-95 p-1.5">
-              <div className="bg-[#ff8c00] rounded-xl w-full h-full flex items-center justify-center shadow-sm">
-                {service.icon}
-              </div>
-            </div>
-            <span className="text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
-          </div>
-        ))}
-      </div>
 
       {/* ═══ GOT ANY QUESTIONS? BANNER ═══ */}
       <div className="px-5 mb-8">
