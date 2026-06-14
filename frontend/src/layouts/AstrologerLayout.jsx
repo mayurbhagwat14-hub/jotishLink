@@ -1,7 +1,8 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/slices/authSlice';
+import { astrologerLogout } from '../store/slices/astrologerAuthSlice';
+import { clearAstrologerDashboard } from '../store/slices/dashboardSlice';
 import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiSettings, FiLogOut, FiLogIn, FiUserPlus, FiCreditCard, FiActivity, FiClock, FiMenu, FiCheckCircle } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
@@ -13,14 +14,35 @@ import toast from 'react-hot-toast';
 
 const AstrologerLayout = () => {
   const dispatch = useDispatch();
-  const { user, token } = useSelector((state) => state.auth);
+  const { user, token } = useSelector((state) => state.astrologerAuth);
   const { profile } = useSelector((state) => state.astrologer);
   const location = useLocation();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(user?.onlineStatus === 'online' || false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const socketRef = useRef(null);
+
+  useEffect(() => {
+    const handleFocus = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(true);
+      }
+    };
+    const handleBlur = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(false);
+      }
+    };
+
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+    return () => {
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+    };
+  }, []);
 
   useEffect(() => {
     if (user && user.role === 'astrologer') {
@@ -107,7 +129,8 @@ const AstrologerLayout = () => {
   // Requests are now handled in the Chats/Calls tabs directly
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(astrologerLogout());
+    dispatch(clearAstrologerDashboard());
     navigate('/astrologer/login');
   };
 
@@ -234,6 +257,9 @@ const AstrologerLayout = () => {
                 <Link to="/astrologer/earnings" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
                   <FiCreditCard size={18} /> Earnings & Wallet
                 </Link>
+                <Link to="/astrologer/session-earnings" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
+                  <FiClock size={18} /> Session Earnings
+                </Link>
                 <Link to="/astrologer/analytics" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
                   <FiActivity size={18} /> Analytics
                 </Link>
@@ -267,8 +293,9 @@ const AstrologerLayout = () => {
       )}
 
       {/* Mobile Top Up Banner - Absolute positioned overlay */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 z-[90] pointer-events-none md:max-w-md md:mx-auto">
-        <nav className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-orange-500/10 rounded-3xl flex justify-around items-center h-16 px-2 pointer-events-auto relative overflow-hidden">
+      {!isKeyboardOpen && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 z-[90] pointer-events-none md:max-w-md md:mx-auto">
+          <nav className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-orange-500/10 rounded-3xl flex justify-around items-center h-16 px-2 pointer-events-auto relative overflow-hidden">
           {/* Subtle gradient glow inside the navbar */}
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-orange-500/5 pointer-events-none"></div>
           
@@ -301,6 +328,7 @@ const AstrologerLayout = () => {
           })}
         </nav>
       </div>
+      )}
       
       {/* Desktop Wrapper (Optional, to keep it centered like an app on large screens) */}
       <style>{`

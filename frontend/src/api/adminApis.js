@@ -11,7 +11,7 @@ export const updateAdminUserStatus = (id, status) => axios.put(`/admin/users/${i
 export const deleteAdminUser = (id) => axios.delete(`/admin/users/${id}`);
 export const getAdminAstrologers = () => axios.get('/admin/astrologers');
 export const getAdminAstrologerById = (id) => axios.get(`/admin/astrologer/${id}`);
-export const updateAdminAstrologerStatus = (id, status) => axios.put(`/admin/astrologers/${id}/status`, { status });
+export const updateAdminAstrologerStatus = (id, status) => axios.put(`/admin/astrologer/${id}/status`, { status });
 export const approveAstrologer = (id) => axios.put(`/admin/astrologer/approve/${id}`);
 export const rejectAstrologer = (id, reason) => axios.put(`/admin/astrologer/reject/${id}`, { reason });
 export const suspendAstrologer = (id, reason) => axios.put(`/admin/astrologer/suspend/${id}`, { reason });
@@ -21,6 +21,9 @@ export const refundUser = (id, data) => axios.post(`/admin/users/${id}/refund`, 
 export const getAdminOrders = () => axios.get('/admin/orders');
 export const updateAdminOrderStatus = (id, status) => axios.put(`/admin/orders/${id}/status`, { status });
 export const processCancelRequest = (id, action, refundPercent) => axios.put(`/admin/orders/${id}/cancel`, { action, refundPercent });
+export const pushOrderToShiprocket = (id) => axios.post(`/admin/orders/${id}/shiprocket/push`);
+export const generateOrderAWB = (id, courierId) => axios.post(`/admin/orders/${id}/shiprocket/awb`, { courierId });
+export const getPendingCounts = () => axios.get('/admin/pending-counts');
 export const getAdminProducts = () => axios.get('/admin/products');
 export const createAdminProduct = (data) => axios.post('/admin/products', data);
 export const updateAdminProduct = (id, data) => axios.put(`/admin/products/${id}`, data);

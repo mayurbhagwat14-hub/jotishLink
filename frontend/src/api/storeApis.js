@@ -8,3 +8,4 @@ export const getUserOrders = () => axios.get('/store/orders');
 export const getOrderById = (id) => axios.get(`/store/orders/${id}`);
 export const createRazorpayOrder = (amount) => axios.post('/store/razorpay-order', { amount });
 export const requestCancelOrder = (orderId, reason) => axios.post(`/store/orders/${orderId}/cancel`, { reason });
+export const trackOrder = (orderId) => axios.get(`/store/orders/${orderId}/track`);

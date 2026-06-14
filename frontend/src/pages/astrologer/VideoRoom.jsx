@@ -28,8 +28,20 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
   const isAudio = sessionData.type === 'audio';
   const [isVideoEnabled, setIsVideoEnabled] = useState(!isAudio);
 
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(!isMuted);
-  const { localCameraTrack } = useLocalCameraTrack(isVideoEnabled && !isAudio);
+  const { localMicrophoneTrack } = useLocalMicrophoneTrack(true);
+  const { localCameraTrack } = useLocalCameraTrack(!isAudio);
+
+  useEffect(() => {
+    if (localMicrophoneTrack) {
+      localMicrophoneTrack.setMuted(isMuted).catch(console.error);
+    }
+  }, [isMuted, localMicrophoneTrack]);
+
+  useEffect(() => {
+    if (localCameraTrack && !isAudio) {
+      localCameraTrack.setMuted(!isVideoEnabled).catch(console.error);
+    }
+  }, [isVideoEnabled, localCameraTrack, isAudio]);
   const remoteUsers = useRemoteUsers();
 
   useJoin({ appid: appId, channel: channelName, token: rtcToken, uid });

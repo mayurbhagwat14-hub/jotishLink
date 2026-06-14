@@ -79,7 +79,8 @@ const AdminContent = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setNewBanner({ ...newBanner, imageUrl: reader.result });
+        // Use functional state update to prevent stale closures
+        setNewBanner((prev) => ({ ...prev, imageUrl: reader.result }));
       };
       reader.readAsDataURL(file);
     }
@@ -364,7 +365,12 @@ const AdminContent = () => {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-bold text-gray-900">Add New Banner</h3>
-              <button onClick={() => setShowBannerModal(false)} className="text-gray-400 hover:text-gray-600"><FiX size={20}/></button>
+              <button 
+                onClick={() => !isSubmittingBanner && setShowBannerModal(false)} 
+                className={`${isSubmittingBanner ? 'opacity-30 cursor-not-allowed' : 'text-gray-400 hover:text-gray-600'}`}
+              >
+                <FiX size={20}/>
+              </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -424,10 +430,13 @@ const AdminContent = () => {
               <button 
                 onClick={handleCreateBanner} 
                 disabled={isSubmittingBanner}
-                className={`w-full py-3 mt-2 text-white font-bold rounded-xl transition-all flex items-center justify-center ${isSubmittingBanner ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 active:scale-[0.98]'}`}
+                className={`w-full py-3 mt-2 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${isSubmittingBanner ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 active:scale-[0.98]'}`}
               >
                 {isSubmittingBanner ? (
-                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <>
+                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    Uploading Image...
+                  </>
                 ) : (
                   'Save Banner'
                 )}

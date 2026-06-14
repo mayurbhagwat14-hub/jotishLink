@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const validate = (schema) => asyncHandler(async (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
+    console.error("VALIDATION FAILED FOR PAYLOAD:", JSON.stringify(req.body, null, 2));
     const errorMessage = error.details.map((detail) => detail.message).join(', ');
     throw new ApiError(400, errorMessage);
   }
@@ -85,6 +86,13 @@ export const astrologerSignupSchema = Joi.object({
   panCard: Joi.string().allow('').optional(),
   certificate: Joi.string().allow('').optional(),
   selfieVerification: Joi.string().allow('').optional(),
+  isPandit: Joi.boolean().optional(),
+  poojasOffered: Joi.array().items(
+    Joi.object({
+      poojaName: Joi.string().required(),
+      price: Joi.number().required()
+    })
+  ).optional()
 });
 
 export const astrologerLoginSchema = Joi.object({

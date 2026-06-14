@@ -28,8 +28,20 @@ const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user,
   const sessionIdRef = useRef(null);
   const isAudio = callType === 'audio';
 
-  const { localMicrophoneTrack } = useLocalMicrophoneTrack(!isMuted);
-  const { localCameraTrack } = useLocalCameraTrack(!isVideoOff && !isAudio);
+  const { localMicrophoneTrack } = useLocalMicrophoneTrack(true);
+  const { localCameraTrack } = useLocalCameraTrack(!isAudio);
+
+  useEffect(() => {
+    if (localMicrophoneTrack) {
+      localMicrophoneTrack.setMuted(isMuted).catch(console.error);
+    }
+  }, [isMuted, localMicrophoneTrack]);
+
+  useEffect(() => {
+    if (localCameraTrack && !isAudio) {
+      localCameraTrack.setMuted(isVideoOff).catch(console.error);
+    }
+  }, [isVideoOff, localCameraTrack, isAudio]);
   const remoteUsers = useRemoteUsers();
 
   useJoin({ appid: appId, channel: channelName, token: rtcToken, uid });

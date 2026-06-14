@@ -15,6 +15,7 @@ export const fetchAstrologersThunk = createAsyncThunk(
 
 const initialState = {
   astrologers: [],
+  bannerMessage: 'Will I have love or arranged marriage?',
   loading: false,
   error: null,
 };
@@ -41,10 +42,16 @@ const userSlice = createSlice({
         state.loading = false;
         // ApiResponse: { data: { astrologers: [...] } }
         const astrologers = action.payload?.data?.astrologers || action.payload?.astrologers || action.payload;
+        const settings = action.payload?.data?.settings || action.payload?.settings;
+        
         if (Array.isArray(astrologers)) {
           state.astrologers = astrologers;
         } else {
           state.astrologers = [];
+        }
+        
+        if (settings && settings.astrologerBannerMessage) {
+          state.bannerMessage = settings.astrologerBannerMessage;
         }
       })
       .addCase(fetchAstrologersThunk.rejected, (state, action) => {

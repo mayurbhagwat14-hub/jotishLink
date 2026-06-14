@@ -32,6 +32,13 @@ const withdrawalRequestSchema = new mongoose.Schema(
     },
     rejectionReason: {
       type: String,
+    },
+    paymentProof: {
+      type: String, // URL of the screenshot uploaded by admin
+    },
+    deletedByAstrologer: {
+      type: Boolean,
+      default: false,
     }
   },
   {

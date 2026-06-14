@@ -75,7 +75,15 @@ const initialState = {
 const dashboardSlice = createSlice({
   name: 'dashboard',
   initialState,
-  reducers: {},
+  reducers: {
+    clearAdminDashboard: (state) => {
+      state.adminDashboard = {};
+    },
+    clearAstrologerDashboard: (state) => {
+      state.astrologerDashboard = {};
+      state.astrologerAnalytics = {};
+    }
+  },
   extraReducers: (builder) => {
     builder
       // User Home Data
@@ -145,4 +153,5 @@ const dashboardSlice = createSlice({
   }
 });
 
+export const { clearAdminDashboard, clearAstrologerDashboard } = dashboardSlice.actions;
 export default dashboardSlice.reducer;

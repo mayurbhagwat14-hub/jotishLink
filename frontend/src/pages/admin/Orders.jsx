@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi } from '../../api/adminApis';
+import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB } from '../../api/adminApis';
 
 const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
@@ -51,6 +51,10 @@ const AdminOrders = () => {
           payment: o.paymentStatus || 'Paid',
           status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending',
           cancelRequest: o.cancelRequest || null,
+          shiprocketOrderId: o.shiprocketOrderId,
+          shipmentId: o.shipmentId,
+          tracking: o.trackingId || o.awbCode || null,
+          shippingProvider: o.courierPartner || 'Unknown',
           date: new Date(o.createdAt).toLocaleDateString(),
           time: new Date(o.createdAt).toLocaleTimeString(),
           timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }]
@@ -73,7 +77,7 @@ const AdminOrders = () => {
     try {
       await updateAdminOrderStatus(dbId, 'Processing');
       setOrders(prev => prev.map(o => {
-        if (o.id === orderId && o.status === 'Pending') {
+        if (o.id === orderId) {
           return {
             ...o,
             status: 'Processing',
@@ -126,7 +130,7 @@ const AdminOrders = () => {
     try {
       await updateAdminOrderStatus(dbId, 'Delivered');
       setOrders(prev => prev.map(o => {
-        if (o.id === orderId && o.status === 'Shipped') {
+        if (o.id === orderId) {
           return {
             ...o,
             status: 'Delivered',
@@ -144,12 +148,34 @@ const AdminOrders = () => {
     }
   };
 
+  // ═══ MARK COMPLETED ═══
+  const markCompleted = async (orderId, dbId) => {
+    try {
+      await updateAdminOrderStatus(dbId, 'Completed');
+      setOrders(prev => prev.map(o => {
+        if (o.id === orderId) {
+          return {
+            ...o,
+            status: 'Completed',
+            timeline: [...o.timeline, { label: 'Completed', time: now(), icon: 'check' }]
+          };
+        }
+        return o;
+      }));
+      showToast(`${orderId} marked as completed! 🎉`);
+      setSelectedOrder(null);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update status');
+    }
+  };
+
   // ═══ CANCEL ORDER ═══
   const cancelOrder = async (orderId, dbId) => {
     try {
       await updateAdminOrderStatus(dbId, 'Cancelled');
       setOrders(prev => prev.map(o => {
-        if (o.id === orderId && (o.status === 'Pending' || o.status === 'Processing')) {
+        if (o.id === orderId) {
           return {
             ...o,
             status: 'Cancelled',
@@ -167,13 +193,14 @@ const AdminOrders = () => {
     }
   };
 
-  const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancel Requests', 'Cancelled'];
+  const tabs = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Completed', 'Cancel Requests', 'Cancelled'];
   const tabCounts = {
     All: orders.length,
     Pending: orders.filter(o => o.status === 'Pending').length,
     Processing: orders.filter(o => o.status === 'Processing').length,
     Shipped: orders.filter(o => o.status === 'Shipped').length,
     Delivered: orders.filter(o => o.status === 'Delivered').length,
+    Completed: orders.filter(o => o.status === 'Completed').length,
     'Cancel Requests': orders.filter(o => o.cancelRequest?.requested && o.cancelRequest?.adminResponse === 'pending').length,
     Cancelled: orders.filter(o => o.status === 'Cancelled').length,
   };
@@ -196,6 +223,7 @@ const AdminOrders = () => {
       case 'Processing': return 'bg-yellow-50 text-yellow-700';
       case 'Shipped': return 'bg-blue-50 text-blue-600';
       case 'Delivered': return 'bg-green-50 text-green-600';
+      case 'Completed': return 'bg-teal-50 text-teal-600';
       case 'Cancelled': return 'bg-red-50 text-red-500';
       default: return 'bg-gray-100 text-gray-500';
     }
@@ -207,6 +235,7 @@ const AdminOrders = () => {
       case 'Processing': return <FiPackage size={10} />;
       case 'Shipped': return <FiTruck size={10} />;
       case 'Delivered': return <FiCheck size={10} />;
+      case 'Completed': return <FiCheckCircle size={10} />;
       case 'Cancelled': return <FiX size={10} />;
       default: return null;
     }
@@ -447,6 +476,15 @@ const AdminOrders = () => {
                               <FiCheckCircle size={12} /> Delivered
                             </button>
                           )}
+                          
+                          {order.status === 'Delivered' && (
+                            <button
+                              onClick={() => markCompleted(order.id, order.dbId)}
+                              className="px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-teal-500/20 hover:shadow-md hover:shadow-teal-500/30 active:scale-95"
+                            >
+                              <FiCheckCircle size={12} /> Complete
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
@@ -587,6 +625,12 @@ const AdminOrders = () => {
                             <p className="text-xs font-medium text-gray-400 pt-1">Awaiting delivery confirmation...</p>
                           </div>
                         )}
+                        {order.status === 'Delivered' && (
+                          <div className="flex gap-3 opacity-40">
+                            <div className="w-6 h-6 rounded-full border-2 border-dashed border-teal-300 flex items-center justify-center shrink-0"><FiCheckCircle size={10} className="text-teal-300" /></div>
+                            <p className="text-xs font-medium text-gray-400 pt-1">Awaiting completion...</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -605,10 +649,36 @@ const AdminOrders = () => {
                         </>
                       )}
                       {order.status === 'Processing' && (
-                        <button
-                          onClick={() => { setShowShipModal(order); setSelectedOrder(null); setTrackingNumber(''); setShippingProvider('DHL Express'); setIsCustomProvider(false); setCustomProviderName(''); }}
-                          className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-600/20 active:scale-[0.98]"
-                        ><FiTruck size={14} /> Mark as Shipped</button>
+                        <>
+                          {!order.shipmentId ? (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await pushOrderToShiprocket(order.dbId);
+                                  showToast(`Order ${order.id} pushed to Shiprocket!`);
+                                  // Re-fetch to get new state
+                                  window.location.reload(); 
+                                } catch (e) {
+                                  showToast('Failed to push to Shiprocket');
+                                }
+                              }}
+                              className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-purple-600/20 active:scale-[0.98]"
+                            ><FiPackage size={14} /> Push to Shiprocket</button>
+                          ) : (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await generateOrderAWB(order.dbId);
+                                  showToast(`AWB Generated for ${order.id}!`);
+                                  window.location.reload();
+                                } catch (e) {
+                                  showToast('Failed to generate AWB');
+                                }
+                              }}
+                              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-600/20 active:scale-[0.98]"
+                            ><FiTruck size={14} /> Generate AWB (Ship)</button>
+                          )}
+                        </>
                       )}
                       {order.status === 'Shipped' && (
                         <button
@@ -617,8 +687,16 @@ const AdminOrders = () => {
                         ><FiCheckCircle size={14} /> Mark as Delivered</button>
                       )}
                       {order.status === 'Delivered' && (
-                        <div className="flex-1 px-4 py-3 bg-green-50 text-green-700 font-bold text-sm rounded-xl flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => markCompleted(order.id, order.dbId)}
+                          className="flex-1 px-4 py-3 bg-teal-50 text-teal-600 hover:bg-teal-100 font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+                        >
                           <FiCheckCircle size={14} /> Order Complete
+                        </button>
+                      )}
+                      {order.status === 'Completed' && (
+                        <div className="flex-1 px-4 py-3 bg-teal-50 text-teal-700 font-bold text-sm rounded-xl flex items-center justify-center gap-2">
+                          <FiCheckCircle size={14} /> Completed
                         </div>
                       )}
                       {order.status === 'Cancelled' && (

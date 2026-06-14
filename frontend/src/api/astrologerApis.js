@@ -20,4 +20,5 @@ export const updateAstrologerOnlineStatus = (status) => axios.put('/astrologer/s
 export const getAstrologerHistory = () => axios.get('/astrologer/history');
 export const getAstrologerAnalytics = () => axios.get('/astrologer/analytics');
 export const requestWithdrawal = (amount) => axios.post('/astrologer/withdraw', { amount });
+export const deleteWithdrawalRequest = (id) => axios.delete(`/astrologer/withdraw/${id}`);
 export const deleteAstrologerHistoryBulk = (ids) => axios.post('/astrologer/history/delete', { ids });

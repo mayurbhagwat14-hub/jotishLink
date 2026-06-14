@@ -51,6 +51,8 @@ const OrderHistory = () => {
   const [storeOrders, setStoreOrders] = useState([]);
   const [calls, setCalls] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugError, setDebugError] = useState('');
+
 
 
   // Selection mode
@@ -82,7 +84,7 @@ const OrderHistory = () => {
     const fetchData = async () => {
       try {
         const [sessionRes, poojaRes, storeRes, callsRes] = await Promise.all([
-          getUserSessions().catch(() => ({ data: { data: {} } })),
+          getUserSessions().catch((e) => ({ data: { success: false, debug: e.message } })),
           getUserPoojas().catch(() => ({ data: { data: {} } })),
           getUserOrders().catch(() => ({ data: { data: {} } })),
           getUserCalls().catch(() => ({ data: { data: {} } }))
@@ -90,8 +92,12 @@ const OrderHistory = () => {
         
         if (sessionRes.data?.success) {
           setSessions(sessionRes.data.data.sessions || []);
-          
-          const rawTxns = sessionRes.data.data.transactions || [];
+          setDebugError('');
+        } else {
+          setDebugError('API Failed: ' + (sessionRes.data?.debug || 'Unknown error or no success flag') + ' | Raw data: ' + JSON.stringify(sessionRes.data || {}));
+        }
+        
+        const rawTxns = sessionRes.data?.data?.transactions || [];
           const aggregatedTxns = [];
           let currentSessionTxn = null;
 
@@ -118,11 +124,11 @@ const OrderHistory = () => {
             }
           }
           setTransactions(aggregatedTxns);
-        }
         if (poojaRes.data?.success) {
           setPoojas(poojaRes.data.data.poojas || []);
         }
         if (storeRes.data?.success) {
+          console.log("STORE RES DATA:", storeRes.data);
           setStoreOrders(storeRes.data.data.orders || []);
         }
         if (callsRes.data?.success) {
@@ -167,6 +173,22 @@ const OrderHistory = () => {
     setIsConfirmModalOpen(true);
   };
 
+  const handleSingleDelete = async (id, type) => {
+    if (!window.confirm("Are you sure you want to delete this history?")) return;
+    try {
+      setIsLoading(true);
+      await deleteUserHistory({ ids: [id], type });
+      if (type === 'chat') setSessions(prev => prev.filter(x => x._id !== id));
+      if (type === 'call') setCalls(prev => prev.filter(x => x._id !== id));
+      if (type === 'pooja') setPoojas(prev => prev.filter(x => x._id !== id));
+      if (type === 'order') setStoreOrders(prev => prev.filter(x => x._id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete history');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const executeDelete = async () => {
 
     let type;
@@ -203,10 +225,10 @@ const OrderHistory = () => {
       {/* ═══ TOP NAVBAR ═══ */}
       <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-gray-50">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
+          <button onClick={() => navigate('/user/home')} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
             <FiArrowLeft size={20} />
           </button>
-          <span className="text-gray-800 font-semibold text-[17px]">Order History</span>
+          <span className="text-gray-800 font-semibold text-[17px]">History</span>
         </div>
         <div className="flex items-center gap-3">
           {['Chat', 'Calls', 'Orders', 'Poojas'].includes(activeTab) && (
@@ -255,6 +277,7 @@ const OrderHistory = () => {
       {/* ═══ CHAT TAB ═══ */}
       {activeTab === 'Chat' && (
         <div className="divide-y divide-gray-50">
+          {debugError && <div className="p-4 bg-red-100 text-red-700 text-xs font-mono break-words">{debugError}</div>}
           {isLoading ? (
             <div className="p-8 text-center text-gray-400">Loading...</div>
           ) : sessions.length === 0 ? (
@@ -276,7 +299,7 @@ const OrderHistory = () => {
               const astroName = item.astrologerId?.name || 'Astrologer';
               const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
               const lastMsg = item.messages?.length > 0 ? item.messages[item.messages.length - 1]?.text : 'No messages';
-              const duration = item.durationSeconds ? `${Math.floor(item.durationSeconds / 60)}m ${item.durationSeconds % 60}s` : (item.messages?.length ? `${item.messages.length} msgs` : '');
+              const durationStr = item.durationSeconds ? `${Math.floor(item.durationSeconds / 60)}m ${item.durationSeconds % 60}s` : '0m 0s';
 
               return (
                 <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors flex items-start gap-2 relative">
@@ -303,9 +326,29 @@ const OrderHistory = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-gray-800 text-[15px]">{astroName}</h4>
-                        <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)} {duration && `• ${duration}`}</p>
-                        <p className="text-[12px] text-gray-500 line-clamp-1 mt-0.5">{typeof lastMsg === 'string' ? lastMsg.slice(0, 60) : 'Chat session'}{lastMsg?.length > 60 ? '...' : ''}</p>
+                        <p className="text-[12px] text-gray-400">{formatDate(item.createdAt)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                            (item.status || 'completed') === 'completed' ? 'bg-green-50 text-green-600' :
+                            item.status === 'missed' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {item.status || 'completed'}
+                          </span>
+                          <span className="text-[12px] text-gray-500 font-medium">{durationStr} • ₹{Number(item.amountDeducted || 0).toFixed(2)}</span>
+                        </div>
+                        <p className="text-[12px] text-gray-500 line-clamp-1 mt-1">{typeof lastMsg === 'string' ? lastMsg.slice(0, 60) : 'Chat session'}{lastMsg?.length > 60 ? '...' : ''}</p>
                       </div>
+                      {!isSelectionMode && (
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            handleSingleDelete(item._id, 'chat'); 
+                          }}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors self-start"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   <div className="flex gap-2 pl-[60px]">
                     <button 
@@ -352,7 +395,9 @@ const OrderHistory = () => {
             calls.map((item, i) => {
               const astroName = item.astrologerId?.name || 'Astrologer';
               const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
-              const duration = item.durationSeconds ? `${Math.floor(item.durationSeconds / 60)}m ${item.durationSeconds % 60}s` : '0m 0s';
+              const callDuration = item.duration || item.durationSeconds || 0;
+              const durationStr = callDuration ? `${Math.floor(callDuration / 60)}m ${callDuration % 60}s` : '0m 0s';
+              const cost = item.totalAmount || item.amountDeducted || 0;
 
               return (
                 <div key={i} className="px-4 py-3.5 hover:bg-orange-50/30 transition-colors flex items-start gap-2 relative">
@@ -387,9 +432,20 @@ const OrderHistory = () => {
                           }`}>
                             {item.status}
                           </span>
-                          {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{duration} • ₹{item.amountDeducted || 0}</span>}
+                          {item.status === 'completed' && <span className="text-[12px] text-gray-500 font-medium">{durationStr} • ₹{Number(cost).toFixed(2)}</span>}
                         </div>
                       </div>
+                      {!isSelectionMode && (
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            handleSingleDelete(item._id, 'call'); 
+                          }}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors self-start"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   <div className="flex gap-2 pl-[60px]">
                     <button 

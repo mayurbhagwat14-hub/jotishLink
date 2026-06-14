@@ -20,6 +20,7 @@ import {
   deleteAstrologerHistoryBulk,
   getAstrologerAnalytics,
   requestWithdrawal,
+  deleteWithdrawalRequest,
 } from '../controllers/astrologer.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { uploadFields } from '../middlewares/upload.middleware.js';
@@ -51,6 +52,7 @@ router.delete('/astrologer/profile/delete', astroAuth, deleteAstrologerAccount);
 router.get('/astrologer/dashboard', astroAuth, getAstrologerDashboard);
 router.get('/astrologer/earnings', astroAuth, getAstrologerEarnings);
 router.post('/astrologer/withdraw', astroAuth, requestWithdrawal);
+router.delete('/astrologer/withdraw/:id', astroAuth, deleteWithdrawalRequest);
 router.get('/astrologer/pooja-requests', astroAuth, getAstrologerPoojaRequests);
 router.put('/astrologer/poojas/:id/status', astroAuth, updatePoojaStatus);
 router.post('/astrologer/poojas/:id/proof', astroAuth, uploadFields, uploadPoojaProof);

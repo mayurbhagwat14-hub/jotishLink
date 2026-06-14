@@ -287,3 +287,25 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
     throw new ApiError(500, error.message || 'Failed to create Razorpay order');
   }
 });
+
+import ShiprocketService from '../services/shiprocket.service.js';
+
+// GET /api/store/orders/:id/track
+export const trackOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findOne({ _id: req.params.id, userId: req.user._id });
+  
+  if (!order) {
+    throw new ApiError(404, 'Order not found');
+  }
+
+  if (!order.awbCode) {
+    return res.status(200).json(new ApiResponse(200, { tracking: null, message: 'Tracking not available yet. AWB not generated.' }, 'Tracking info'));
+  }
+
+  try {
+    const trackingData = await ShiprocketService.trackOrder(order.awbCode);
+    return res.status(200).json(new ApiResponse(200, { tracking: trackingData }, 'Tracking details fetched successfully'));
+  } catch (error) {
+    throw new ApiError(500, 'Failed to fetch tracking details from Shiprocket');
+  }
+});

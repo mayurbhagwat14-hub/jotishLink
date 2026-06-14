@@ -16,6 +16,7 @@ import WalletService from '../services/wallet.service.js';
 
 import RevenueLog from '../models/revenueLog.model.js';
 import WithdrawalRequest from '../models/withdrawalRequest.model.js';
+import Rating from '../models/rating.model.js';
 import axios from 'axios';
 
 export const getAdminEarnings = async (req, res, next) => {
@@ -364,9 +365,20 @@ export const updateAstrologerStatus = asyncHandler(async (req, res) => {
     astrologer.rejectionReason = reason || 'Suspended by admin';
   }
   
-  astrologer.approvalStatus = newStatus;
-  astrologer.isVerified = isVerified;
-  await astrologer.save();
+  const updateData = {
+    approvalStatus: newStatus,
+    isVerified,
+    registrationStatus: astrologer.registrationStatus,
+    approvedBy: astrologer.approvedBy,
+    approvedAt: astrologer.approvedAt,
+    rejectionReason: astrologer.rejectionReason
+  };
+
+  const updatedAstrologer = await Astrologer.findByIdAndUpdate(
+    req.params.id,
+    { $set: updateData },
+    { new: true }
+  );
   
   // Log Audit
   const { default: AuditLog } = await import('../models/auditLog.model.js');
@@ -1005,79 +1017,31 @@ export const processAstrologerPayout = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Astrologer bank details are missing.');
   }
 
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  
-  const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
-  let payoutResponse = null;
+  let paymentProofUrl = null;
 
   try {
-    if (!keyId || !keySecret) throw new Error('RAZORPAY_KEY_ID or SECRET is missing');
+    if (!req.file) {
+      throw new ApiError(400, 'Payment receipt screenshot is required');
+    }
 
-    // 1. Create Contact
-    const contactPayload = {
-      name: bankDetails.accountHolderName || astrologer.name,
-      email: astrologer.email || 'astrologer@jotishlink.com',
-      contact: astrologer.phone || '',
-      type: 'employee',
-      reference_id: `astro_${astrologer._id}`
-    };
-
-    const contactRes = await axios.post('https://api.razorpay.com/v1/contacts', contactPayload, {
-      headers: { Authorization: `Basic ${auth}` }
-    });
-    const contactId = contactRes.data.id;
-
-    // 2. Create Fund Account
-    const fundAccountPayload = {
-      contact_id: contactId,
-      account_type: 'bank_account',
-      bank_account: {
-        name: bankDetails.accountHolderName || astrologer.name,
-        ifsc: bankDetails.ifscCode,
-        account_number: bankDetails.accountNumber
-      }
-    };
-
-    const fundRes = await axios.post('https://api.razorpay.com/v1/fund_accounts', fundAccountPayload, {
-      headers: { Authorization: `Basic ${auth}` }
-    });
-    const fundAccountId = fundRes.data.id;
-
-    // 3. Create Payout
-    const payoutPayload = {
-      account_number: process.env.RAZORPAYX_ACCOUNT_NUMBER || '2323230043265147', // Mock fallback account number
-      fund_account_id: fundAccountId,
-      amount: Math.round(withdrawal.amount * 100), // Razorpay accepts amount in paise
-      currency: 'INR',
-      mode: 'IMPS',
-      purpose: 'payout',
-      reference_id: `withdraw_${withdrawal._id}`
-    };
-
-    const payoutReq = await axios.post('https://api.razorpay.com/v1/payouts', payoutPayload, {
-      headers: { Authorization: `Basic ${auth}` }
-    });
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
     
-    payoutResponse = payoutReq.data;
+    const result = await uploadMedia(dataURI, 'payouts');
+    
+    if (!result || !result.url) {
+      throw new Error('Cloudinary failed to return a valid URL.');
+    }
+    paymentProofUrl = result.url;
   } catch (error) {
-    console.error('RazorpayX Payout Error:', error.response?.data || error.message);
-    
-    // For development purposes, if we get an authentication or validation error (like missing RazorpayX activation on test keys)
-    // we gracefully MOCK the success so the feature can still be tested and demonstrated end-to-end.
-    const errMessage = error.response?.data?.error?.description || error.message;
-    console.log(`Mocking successful payout due to Razorpay API error: ${errMessage}`);
-    
-    payoutResponse = {
-      id: `pout_mock_${Date.now()}`,
-      status: 'processed_mock'
-    };
+    console.error('Payout Receipt Upload Error:', error.message);
+    throw new ApiError(500, 'Failed to upload payment receipt');
   }
 
   // Finalize processing
   withdrawal.status = 'completed';
   withdrawal.processedAt = new Date();
-  withdrawal.payoutId = payoutResponse.id;
+  withdrawal.paymentProof = paymentProofUrl;
   await withdrawal.save();
 
   // Log the transaction for admin audit
@@ -1087,8 +1051,8 @@ export const processAstrologerPayout = asyncHandler(async (req, res) => {
     amount: withdrawal.amount,
     status: 'completed',
     paymentMethod: 'bank_transfer',
-    razorpayReference: payoutResponse.id,
-    desc: 'Astrologer Payout via RazorpayX'
+    razorpayReference: paymentProofUrl,
+    desc: 'Astrologer Payout via Manual Bank Transfer'
   });
 
   // Deduct from astrologer earnings
@@ -1102,7 +1066,7 @@ export const processAstrologerPayout = asyncHandler(async (req, res) => {
     io.to(`room_astro_${astrologer._id}`).emit('withdrawal_processed', { withdrawal });
   }
 
-  return res.status(200).json(new ApiResponse(200, { withdrawal, payout: payoutResponse }, 'Payout processed successfully'));
+  return res.status(200).json(new ApiResponse(200, { withdrawal }, 'Payout processed successfully'));
 });
 
 // GET /api/admin/calls/analytics
@@ -1125,7 +1089,6 @@ export const getAdminCallAnalytics = asyncHandler(async (req, res) => {
   }, 'Call analytics fetched'));
 });
 
-
 export const toggleTopVerifiedAstrologer = asyncHandler(async (req, res) => {
   const astrologer = await Astrologer.findById(req.params.id);
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
@@ -1137,3 +1100,125 @@ export const toggleTopVerifiedAstrologer = asyncHandler(async (req, res) => {
   }
   return res.status(200).json(new ApiResponse(200, { astrologer }, `Astrologer ${astrologer.isTopVerified ? 'added to' : 'removed from'} Top Verified`));
 });
+
+// GET /api/admin/ratings
+export const getAdminRatings = asyncHandler(async (req, res) => {
+  const ratings = await Rating.find()
+    .populate('userId', 'name')
+    .populate('astrologerId', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+  return res.status(200).json(new ApiResponse(200, { ratings }, 'Ratings fetched'));
+});
+
+// DELETE /api/admin/ratings/:id
+export const deleteAdminRating = asyncHandler(async (req, res) => {
+  const rating = await Rating.findByIdAndDelete(req.params.id);
+  if (!rating) throw new ApiError(404, 'Rating not found');
+  return res.status(200).json(new ApiResponse(200, { rating }, 'Rating deleted successfully'));
+});
+
+// GET /api/admin/pending-counts
+export const getAdminPendingCounts = asyncHandler(async (req, res) => {
+  const [
+    pendingAstrologers,
+    pendingOrders,
+    pendingCancelRequests
+  ] = await Promise.all([
+    Astrologer.countDocuments({ status: 'pending' }),
+    Order.countDocuments({ orderStatus: 'pending' }),
+    Order.countDocuments({ 'cancelRequest.requested': true, 'cancelRequest.adminResponse': 'pending' })
+  ]);
+
+  return res.status(200).json(new ApiResponse(200, {
+    astrologers: pendingAstrologers,
+    orders: pendingOrders,
+    cancelRequests: pendingCancelRequests
+  }, 'Pending counts fetched'));
+});
+
+import ShiprocketService from '../services/shiprocket.service.js';
+
+// POST /api/admin/orders/:id/shiprocket/push
+export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id)
+    .populate('userId', 'name phone email')
+    .populate('items.productId', 'name sku price weight dimensions');
+
+  if (!order) throw new ApiError(404, 'Order not found');
+  if (order.shiprocketOrderId) throw new ApiError(400, 'Order already pushed to Shiprocket');
+
+  // Prepare Shiprocket Order Payload
+  const orderItems = order.items.map(item => ({
+    name: item.productId.name,
+    sku: item.productId.sku || item.productId._id.toString(),
+    units: item.quantity,
+    selling_price: item.price,
+    discount: 0,
+    tax: 0,
+    hsn: ''
+  }));
+
+  const orderData = {
+    order_id: order._id.toString(),
+    order_date: order.createdAt.toISOString(),
+    pickup_location: "Primary", // Must match the pickup location added in Shiprocket dashboard
+    billing_customer_name: order.shippingAddress.fullName,
+    billing_last_name: "",
+    billing_address: order.shippingAddress.addressLine,
+    billing_address_2: "",
+    billing_city: order.shippingAddress.city,
+    billing_pincode: order.shippingAddress.pincode,
+    billing_state: order.shippingAddress.state,
+    billing_country: "India",
+    billing_email: order.userId.email || "customer@example.com",
+    billing_phone: order.shippingAddress.phone || order.userId.phone,
+    shipping_is_billing: true,
+    order_items: orderItems,
+    payment_method: order.paymentMethod === 'cod' ? 'COD' : 'Prepaid',
+    sub_total: order.totalAmount,
+    length: 10, // Default values if not in product
+    breadth: 10,
+    height: 10,
+    weight: 0.5 // Default weight in kg
+  };
+
+  const shiprocketResponse = await ShiprocketService.createOrder(orderData);
+
+  order.shiprocketOrderId = shiprocketResponse.order_id;
+  order.shipmentId = shiprocketResponse.shipment_id;
+  await order.save();
+
+  return res.status(200).json(new ApiResponse(200, { order, shiprocketResponse }, 'Order pushed to Shiprocket successfully'));
+});
+
+// POST /api/admin/orders/:id/shiprocket/awb
+export const generateOrderAWB = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) throw new ApiError(404, 'Order not found');
+  if (!order.shipmentId) throw new ApiError(400, 'Order not pushed to Shiprocket yet');
+  if (order.awbCode) throw new ApiError(400, 'AWB already generated');
+
+  const { courierId } = req.body;
+  const awbResponse = await ShiprocketService.generateAWB(order.shipmentId, courierId);
+
+  if (awbResponse.awb_assign_status === 1) {
+    order.awbCode = awbResponse.response.data.awb_code;
+    order.courierCompanyId = awbResponse.response.data.courier_company_id;
+    order.courierPartner = awbResponse.response.data.courier_name;
+    order.trackingId = awbResponse.response.data.awb_code; // Map to existing trackingId field
+    order.orderStatus = 'shipped';
+    await order.save();
+
+    // Notify user
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`room_user_${order.userId}`).emit('order_updated', { order });
+    }
+  } else {
+     throw new ApiError(500, 'Failed to generate AWB: ' + JSON.stringify(awbResponse));
+  }
+
+  return res.status(200).json(new ApiResponse(200, { order, awbResponse }, 'AWB generated successfully'));
+});
+

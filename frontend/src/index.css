@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 @layer base {
+  html, body {
+    font-size: 16px;
+    zoom: 1;
+  }
   body {
     @apply bg-white text-gray-800 font-sans antialiased overflow-x-hidden;
   }

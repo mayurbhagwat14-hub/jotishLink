@@ -89,23 +89,7 @@ const LandingPage = () => {
           </div>
         </div>
 
-        {/* Chat Banner */}
-        <div className="px-4 pb-4">
-          <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-4 relative overflow-hidden shadow-lg flex items-center gap-3">
-            <div className="absolute top-0 left-0 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-br-lg z-10">NEW</div>
-            <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Astrologer" className="w-14 h-14 rounded-full border-2 border-orange-400 object-cover" />
-            <div className="flex-1">
-              <h3 className="text-white font-bold text-[16px]">Got any questions?</h3>
-              <p className="text-gray-400 text-[12px]">Chat with Astrologer</p>
-              <div className="flex justify-between items-center mt-2">
-                <p className="text-white font-bold text-[13px]">@INR 5/min</p>
-                <button onClick={() => navigate('/user/login')} className="bg-orange-500 text-white text-[11px] font-bold px-4 py-1.5 rounded-full hover:bg-orange-600 transition shadow-sm">
-                  Chat Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* Quick Actions */}
         <div className="px-4 py-3 flex gap-3">

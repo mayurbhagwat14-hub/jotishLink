@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck } from 'react-icons/fi';
@@ -13,6 +13,13 @@ const Checkout = () => {
   const total = location.state?.total || 0;
   
   const { user } = useSelector((state) => state.auth);
+  const { cart } = useSelector((state) => state.cart);
+  
+  useEffect(() => {
+    if (!cart?.items || cart.items.length === 0) {
+      navigate('/user/cart', { replace: true });
+    }
+  }, [cart, navigate]);
   
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
@@ -125,6 +132,10 @@ const Checkout = () => {
       }
     } catch (err) {
       toast.error(err.message || 'Failed to place order');
+      if (err.message === 'Cart is empty' || (err.message && err.message.toLowerCase().includes('empty'))) {
+        navigate('/user/cart', { replace: true });
+        window.location.reload(); // Force sync
+      }
     } finally {
       setLoading(false);
     }

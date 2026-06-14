@@ -6,6 +6,7 @@ const systemSettingsSchema = new mongoose.Schema(
     tagline: { type: String, default: 'Connect with the Stars' },
     supportEmail: { type: String, default: 'support@jyotishlink.com' },
     supportPhone: { type: String, default: '+91 9999999999' },
+    astrologerBannerMessage: { type: String, default: 'Will I have love or arranged marriage?' },
     commissionRates: {
       chat: { type: Number, default: 30 },
       audioCall: { type: Number, default: 30 },

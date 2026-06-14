@@ -5,12 +5,12 @@ const DesktopNavbar = () => {
   const navigate = useNavigate();
 
   const navLinks = [
-    { name: 'Chat with Astrologer', path: '/user/login' },
-    { name: 'Call with Astrologer', path: '/user/login' },
-    { name: 'Horoscope', path: '/user/login' },
-    { name: 'Free Kundli', path: '/user/login' },
-    { name: 'Kundli Matching', path: '/user/login' },
-    { name: 'JyotishLink Services', path: '/user/login' },
+    { name: 'Chat with Astrologer', path: '/user/astrologers?type=chat' },
+    { name: 'Call with Astrologer', path: '/user/astrologers?type=call' },
+    { name: 'Horoscope', path: '/user/home' },
+    { name: 'Free Kundli', path: '/user/kundli' },
+    { name: 'Kundli Matching', path: '/user/matchmaking' },
+    { name: 'JyotishLink Services', path: '/user/home' },
   ];
 
   return (

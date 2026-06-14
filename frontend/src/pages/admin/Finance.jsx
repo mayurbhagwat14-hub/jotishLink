@@ -18,7 +18,7 @@ const AdminFinance = () => {
   // Payout Modal State
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
   const [selectedAstrologer, setSelectedAstrologer] = useState(null);
-  const [payoutAmount, setPayoutAmount] = useState('');
+  const [payoutReceipt, setPayoutReceipt] = useState(null);
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   // Astrologer Details Modal
@@ -92,7 +92,7 @@ const AdminFinance = () => {
 
   const handleOpenPayoutModal = (astrologer) => {
     setSelectedAstrologer(astrologer);
-    setPayoutAmount('');
+    setPayoutReceipt(null);
     setIsPayoutModalOpen(true);
   };
 
@@ -110,12 +110,8 @@ const AdminFinance = () => {
   };
 
   const handleProcessPayout = async () => {
-    if (!payoutAmount || isNaN(payoutAmount) || Number(payoutAmount) <= 0) {
-      toast.error('Please enter a valid amount');
-      return;
-    }
-    if (Number(payoutAmount) > selectedAstrologer.wallet) {
-      toast.error('Amount exceeds available wallet balance');
+    if (!payoutReceipt) {
+      toast.error('Please upload a payment receipt screenshot');
       return;
     }
 
@@ -123,8 +119,11 @@ const AdminFinance = () => {
 
     setIsProcessingPayout(true);
     try {
-      await processAstrologerPayout(selectedAstrologer._id, { amount: Number(payoutAmount) });
-      toast.success('Payout processed successfully');
+      const formData = new FormData();
+      formData.append('receipt', payoutReceipt);
+
+      await processAstrologerPayout(selectedAstrologer._id, formData);
+      toast.success('Payout completed successfully');
       setIsPayoutModalOpen(false);
       fetchPayouts(); // Refresh payouts list
       fetchTransactions(); // Refresh transactions list
@@ -476,14 +475,12 @@ const AdminFinance = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Amount to Deduct/Pay (₹)</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Payment Screenshot / Receipt</label>
                 <input 
-                  type="number" 
-                  value={payoutAmount}
-                  onChange={(e) => setPayoutAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  max={selectedAstrologer.wallet}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-bold"
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setPayoutReceipt(e.target.files[0])}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-bold text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
                 />
               </div>
             </div>
@@ -497,7 +494,7 @@ const AdminFinance = () => {
               </button>
               <button 
                 onClick={handleProcessPayout}
-                disabled={isProcessingPayout || !payoutAmount || Number(payoutAmount) <= 0 || Number(payoutAmount) > selectedAstrologer.wallet}
+                disabled={isProcessingPayout || !payoutReceipt}
                 className="flex-1 px-4 py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isProcessingPayout ? (
@@ -508,7 +505,7 @@ const AdminFinance = () => {
                     </svg>
                     Processing...
                   </>
-                ) : 'Confirm Payout'}
+                ) : 'Complete'}
               </button>
             </div>
           </div>

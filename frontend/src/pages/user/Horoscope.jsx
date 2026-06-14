@@ -57,10 +57,6 @@ const Horoscope = () => {
           <h1 className="text-[17px] font-semibold text-gray-800">Daily Horoscope</h1>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-1.5 hover:bg-gray-50 transition-colors">
-            <FaWhatsapp className="text-green-500" size={14} />
-            <span className="text-[12px] font-bold text-gray-700">Share</span>
-          </button>
           <div 
             onClick={openSidebar}
             className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden border border-orange-200 cursor-pointer shrink-0"
@@ -206,13 +202,6 @@ const Horoscope = () => {
             "Life shrinks or expands in proportion to one's courage."
           </h3>
           <p className="text-orange-200/60 text-[12px]">- Anais Nin</p>
-          
-          <div className="flex justify-end mt-4">
-            <button className="flex items-center gap-1.5 bg-orange-500 text-white rounded-full px-4 py-2 hover:bg-orange-600 transition-colors shadow-sm">
-              <FaWhatsapp size={14} />
-              <span className="text-[12px] font-bold">Share</span>
-            </button>
-          </div>
         </div>
 
         {/* ═══ WEEKLY/MONTHLY ═══ */}

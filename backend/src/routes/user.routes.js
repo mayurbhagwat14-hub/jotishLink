@@ -6,6 +6,7 @@ import {
   getHomepageData,
   getAstrologers,
   getAstrologerById,
+  getAstrologerRatings,
   getStoreProducts,
   getStorePandits,
   getProductById,
@@ -26,6 +27,8 @@ const router = Router();
 router.get('/user/homepage-data', optionalAuth, getHomepageData);
 router.get('/astrologers', optionalAuth, getAstrologers);
 router.get('/astrologers/:id', optionalAuth, getAstrologerById);
+router.get('/astrologers/:id/ratings', optionalAuth, getAstrologerRatings);
+
 router.get('/products', optionalAuth, getStoreProducts);
 router.get('/products/:id', optionalAuth, getProductById);
 router.get('/pandits', optionalAuth, getStorePandits);

@@ -1,7 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as userApis from '../../api/userApis';
-import * as astrologerApis from '../../api/astrologerApis';
-import * as adminApis from '../../api/adminApis';
 import axios from '../../api/axios';
 
 // User Auth Thunks
@@ -78,92 +76,7 @@ export const userDeleteAccountThunk = createAsyncThunk(
   }
 );
 
-// Astrologer Auth Thunks
-export const astrologerLoginThunk = createAsyncThunk(
-  'auth/astrologerLogin',
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const response = await astrologerApis.astrologerLogin(credentials);
-      return response.data;
-    } catch (error) {
-      const payload = typeof error.response?.data === 'object' ? error.response.data : { message: error.response?.data || error.message };
-      return rejectWithValue({ ...payload, status: error.response?.status });
-    }
-  }
-);
 
-export const astrologerSignupThunk = createAsyncThunk(
-  'auth/astrologerSignup',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await astrologerApis.astrologerSignup(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const astrologerChangePasswordThunk = createAsyncThunk(
-  'auth/astrologerChangePassword',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await astrologerApis.astrologerChangePassword(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const astrologerDeleteAccountThunk = createAsyncThunk(
-  'auth/astrologerDeleteAccount',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await astrologerApis.astrologerDeleteAccount();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-// Admin Auth Thunks
-export const adminLoginThunk = createAsyncThunk(
-  'auth/adminLogin',
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const response = await adminApis.adminLogin(credentials);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const adminChangePasswordThunk = createAsyncThunk(
-  'auth/adminChangePassword',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await adminApis.adminChangePassword(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const adminDeleteAccountThunk = createAsyncThunk(
-  'auth/adminDeleteAccount',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await adminApis.adminDeleteAccount();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
 
 export const fetchProfileThunk = createAsyncThunk(
   'auth/fetchProfile',
@@ -290,39 +203,12 @@ const authSlice = createSlice({
         state.error = null;
         localStorage.removeItem('refreshToken');
       })
-      .addCase(astrologerLoginThunk.fulfilled, (state, action) => {
-        const data = action.payload?.data || action.payload;
-        state.user = data.user;
-        state.token = data.accessToken;
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
-        state.isAuthenticated = true;
-      })
-      .addCase(adminLoginThunk.fulfilled, (state, action) => {
-        const data = action.payload?.data || action.payload;
-        state.user = data.user;
-        state.token = data.accessToken;
-        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
-        state.isAuthenticated = true;
-      })
       .addCase(userDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem('refreshToken');
-      })
-      .addCase(astrologerDeleteAccountThunk.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem('refreshToken');
-      })
-      .addCase(adminDeleteAccountThunk.fulfilled, (state) => {
-        state.user = null;
-        state.token = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem('refreshToken');
-      });
-  }
+      });  }
 });
 
 export const { login, logout, updateUser, addWalletCash, deductWalletCash } = authSlice.actions;

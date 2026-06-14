@@ -27,7 +27,7 @@ const ChatScreen = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { astrologers: reduxAstrologers } = useSelector((state) => state.user);
+  const { astrologers: reduxAstrologers, bannerMessage } = useSelector((state) => state.user);
   const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -86,7 +86,7 @@ const ChatScreen = () => {
 
         {/* Question banner */}
         <div className="bg-orange-50 border-y border-orange-100 px-4 py-2.5 text-center">
-          <span className="text-[13px] text-gray-600 font-medium">Will I have love or arranged marriage?</span>
+          <span className="text-[13px] text-gray-600 font-medium">{bannerMessage}</span>
         </div>
 
         {/* Tab Bar */}

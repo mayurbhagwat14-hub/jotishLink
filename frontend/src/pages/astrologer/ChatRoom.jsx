@@ -21,7 +21,7 @@ const ChatRoom = () => {
   const [sessionEnded, setSessionEnded] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const { user: astrologer } = useSelector((state) => state.auth);
+  const { user: astrologer } = useSelector((state) => state.astrologerAuth);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

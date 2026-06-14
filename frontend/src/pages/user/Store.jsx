@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import { FiSearch, FiClock, FiShoppingBag } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { getStoreProducts, getStorePandits } from '../../api/userApis';
@@ -18,6 +18,7 @@ const Store = () => {
   const { cart } = useSelector((state) => state.cart);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { openSidebar } = useOutletContext() || {};
 
   // Local state for products, pandits and loading state
   const [products, setProducts] = useState([]);
@@ -25,6 +26,33 @@ const Store = () => {
   const [newLaunchProducts, setNewLaunchProducts] = useState([]);
   const [storeCategories, setStoreCategories] = useState([]);
   const [banners, setBanners] = useState([]);
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const scrollRef = useRef(null);
+
+  const handleBannerScroll = (e) => {
+    if (!e.target.children[0]) return;
+    const childWidth = e.target.children[0].offsetWidth;
+    const scrollLeft = e.target.scrollLeft;
+    const index = Math.round(scrollLeft / (childWidth + 16));
+    if (index >= 0 && index < banners.length && index !== currentBannerIndex) {
+      setCurrentBannerIndex(index);
+    }
+  };
+
+  useEffect(() => {
+    if (banners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prev) => {
+        const next = (prev + 1) % banners.length;
+        if (scrollRef.current && scrollRef.current.children[next]) {
+          const child = scrollRef.current.children[next];
+          scrollRef.current.scrollTo({ left: child.offsetLeft - 16, behavior: 'smooth' });
+        }
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
   
   const [pandits, setPandits] = useState([]);
   const [poojaTypes, setPoojaTypes] = useState(['General Pooja']);
@@ -132,7 +160,10 @@ const Store = () => {
       {/* ═══ TOP NAVBAR ═══ */}
       <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-gray-50">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-orange-200">
+          <div 
+            onClick={() => openSidebar && openSidebar()} 
+            className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-orange-200 cursor-pointer"
+          >
             <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
           </div>
           <span className="text-gray-800 font-semibold text-[18px]">JyotishLink Services</span>
@@ -239,14 +270,40 @@ const Store = () => {
 
               {/* ═══ BANNER ═══ */}
               {banners.length > 0 && (
-                <div className="px-4 py-3 flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-                  {banners.map((banner, i) => (
-                    <div key={banner._id || i} className="w-full shrink-0 snap-center">
-                      <div className="w-full h-36 bg-gray-100 rounded-2xl relative overflow-hidden shadow-sm">
+                <div className="py-3">
+                  <div 
+                    ref={scrollRef}
+                    onScroll={handleBannerScroll}
+                    className="px-4 flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory"
+                  >
+                    {banners.map((banner, i) => (
+                      <div 
+                        key={banner._id || i} 
+                        className="w-[85vw] sm:w-[320px] h-36 shrink-0 snap-center bg-gray-100 rounded-2xl relative overflow-hidden shadow-sm cursor-pointer"
+                        onClick={() => {
+                          if (banner.linkUrl) {
+                            if (banner.linkUrl.startsWith('http')) {
+                              window.open(banner.linkUrl, '_blank');
+                            } else {
+                              navigate(banner.linkUrl);
+                            }
+                          }
+                        }}
+                      >
                         <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  
+                  {/* Pagination Dots Indicator */}
+                  <div className="flex justify-center gap-1.5 mt-3">
+                    {banners.map((_, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`h-[4px] rounded-full transition-all duration-300 ${currentBannerIndex === idx ? 'w-4 bg-[#ff8c00]' : 'w-1.5 bg-[#ff8c00]/30'}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
 

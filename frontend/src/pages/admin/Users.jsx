@@ -111,8 +111,8 @@ const AdminUsers = () => {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg font-bold">{users.length} Total</span>
-          <span className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg font-bold">{users.filter(u => u.status === 'Active').length} Active</span>
-          <span className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold">{users.filter(u => u.status === 'Banned').length} Banned</span>
+          <span className="bg-green-50 text-green-600 px-3 py-1.5 rounded-lg font-bold">{users.filter(u => (u.status || (u.isBlocked ? 'Banned' : 'Active')) === 'Active').length} Active</span>
+          <span className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg font-bold">{users.filter(u => (u.status || (u.isBlocked ? 'Banned' : 'Active')) === 'Banned').length} Banned</span>
         </div>
       </div>
 
@@ -147,22 +147,14 @@ const AdminUsers = () => {
         <div className="w-full overflow-visible">
           <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-gray-100">
-                <th className="py-4 px-4 w-10">
-                  <input
-                    type="checkbox"
-                    checked={selectedUsers.length === paginatedUsers.length && paginatedUsers.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
-                  />
-                </th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">User</th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Contact</th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Wallet</th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Sessions</th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Joined</th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="py-4 px-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
+              <tr className="border-b border-gray-100 bg-gray-50/30">
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">User</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Contact</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Wallet</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Sessions</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Joined</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -172,18 +164,10 @@ const AdminUsers = () => {
                 const lastActive = user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : 'N/A';
                 
                 return (
-                <tr key={user._id} className="hover:bg-gray-50/50 transition-colors group cursor-pointer" onClick={() => setDetailUser(user)}>
-                  <td className="py-4 px-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user._id)}
-                      onChange={(e) => { e.stopPropagation(); toggleSelect(user._id); }}
-                      className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
-                    />
-                  </td>
-                  <td className="py-4 px-4">
+                <tr key={user._id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center font-bold text-sm shrink-0 ${
+                      <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center font-bold text-xs shrink-0 ${
                         uStatus === 'Banned' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-600'
                       }`}>
                         {user.avatar ? (
@@ -193,32 +177,32 @@ const AdminUsers = () => {
                         )}
                       </div>
                       <div>
-                        <p className={`font-bold text-sm ${uStatus === 'Banned' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{user.name || 'Guest User'}</p>
-                        <p className="text-[10px] text-gray-400 font-medium">Last active: {lastActive}</p>
+                        <p className={`font-bold text-[13px] ${uStatus === 'Banned' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{user.name || 'Guest User'}</p>
+                        <p className="text-[9px] text-gray-400 font-medium">Last active: {lastActive}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-4 px-4">
-                    <p className="text-xs text-gray-500 font-medium flex items-center gap-1"><FiPhone size={10} /> {user.phone}</p>
+                  <td className="py-3 px-4">
+                    <p className="text-[11px] text-gray-500 font-medium flex items-center gap-1"><FiPhone size={10} /> {user.phone}</p>
                     <p className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-0.5"><FiMail size={10} /> {user.email || 'N/A'}</p>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className="font-black text-sm text-gray-900">₹{(user.wallet || 0).toLocaleString()}</span>
+                  <td className="py-3 px-4">
+                    <span className="font-black text-[13px] text-gray-900">₹{(user.wallet || 0).toLocaleString()}</span>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className="text-sm font-bold text-gray-600">{user.sessions || 0}</span>
+                  <td className="py-3 px-4">
+                    <span className="text-[13px] font-bold text-gray-600">{user.sessions || 0}</span>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className="text-xs text-gray-400 font-medium flex items-center gap-1"><FiCalendar size={10} /> {joinedDate}</span>
+                  <td className="py-3 px-4">
+                    <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1"><FiCalendar size={10} /> {joinedDate}</span>
                   </td>
-                  <td className="py-4 px-4">
-                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${
                       uStatus === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'
                     }`}>
                       {uStatus}
                     </span>
                   </td>
-                  <td className={`py-4 px-4 text-right relative ${openActionDropdown === user._id ? 'z-50' : ''}`}>
+                  <td className={`py-3 px-4 text-right relative ${openActionDropdown === user._id ? 'z-50' : ''}`}>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -232,33 +216,33 @@ const AdminUsers = () => {
                     {openActionDropdown === user._id && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
-                        <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
+                        <div className="absolute right-5 top-10 mt-1 w-44 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
                           <button
                             onClick={(e) => { e.stopPropagation(); setDetailUser(user); setOpenActionDropdown(null); }}
-                            className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                            className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
                           >
-                            <FiEye size={16} className="text-blue-500" /> View Profile
+                            <FiEye size={14} className="text-blue-500" /> View Profile
                           </button>
                           {uStatus === 'Active' ? (
                             <button
                               onClick={(e) => { e.stopPropagation(); banUser(user._id); setOpenActionDropdown(null); }}
-                              className="w-full px-4 py-3 text-left text-sm font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                              className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-orange-600 hover:bg-orange-50 flex items-center gap-2 transition-colors border-b border-gray-50"
                             >
-                              <FiUserX size={16} /> Ban User
+                              <FiUserX size={14} /> Ban User
                             </button>
                           ) : (
                             <button
                               onClick={(e) => { e.stopPropagation(); unbanUser(user._id); setOpenActionDropdown(null); }}
-                              className="w-full px-4 py-3 text-left text-sm font-bold text-green-600 hover:bg-green-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                              className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-green-600 hover:bg-green-50 flex items-center gap-2 transition-colors border-b border-gray-50"
                             >
-                              <FiUserCheck size={16} /> Unban User
+                              <FiUserCheck size={14} /> Unban User
                             </button>
                           )}
                           <button
                             onClick={(e) => { e.stopPropagation(); deleteUser(user); setOpenActionDropdown(null); }}
-                            className="w-full px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                            className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                           >
-                            <FiX size={16} /> Delete User
+                            <FiX size={14} /> Delete User
                           </button>
                         </div>
                       </>
@@ -466,38 +450,7 @@ const AdminUsers = () => {
 
             </div>
 
-            {/* Footer Actions */}
-            <div className="p-6 border-t border-gray-100 bg-white shrink-0 flex flex-col sm:flex-row items-center gap-3">
-              <button 
-                onClick={() => setRefundModal(true)}
-                className="w-full sm:flex-1 py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-lg shadow-gray-900/20 active:scale-[0.98] flex justify-center items-center gap-2"
-              >
-                <FiEdit size={16} /> Refund to Wallet
-              </button>
-              
-              {!detailUser.isBlocked ? (
-                <button
-                  onClick={() => banUser(detailUser._id || detailUser.id)}
-                  className="w-full sm:flex-1 py-3.5 bg-orange-50 hover:bg-orange-100 text-orange-600 font-bold rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
-                >
-                  <FiUserX size={16} /> Ban User
-                </button>
-              ) : (
-                <button
-                  onClick={() => unbanUser(detailUser._id || detailUser.id)}
-                  className="w-full sm:flex-1 py-3.5 bg-green-50 hover:bg-green-100 text-green-600 font-bold rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
-                >
-                  <FiUserCheck size={16} /> Unban User
-                </button>
-              )}
-              
-              <button
-                onClick={() => deleteUser(detailUser)}
-                className="w-full sm:flex-1 py-3.5 bg-red-50 border border-red-100 hover:bg-red-100 text-red-600 font-bold rounded-xl transition-all active:scale-[0.98] flex justify-center items-center gap-2"
-              >
-                <FiX size={16} /> Delete Account
-              </button>
-            </div>
+
           </div>
         </div>
       )}

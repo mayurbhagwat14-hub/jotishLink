@@ -12,7 +12,7 @@ const Calls = () => {
   const [processingId, setProcessingId] = useState(null);
 
   const { incomingRequests, activeSessions } = useSelector((state) => state.astrologer);
-  const { token } = useSelector((state) => state.auth);
+  const { token } = useSelector((state) => state.astrologerAuth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

@@ -61,7 +61,7 @@ const orderSchema = new mongoose.Schema(
     },
     orderStatus: {
       type: String,
-      enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+      enum: ['pending', 'processing', 'shipped', 'delivered', 'completed', 'cancelled'],
       default: 'pending',
     },
     trackingId: {
@@ -69,6 +69,22 @@ const orderSchema = new mongoose.Schema(
       default: null,
     },
     courierPartner: {
+      type: String,
+      default: null,
+    },
+    shiprocketOrderId: {
+      type: String,
+      default: null,
+    },
+    shipmentId: {
+      type: String,
+      default: null,
+    },
+    awbCode: {
+      type: String,
+      default: null,
+    },
+    courierCompanyId: {
       type: String,
       default: null,
     },

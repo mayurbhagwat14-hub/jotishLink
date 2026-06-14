@@ -62,6 +62,7 @@ import AdminInventory from './pages/admin/Inventory';
 import AdminSettings from './pages/admin/Settings';
 import AdminAuditLogs from './pages/admin/AuditLogs';
 import AdminEarnings from './pages/admin/Earnings';
+import AdminRatings from './pages/admin/Ratings';
 
 // Astrologer Pages
 import AstrologerDashboard from './pages/astrologer/Dashboard';
@@ -73,6 +74,7 @@ import Calls from './pages/astrologer/Calls';
 import PoojaRequests from './pages/astrologer/PoojaRequests';
 import History from './pages/astrologer/History';
 import Earnings from './pages/astrologer/Earnings';
+import SessionEarnings from './pages/astrologer/SessionEarnings';
 import Analytics from './pages/astrologer/Analytics';
 import AstrologerDashboardProfile from './pages/astrologer/Profile';
 import AstrologerVideoRoom from './pages/astrologer/VideoRoom';
@@ -85,7 +87,9 @@ import { useGlobalSocket } from './hooks/useGlobalSocket';
 
 const AppContent = () => {
   const dispatch = useDispatch();
-  const { isAuthenticated, user, token } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, token } = useSelector((state) => state.auth) || {};
+  const { isAuthenticated: isAdminAuthenticated, user: adminUser } = useSelector((state) => state.adminAuth) || {};
+  const { isAuthenticated: isAstrologerAuthenticated, user: astrologerUser } = useSelector((state) => state.astrologerAuth) || {};
   const userRole = user?.role || 'user';
 
   // Initialize Global Sockets
@@ -99,7 +103,7 @@ const AppContent = () => {
   }, [isAuthenticated, token, dispatch]);
 
   const getHomePath = () => {
-    if (!isAuthenticated) return '/user/home';
+    if (!isAuthenticated || !user) return '/user/home';
     if (userRole === 'admin') return '/admin/dashboard';
     if (userRole === 'astrologer') return '/astrologer/dashboard';
     
@@ -123,7 +127,7 @@ const AppContent = () => {
 
       {/* Auth Pages */}
       <Route element={<AuthLayout />}>
-        <Route path="/user/login" element={isAuthenticated ? <Navigate to={getHomePath()} replace /> : <Login />} />
+        <Route path="/user/login" element={(isAuthenticated && user) ? <Navigate to={getHomePath()} replace /> : <Login />} />
       </Route>
 
       {/* User Panel */}
@@ -175,7 +179,7 @@ const AppContent = () => {
       </Route>
 
       {/* Admin Panel (Public Login) */}
-      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/login" element={isAdminAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin />} />
 
       {/* Admin Panel (Protected) */}
       <Route path="/admin" element={
@@ -186,6 +190,7 @@ const AppContent = () => {
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="astrologers" element={<AdminAstrologers />} />
+        <Route path="ratings" element={<AdminRatings />} />
         <Route path="finance" element={<AdminFinance />} />
         <Route path="earnings" element={<AdminEarnings />} />
         <Route path="services" element={<AdminServices />} />
@@ -200,8 +205,8 @@ const AppContent = () => {
       </Route>
 
       {/* Astrologer Application & Login (Public) */}
-      <Route path="/astrologer/apply" element={<ApplyAstrologer />} />
-      <Route path="/astrologer/login" element={<AstrologerLogin />} />
+      <Route path="/astrologer/apply" element={isAstrologerAuthenticated && astrologerUser?.approvalStatus === 'approved' ? <Navigate to="/astrologer/dashboard" replace /> : <ApplyAstrologer />} />
+      <Route path="/astrologer/login" element={isAstrologerAuthenticated && astrologerUser?.approvalStatus === 'approved' ? <Navigate to="/astrologer/dashboard" replace /> : <AstrologerLogin />} />
 
       {/* Astrologer Panel */}
       <Route path="/astrologer" element={
@@ -215,6 +220,7 @@ const AppContent = () => {
         <Route path="pooja" element={<PoojaRequests />} />
         <Route path="history" element={<History />} />
         <Route path="earnings" element={<Earnings />} />
+        <Route path="session-earnings" element={<SessionEarnings />} />
         <Route path="analytics" element={<Analytics />} />
         <Route path="profile" element={<AstrologerDashboardProfile />} />
         <Route path="bank-details" element={<BankDetails />} />

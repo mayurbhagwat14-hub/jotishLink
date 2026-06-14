@@ -15,7 +15,18 @@ const instance = axios.create({
 instance.interceptors.request.use(
   (config) => {
     if (store) {
-      const token = store.getState().auth.token;
+      const state = store.getState();
+      let token = state.auth.token; // default to user token
+      
+      // Determine context based on the API URL path
+      if (config.url && config.url.includes('/admin')) {
+        token = state.adminAuth?.token;
+      } else if (config.url && config.url.includes('/astrologer')) {
+        token = state.astrologerAuth?.token;
+      } else {
+        token = state.auth?.token;
+      }
+      
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -60,7 +71,20 @@ instance.interceptors.response.use(
 
       try {
         console.log('🔄 [Axios] Token expired. Attempting to refresh token...');
-        const refreshTokenStr = localStorage.getItem('refreshToken');
+        
+        // Determine which refresh token to use based on the failed request URL context
+        let tokenKey = 'refreshToken'; // default user
+        let actionType = 'auth/login';
+        
+        if (originalRequest.url.includes('/admin')) {
+          tokenKey = 'adminRefreshToken';
+          actionType = 'adminAuth/adminLogin';
+        } else if (originalRequest.url.includes('/astrologer')) {
+          tokenKey = 'astrologerRefreshToken';
+          actionType = 'astrologerAuth/astrologerLogin';
+        }
+
+        const refreshTokenStr = localStorage.getItem(tokenKey);
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/refresh`,
           { refreshToken: refreshTokenStr },
@@ -70,11 +94,16 @@ instance.interceptors.response.use(
         const newRefreshToken = res.data?.data?.refreshToken || res.data?.refreshToken;
         
         if (newRefreshToken) {
-          localStorage.setItem('refreshToken', newRefreshToken);
+          localStorage.setItem(tokenKey, newRefreshToken);
         }
         
         if (store) {
-          store.dispatch({ type: 'auth/login', payload: { user: store.getState().auth.user, token: newAccessToken } });
+          let userToKeep;
+          if (tokenKey === 'adminRefreshToken') userToKeep = store.getState().adminAuth?.user;
+          else if (tokenKey === 'astrologerRefreshToken') userToKeep = store.getState().astrologerAuth?.user;
+          else userToKeep = store.getState().auth?.user;
+          
+          store.dispatch({ type: actionType, payload: { user: userToKeep, token: newAccessToken } });
         }
         
         console.log('✅ [Axios] Token refreshed successfully! Retrying failed requests.');
@@ -89,7 +118,9 @@ instance.interceptors.response.use(
         isRefreshing = false;
         
         if (store) {
-          store.dispatch({ type: 'auth/logout' });
+          if (originalRequest.url.includes('/admin')) store.dispatch({ type: 'adminAuth/adminLogout' });
+          else if (originalRequest.url.includes('/astrologer')) store.dispatch({ type: 'astrologerAuth/astrologerLogout' });
+          else store.dispatch({ type: 'auth/logout' });
         }
         toast.error('Session expired. Please login again.');
         return Promise.reject(refreshError);

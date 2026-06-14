@@ -1,8 +1,30 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FiHome, FiSearch, FiHeart, FiClock, FiShoppingBag, FiVideo, FiBell } from 'react-icons/fi';
 
 const BottomNav = () => {
   const location = useLocation();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const handleFocus = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(true);
+      }
+    };
+    const handleBlur = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(false);
+      }
+    };
+
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+    return () => {
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+    };
+  }, []);
 
   const navItems = [
     { name: 'Home', path: '/user/home', icon: FiHome },
@@ -11,6 +33,8 @@ const BottomNav = () => {
     { name: 'History', path: '/user/history', icon: FiClock },
     { name: 'Store', path: '/user/store', icon: FiShoppingBag },
   ];
+
+  if (isKeyboardOpen) return null;
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-safe">
@@ -31,16 +55,16 @@ const BottomNav = () => {
               )}
 
               <div
-                className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300
+                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300
                   ${isActive
                     ? 'bg-orange-300 text-gray-900 shadow-md shadow-orange-300/40 scale-110'
                     : 'text-gray-400 hover:text-gray-600'
                   }`}
               >
-                <Icon size={isActive ? 18 : 20} strokeWidth={isActive ? 2.5 : 1.8} />
+                <Icon size={isActive ? 16 : 18} strokeWidth={isActive ? 2.5 : 1.8} />
               </div>
               <span
-                className={`text-[10px] leading-tight transition-all duration-200
+                className={`text-[9px] leading-tight transition-all duration-200 mt-0.5
                   ${isActive ? 'font-bold text-gray-900' : 'font-medium text-gray-400'}`}
               >
                 {item.name}

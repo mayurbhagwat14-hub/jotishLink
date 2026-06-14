@@ -8,6 +8,8 @@ import Order from '../models/order.model.js';
 import Transaction from '../models/transaction.model.js';
 import Celebrity from '../models/celebrity.model.js';
 import Banner from '../models/banner.model.js';
+import Rating from '../models/rating.model.js';
+import mongoose from 'mongoose';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -22,7 +24,7 @@ export const getUserProfile = asyncHandler(async (req, res) => {
   const SystemSettings = (await import('../models/systemSettings.model.js')).default;
   const settings = await SystemSettings.findOne({}) || new SystemSettings();
   
-  return res.status(200).json(new ApiResponse(200, { user, settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration } }, 'Profile fetched'));
+  return res.status(200).json(new ApiResponse(200, { user, settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration, astrologerBannerMessage: settings.astrologerBannerMessage, supportEmail: settings.supportEmail, supportPhone: settings.supportPhone } }, 'Profile fetched'));
 });
 
 // PUT /api/user/profile
@@ -86,7 +88,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
       { $project: { _id: 0, name: '$_id', img: 1 } },
       { $limit: 6 }
     ]),
-    Banner.find({ isActive: true, $or: [{ pages: 'Home' }, { pages: { $exists: false } }, { pages: { $size: 0 } }] }).sort({ position: 1, createdAt: -1 }).lean()
+    Banner.find({ isActive: true, $or: [{ pages: 'Home' }, { pages: 'Home_Middle' }, { pages: { $exists: false } }, { pages: { $size: 0 } }] }).sort({ position: 1, createdAt: -1 }).lean()
   ]);
 
   const liveAstrologers = liveAstrologersRaw.map(astro => ({
@@ -138,7 +140,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
         services: storeCategories,
         celebrities,
         banners: banners || [],
-        settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration },
+        settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration, astrologerBannerMessage: settings.astrologerBannerMessage, supportEmail: settings.supportEmail, supportPhone: settings.supportPhone },
       }, 'Homepage data fetched')
     );
 });
@@ -171,7 +173,10 @@ export const getAstrologers = asyncHandler(async (req, res) => {
     );
   }
 
-  return res.status(200).json(new ApiResponse(200, { astrologers }, 'Astrologers fetched'));
+  const SystemSettings = (await import('../models/systemSettings.model.js')).default;
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+
+  return res.status(200).json(new ApiResponse(200, { astrologers, settings: { astrologerBannerMessage: settings.astrologerBannerMessage } }, 'Astrologers fetched'));
 });
 
 // GET /api/astrologers/:id
@@ -181,6 +186,38 @@ export const getAstrologerById = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Astrologer not found');
   }
   return res.status(200).json(new ApiResponse(200, { astrologer }, 'Astrologer fetched'));
+});
+
+// GET /api/astrologers/:id/ratings
+export const getAstrologerRatings = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Use MongoDB aggregation to match astrologerId and sample 3 random documents
+  const ratings = await Rating.aggregate([
+    { $match: { astrologerId: new mongoose.Types.ObjectId(id) } },
+    { $sample: { size: 3 } },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'user'
+      }
+    },
+    { $unwind: '$user' },
+    {
+      $project: {
+        _id: 1,
+        rating: 1,
+        review: 1,
+        createdAt: 1,
+        'user.name': 1,
+        'user.avatar': 1
+      }
+    }
+  ]);
+
+  return res.status(200).json(new ApiResponse(200, { ratings }, 'Ratings fetched'));
 });
 
 // GET /api/products/:id
@@ -210,16 +247,16 @@ export const getStoreProducts = asyncHandler(async (req, res) => {
   const manualTopSelling = products.filter(p => p.featuredSection === 'top_selling');
   const manualNewLaunch = products.filter(p => p.featuredSection === 'newly_launch');
 
+  // Only consider unassigned products for automatic filling
+  const unassignedProducts = products.filter(p => p.featuredSection !== 'top_selling' && p.featuredSection !== 'newly_launch');
+
   // Top Selling (Manual first, then Highest sold quantity, fallback to rating)
-  const autoTopSelling = [...products]
-    .filter(p => p.featuredSection !== 'top_selling')
+  const autoTopSelling = [...unassignedProducts]
     .sort((a, b) => (b.sold || 0) - (a.sold || 0) || (b.rating * b.reviews || 0) - (a.rating * a.reviews || 0));
   const topSelling = [...manualTopSelling, ...autoTopSelling].slice(0, 10);
   
   // New Launch (Manual first, then Latest createdAt)
-  const autoNewLaunch = [...products]
-    .filter(p => p.featuredSection !== 'newly_launch');
-  // It's already sorted by createdAt -1 above
+  const autoNewLaunch = [...unassignedProducts]; // Already sorted by createdAt -1 above
   const newLaunch = [...manualNewLaunch, ...autoNewLaunch].slice(0, 10);
 
   // Fetch Banners
@@ -336,18 +373,33 @@ export const getUserPoojaById = asyncHandler(async (req, res) => {
 
 // GET /api/user/sessions
 export const getUserSessions = asyncHandler(async (req, res) => {
-  const sessions = await ChatSession.find({ 
+  const qObj = { 
     userId: req.user._id, 
     deletedByUser: { $ne: true },
     $or: [{ type: 'chat' }, { type: { $exists: false } }]
-  })
+  };
+  const sessions = await ChatSession.find(qObj)
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
 
   const transactions = await Transaction.find({ userId: req.user._id }).sort({ createdAt: -1 }).lean();
+  
+  const allSessCount = await ChatSession.countDocuments({ userId: req.user._id });
+  const allTxnCount = await Transaction.countDocuments({ userId: req.user._id });
 
-  return res.status(200).json(new ApiResponse(200, { sessions, transactions }, 'Sessions fetched'));
+  return res.status(200).json(new ApiResponse(200, { 
+    sessions, 
+    transactions, 
+    debugMongoose: { 
+      qObj, 
+      allSessCount,
+      allTxnCount,
+      reqUserIdType: typeof req.user._id,
+      reqUserIdStr: req.user._id.toString(),
+      isObjectId: req.user._id instanceof mongoose.Types.ObjectId
+    } 
+  }, 'Sessions fetched'));
 });
 
 // GET /api/user/wallet
@@ -402,6 +454,14 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, { alreadyRated: true }, 'Already rated'));
   }
 
+  // Create Rating Document
+  await Rating.create({
+    userId,
+    astrologerId,
+    rating,
+    review
+  });
+
   // Save rating on Astrologer
   const astrologer = await Astrologer.findById(astrologerId);
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
@@ -410,10 +470,6 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
   const currentRating = astrologer.rating || 0;
   astrologer.rating = ((currentRating * totalRatings) + rating) / (totalRatings + 1);
   astrologer.totalRatings = totalRatings + 1;
-  if (review) {
-    if (!astrologer.reviews) astrologer.reviews = [];
-    astrologer.reviews.push({ userId, rating, review, date: new Date() });
-  }
   await astrologer.save();
 
   // Mark user as rated this astrologer

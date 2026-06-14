@@ -7,7 +7,8 @@ import {
   getUserOrders,
   getOrderById,
   createRazorpayOrder,
-  requestCancelOrder
+  requestCancelOrder,
+  trackOrder
 } from '../controllers/store.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 
@@ -21,5 +22,6 @@ router.post('/store/razorpay-order', verifyJWT, createRazorpayOrder);
 router.get('/store/orders', verifyJWT, getUserOrders);
 router.get('/store/orders/:id', verifyJWT, getOrderById);
 router.post('/store/orders/:id/cancel', verifyJWT, requestCancelOrder);
+router.get('/store/orders/:id/track', verifyJWT, trackOrder);
 
 export default router;

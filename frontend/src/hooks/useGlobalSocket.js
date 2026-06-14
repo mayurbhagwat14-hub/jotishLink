@@ -7,16 +7,22 @@ import toast from 'react-hot-toast';
 
 export const useGlobalSocket = () => {
   const dispatch = useDispatch();
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const userAuth = useSelector((state) => state.auth) || {};
+  const adminAuth = useSelector((state) => state.adminAuth) || {};
+  const astrologerAuth = useSelector((state) => state.astrologerAuth) || {};
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    const activeUsers = [userAuth.user, adminAuth.user, astrologerAuth.user].filter(Boolean);
+    
+    if (activeUsers.length === 0) return;
 
     const socket = getSocket();
 
     // 1. Join Global Room (and handle reconnections)
     const joinRoom = () => {
-      socket.emit('join_global_room', { userId: user._id, role: user.role });
+      activeUsers.forEach(u => {
+        socket.emit('join_global_room', { userId: u._id, role: u.role });
+      });
     };
 
     if (socket.connected) {
@@ -39,7 +45,7 @@ export const useGlobalSocket = () => {
 
     // Admin Dashboard Real-Time Updates
     const handleDashboardUpdate = () => {
-      if (user.role === 'admin' || user.role === 'superadmin') {
+      if (adminAuth.isAuthenticated && adminAuth.user) {
         dispatch(fetchAdminDashboardThunk());
       }
     };
@@ -67,5 +73,5 @@ export const useGlobalSocket = () => {
       socket.off('pooja_booking_rejected', handlePoojaStatus);
       socket.off('pooja_booking_completed', handlePoojaStatus);
     };
-  }, [isAuthenticated, user, dispatch]);
+  }, [userAuth.isAuthenticated, adminAuth.isAuthenticated, astrologerAuth.isAuthenticated, dispatch]);
 };

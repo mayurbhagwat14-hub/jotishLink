@@ -11,6 +11,7 @@ const AstrologerProfile = () => {
   const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
   
   const [astrologer, setAstrologer] = useState(null);
+  const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -20,8 +21,12 @@ const AstrologerProfile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await userApis.getAstrologerById(id);
-        setAstrologer(res.data?.data?.astrologer || res.data?.astrologer);
+        const [astroRes, ratingsRes] = await Promise.all([
+          userApis.getAstrologerById(id),
+          userApis.getAstrologerRatings(id)
+        ]);
+        setAstrologer(astroRes.data?.data?.astrologer || astroRes.data?.astrologer);
+        setRatings(ratingsRes.data?.data?.ratings || []);
       } catch (err) {
         setError('Failed to fetch astrologer details');
       } finally {
@@ -142,23 +147,23 @@ const AstrologerProfile = () => {
           </div>
           
           <div className="space-y-4">
-            {/* Mock Reviews */}
-            {[
-              { name: 'Rohan Sharma', text: 'Very accurate predictions. Helped me a lot.', rating: 5 },
-              { name: 'Priya Desai', text: 'Good experience, but took some time to connect.', rating: 4 },
-            ].map((review, i) => (
-              <div key={i} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-gray-800 text-sm">{review.name}</span>
-                  <div className="flex gap-0.5">
-                    {Array(5).fill(0).map((_, idx) => (
-                      <FiStar key={idx} size={10} className={idx < review.rating ? "text-orange-400 fill-orange-400" : "text-gray-200 fill-gray-200"} />
-                    ))}
+            {ratings.length > 0 ? (
+              ratings.map((review, i) => (
+                <div key={review._id || i} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-gray-800 text-sm">{review.user?.name || 'JyotishLink User'}</span>
+                    <div className="flex gap-0.5">
+                      {Array(5).fill(0).map((_, idx) => (
+                        <FiStar key={idx} size={10} className={idx < review.rating ? "text-orange-400 fill-orange-400" : "text-gray-200 fill-gray-200"} />
+                      ))}
+                    </div>
                   </div>
+                  <p className="text-gray-500 text-sm">{review.review || 'No review provided.'}</p>
                 </div>
-                <p className="text-gray-500 text-sm">{review.text}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-gray-400 text-sm italic">No reviews yet. Be the first to rate!</p>
+            )}
           </div>
         </div>
       </div>

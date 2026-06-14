@@ -24,6 +24,7 @@ export const updateUserProfile = (data) => axios.put('/user/profile', data);
 export const getUserWallet = () => axios.get('/user/wallet');
 export const getAstrologers = (params) => axios.get('/astrologers', { params });
 export const getAstrologerById = (id) => axios.get(`/astrologers/${id}`);
+export const getAstrologerRatings = (id) => axios.get(`/astrologers/${id}/ratings`);
 export const getStoreProducts = (params) => axios.get('/products', { params });
 export const getProductById = (id) => axios.get(`/products/${id}`);
 export const getStorePandits = () => axios.get('/pandits');

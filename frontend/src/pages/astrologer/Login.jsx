@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { login, astrologerLoginThunk } from '../../store/slices/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { astrologerLogin, astrologerLoginThunk } from '../../store/slices/astrologerAuthSlice';
 import { checkAstrologerPhone, requestOtp } from '../../api/astrologerApis';
 import { FiMoon, FiPhone, FiCheckCircle } from 'react-icons/fi';
 
@@ -13,6 +13,15 @@ const AstrologerLogin = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isAuthenticated, user } = useSelector((state) => state.astrologerAuth);
+
+  useEffect(() => {
+    // If the user is already authenticated but not approved, jump directly to step 3
+    if (isAuthenticated && user?.approvalStatus && user.approvalStatus !== 'approved') {
+      setPhone(user.phone || '');
+      setStep(3);
+    }
+  }, [isAuthenticated, user]);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -42,10 +51,12 @@ const AstrologerLogin = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await dispatch(astrologerLoginThunk({ phone, otp: otp.join('') })).unwrap();
-      const data = res?.data || res;
-      if (data?.accessToken) {
-        dispatch(login({ user: data.user, token: data.accessToken }));
+      const data = await dispatch(astrologerLoginThunk({ phone, otp: otp.join('') })).unwrap();
+      
+      if (data && data.data) {
+        dispatch(astrologerLogin({ user: { ...data.data.user, role: 'astrologer' }, token: data.data.accessToken }));
+      } else if (data && data.accessToken) {
+        dispatch(astrologerLogin({ user: { ...data.user, role: 'astrologer' }, token: data.accessToken }));
       }
       navigate('/astrologer/dashboard');
     } catch (err) {
@@ -113,6 +124,18 @@ const AstrologerLogin = () => {
     }
   };
 
+  const handleGoBack = () => {
+    if (isAuthenticated) {
+      // Must import astrologerLogout from slice for this
+      import('../../store/slices/astrologerAuthSlice').then(({ astrologerLogout }) => {
+        dispatch(astrologerLogout());
+      });
+    }
+    setStep(1);
+    setPhone('');
+    setError('');
+  };
+
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans p-4 relative overflow-hidden">
@@ -125,17 +148,21 @@ const AstrologerLogin = () => {
       <div className="w-full max-w-sm z-10">
         
         <div className="flex flex-col items-center">
-          <div className="w-[80px] h-[80px] bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative">
-            <FiMoon size={36} className="text-white" />
-          </div>
-          
-          <h1 className="text-[32px] font-bold text-gray-900 mb-2 tracking-tight">Astrologer Portal</h1>
-          <p className="text-center text-gray-500 text-[14px] font-medium mb-10">Login to manage your sessions and earnings.</p>
+          {step !== 3 && (
+            <>
+              <div className="w-[80px] h-[80px] bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative mx-auto">
+                <FiMoon size={36} className="text-white" />
+              </div>
+              
+              <h1 className="text-[32px] font-bold text-gray-900 mb-2 tracking-tight text-center">Astrologer Portal</h1>
+              <p className="text-center text-gray-500 text-[14px] font-medium mb-10">Login to manage your sessions and earnings.</p>
 
-          {error && (
-            <div className="w-full mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 font-medium text-center shadow-sm">
-              {error}
-            </div>
+              {error && (
+                <div className="w-full mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 font-medium text-center shadow-sm">
+                  {error}
+                </div>
+              )}
+            </>
           )}
 
           {step === 1 && (
@@ -148,16 +175,19 @@ const AstrologerLogin = () => {
                   type="tel" 
                   required
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter phone number" 
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 10) setPhone(val);
+                  }}
+                  placeholder="Enter 10-digit number" 
                   className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-3.5 bg-gray-50 text-[15px] text-gray-900 outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
                 />
               </div>
               <button 
                 type="submit"
-                disabled={loading || phone.length < 10}
+                disabled={loading || phone.length !== 10}
                 className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 flex justify-center items-center ${
-                  loading || phone.length < 10
+                  loading || phone.length !== 10
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
                 }`}
@@ -209,18 +239,18 @@ const AstrologerLogin = () => {
           )}
 
           {step === 3 && (
-            <div className="w-full text-center py-6 animate-fade-in">
-              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 relative shadow-inner">
-                <FiCheckCircle size={32} className="text-blue-500" />
-                <span className="absolute top-0 right-0 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center animate-pulse" />
+            <div className="text-center py-10 animate-fade-in max-w-md mx-auto">
+              <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FiCheckCircle size={40} className="text-green-500" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3 tracking-tight">Your application is under review</h2>
-              <p className="text-gray-500 font-medium leading-relaxed mb-8">
-                {error || "Your application is currently under review by our admin team."}
+              <h2 className="text-2xl font-black text-gray-900 mb-3">Application Submitted Successfully!</h2>
+              <p className="text-gray-500 font-medium leading-relaxed mb-6">
+                Thank you for applying. Your application has been sent to the admin panel for review. Our team will verify your details.
               </p>
+
               <button 
-                onClick={() => setStep(1)}
-                className="px-8 py-3 border-2 border-orange-500 text-orange-500 font-bold rounded-xl hover:bg-orange-50 transition-colors active:scale-[0.98]"
+                onClick={handleGoBack}
+                className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all active:scale-[0.98]"
               >
                 Go Back
               </button>
@@ -229,20 +259,22 @@ const AstrologerLogin = () => {
 
         </div>
         
-        <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-3 w-full">
-          <p className="text-[13px] font-medium text-gray-500">
-            Not an astrologer yet?{' '}
-            <Link to="/astrologer/apply" className="text-orange-500 font-bold hover:underline transition-colors">
-              Apply Here
-            </Link>
-          </p>
-          <p className="text-[13px] font-medium text-gray-500">
-            Are you a user?{' '}
-            <Link to="/user/login" className="text-orange-500 font-bold hover:underline transition-colors">
-              Login Here
-            </Link>
-          </p>
-        </div>
+        {step !== 3 && (
+          <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-3 w-full">
+            <p className="text-[13px] font-medium text-gray-500">
+              Not an astrologer yet?{' '}
+              <Link to="/astrologer/apply" className="text-orange-500 font-bold hover:underline transition-colors">
+                Apply Here
+              </Link>
+            </p>
+            <p className="text-[13px] font-medium text-gray-500">
+              Are you a user?{' '}
+              <Link to="/user/login" className="text-orange-500 font-bold hover:underline transition-colors">
+                Login Here
+              </Link>
+            </p>
+          </div>
+        )}
 
       </div>
     </div>

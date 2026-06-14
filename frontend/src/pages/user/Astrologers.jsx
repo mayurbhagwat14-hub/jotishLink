@@ -27,7 +27,7 @@ const Astrologers = () => {
   const navigate = useNavigate();
   const { openSidebar } = useOutletContext();
   
-  const { astrologers } = useSelector((state) => state.user);
+  const { astrologers, loading, bannerMessage } = useSelector((state) => state.user);
   const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -175,7 +175,7 @@ const Astrologers = () => {
 
         {/* Question Banner */}
         <div className="bg-orange-50 border-y border-orange-100 px-4 py-2.5 text-center">
-          <span className="text-[13px] text-gray-600 font-medium">Will I have love or arranged marriage?</span>
+          <span className="text-[13px] text-gray-600 font-medium">{bannerMessage}</span>
         </div>
 
         {/* Tab Bar: Chat / Call */}
@@ -243,11 +243,11 @@ const Astrologers = () => {
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 flex flex-col pt-0.5">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <h3 className="font-bold text-gray-900 text-[16px]">{astroName}</h3>
+                <div className="flex-1 flex flex-col pt-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-[16px] truncate max-w-[120px] sm:max-w-[140px]">{astroName}</h3>
                     {astro.isVerified !== false && (
-                      <span className="w-[14px] h-[14px] bg-green-500 rounded-full flex items-center justify-center text-white text-[9px]">✓</span>
+                      <span className="w-[14px] h-[14px] bg-green-500 rounded-full flex items-center justify-center text-white text-[9px] shrink-0">✓</span>
                     )}
                   </div>
                   <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{(astro.skills || []).join(', ')}</p>
@@ -263,7 +263,7 @@ const Astrologers = () => {
                 </div>
 
                 {/* Action Button */}
-                <div className="flex flex-col items-end justify-center">
+                <div className="flex flex-col items-end justify-center shrink-0 pl-2">
                   {isOffline ? (
                     <button disabled className="bg-gray-400 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm transition-all capitalize cursor-not-allowed">
                       Offline

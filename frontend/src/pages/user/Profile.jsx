@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiArrowLeft, FiUploadCloud, FiSave } from 'react-icons/fi';
-import { updateUser, fetchProfileThunk, updateProfileThunk } from '../../store/slices/authSlice';
+import { FiArrowLeft, FiUploadCloud, FiSave, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
+import { updateUser, fetchProfileThunk, updateProfileThunk, logout } from '../../store/slices/authSlice';
+import axiosInstance from '../../api/axios';
+import { toast } from 'react-hot-toast';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -22,6 +24,24 @@ const Profile = () => {
     pincode: user?.pincode || '',
     avatar: user?.avatar || '',
   }));
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await axiosInstance.delete('/user/profile/delete');
+      dispatch(logout());
+      navigate('/user/login');
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      alert('Failed to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchProfileThunk()).unwrap().then((data) => {
@@ -60,13 +80,20 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.name?.trim()) {
+      return toast.error("Name cannot be empty");
+    }
+    if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
+      return toast.error("Pincode must be exactly 6 digits.");
+    }
     try {
       await dispatch(updateProfileThunk(formData)).unwrap();
+      toast.success("Profile updated successfully!");
+      navigate('/user/home');
     } catch (err) {
-      console.error("Failed to update profile via API, updating local state", err);
-      dispatch(updateUser(formData));
+      console.error("Failed to update profile", err);
+      toast.error(err?.message || "Failed to update profile. Please try again.");
     }
-    navigate('/user/home');
   };
 
   return (
@@ -191,12 +218,49 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Submit Button */}
-      <div className="p-4 bg-white mt-auto border-t border-gray-50">
+      {/* Submit Button & Delete Account */}
+      <div className="p-4 bg-white mt-auto border-t border-gray-50 space-y-3">
         <button onClick={handleSubmit} className="w-full py-4 flex items-center justify-center gap-2 bg-orange-500 text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98] transition-all">
           <FiSave /> Save Changes
         </button>
+        <button 
+          onClick={() => setShowDeleteModal(true)} 
+          className="w-full py-3.5 flex items-center justify-center gap-2 bg-red-50 text-red-600 font-bold text-[15px] rounded-xl hover:bg-red-100 transition-colors"
+        >
+          <FiTrash2 /> Delete Account
+        </button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiAlertTriangle size={32} className="text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Account?</h3>
+            <p className="text-gray-500 text-[14px] font-medium mb-6">
+              Are you sure you want to permanently delete your account? All your details will be erased from the database. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-3 text-gray-600 font-bold bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteAccount}
+                className="flex-1 py-3 text-white font-bold bg-red-500 hover:bg-red-600 rounded-xl transition-colors flex items-center justify-center gap-2"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

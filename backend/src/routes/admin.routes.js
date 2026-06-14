@@ -48,11 +48,17 @@ import {
   getAdminAstrologerById,
   sendBroadcast,
   getAdminEarnings,
-  toggleTopVerifiedAstrologer
+  toggleTopVerifiedAstrologer,
+  getAdminRatings,
+  deleteAdminRating,
+  pushOrderToShiprocket,
+  generateOrderAWB,
+  getAdminPendingCounts
 } from '../controllers/admin.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { auditLogMiddleware } from '../middlewares/audit.middleware.js';
 import { validate, refundUserSchema } from '../middlewares/validation.middleware.js';
+import { upload } from '../middlewares/upload.middleware.js';
 
 const router = Router();
 
@@ -66,6 +72,7 @@ router.delete('/admin/profile', deleteAdminProfile);
 
 // Dashboard & Earnings
 router.get('/admin/dashboard-stats', getAdminDashboard);
+router.get('/admin/pending-counts', getAdminPendingCounts);
 router.get('/admin/earnings', getAdminEarnings);
 
 // User management
@@ -90,12 +97,14 @@ router.delete('/admin/astrologers/:id', deleteAdminAstrologer);
 
 // Astrologer payouts
 router.get('/admin/astrologer-payouts', getAstrologerPayouts);
-router.post('/admin/astrologer-payouts/:id/process', processAstrologerPayout);
+router.post('/admin/astrologer-payouts/:id/process', upload.single('receipt'), processAstrologerPayout);
 
 // Orders
 router.get('/admin/orders', getAdminOrders);
 router.put('/admin/orders/:id/status', updateOrderStatus);
 router.put('/admin/orders/:id/cancel', processCancelRequest);
+router.post('/admin/orders/:id/shiprocket/push', pushOrderToShiprocket);
+router.post('/admin/orders/:id/shiprocket/awb', generateOrderAWB);
 
 // Products
 router.get('/admin/products', getAdminProducts);
@@ -144,5 +153,9 @@ router.get('/admin/reports', getAdminReports);
 router.get('/admin/calls', getAdminCalls);
 router.delete('/admin/calls/:id', deleteAdminCall);
 router.get('/admin/calls/analytics', getAdminCallAnalytics);
+
+// Ratings
+router.get('/admin/ratings', getAdminRatings);
+router.delete('/admin/ratings/:id', deleteAdminRating);
 
 export default router;

@@ -1,6 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import authReducer from './slices/authSlice';
+import adminAuthReducer from './slices/adminAuthSlice';
+import astrologerAuthReducer from './slices/astrologerAuthSlice';
 import userReducer from './slices/userSlice';
 import astrologerReducer from './slices/astrologerSlice';
 import adminReducer from './slices/adminSlice';
@@ -22,16 +24,32 @@ const storage = {
 
 // Persist only auth slice (token + user + isAuthenticated) across page reloads
 const authPersistConfig = {
-  key: 'auth',
+  key: 'auth_user',
+  storage,
+  whitelist: ['user', 'token', 'isAuthenticated', 'settings'],
+};
+
+const adminAuthPersistConfig = {
+  key: 'auth_admin',
+  storage,
+  whitelist: ['user', 'token', 'isAuthenticated'],
+};
+
+const astrologerAuthPersistConfig = {
+  key: 'auth_astrologer',
   storage,
   whitelist: ['user', 'token', 'isAuthenticated'],
 };
 
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
+const persistedAdminAuthReducer = persistReducer(adminAuthPersistConfig, adminAuthReducer);
+const persistedAstrologerAuthReducer = persistReducer(astrologerAuthPersistConfig, astrologerAuthReducer);
 
 const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
+    adminAuth: persistedAdminAuthReducer,
+    astrologerAuth: persistedAstrologerAuthReducer,
     user: userReducer,
     astrologer: astrologerReducer,
     admin: adminReducer,

@@ -26,6 +26,7 @@ const AdminSettings = () => {
     tagline: 'Connect with the Stars',
     supportEmail: 'support@jyotishlink.com',
     supportPhone: '+91 1800 000 000',
+    astrologerBannerMessage: 'Will I have love or arranged marriage?',
     minChatBalance: 50,
     freeChatDuration: 1
   });
@@ -207,6 +208,11 @@ const AdminSettings = () => {
             <div className="space-y-1.5 pt-2">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Min Wallet Balance for Chat (₹)</label>
               <input type="number" value={generalSettings.minChatBalance} onChange={e => setGeneralSettings({...generalSettings, minChatBalance: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Question Banner (Astrologers Page)</label>
+              <input type="text" value={generalSettings.astrologerBannerMessage ?? 'Will I have love or arranged marriage?'} onChange={e => setGeneralSettings({...generalSettings, astrologerBannerMessage: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <div className="space-y-1.5">

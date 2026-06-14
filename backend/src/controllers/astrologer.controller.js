@@ -90,6 +90,8 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     education, certificationDetails, bankDetails, email, isPandit, poojasOffered
   } = req.body;
 
+  console.log("SIGNUP PAYLOAD RECEIVED:", JSON.stringify(req.body, null, 2));
+
   if (!name || !phone || !password || !otp) throw new ApiError(400, 'name, phone, password, and otp required');
 
   const existingRole = await checkGlobalMobileExists(phone);
@@ -183,25 +185,30 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
       return { url: '', publicId: '' };
     };
 
-    const avatarRes = await uploadField('avatar');
+    const [
+      avatarRes,
+      idRes,
+      aadhaarFrontRes,
+      aadhaarBackRes,
+      panCardRes,
+      certRes,
+      selfieRes
+    ] = await Promise.all([
+      uploadField('avatar'),
+      uploadField('identityProof'),
+      uploadField('aadhaarFront'),
+      uploadField('aadhaarBack'),
+      uploadField('panCard'),
+      uploadField('certificate'),
+      uploadField('selfieVerification')
+    ]);
+
     if (avatarRes.url) { astrologer.avatar = avatarRes.url; astrologer.avatarPublicId = avatarRes.publicId; }
-
-    const idRes = await uploadField('identityProof');
     if (idRes.url) { astrologer.identityProof = idRes.url; astrologer.identityProofPublicId = idRes.publicId; }
-
-    const aadhaarFrontRes = await uploadField('aadhaarFront');
     if (aadhaarFrontRes.url) { astrologer.aadhaarFront = aadhaarFrontRes.url; astrologer.aadhaarFrontPublicId = aadhaarFrontRes.publicId; }
-
-    const aadhaarBackRes = await uploadField('aadhaarBack');
     if (aadhaarBackRes.url) { astrologer.aadhaarBack = aadhaarBackRes.url; astrologer.aadhaarBackPublicId = aadhaarBackRes.publicId; }
-
-    const panCardRes = await uploadField('panCard');
     if (panCardRes.url) { astrologer.panCard = panCardRes.url; astrologer.panCardPublicId = panCardRes.publicId; }
-
-    const certRes = await uploadField('certificate');
     if (certRes.url) { astrologer.certificate = certRes.url; astrologer.certificatePublicId = certRes.publicId; }
-
-    const selfieRes = await uploadField('selfieVerification');
     if (selfieRes.url) { astrologer.selfieVerification = selfieRes.url; astrologer.selfieVerificationPublicId = selfieRes.publicId; }
 
     astrologer.isVerified = false;
@@ -516,6 +523,7 @@ export const getAstrologerEarnings = asyncHandler(async (req, res) => {
       totalEarnings: parseFloat(totalEarnings.toFixed(2)),
       pendingWithdrawalAmount: parseFloat(pendingWithdrawalAmount.toFixed(2)),
       completedWithdrawalAmount: parseFloat(completedWithdrawalAmount.toFixed(2)),
+      withdrawals: withdrawals.filter(w => w.deletedByAstrologer !== true).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
       thisMonth: parseFloat(thisMonthTotal.toFixed(2)),
       percentageChange: parseFloat(percentageChange.toFixed(1))
     }, 'Earnings fetched')
@@ -575,6 +583,17 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
   }
 
   return res.status(201).json(new ApiResponse(201, { withdrawal }, 'Withdrawal request sent successfully. Money will come to your account in 1-2 working days.'));
+});
+
+// DELETE /api/astrologer/withdraw/:id
+export const deleteWithdrawalRequest = asyncHandler(async (req, res) => {
+  const withdrawal = await WithdrawalRequest.findOne({ _id: req.params.id, astrologerId: req.user._id });
+  if (!withdrawal) throw new ApiError(404, 'Withdrawal request not found');
+
+  withdrawal.deletedByAstrologer = true;
+  await withdrawal.save();
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Withdrawal request deleted successfully'));
 });
 
 // GET /api/astrologer/pooja-requests
@@ -833,19 +852,29 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
 
   const { default: Review } = await import('../models/review.model.js');
+  const { CallSession } = await import('../models/callSession.model.js');
 
   // 1. Average Rating
-  const averageRating = astrologer.rating || 5.0;
+  const allReviews = await Review.find({ astrologerId: astrologer._id }).lean();
+  let averageRating = astrologer.rating || 5.0;
+  if (allReviews.length > 0) {
+    const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+    averageRating = Number((totalRating / allReviews.length).toFixed(1));
+  }
 
   // 2. Total Users Consulted & Returning Customers
-  // Group by userId to count sessions per user
-  const userSessions = await ChatSession.aggregate([
-    { $match: { astrologerId: astrologer._id, status: 'completed' } },
-    { $group: { _id: '$userId', sessionCount: { $sum: 1 } } }
-  ]);
+  const chatSessions = await ChatSession.find({ astrologerId: astrologer._id, status: 'completed' }).select('userId').lean();
+  const callSessions = await CallSession.find({ astrologerId: astrologer._id, status: 'completed' }).select('userId').lean();
+  
+  const allUserIds = [...chatSessions.map(c => c.userId?.toString()).filter(Boolean), ...callSessions.map(c => c.userId?.toString()).filter(Boolean)];
+  
+  const userCounts = {};
+  allUserIds.forEach(id => {
+    userCounts[id] = (userCounts[id] || 0) + 1;
+  });
 
-  const totalUsersConsulted = userSessions.length;
-  const returningCustomers = userSessions.filter(u => u.sessionCount > 1).length;
+  const totalUsersConsulted = Object.keys(userCounts).length;
+  const returningCustomers = Object.values(userCounts).filter(count => count > 1).length;
   const returningCustomersPercentage = totalUsersConsulted > 0 
     ? Math.round((returningCustomers / totalUsersConsulted) * 100) 
     : 0;
@@ -857,36 +886,33 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
   sevenDaysAgo.setDate(today.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
 
-  const recentSessions = await ChatSession.aggregate([
-    { 
-      $match: { 
-        astrologerId: astrologer._id, 
-        status: 'completed',
-        createdAt: { $gte: sevenDaysAgo, $lte: today }
-      } 
-    },
-    {
-      $group: {
-        _id: { $dayOfWeek: "$createdAt" }, // 1 = Sunday, 7 = Saturday
-        count: { $sum: 1 }
-      }
-    }
-  ]);
+  const recentChats = await ChatSession.find({
+    astrologerId: astrologer._id,
+    status: 'completed',
+    createdAt: { $gte: sevenDaysAgo, $lte: today }
+  }).select('createdAt').lean();
 
-  // Convert to Mon-Sun array
-  // MongoDB $dayOfWeek: 1 (Sun) to 7 (Sat)
-  // We want: Mon(0), Tue(1), Wed(2), Thu(3), Fri(4), Sat(5), Sun(6)
+  const recentCalls = await CallSession.find({
+    astrologerId: astrologer._id,
+    status: 'completed',
+    createdAt: { $gte: sevenDaysAgo, $lte: today }
+  }).select('createdAt').lean();
+
+  const recentAll = [...recentChats, ...recentCalls];
+
   const trendsMap = {};
-  recentSessions.forEach(item => {
-    // Map 1(Sun) -> 6, 2(Mon) -> 0, etc.
-    const mappedDay = item._id === 1 ? 6 : item._id - 2;
-    trendsMap[mappedDay] = item.count;
+  for (let i = 0; i < 7; i++) trendsMap[i] = 0;
+
+  recentAll.forEach(session => {
+    const day = new Date(session.createdAt).getDay();
+    const mappedDay = day === 0 ? 6 : day - 1;
+    trendsMap[mappedDay]++;
   });
 
   const trends = [];
   let maxCount = 0;
   for (let i = 0; i < 7; i++) {
-    const count = trendsMap[i] || 0;
+    const count = trendsMap[i];
     trends.push(count);
     if (count > maxCount) maxCount = count;
   }
@@ -908,23 +934,7 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
     review: r.review
   }));
 
-  // Fallback if no reviews
-  if (formattedReviews.length === 0) {
-    formattedReviews.push({
-      id: 'mock1',
-      userName: 'Priya K.',
-      rating: 5,
-      review: "Very accurate predictions. The remedies suggested were easy to follow and highly effective. Highly recommend!"
-    });
-    formattedReviews.push({
-      id: 'mock2',
-      userName: 'Rahul M.',
-      rating: 5,
-      review: "Gave me great clarity about my career path. The video consultation felt very personal and deeply insightful."
-    });
-  }
-
-  return res.status(200).json(new ApiResponse(200, {
+  return res.status(200).json(new ApiResponse(200, { 
     analytics: {
       averageRating,
       totalUsersConsulted,

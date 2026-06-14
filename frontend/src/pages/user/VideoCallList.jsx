@@ -139,55 +139,81 @@ const VideoCallList = () => {
 
       {/* List */}
       <div className="px-4 py-4 space-y-3">
-        {filteredAstrologers.map((astro) => {
+        {filteredAstrologers.map((astro, idx) => {
+          const astroName = astro.name || astro.userId?.name || 'Astrologer';
+          const avatarUrl = astro.avatar || astro.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
           const isOffline = astro.onlineStatus === 'offline';
           const isBusy = astro.onlineStatus === 'busy';
           
           return (
-          <div key={astro._id} className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 transition-all duration-500 ${isOffline ? 'grayscale opacity-60' : ''}`}>
-            
-            <div className="relative shrink-0">
-              <div className="w-16 h-16 rounded-full border-2 border-orange-200 overflow-hidden">
-                <img src={astro.avatar} alt={astro.name} className="w-full h-full object-cover" />
-              </div>
-              {astro.isVerified && (
-                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                  <span className="text-white text-[8px]">✓</span>
+          <div key={astro._id || idx} className={`bg-white rounded-2xl shadow-card border border-gray-100 relative overflow-hidden hover:shadow-card-hover transition-all duration-500 ${isOffline ? 'grayscale opacity-60' : ''}`}>
+            <div className="p-4 cursor-pointer" onClick={() => navigate(`/user/astrologer/${astro._id}`)}>
+              <div className="flex gap-3">
+                {/* Avatar & rating */}
+                <div className="flex flex-col items-center gap-1.5 shrink-0">
+                  <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-200 bg-orange-50">
+                    <img src={avatarUrl} alt={astroName} className="w-full h-full object-cover" onError={(e) => { e.target.onerror = null; e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`; }} />
+                  </div>
+                  <div className="flex text-[13px] tracking-[-1px]">
+                    {Array(5).fill(0).map((_, i) => (
+                      <span key={i} className={i < Math.floor(astro.rating || 5) ? 'text-orange-400' : 'text-gray-200'}>★</span>
+                    ))}
+                  </div>
+                  <span className="text-gray-400 text-[10px] whitespace-nowrap">{astro.orders || '1k+'} orders</span>
                 </div>
-              )}
-            </div>
-            
-            <div className="flex-1">
-              <h3 className="text-[16px] font-bold text-gray-900">{astro.name}</h3>
-              <p className="text-[12px] text-gray-500 line-clamp-1">{astro.skills.join(', ')}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-orange-500 text-[12px]">★</span>
-                <span className="text-[12px] font-bold text-gray-700">{astro.rating}</span>
-                <span className="text-gray-300 text-[10px] mx-1">•</span>
-                <span className="text-[11px] text-gray-500">{astro.experience} Yrs Exp</span>
+
+                {/* Details */}
+                <div className="flex-1 flex flex-col pt-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-[16px] truncate max-w-[120px] sm:max-w-[140px]">{astroName}</h3>
+                    {astro.isVerified !== false && (
+                      <span className="w-[14px] h-[14px] bg-green-500 rounded-full flex items-center justify-center text-white text-[9px] shrink-0">✓</span>
+                    )}
+                  </div>
+                  <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{(astro.skills || []).join(', ')}</p>
+                  <p className="text-gray-500 text-[12px] line-clamp-1 mb-0.5">{(astro.languages || []).join(', ')}</p>
+                  <p className="text-gray-500 text-[12px] mb-1.5">Exp: {astro.experience} Years</p>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[14px] font-bold text-gray-800">
+                      ₹{astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10)}
+                      <span className="text-[12px] text-gray-400 font-normal">/min</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="flex flex-col items-end justify-center shrink-0 pl-2">
+                  {isOffline ? (
+                    <button disabled className="bg-gray-400 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm transition-all capitalize cursor-not-allowed">
+                      Offline
+                    </button>
+                  ) : isBusy ? (
+                    <button disabled className="bg-red-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm transition-all capitalize cursor-not-allowed">
+                      Busy
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSessionRequest(astro, 'video');
+                      }}
+                      className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
+                    >
+                      Video Call
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <span className="text-[14px] font-bold text-gray-900">₹{astro.pricing?.videoCall || (astro.rate ? astro.rate * 2 : 10)}/min</span>
-              {isOffline ? (
-                <button disabled className="bg-gray-400 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm transition-all cursor-not-allowed">
-                  Offline
-                </button>
-              ) : isBusy ? (
-                <button disabled className="bg-red-500 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm transition-all cursor-not-allowed">
-                  Busy
-                </button>
-              ) : (
-                <button 
-                  onClick={() => handleSessionRequest(astro, 'video')}
-                  className="bg-orange-500 text-white px-4 py-1.5 rounded-xl text-[12px] font-bold flex items-center gap-1 shadow-sm hover:bg-orange-600 active:scale-95 transition-all"
-                >
-                  Call
-                </button>
-              )}
-            </div>
-
+            {/* Offer Footer */}
+            {astro.discountedPrice && (
+              <div className="bg-orange-50 px-4 py-1.5 border-t border-orange-100 flex items-center gap-1.5">
+                <span className="text-orange-400 text-[10px]">%</span>
+                <span className="text-orange-400 text-[11px] font-medium">Special offer for new users</span>
+              </div>
+            )}
           </div>
         )})}
 

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { login, adminLoginThunk } from '../../store/slices/authSlice';
+import { adminLogin, adminLoginThunk } from '../../store/slices/adminAuthSlice';
 import { FiLock, FiUser, FiArrowRight, FiShield, FiCheckCircle, FiCpu, FiKey } from 'react-icons/fi';
 
 const AdminLogin = () => {
@@ -24,12 +24,23 @@ const AdminLogin = () => {
     
     try {
       // Call real backend: POST /api/admin/auth/login with { email, password }
-      const res = await dispatch(adminLoginThunk({ email: username, password })).unwrap();
-      const data = res?.data || res;
-      if (data?.accessToken) {
-        dispatch(login({ user: data.user, token: data.accessToken }));
+      const resultAction = await dispatch(adminLoginThunk({ email: username, password }));
+      if (resultAction.payload && resultAction.payload.data) {
+        const payloadData = resultAction.payload.data;
+        dispatch(adminLogin({
+          user: { ...payloadData.user, role: 'admin' },
+          token: payloadData.accessToken,
+          refreshToken: payloadData.refreshToken
+        }));
+        navigate('/admin/dashboard');
+      } else if (resultAction.payload && resultAction.payload.accessToken) {
+        dispatch(adminLogin({
+          user: { ...resultAction.payload.user, role: 'admin' },
+          token: resultAction.payload.accessToken,
+          refreshToken: resultAction.payload.refreshToken
+        }));
+        navigate('/admin/dashboard');
       }
-      navigate('/admin/dashboard');
     } catch (err) {
       setError(err?.message || 'Invalid admin credentials');
     } finally {

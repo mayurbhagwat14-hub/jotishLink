@@ -10,7 +10,13 @@ const Matchmaking = () => {
   const { user } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     boyName: '',
-    girlName: ''
+    boyDob: '',
+    boyTob: '',
+    boyPob: '',
+    girlName: '',
+    girlDob: '',
+    girlTob: '',
+    girlPob: ''
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,8 +26,18 @@ const Matchmaking = () => {
     setLoading(true);
     try {
       const res = await checkMatchmaking({
-        boyDetails: { name: formData.boyName },
-        girlDetails: { name: formData.girlName }
+        boyDetails: { 
+          name: formData.boyName,
+          dob: formData.boyDob,
+          timeOfBirth: formData.boyTob,
+          placeOfBirth: formData.boyPob
+        },
+        girlDetails: { 
+          name: formData.girlName,
+          dob: formData.girlDob,
+          timeOfBirth: formData.girlTob,
+          placeOfBirth: formData.girlPob
+        }
       });
       setResult(res.data);
       setLoading(false);
@@ -65,26 +81,84 @@ const Matchmaking = () => {
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-orange-100 rounded-full blur-[50px] opacity-40 -z-10" />
           
           <form onSubmit={handleSubmit} className="relative z-10 flex flex-col md:flex-row gap-6 items-center">
-            <div className="flex-1 w-full bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm">
-              <h3 className="font-bold text-orange-800 text-[15px] mb-3 flex items-center gap-2">👨 Boy's Details</h3>
-              <input 
-                required type="text" placeholder="Enter boy's name"
-                value={formData.boyName} onChange={e => setFormData({...formData, boyName: e.target.value})}
-                className="w-full border-2 border-white bg-white rounded-xl py-3 px-4 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[14px]" 
-              />
+            <div className="flex-1 w-full bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col gap-4">
+              <h3 className="font-bold text-orange-800 text-[15px] mb-1 flex items-center gap-2">👨 Boy's Details</h3>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-600 mb-1">Name</label>
+                <input 
+                  required type="text" placeholder="Enter boy's name"
+                  value={formData.boyName} onChange={e => setFormData({...formData, boyName: e.target.value})}
+                  className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-[12px] font-semibold text-gray-600 mb-1">Date of Birth</label>
+                  <input 
+                    required type="date" 
+                    value={formData.boyDob} onChange={e => setFormData({...formData, boyDob: e.target.value})}
+                    className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[12px] font-semibold text-gray-600 mb-1">Time of Birth</label>
+                  <input 
+                    required type="time" 
+                    value={formData.boyTob} onChange={e => setFormData({...formData, boyTob: e.target.value})}
+                    className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-600 mb-1">Place of Birth</label>
+                <input 
+                  required type="text" placeholder="Enter city"
+                  value={formData.boyPob} onChange={e => setFormData({...formData, boyPob: e.target.value})}
+                  className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                />
+              </div>
             </div>
 
             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md font-bold text-orange-400 shrink-0 border border-orange-100 z-10 text-[14px]">
               VS
             </div>
 
-            <div className="flex-1 w-full bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm">
-              <h3 className="font-bold text-orange-800 text-[15px] mb-3 flex items-center gap-2">👩 Girl's Details</h3>
-              <input 
-                required type="text" placeholder="Enter girl's name"
-                value={formData.girlName} onChange={e => setFormData({...formData, girlName: e.target.value})}
-                className="w-full border-2 border-white bg-white rounded-xl py-3 px-4 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[14px]" 
-              />
+            <div className="flex-1 w-full bg-orange-50/50 p-5 rounded-2xl border border-orange-100 shadow-sm flex flex-col gap-4">
+              <h3 className="font-bold text-orange-800 text-[15px] mb-1 flex items-center gap-2">👩 Girl's Details</h3>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-600 mb-1">Name</label>
+                <input 
+                  required type="text" placeholder="Enter girl's name"
+                  value={formData.girlName} onChange={e => setFormData({...formData, girlName: e.target.value})}
+                  className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-[12px] font-semibold text-gray-600 mb-1">Date of Birth</label>
+                  <input 
+                    required type="date" 
+                    value={formData.girlDob} onChange={e => setFormData({...formData, girlDob: e.target.value})}
+                    className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[12px] font-semibold text-gray-600 mb-1">Time of Birth</label>
+                  <input 
+                    required type="time" 
+                    value={formData.girlTob} onChange={e => setFormData({...formData, girlTob: e.target.value})}
+                    className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[12px] font-semibold text-gray-600 mb-1">Place of Birth</label>
+                <input 
+                  required type="text" placeholder="Enter city"
+                  value={formData.girlPob} onChange={e => setFormData({...formData, girlPob: e.target.value})}
+                  className="w-full border-2 border-white bg-white rounded-xl py-2.5 px-4 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all text-[13px]" 
+                />
+              </div>
             </div>
             
             <div className="w-full md:w-auto shrink-0 mt-2 md:mt-0">

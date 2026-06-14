@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiX, FiAlertTriangle } from 'react-icons/fi';
-import { getOrderById, requestCancelOrder } from '../../api/storeApis';
+import { FiArrowLeft, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiX, FiAlertTriangle, FiActivity } from 'react-icons/fi';
+import { getOrderById, requestCancelOrder, trackOrder } from '../../api/storeApis';
 
 const formatDate = (isoString) => {
   if (!isoString) return '';
@@ -23,12 +23,26 @@ const OrderDetails = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [cancelLoading, setCancelLoading] = useState(false);
 
+  const [trackingData, setTrackingData] = useState(null);
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
         const res = await getOrderById(id);
         if (res.data?.success) {
-          setOrder(res.data.data.order);
+          const fetchedOrder = res.data.data.order;
+          setOrder(fetchedOrder);
+          
+          if (fetchedOrder.awbCode) {
+            try {
+               const trackRes = await trackOrder(fetchedOrder._id);
+               if (trackRes.data?.success && trackRes.data.data.tracking?.tracking_data?.track_status === 1) {
+                  setTrackingData(trackRes.data.data.tracking.tracking_data);
+               }
+            } catch (trackErr) {
+               console.log("Could not load advanced tracking data");
+            }
+          }
         }
       } catch (err) {
         alert('Failed to load order details');
@@ -179,6 +193,21 @@ const OrderDetails = () => {
                   </div>
                 );
               })}
+              
+              {/* Shiprocket Advanced Tracking Data */}
+              {trackingData && trackingData.shipment_track && trackingData.shipment_track.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <h4 className="text-[12px] font-bold text-gray-600 mb-3 flex items-center gap-2"><FiActivity /> Live Courier Updates ({order.courierPartner})</h4>
+                  <div className="space-y-4">
+                    {trackingData.shipment_track[0].origin && (
+                      <p className="text-[11px] text-gray-500">Origin: <strong>{trackingData.shipment_track[0].origin}</strong> → Destination: <strong>{trackingData.shipment_track[0].destination}</strong></p>
+                    )}
+                    <p className="text-[11px] text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded inline-block">
+                       Current Status: {trackingData.shipment_status === 1 ? 'AWB Assigned' : trackingData.shipment_track[0].current_status}
+                    </p>
+                  </div>
+                </div>
+              )}
               
               {order.orderStatus === 'cancelled' && (
                 <div className="flex items-start gap-4">

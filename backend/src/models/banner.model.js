@@ -19,7 +19,7 @@ const bannerSchema = new mongoose.Schema(
     },
     pages: {
       type: [String],
-      enum: ['Home', 'Store'],
+      enum: ['Home', 'Home_Middle', 'Store'],
       default: ['Home'],
     },
   },

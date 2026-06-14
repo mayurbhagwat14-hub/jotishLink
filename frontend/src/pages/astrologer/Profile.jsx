@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSave, FiPlus, FiX, FiCheck } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
+import { astrologerDeleteAccountThunk } from '../../store/slices/astrologerAuthSlice';
 
 const POOJA_TYPES = ['Satyanarayan Pooja', 'Griha Pravesh', 'Navagraha Shanti', 'Rudrabhishek', 'Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya', 'Kaal Sarp Dosh Nivaran', 'Mangal Dosh Nivaran'];
 
@@ -10,6 +12,8 @@ const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { profile } = useSelector((state) => state.astrologer);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [languages, setLanguages] = useState(['Hindi', 'English']);
   const [newLanguage, setNewLanguage] = useState('');
@@ -138,7 +142,22 @@ const Profile = () => {
     const vPrice = Number(formData.videoPrice);
 
     if (cPrice < 5 || aPrice < 5 || vPrice < 5) {
-      alert("Minimum price for any service must be at least ₹5/min");
+      toast.error("Minimum price for any service must be at least ₹5/min");
+      return;
+    }
+    
+    if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
+      toast.error('Pincode must be exactly 6 digits.');
+      return;
+    }
+    
+    if (formData.accountNumber && !/^\d{9,18}$/.test(formData.accountNumber)) {
+      toast.error('Account Number must be between 9 and 18 digits.');
+      return;
+    }
+    
+    if (formData.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) {
+      toast.error('Invalid IFSC Code format. Example: SBIN0123456');
       return;
     }
 
@@ -180,9 +199,21 @@ const Profile = () => {
         dispatch({ type: 'auth/updateUser', payload: { avatar: updatedData.avatar, name: updatedData.name } });
       }
 
+      toast.success('Profile updated successfully!');
       navigate('/astrologer/dashboard');
     } catch (err) {
-      alert('Failed to save profile: ' + (err.message || 'Unknown error'));
+      toast.error('Failed to save profile: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await dispatch(astrologerDeleteAccountThunk()).unwrap();
+      toast.success("Account deleted successfully");
+      navigate('/astrologer/login');
+    } catch (err) {
+      toast.error("Failed to delete account: " + (err.message || 'Unknown error'));
+      setShowDeleteModal(false);
     }
   };
 
@@ -570,6 +601,50 @@ const Profile = () => {
         </div>
 
       </div>
+
+      {/* Danger Zone */}
+      <div className="mt-8 mb-24 lg:mb-8 bg-red-50/80 border border-red-200 rounded-3xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+        <div className="flex-1">
+          <h2 className="text-[17px] font-bold text-red-600">Danger Zone</h2>
+          <p className="text-[13px] text-red-500/80 font-medium mt-1.5 leading-relaxed">Permanently delete your account and all associated data. This action cannot be undone.</p>
+        </div>
+        <button 
+          onClick={() => setShowDeleteModal(true)}
+          className="w-full sm:w-auto px-6 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 shadow-md shadow-red-500/20 transition-all whitespace-nowrap active:scale-95"
+        >
+          Delete Account
+        </button>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl transform transition-all">
+            <div className="w-16 h-16 bg-red-50 border-4 border-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <FiX className="text-3xl text-red-500" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 text-center mb-2">Delete Account?</h3>
+            <p className="text-gray-500 text-center text-[14px] font-medium mb-6 leading-relaxed">
+              Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteAccount}
+                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors shadow-md shadow-red-500/20"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

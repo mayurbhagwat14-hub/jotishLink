@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera } from 'react-icons/fi';
 import { useDispatch } from 'react-redux';
-import { login, astrologerSignupThunk } from '../../store/slices/authSlice';
+import { toast } from 'react-hot-toast';
+import { astrologerLogin, astrologerSignupThunk } from '../../store/slices/astrologerAuthSlice';
 import { checkAstrologerPhone, requestOtp, astrologerSignup } from '../../api/astrologerApis';
 
 const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career'];
@@ -54,6 +55,24 @@ const ApplyAstrologer = () => {
     isPandit: false,
     poojasOffered: []
   });
+
+  // Load from local storage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('astrologerApplyData');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setFormData((prev) => ({ ...prev, ...parsed, mobile: prefilledPhone || parsed.mobile || '' }));
+      } catch (err) {
+        console.error('Failed to parse local storage data', err);
+      }
+    }
+  }, [prefilledPhone]);
+
+  // Save to local storage on change
+  useEffect(() => {
+    localStorage.setItem('astrologerApplyData', JSON.stringify(formData));
+  }, [formData]);
 
   const [otp, setOtp] = useState(['', '', '', '']);
 
@@ -138,30 +157,37 @@ const ApplyAstrologer = () => {
     setOtp(['', '', '', '']); // Clear the OTP blocks
 
     // Comprehensive format validations
-    const errors = [];
-    if (!profilePic) errors.push('Profile Photo is required.');
-    if (!aadhaarFront || !aadhaarBack || !panCard || !certificate || !selfieVerification) errors.push('All Document uploads are required.');
-    if (formData.fullName.trim().length < 3) errors.push('Full Name must be at least 3 characters.');
-    if (!/^\d{10}$/.test(formData.mobile)) errors.push('Mobile Number must be exactly 10 digits.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.push('Please enter a valid email format.');
-    if (formData.password.length < 6) errors.push('Password must be at least 6 characters.');
-    if (formData.specialities.length === 0) errors.push('Please select at least one Primary Speciality.');
-    if (formData.categories.length === 0) errors.push('Please select at least one Expertise Category.');
-    if (Number(formData.chatPrice) < 5 || Number(formData.callPrice) < 5 || Number(formData.videoPrice) < 5) {
-      errors.push('All prices (Chat, Call, Video) must be at least ₹5/min.');
-    }
-    if (formData.description.trim().length < 20) errors.push('About You description must be at least 20 characters.');
+    if (!profilePic) { toast.error('Profile Photo is required.'); return setLoading(false); }
+    if (!aadhaarFront || !aadhaarBack || !panCard || !certificate || !selfieVerification) { toast.error('All Document uploads are required.'); return setLoading(false); }
     
-    // Check some required text fields
-    if (!formData.dob || !formData.address || !formData.city || !formData.state || !formData.pincode) errors.push('All Personal Details are required.');
-    if (!formData.education || !formData.consultationStyle) errors.push('Professional details like education and style are required.');
-    if (!formData.accountHolderName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) errors.push('Bank details are required.');
-
-    if (errors.length > 0) {
-      setApiError('Validation Failed: ' + errors.join(' | '));
-      setLoading(false);
-      return;
+    if (formData.fullName.trim().length < 3) { toast.error('Full Name must be at least 3 characters.'); return setLoading(false); }
+    if (!/^\d{10}$/.test(formData.mobile)) { toast.error('Mobile Number must be exactly 10 digits.'); return setLoading(false); }
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) { 
+      toast.error('Please enter a valid email format.'); 
+      return setLoading(false); 
     }
+    const domain = formData.email.split('@')[1]?.toLowerCase();
+    const commonTypos = ['gnail.com', 'gamil.com', 'gmai.com', 'yaho.com', 'yahooo.com', 'hotmial.com'];
+    if (commonTypos.includes(domain)) {
+      toast.error(`Typo detected in email domain (${domain}). Please enter a valid email.`);
+      return setLoading(false);
+    }
+    if (formData.password.length < 6) { toast.error('Password must be at least 6 characters.'); return setLoading(false); }
+    if (!formData.dob || !formData.address || !formData.city || !formData.state || !formData.pincode) { toast.error('All Personal Details are required.'); return setLoading(false); }
+    if (!/^\d{6}$/.test(formData.pincode)) { toast.error('Pincode must be exactly 6 digits.'); return setLoading(false); }
+    
+    if (formData.specialities.length === 0) { toast.error('Please select at least one Primary Speciality.'); return setLoading(false); }
+    if (formData.categories.length === 0) { toast.error('Please select at least one Expertise Category.'); return setLoading(false); }
+    
+    if (!formData.education || !formData.consultationStyle) { toast.error('Professional details like education and style are required.'); return setLoading(false); }
+    if (Number(formData.chatPrice) < 5 || Number(formData.callPrice) < 5 || Number(formData.videoPrice) < 5) { toast.error('All prices (Chat, Call, Video) must be at least ₹5/min.'); return setLoading(false); }
+    
+    if (!formData.accountHolderName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) { toast.error('Bank details are required.'); return setLoading(false); }
+    if (!/^\d{9,18}$/.test(formData.accountNumber)) { toast.error('Account Number must be between 9 and 18 digits.'); return setLoading(false); }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) { toast.error('Invalid IFSC Code format. Example: SBIN0123456'); return setLoading(false); }
+    
+    if (formData.description.trim().length < 20) { toast.error('About You description must be at least 20 characters.'); return setLoading(false); }
 
     try {
       // Pre-flight check: see if they are already an astrologer
@@ -232,24 +258,30 @@ const ApplyAstrologer = () => {
       };
       const res = await astrologerSignup(payload);
       
-      // Auto login in Redux with the token we get from signup
+      // Store auth data temporarily instead of dispatching immediately
+      // so we don't bypass the pending screen
       if (res.data?.data?.accessToken) {
-        dispatch(login({ 
+        setTempAuthData({ 
           user: res.data.data.user, 
           token: res.data.data.accessToken 
-        }));
+        });
       } else if (res.data?.accessToken) {
-        dispatch(login({
+        setTempAuthData({
           user: res.data.user,
           token: res.data.accessToken
-        }));
+        });
       }
+
+      // Clear local storage after successful submission
+      localStorage.removeItem('astrologerApplyData');
 
       setLoading(false);
       setStep(3); // Pending screen
     } catch (err) {
       console.error(err);
-      setApiError(err.message || 'Invalid OTP. Please try again.');
+      const errorMsg = err.response?.data?.message || err.message || 'Invalid OTP. Please try again.';
+      setApiError(errorMsg);
+      toast.error(errorMsg);
       setLoading(false);
     }
   };
@@ -276,7 +308,11 @@ const ApplyAstrologer = () => {
           const data = res.data?.data || res.data;
           if (data?.approvalStatus === 'approved') {
             clearInterval(interval);
-            navigate('/astrologer/dashboard');
+            if (tempAuthData) {
+              dispatch(astrologerLogin(tempAuthData));
+            } else {
+              navigate('/astrologer/login');
+            }
           }
         } catch (e) {
           // ignore
@@ -284,7 +320,7 @@ const ApplyAstrologer = () => {
       }, 3000); // Check every 3 seconds
     }
     return () => clearInterval(interval);
-  }, [step, formData.mobile, navigate]);
+  }, [step, formData.mobile, navigate, tempAuthData, dispatch]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FC] font-sans flex flex-col items-center py-10 px-4">
@@ -348,16 +384,18 @@ const ApplyAstrologer = () => {
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mobile Number <span className="text-red-500">*</span></label>
                   <div className="flex rounded-xl bg-gray-50 border border-gray-200 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all overflow-hidden">
-                    <span className={`px-4 py-3 border-r border-gray-200 font-bold text-sm ${prefilledPhone ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-500'}`}>+91</span>
+                    <span className="px-4 py-3 border-r border-gray-200 font-bold text-sm bg-gray-100 text-gray-500">+91</span>
                     <input 
                       type="tel" 
                       name="mobile"
                       required
                       value={formData.mobile}
-                      onChange={handleChange}
-                      readOnly={!!prefilledPhone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val.length <= 10) handleChange({ target: { name: 'mobile', value: val } });
+                      }}
                       placeholder="10-digit mobile number" 
-                      className={`w-full px-4 py-3 border-0 focus:outline-none font-medium text-gray-800 ${prefilledPhone ? 'bg-gray-100 cursor-not-allowed' : 'bg-transparent'}`}
+                      className="w-full px-4 py-3 border-0 focus:outline-none font-medium text-gray-800 bg-transparent"
                     />
                   </div>
                 </div>
@@ -732,11 +770,6 @@ const ApplyAstrologer = () => {
                 Your application has been sent to the admin panel for review. Our team will verify your details.
               </p>
 
-              <div className="flex flex-col items-center justify-center space-y-4 mb-8">
-                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-orange-500 font-bold text-sm animate-pulse">Waiting for Admin Approval...</p>
-              </div>
-              
               <button 
                 onClick={() => navigate('/astrologer/dashboard')}
                 className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all active:scale-[0.98]"

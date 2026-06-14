@@ -1,7 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '../store/slices/authSlice';
+import { adminLogout } from '../store/slices/adminAuthSlice';
+import { clearAdminDashboard } from '../store/slices/dashboardSlice';
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-hot-toast';
 import {
   FiHome, FiUsers, FiCreditCard, FiLogOut, FiLayout, FiBarChart2,
   FiMenu, FiChevronLeft, FiChevronRight, FiChevronDown, FiMessageSquare,
@@ -11,12 +13,12 @@ import {
 import { FaRupeeSign } from 'react-icons/fa';
 import { GiFlowerPot } from 'react-icons/gi';
 import NotificationDropdown from '../components/NotificationDropdown';
-import { getAdminSessions, getAdminCalls } from '../api/adminApis';
+import { getAdminSessions, getAdminCalls, getPendingCounts } from '../api/adminApis';
 import { getSocket } from '../socket/socketManager';
 
 const AdminLayout = () => {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.adminAuth);
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -24,10 +26,13 @@ const AdminLayout = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [liveSessionsCount, setLiveSessionsCount] = useState(0);
+  const [pendingCounts, setPendingCounts] = useState({ astrologers: 0, orders: 0, cancelRequests: 0 });
   const searchRef = useRef(null);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(adminLogout());
+    dispatch(clearAdminDashboard());
+    toast.success('Logged out successfully');
     navigate('/admin/login');
   };
 
@@ -64,26 +69,29 @@ const AdminLayout = () => {
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  const fetchLiveCount = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const [sessionsRes, callsRes] = await Promise.all([
+      const [sessionsRes, callsRes, pendingRes] = await Promise.all([
         getAdminSessions(),
-        getAdminCalls()
+        getAdminCalls(),
+        getPendingCounts()
       ]);
       const allSessions = sessionsRes.data?.data?.sessions || [];
       const allCalls = callsRes.data?.data?.calls || [];
+      const counts = pendingRes.data?.data || { astrologers: 0, orders: 0, cancelRequests: 0 };
       
       const liveChats = allSessions.filter(s => s.status === 'ongoing' && s.userId && s.astrologerId).length;
       const liveCalls = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status) && c.userId && c.astrologerId).length;
       
       setLiveSessionsCount(liveChats + liveCalls);
+      setPendingCounts(counts);
     } catch (err) {
-      console.error('Failed to fetch live count for sidebar', err);
+      console.error('Failed to fetch dashboard data for sidebar', err);
     }
   };
 
   useEffect(() => {
-    fetchLiveCount();
+    fetchDashboardData();
     const token = localStorage.getItem('token') || localStorage.getItem('refreshToken');
     const socket = getSocket(token);
     
@@ -91,10 +99,12 @@ const AdminLayout = () => {
       socket.emit('join_global_room', { userId: user._id, role: user.role });
     }
     
-    socket.on('dashboard_updated', fetchLiveCount);
+    socket.on('dashboard_updated', fetchDashboardData);
+    socket.on('order_updated', fetchDashboardData);
     
     return () => {
-      socket.off('dashboard_updated', fetchLiveCount);
+      socket.off('dashboard_updated', fetchDashboardData);
+      socket.off('order_updated', fetchDashboardData);
     };
   }, [user]);
 
@@ -108,9 +118,10 @@ const AdminLayout = () => {
     {
       title: 'People',
       icon: <FiUsers size={18} />,
+      badge: pendingCounts.astrologers > 0 ? pendingCounts.astrologers.toString() : null,
       children: [
         { path: '/admin/users', name: 'Users', icon: <FiUsers size={16} /> },
-        { path: '/admin/astrologers', name: 'Astrologers', icon: <FiStar size={16} /> },
+        { path: '/admin/astrologers', name: 'Astrologers', icon: <FiStar size={16} />, badge: pendingCounts.astrologers > 0 ? pendingCounts.astrologers.toString() : null },
       ],
     },
     {
@@ -118,6 +129,7 @@ const AdminLayout = () => {
       icon: <FiMessageSquare size={18} />,
       children: [
         { path: '/admin/sessions', name: 'Live Sessions', icon: <FiMessageSquare size={16} />, badge: liveSessionsCount > 0 ? liveSessionsCount.toString() : null },
+        { path: '/admin/ratings', name: 'Ratings', icon: <FiStar size={16} /> },
         { path: '/admin/finance', name: 'Finance', icon: <FiCreditCard size={16} /> },
         { path: '/admin/earnings', name: 'Earnings', icon: <FaRupeeSign size={14} /> },
         { path: '/admin/services', name: 'Services', icon: <GiFlowerPot size={16} /> },
@@ -126,21 +138,24 @@ const AdminLayout = () => {
     {
       title: 'Store Management',
       icon: <FiShoppingCart size={18} />,
+      badge: (pendingCounts.orders + pendingCounts.cancelRequests) > 0 ? (pendingCounts.orders + pendingCounts.cancelRequests).toString() : null,
       children: [
         { path: '/admin/products', name: 'Products', icon: <FiBox size={16} /> },
-        { path: '/admin/orders', name: 'Orders', icon: <FiShoppingCart size={16} /> },
+        { path: '/admin/orders', name: 'Orders', icon: <FiShoppingCart size={16} />, badge: (pendingCounts.orders + pendingCounts.cancelRequests) > 0 ? (pendingCounts.orders + pendingCounts.cancelRequests).toString() : null },
         { path: '/admin/inventory', name: 'Inventory', icon: <FiDatabase size={16} /> },
       ],
     },
     {
-      title: 'Platform',
+      title: 'Catalog',
       icon: <FiGrid size={18} />,
       children: [
-        { path: '/admin/content', name: 'Content & CMS', icon: <FiLayout size={16} /> },
-        { path: '/admin/reports', name: 'Reports', icon: <FiBarChart2 size={16} /> },
-        { path: '/admin/audit-logs', name: 'Audit Logs', icon: <FiShield size={16} /> },
-        { path: '/admin/settings', name: 'Settings', icon: <FiSettings size={16} /> },
+        { path: '/admin/content', name: 'User', icon: <FiLayout size={16} /> },
       ],
+    },
+    {
+      title: 'Settings',
+      icon: <FiSettings size={18} />,
+      path: '/admin/settings',
     },
 
   ];
@@ -185,10 +200,10 @@ const AdminLayout = () => {
     <div className="flex h-screen bg-[#F8F9FC] font-sans overflow-hidden">
 
       {/* ═══ SIDEBAR ═══ */}
-      <aside className={`bg-white flex flex-col transition-all duration-300 ease-in-out border-r border-gray-200/60 ${sidebarCollapsed ? 'w-[72px]' : 'w-[270px]'} shrink-0 relative z-20`}>
+      <aside className={`bg-white flex flex-col transition-all duration-300 ease-in-out border-r border-gray-200/60 ${sidebarCollapsed ? 'w-[72px]' : 'w-[240px]'} shrink-0 relative z-20`}>
 
         {/* Brand */}
-        <div className={`h-[68px] flex items-center shrink-0 border-b border-gray-100 ${sidebarCollapsed ? 'justify-center px-2' : 'px-5'}`}>
+        <div className={`h-[60px] flex items-center shrink-0 border-b border-gray-100 ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'}`}>
           {!sidebarCollapsed && (
             <div className="flex items-center gap-3 w-full">
               <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm shadow-orange-500/20">
@@ -227,18 +242,21 @@ const AdminLayout = () => {
                 <Link
                   key={section.title}
                   to={section.path}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group relative ${
                     isLinkActive(section.path)
                       ? 'bg-orange-50 text-orange-600'
                       : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                   } ${sidebarCollapsed ? 'justify-center' : ''}`}
                   title={sidebarCollapsed ? section.title : ''}
                 >
-                  {isLinkActive(section.path) && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-orange-500 rounded-r-full" />}
-                  <span className={`shrink-0 ${isLinkActive(section.path) ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                  {isLinkActive(section.path) && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-orange-500 rounded-r-full" />}
+                  <span className={`shrink-0 relative ${isLinkActive(section.path) ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
                     {section.icon}
+                    {sidebarCollapsed && section.badge && (
+                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse" />
+                    )}
                   </span>
-                  {!sidebarCollapsed && <span className="font-semibold text-[13px]">{section.title}</span>}
+                  {!sidebarCollapsed && <span className="font-semibold text-[12px]">{section.title}</span>}
                 </Link>
               );
             }
@@ -250,19 +268,29 @@ const AdminLayout = () => {
               <div key={section.title}>
                 <button
                   onClick={() => sidebarCollapsed ? setSidebarCollapsed(false) : toggleSection(section.title)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group w-full ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
                     sectionIsActive && !isExpanded
                       ? 'bg-orange-50/60 text-orange-600'
                       : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                   } ${sidebarCollapsed ? 'justify-center' : ''}`}
                   title={sidebarCollapsed ? section.title : ''}
                 >
-                  <span className={`shrink-0 ${sectionIsActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                  <span className={`shrink-0 relative ${sectionIsActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
                     {section.icon}
+                    {sidebarCollapsed && section.badge && (
+                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse" />
+                    )}
                   </span>
                   {!sidebarCollapsed && (
                     <>
-                      <span className="font-semibold text-[13px] flex-1 text-left">{section.title}</span>
+                      <span className="font-semibold text-[12px] flex-1 text-left flex items-center gap-2">
+                        {section.title}
+                        {section.badge && (
+                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse shadow-sm">
+                            {section.badge}
+                          </span>
+                        )}
+                      </span>
                       <FiChevronDown
                         size={14}
                         className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
@@ -281,19 +309,19 @@ const AdminLayout = () => {
                           <Link
                             key={child.path}
                             to={child.path}
-                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 group relative ${
+                            className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-all duration-200 group relative ${
                               childActive
                                 ? 'bg-orange-50 text-orange-600 font-bold'
                                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                             }`}
                           >
-                            {childActive && <div className="absolute -left-[15px] top-1/2 -translate-y-1/2 w-[2px] h-4 bg-orange-500 rounded-r-full" />}
+                            {childActive && <div className="absolute -left-[15px] top-1/2 -translate-y-1/2 w-[2px] h-3 bg-orange-500 rounded-r-full" />}
                             <span className={`shrink-0 ${childActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-500'}`}>
                               {child.icon}
                             </span>
-                            <span className="text-[13px] font-medium">{child.name}</span>
+                            <span className="text-[12px] font-medium">{child.name}</span>
                             {child.badge && (
-                              <span className="ml-auto bg-red-500 text-white text-[9px] font-bold w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse">
+                              <span className="ml-auto bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse">
                                 {child.badge}
                               </span>
                             )}
@@ -311,23 +339,23 @@ const AdminLayout = () => {
         {/* Bottom — User + Logout */}
         <div className="p-3 border-t border-gray-100 shrink-0 space-y-1">
           {!sidebarCollapsed && (
-            <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-sm shadow-sm shadow-orange-500/20">
+            <div className="flex items-center gap-3 px-3 py-2 mb-1">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-sm shadow-sm shadow-orange-500/20">
                 {user?.name?.[0]?.toUpperCase() || 'A'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold text-gray-800 truncate">{user?.name || 'Super Admin'}</p>
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Administrator</p>
+                <p className="text-[12px] font-bold text-gray-800 truncate">{user?.name || 'Super Admin'}</p>
+                <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider">Administrator</p>
               </div>
             </div>
           )}
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-red-500 hover:bg-red-50 transition-all ${sidebarCollapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 px-3 py-2 w-full rounded-lg text-red-500 hover:bg-red-50 transition-all ${sidebarCollapsed ? 'justify-center' : ''}`}
             title={sidebarCollapsed ? 'Sign Out' : ''}
           >
-            <FiLogOut size={18} />
-            {!sidebarCollapsed && <span className="font-semibold text-[13px]">Sign Out</span>}
+            <FiLogOut size={16} />
+            {!sidebarCollapsed && <span className="font-semibold text-[12px]">Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -336,7 +364,7 @@ const AdminLayout = () => {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Top Bar */}
-        <header className="h-[68px] bg-white flex items-center justify-between px-6 lg:px-8 shrink-0 border-b border-gray-200/60">
+        <header className="h-[60px] bg-white flex items-center justify-between px-6 lg:px-8 shrink-0 border-b border-gray-200/60">
           {/* Left: Breadcrumb + Mobile toggle */}
           <div className="flex items-center gap-4">
             <button
@@ -378,13 +406,12 @@ const AdminLayout = () => {
 
             <div className="w-px h-8 bg-gray-100 hidden sm:block"></div>
 
-            {/* User Avatar */}
             <div className="hidden sm:flex items-center gap-3">
               <div className="text-right">
-                <p className="text-[13px] font-bold text-gray-800 leading-tight">{user?.name || 'Super Admin'}</p>
-                <p className="text-[10px] font-bold text-orange-500 uppercase tracking-widest">Administrator</p>
+                <p className="text-[12px] font-bold text-gray-800 leading-tight">{user?.name || 'Super Admin'}</p>
+                <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest">Administrator</p>
               </div>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-sm shadow-sm shadow-orange-500/20">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center font-bold text-white text-sm shadow-sm shadow-orange-500/20">
                 {user?.name?.[0]?.toUpperCase() || 'A'}
               </div>
             </div>
@@ -392,7 +419,7 @@ const AdminLayout = () => {
         </header>
 
         {/* Scrollable Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-5 lg:p-8">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 lg:p-6 bg-gray-50/50">
           <Outlet />
         </main>
       </div>
