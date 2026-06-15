@@ -14,14 +14,19 @@ const instance = axios.create({
 
 instance.interceptors.request.use(
   (config) => {
+    // Prevent caching for all requests
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+
     if (store) {
       const state = store.getState();
       let token = state.auth.token; // default to user token
       
       // Determine context based on the API URL path
-      if (config.url && config.url.includes('/admin')) {
+      if (config.url && config.url.startsWith('/admin')) {
         token = state.adminAuth?.token;
-      } else if (config.url && config.url.includes('/astrologer')) {
+      } else if (config.url && config.url.startsWith('/astrologer')) {
         token = state.astrologerAuth?.token;
       } else {
         token = state.auth?.token;
@@ -76,10 +81,10 @@ instance.interceptors.response.use(
         let tokenKey = 'refreshToken'; // default user
         let actionType = 'auth/login';
         
-        if (originalRequest.url.includes('/admin')) {
+        if (originalRequest.url.startsWith('/admin')) {
           tokenKey = 'adminRefreshToken';
           actionType = 'adminAuth/adminLogin';
-        } else if (originalRequest.url.includes('/astrologer')) {
+        } else if (originalRequest.url.startsWith('/astrologer')) {
           tokenKey = 'astrologerRefreshToken';
           actionType = 'astrologerAuth/astrologerLogin';
         }

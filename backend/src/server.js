@@ -172,27 +172,27 @@ io.on('connection', (socket) => {
 
   // ── Join a chat room
   socket.on('join_room', async ({ roomId, userId, astrologerId, isBot, sessionType }) => {
-    socket.join(roomId);
-    socketRoomMap.set(socket.id, { roomId, type: 'chat_session', astrologerId });
-    socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
-    console.log(`[Socket.IO] ${userId} joined room ${roomId} (Type: ${sessionType || 'chat'})`);
-
     try {
-      // Find or create the real Mongoose ChatSession
+      socket.join(roomId);
+      socketRoomMap.set(socket.id, { roomId, type: 'chat_session', astrologerId });
+      socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
+      console.log(`[Socket.IO] ${userId} joined room ${roomId} (Type: ${sessionType || 'chat'})`);
+
       let session = await ChatSession.findOne({ roomId });
+      let isNewSession = false;
+
       if (!session) {
-        // Fetch astrologer name to personalize the welcome message
         let astroName = 'Astrologer';
         if (astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {
-          const astroDoc = await Astrologer.findOne({ userId: astrologerId });
-          if (astroDoc) {
-            astroName = astroDoc.name || 'Astrologer';
-          }
+          const astroDoc = await Astrologer.findById(astrologerId);
+          if (astroDoc && astroDoc.name) astroName = astroDoc.name;
         }
 
-        const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-        const welcomeText = `Namaste, welcome! I am ${astroName}. Please share your name, date of birth, time of birth, and place of birth, along with your question. I am analyzing your chart now.`;
-        const welcomeMessage = { sender: 'bot', text: welcomeText, time };
+        const welcomeMessage = {
+          sender: 'bot',
+          text: `Namaste, welcome! I am ${astroName}. Please share your name, date of birth, time of birth, and place of birth, along with your question. I am analyzing your chart now.`,
+          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        };
 
         session = await ChatSession.create({
           roomId,
@@ -203,16 +203,38 @@ io.on('connection', (socket) => {
           type: sessionType || 'chat',
           messages: [welcomeMessage],
         });
+        isNewSession = true;
         console.log(`[Socket.IO] Created ChatSession in DB with welcome message: ${session._id}`);
-
-        if (isBot) {
-          // Free chat will be marked as used on completion or transition
-        }
       } else if (!session.astrologerId && astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {
         session.astrologerId = astrologerId;
         await session.save();
       }
-      socket.emit('session_created', { sessionId: session._id, messages: session.messages });
+
+      let pastMessages = [];
+      if (userId && astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {
+        const pastSessions = await ChatSession.find({
+          userId,
+          astrologerId,
+          roomId: { $ne: roomId },
+          type: 'chat'
+        }).sort({ createdAt: 1 }).lean();
+        
+        pastSessions.forEach(ps => {
+          if (ps.messages && ps.messages.length > 0) {
+            pastMessages = pastMessages.concat(ps.messages);
+          }
+        });
+      }
+
+      const emitData = { 
+        sessionId: session._id, 
+        messages: [...pastMessages, ...(session.messages || [])], 
+        roomId, 
+        isBotSession: !!isBot,
+        isNewSession
+      };
+      
+      socket.emit('session_created', emitData);
     } catch (err) {
       console.error('[Socket.IO] Join room DB error:', err.message);
     }
@@ -254,6 +276,7 @@ io.on('connection', (socket) => {
   // ── Start Bot Timer (Dynamic free chat duration)
   socket.on('start_bot_timer', async ({ roomId, sessionId, userId, astrologerId }) => {
     if (activeTimers.has(roomId)) return;
+    activeTimers.set(roomId, { pending: true }); // Sync lock
 
     let settings = await SystemSettings.findOne();
     let durationSeconds = (settings?.freeChatDuration || 1) * 60;
@@ -267,7 +290,9 @@ io.on('connection', (socket) => {
     }
 
     let seconds = 0;
+    activeTimers.set(roomId, { intervalId: null, seconds: 0 });
     const intervalId = setInterval(async () => {
+      activeTimers.get(roomId).intervalId = intervalId;
       seconds++;
       const timerData = activeTimers.get(roomId);
       if (timerData) timerData.seconds = seconds;
@@ -290,12 +315,13 @@ io.on('connection', (socket) => {
             });
 
             // Silently request real astrologer
-            io.to(`astro_${astrologerId}`).emit('incoming_chat_request', {
+            io.to(`astro_${astrologerId}`).emit('incoming_session_request', {
               roomId,
               userId,
               userName: user.name,
               isHandoff: true,
-              userSocketId: socket.id
+              userSocketId: socket.id,
+              type: 'chat'
             });
             // Let the frontend know we are attempting a handoff
             io.to(roomId).emit('handoff_initiated');
@@ -317,6 +343,7 @@ io.on('connection', (socket) => {
         });
 
         // If handoff didn't happen (or balance was low), force end session
+        io.to(roomId).emit('wallet_update', { freeChatUsed: true });
         io.to(roomId).emit('wallet_low_balance');
         io.to(roomId).emit('session_ended', {
           reason: 'insufficient_balance',
@@ -333,9 +360,13 @@ io.on('connection', (socket) => {
   // ── Transition to Real Chat (called after 2 mins if user has balance)
   socket.on('transition_to_real_chat', async ({ roomId, sessionId, userId, astrologerRate }) => {
     const timerData = activeTimers.get(roomId);
+    if (timerData && timerData.isTransitioning) return; // Prevent duplicate transition
+
     if (timerData) {
       clearInterval(timerData.intervalId);
-      activeTimers.delete(roomId);
+      timerData.isTransitioning = true; // Sync lock
+    } else {
+      activeTimers.set(roomId, { isTransitioning: true });
     }
 
     try {
@@ -352,6 +383,10 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error('Transition DB error:', e.message);
     }
+
+    const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    const sysMsg = { sender: 'system', text: 'Free chat ended. Astrologer has joined the session. Standard rates apply.', time };
+    io.to(roomId).emit('receive_message', sysMsg);
 
     let seconds = 0;
     const intervalId = setInterval(async () => {
@@ -397,6 +432,7 @@ io.on('connection', (socket) => {
   // ── Start session timer (called when chat begins)
   socket.on('start_timer', async ({ roomId, sessionId, userId, astrologerRate }) => {
     if (activeTimers.has(roomId)) return; // Already running
+    activeTimers.set(roomId, { pending: true }); // Sync lock
 
     let seconds = 0;
     const intervalId = setInterval(async () => {
@@ -735,7 +771,7 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires'],
 }));
 
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));

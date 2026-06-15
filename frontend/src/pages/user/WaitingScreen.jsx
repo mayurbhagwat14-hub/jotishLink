@@ -27,7 +27,7 @@ const WaitingScreen = () => {
 
     const socket = getSocket();
 
-    const astrologerId = astrologer.userId?._id || astrologer.userId || astrologer._id;
+    const astrologerId = astrologer._id;
 
     socket.emit('request_session', {
       astrologerId,
@@ -89,7 +89,7 @@ const WaitingScreen = () => {
   const handleCancel = () => {
     clearInterval(timerRef.current);
     const socket = getSocket();
-    const astrologerId = astrologer?.userId?._id || astrologer?.userId || astrologer?._id;
+    const astrologerId = astrologer?._id;
     socket.emit('cancel_session_request', { astrologerId, userId: user._id });
     navigate(-1);
   };

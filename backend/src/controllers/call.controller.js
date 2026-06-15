@@ -97,7 +97,7 @@ export const rejectCall = asyncHandler(async (req, res) => {
 });
 
 export const getCallHistory = asyncHandler(async (req, res) => {
-  let query = {};
+  let query = { deletedByUser: { $ne: true } };
   
   if (req.user?.role === 'astrologer') {
     query.astrologerId = req.user._id;

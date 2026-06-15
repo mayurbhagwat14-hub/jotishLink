@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiPaperclip, FiSend } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
@@ -39,8 +39,12 @@ const UserChatRoom = () => {
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
 
-  // Use roomId from WaitingScreen navigation state
-  const roomId = roomIdFromState || (isBotSession ? `bot_${user?._id}_${Date.now()}` : null);
+  // Use roomId from WaitingScreen navigation state or generate a stable one
+  const initialRoomId = useMemo(() => {
+    return roomIdFromState || (isBotSession && user?._id ? `bot_${user._id}_${Date.now()}` : null);
+  }, [roomIdFromState, isBotSession, user?._id]);
+
+  const roomId = initialRoomId;
 
   useEffect(() => {
     if (!roomId) {
@@ -48,12 +52,15 @@ const UserChatRoom = () => {
       return;
     }
 
+    // Wait for Redux to hydrate the user state
+    if (!user || !user._id) return;
+
     const socket = getSocket();
 
     socket.emit('join_room', {
       roomId,
-      userId: user?._id,
-      astrologerId: astrologer.userId?._id || astrologer.userId || astrologer._id,
+      userId: user._id,
+      astrologerId: astrologer._id,
       isBot: isBotSession,
       sessionType: 'chat'
     });
@@ -65,8 +72,8 @@ const UserChatRoom = () => {
         setMessages(data.messages);
       }
 
-      // Auto-send user details if it's a fresh chat (only the welcome message exists)
-      if (data.messages?.length === 1 && !viewOnly) {
+      // Auto-send user details if it's a fresh chat
+      if (data.isNewSession && !viewOnly) {
         const details = `Hi, here are my details for the consultation:
 Name: ${user?.name || 'Not provided'}
 DOB: ${user?.dob || 'Not provided'}
@@ -85,8 +92,7 @@ Please analyze my chart based on this information.`;
       }
 
       if (isBotSession) {
-        const targetAstroId = astrologer.userId?._id || astrologer.userId || astrologer._id;
-        socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: targetAstroId });
+        socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: astrologer._id });
       } else if (!viewOnly) {
         const rate = astrologer.pricing?.chat || astrologer.rate || 5;
         socket.emit('start_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate });
@@ -103,7 +109,7 @@ Please analyze my chart based on this information.`;
     };
     
     const onHandoffInitiated = () => {
-      // Optionally show a "Checking balance..." subtle indicator
+      // Keep handoff entirely silent
     };
     
     // When real astrologer accepts handoff
@@ -118,6 +124,7 @@ Please analyze my chart based on this information.`;
 
     const onWalletUpdate = (data) => {
       if (data.newBalance !== undefined) dispatch(updateUser({ wallet: data.newBalance }));
+      if (data.freeChatUsed !== undefined) dispatch(updateUser({ freeChatUsed: data.freeChatUsed }));
     };
 
     const onSessionEnded = (data) => {
@@ -154,6 +161,7 @@ Please analyze my chart based on this information.`;
     socket.on('handoff_initiated', onHandoffInitiated);
     socket.on('session_accepted', onSessionAccepted);
     socket.on('wallet_update', onWalletUpdate);
+    socket.on('user_joined', onMessage);
     socket.on('session_ended', onSessionEnded);
 
     return () => {
@@ -165,13 +173,35 @@ Please analyze my chart based on this information.`;
       socket.off('session_accepted', onSessionAccepted);
       socket.off('wallet_update', onWalletUpdate);
       socket.off('session_ended', onSessionEnded);
-      // DO NOT emit end_session on cleanup — only on explicit End Chat button
+      socket.off('wallet_low_balance');
+      socket.off('user_joined', onMessage);
     };
-  }, [roomId]);
+  }, [roomId, user?._id]);
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      const socket = getSocket();
+      socket.emit('send_message', {
+        roomId,
+        sessionId: sessionIdRef.current || sessionId,
+        sender: 'user',
+        text: base64String,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = null; // Reset input
+  };
 
   const handleSend = () => {
     if (!inputText.trim() || showLowBalance || sessionEnded || viewOnly) return;
@@ -315,7 +345,11 @@ Please analyze my chart based on this information.`;
               )}
               <div>
                 <div className={`${isMe ? 'bg-orange-500 text-white rounded-br-sm' : 'bg-white text-gray-700 rounded-bl-sm border border-gray-100'} px-4 py-2.5 rounded-2xl shadow-sm text-[14px] max-w-[260px]`}>
-                  {msg.text}
+                  {msg.text && msg.text.startsWith('data:image/') ? (
+                    <img src={msg.text} alt="attachment" className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" onClick={() => window.open(msg.text)} />
+                  ) : (
+                    msg.text
+                  )}
                 </div>
                 <span className={`text-[10px] text-gray-400 mt-1 font-bold block ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
                   {msg.time}
@@ -330,7 +364,19 @@ Please analyze my chart based on this information.`;
       {/* Input */}
       <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
         <div className="flex items-end gap-2">
-          <button className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept="image/*" 
+            className="hidden" 
+          />
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={showLowBalance || sessionEnded || viewOnly}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+          >
             <FiPaperclip size={20} />
           </button>
           <div className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl overflow-hidden focus-within:border-orange-300 focus-within:bg-white transition-all shadow-inner relative">

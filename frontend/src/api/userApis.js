@@ -31,8 +31,8 @@ export const getStorePandits = () => axios.get('/pandits');
 export const bookPooja = (data) => axios.post('/pooja/book', data);
 export const getUserPoojas = () => axios.get('/user/poojas');
 export const getUserPoojaById = (id) => axios.get(`/user/poojas/${id}`);
-export const getUserSessions = () => axios.get('/user/sessions');
-export const getUserCalls = () => axios.get('/calls/history');
+export const getUserSessions = () => axios.get(`/user/sessions?t=${Date.now()}`);
+export const getUserCalls = () => axios.get(`/calls/history?t=${Date.now()}`);
 export const deleteUserHistory = (data) => axios.post('/user/history/delete', data);
 
 // Tool APIs

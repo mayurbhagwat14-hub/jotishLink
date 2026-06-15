@@ -265,12 +265,14 @@ const OrderHistory = () => {
       </div>
 
       {/* ═══ CHAT TAB ═══ */}
-      {activeTab === 'Chat' && (
+      {activeTab === 'Chat' && (() => {
+        const chatSessions = sessions.filter(s => s.type === 'chat' || !s.type);
+        return (
         <div className="divide-y divide-gray-50">
           {debugError && <div className="p-4 bg-red-100 text-red-700 text-xs font-mono break-words">{debugError}</div>}
           {isLoading ? (
             <div className="p-8 text-center text-gray-400">Loading...</div>
-          ) : sessions.length === 0 ? (
+          ) : chatSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
                 <FiMessageCircle size={40} className="text-orange-400" />
@@ -285,7 +287,7 @@ const OrderHistory = () => {
               </button>
             </div>
           ) : (
-            sessions.map((item, i) => {
+            chatSessions.map((item, i) => {
               const astroName = item.astrologerId?.name || 'Astrologer';
               const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
               const lastMsg = item.messages?.length > 0 ? item.messages[item.messages.length - 1]?.text : 'No messages';
@@ -360,14 +362,17 @@ const OrderHistory = () => {
             })
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* ═══ CALLS TAB ═══ */}
-      {activeTab === 'Calls' && (
+      {activeTab === 'Calls' && (() => {
+        const callSessions = [...sessions.filter(s => s.type === 'audio_call' || s.type === 'video_call' || s.type === 'audio' || s.type === 'video'), ...calls].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return (
         <div className="divide-y divide-gray-50">
           {isLoading ? (
             <div className="p-8 text-center text-gray-400">Loading...</div>
-          ) : calls.length === 0 ? (
+          ) : callSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
                 <FiClock size={40} className="text-orange-400" />
@@ -382,7 +387,7 @@ const OrderHistory = () => {
               </button>
             </div>
           ) : (
-            calls.map((item, i) => {
+            callSessions.map((item, i) => {
               const astroName = item.astrologerId?.name || 'Astrologer';
               const astroAvatar = item.astrologerId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astroName)}&background=ffedD5&color=f97316`;
               const callDuration = item.duration || item.durationSeconds || 0;
@@ -451,7 +456,8 @@ const OrderHistory = () => {
             })
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* ═══ WALLET TAB ═══ */}
       {activeTab === 'Wallet' && (

@@ -362,7 +362,8 @@ export const getUserPoojaById = asyncHandler(async (req, res) => {
 // GET /api/user/sessions
 export const getUserSessions = asyncHandler(async (req, res) => {
   const qObj = { 
-    userId: req.user._id
+    userId: req.user._id,
+    deletedByUser: { $ne: true }
   };
   const sessions = await ChatSession.find(qObj)
     .populate('astrologerId', 'name avatar')
@@ -426,6 +427,14 @@ export const deleteUserHistory = asyncHandler(async (req, res) => {
     { $set: { deletedByUser: true } }
   );
 
+  // If type is call, it might also be a video/audio call stored in ChatSession
+  if (type === 'call') {
+    await ChatSession.updateMany(
+      { _id: { $in: ids }, userId: req.user._id },
+      { $set: { deletedByUser: true } }
+    );
+  }
+
   return res.status(200).json(new ApiResponse(200, {}, `${type} history deleted`));
 });
 
@@ -434,21 +443,18 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
   const { astrologerId, rating, review } = req.body;
   const userId = req.user._id;
 
-  // Check already rated
-  const user = await User.findById(userId);
-  if (user.ratedAstrologers?.includes(astrologerId)) {
-    return res.status(200).json(new ApiResponse(200, { alreadyRated: true }, 'Already rated'));
+  if (!astrologerId || !rating) {
+    throw new ApiError(400, 'Astrologer ID and rating are required');
   }
 
-  // Create Rating Document
-  await Rating.create({
-    userId,
-    astrologerId,
-    rating,
-    review
-  });
+  // Update or Create Rating Document
+  await Rating.findOneAndUpdate(
+    { userId, astrologerId },
+    { rating, review },
+    { upsert: true, new: true }
+  );
 
-  // Safely recalculate average rating using aggregation to avoid race conditions
+  // Safely recalculate average rating using aggregation
   const stats = await Rating.aggregate([
     { $match: { astrologerId: new mongoose.Types.ObjectId(astrologerId) } },
     { $group: { _id: '$astrologerId', avgRating: { $avg: '$rating' }, numRatings: { $sum: 1 } } }
@@ -466,7 +472,7 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
     $addToSet: { ratedAstrologers: astrologerId }
   });
 
-  return res.status(200).json(new ApiResponse(200, { rated: true }, 'Rating submitted'));
+  return res.status(200).json(new ApiResponse(200, { rated: true }, 'Rating saved successfully'));
 });
 
 // PUT /api/user/fcm-token

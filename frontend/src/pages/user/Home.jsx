@@ -158,7 +158,7 @@ const Home = () => {
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-gradient-to-b from-[#ff8c00] to-[#f97316] rounded-b-[30px] pt-3 pb-4 px-5 relative z-20 shadow-md">
+      <div className="bg-gradient-to-b from-[#ff8c00] to-[#ea580c] rounded-b-[30px] pt-3 pb-4 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md bg-opacity-95">
         {/* Top Navbar */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ const Home = () => {
               </div>
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#ff8c00] rounded-full"></div>
             </div>
-            <span className="text-white font-bold text-[16px] tracking-wide drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'Naitik'}</span>
+            <span className="text-white font-bold text-[16px] tracking-wide drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -206,7 +206,7 @@ const Home = () => {
       </div>
 
       {/* ═══ QUICK SERVICES ═══ */}
-      <div className="flex justify-between px-5 mb-8 mt-6 w-full relative z-10">
+      <div className="flex justify-center gap-3 sm:gap-6 px-3 mb-8 mt-6 w-full relative z-10">
         {[
           { name: 'Daily\nHoroscope', icon: <Sun size={24} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
           { name: 'Free\nKundli', icon: <Grid size={24} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
@@ -214,7 +214,7 @@ const Home = () => {
           { name: 'Panchang', icon: <Calendar size={24} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
           { name: 'Shubh\nMuhurat', icon: <Clock size={24} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
-          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 flex-1 group">
+          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-[64px]">
             <div className="w-[56px] h-[56px] bg-[#ff8c00] rounded-[20px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
               {service.icon}
             </div>

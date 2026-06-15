@@ -6,12 +6,16 @@ import Astrologer from '../models/astrologer.model.js';
 import Admin from '../models/admin.model.js';
 
 export const verifyJWT = asyncHandler(async (req, res, next) => {
-  const token = req.headers.authorization?.startsWith('Bearer ')
+  let token = req.headers.authorization?.startsWith('Bearer ')
     ? req.headers.authorization.split(' ')[1]
     : null;
+    
+  if (!token && req.cookies) {
+    token = req.cookies.accessToken;
+  }
 
   if (!token) {
-    console.error('verifyJWT Failed: Token is missing from headers');
+    console.error('verifyJWT Failed: Token is missing from headers and cookies');
     throw new ApiError(401, 'Unauthorized request: Token is missing');
   }
 
@@ -41,9 +45,14 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
 });
 
 export const optionalAuth = asyncHandler(async (req, res, next) => {
-  const token = req.headers.authorization?.startsWith('Bearer ')
+  let token = req.headers.authorization?.startsWith('Bearer ')
     ? req.headers.authorization.split(' ')[1]
     : null;
+    
+  if (!token && req.cookies) {
+    token = req.cookies.accessToken;
+  }
+
   if (!token) {
     return next();
   }
@@ -58,8 +67,13 @@ export const optionalAuth = asyncHandler(async (req, res, next) => {
     } else {
       req.user = await User.findById(decoded.id).select('-password');
     }
+
+    if (!req.user) {
+      throw new ApiError(401, 'User no longer exists');
+    }
   } catch (error) {
-    // ignore token errors for optional auth
+    // If token is invalid/expired or user is deleted, force a 401 so frontend can logout/refresh
+    throw new ApiError(401, error.message || 'Invalid Access Token');
   }
   next();
 });
