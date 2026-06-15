@@ -14,17 +14,19 @@ class WalletService {
       throw new ApiError(400, 'Invalid deduction amount');
     }
 
-    const user = await User.findById(userId);
+    // Atomic deduction: only deducts if wallet has >= amount
+    const user = await User.findOneAndUpdate(
+      { _id: userId, wallet: { $gte: amount } },
+      { $inc: { wallet: -amount } },
+      { new: true }
+    );
+
     if (!user) {
-      throw new ApiError(404, 'User not found');
+      // It might be user doesn't exist or insufficient balance. Let's check which one it is.
+      const existingUser = await User.findById(userId);
+      if (!existingUser) throw new ApiError(404, 'User not found');
+      throw new ApiError(400, `Insufficient wallet balance. Required: ₹${amount}, Available: ₹${existingUser.wallet || 0}`);
     }
-
-    if (user.wallet < amount) {
-      throw new ApiError(400, `Insufficient wallet balance. Required: ₹${amount}, Available: ₹${user.wallet}`);
-    }
-
-    user.wallet = Math.max(0, user.wallet - amount);
-    await user.save();
 
     const transaction = await Transaction.create({
       userId,
@@ -49,13 +51,16 @@ class WalletService {
       throw new ApiError(400, 'Invalid recharge/refund amount');
     }
 
-    const user = await User.findById(userId);
+    // Atomic credit
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $inc: { wallet: amount } },
+      { new: true }
+    );
+
     if (!user) {
       throw new ApiError(404, 'User not found');
     }
-
-    user.wallet = (user.wallet || 0) + amount;
-    await user.save();
 
     const transaction = await Transaction.create({
       userId,
@@ -88,33 +93,29 @@ class WalletService {
     if (grossAmount <= 0) return null;
 
     try {
-      const astrologer = await Astrologer.findById(astrologerId);
-      if (!astrologer) return null; // Silently fail to not crash billing loops
-
       const netAmount = Number((grossAmount * (1 - commissionPercent / 100)).toFixed(2));
       const commissionAmount = Number((grossAmount - netAmount).toFixed(2));
 
-      // Update structured earnings
-      if (!astrologer.earnings) {
-        astrologer.earnings = { total: 0, pending: 0, withdrawn: 0, available: 0 };
-      }
-      astrologer.earnings.total += netAmount;
-      astrologer.earnings.available += netAmount;
+      const astrologer = await Astrologer.findByIdAndUpdate(
+        astrologerId,
+        {
+          $inc: {
+            'earnings.total': netAmount,
+            'earnings.available': netAmount,
+            totalEarnings: netAmount,
+            ...(sessionType === 'chat' ? { totalChats: 1 } : {}),
+            ...(sessionType === 'audio' || sessionType === 'audio_call' ? { totalAudioCalls: 1 } : {}),
+            ...(sessionType === 'video' || sessionType === 'video_call' ? { totalVideoCalls: 1 } : {})
+          }
+        },
+        { new: true }
+      );
 
-      // Update public counters
-      astrologer.totalEarnings = (astrologer.totalEarnings || 0) + netAmount;
-      if (sessionType === 'chat') {
-        astrologer.totalChats = (astrologer.totalChats || 0) + 1;
-      } else if (sessionType === 'audio' || sessionType === 'audio_call') {
-        astrologer.totalAudioCalls = (astrologer.totalAudioCalls || 0) + 1;
-      } else if (sessionType === 'video' || sessionType === 'video_call') {
-        astrologer.totalVideoCalls = (astrologer.totalVideoCalls || 0) + 1;
-      }
+      if (!astrologer) return null; // Silently fail to not crash billing loops
 
       // Update orders string
       const totalOrdersNum = (astrologer.totalChats || 0) + (astrologer.totalAudioCalls || 0) + (astrologer.totalVideoCalls || 0);
       astrologer.orders = totalOrdersNum > 999 ? `${Math.floor(totalOrdersNum/1000)}k+` : `${totalOrdersNum}`;
-
       await astrologer.save();
 
       const transaction = await Transaction.create({

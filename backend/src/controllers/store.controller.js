@@ -162,7 +162,8 @@ export const createOrder = asyncHandler(async (req, res) => {
       amount: totalAmount,
       type: 'deduction',
       desc: 'Online Order Payment',
-      status: 'success'
+      status: 'success',
+      razorpayReference: paymentData.razorpay_payment_id
     });
 
     paymentStatus = 'paid';

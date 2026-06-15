@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiShield, FiFileText, FiRefreshCcw, FiX, FiClock, FiTrash2 } from 'react-icons/fi';
 import * as adminApis from '../../api/adminApis';
+import { toast } from 'react-hot-toast';
 
 const AdminAuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -43,7 +44,7 @@ const AdminAuditLogs = () => {
       fetchLogs();
     } catch (err) {
       console.error(err);
-      alert('Failed to delete audit log');
+      toast.error('Failed to delete audit log');
     } finally {
       setIsDeletingLog(false);
     }

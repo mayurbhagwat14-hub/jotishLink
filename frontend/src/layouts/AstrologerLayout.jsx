@@ -169,43 +169,43 @@ const AstrologerLayout = () => {
     <div className="flex flex-col h-screen bg-gray-50 font-sans overflow-hidden">
       
       {/* Top Header */}
-      <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-4 z-10 shrink-0 relative">
-        <div className="flex items-center gap-1">
+      <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-2 sm:px-4 z-10 shrink-0 relative">
+        <div className="flex items-center gap-0 sm:gap-1 overflow-hidden">
           <button 
             onClick={() => setIsDrawerOpen(true)}
-            className="p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors flex-shrink-0"
           >
             <FiMenu size={20} />
           </button>
           
           <button 
             onClick={() => setIsDrawerOpen(true)}
-            className="flex items-center gap-2 hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors text-left"
+            className="flex items-center gap-1.5 sm:gap-2 hover:bg-gray-50 px-1 sm:px-2 py-1 rounded-lg transition-colors text-left overflow-hidden"
           >
-             <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0">
+             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-orange-100 border border-orange-200 overflow-hidden flex-shrink-0">
                 <img src={profile?.astrologer?.avatar || user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent((user?.name === 'Temp Astrologer' ? 'Astrologer' : user?.name) || 'Astrologer')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
              </div>
-             <div>
-               <h3 className="font-bold text-gray-900 text-sm leading-tight truncate max-w-[120px]">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h3>
+             <div className="overflow-hidden">
+               <h3 className="font-bold text-gray-900 text-xs sm:text-sm leading-tight truncate max-w-[80px] sm:max-w-[120px]">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h3>
              </div>
           </button>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-            <span className={`text-[12px] font-bold ${isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 px-2 sm:px-3 py-1 rounded-full border border-gray-100">
+            <span className={`text-[10px] sm:text-[12px] font-bold ${isOnline ? 'text-green-500' : 'text-gray-500'}`}>
               {isOnline ? 'Online' : 'Offline'}
             </span>
             <div 
               onClick={toggleStatus}
-              className={`w-9 h-5 rounded-full p-0.5 cursor-pointer transition-colors ${statusLoading ? 'opacity-50' : ''} ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+              className={`w-8 h-4 sm:w-9 sm:h-5 rounded-full p-0.5 cursor-pointer transition-colors flex items-center ${statusLoading ? 'opacity-50' : ''} ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
             >
-              <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${isOnline ? 'translate-x-4' : 'translate-x-0'}`}></div>
+              <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 bg-white rounded-full shadow-sm transition-transform ${isOnline ? 'translate-x-3.5 sm:translate-x-4' : 'translate-x-0'}`}></div>
             </div>
           </div>
           
-          <div className="relative">
-            <NotificationDropdown iconClassName="text-gray-400 hover:text-orange-500" iconSize={22} />
+          <div className="relative flex-shrink-0">
+            <NotificationDropdown iconClassName="text-gray-400 hover:text-orange-500" iconSize={20} />
           </div>
         </div>
       </header>
@@ -295,9 +295,7 @@ const AstrologerLayout = () => {
       {/* Mobile Top Up Banner - Absolute positioned overlay */}
       {!isKeyboardOpen && (
         <div className="fixed bottom-0 left-0 right-0 p-4 z-[90] pointer-events-none md:max-w-md md:mx-auto">
-          <nav className="bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-orange-500/10 rounded-3xl flex justify-around items-center h-16 px-2 pointer-events-auto relative overflow-hidden">
-          {/* Subtle gradient glow inside the navbar */}
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-orange-500/5 pointer-events-none"></div>
+          <nav className="bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full flex justify-around items-center h-[60px] px-2 pointer-events-auto relative overflow-hidden">
           
           {navLinks.map((link) => {
             const isActive = location.pathname.includes(link.path);
@@ -307,22 +305,14 @@ const AstrologerLayout = () => {
                 to={link.path}
                 className="flex flex-col items-center justify-center w-full h-full gap-1 transition-all group relative z-10"
               >
-                <div className={`relative p-2 rounded-2xl transition-all duration-300 ${isActive ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 -translate-y-1' : 'text-gray-400 group-hover:text-orange-400 group-hover:bg-orange-50/50'}`}>
+                <div className={`relative transition-all duration-300 ${isActive ? 'text-orange-400' : 'text-gray-500 group-hover:text-gray-300'}`}>
                   {link.icon}
                   {link.badge && (
-                    <span className={`absolute -top-1 -right-1 w-4 h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 ${isActive ? 'bg-white text-red-500 border-orange-500 shadow-sm' : 'bg-red-500 text-white border-white shadow-sm shadow-red-500/30 animate-pulse-slow'}`}>
+                    <span className={`absolute -top-1 -right-2 w-4 h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white ${isActive ? 'bg-orange-500 text-white' : 'bg-red-500 text-white animate-pulse-slow'}`}>
                       {link.badge}
                     </span>
                   )}
                 </div>
-                {/* Optional subtle dot for active state if we don't use name */}
-                {isActive ? (
-                  <span className="w-1 h-1 bg-orange-500 rounded-full mt-0.5"></span>
-                ) : (
-                  <span className="text-[9px] font-bold text-gray-400 transition-colors group-hover:text-orange-400">
-                    {link.name}
-                  </span>
-                )}
               </Link>
             );
           })}

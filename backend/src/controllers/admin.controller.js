@@ -21,15 +21,23 @@ import axios from 'axios';
 
 export const getAdminEarnings = async (req, res, next) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const istOffset = 330; // IST is UTC+5:30
+    
+    // Calculate IST Midnight for Today
+    const istTimeToday = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
+    istTimeToday.setHours(0, 0, 0, 0);
+    const today = new Date(istTimeToday.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
 
-    const thisWeek = new Date();
+    // Calculate IST Midnight for 7 Days Ago
+    const thisWeek = new Date(today);
     thisWeek.setDate(thisWeek.getDate() - 7);
 
-    const thisMonth = new Date();
-    thisMonth.setDate(1);
-    thisMonth.setHours(0, 0, 0, 0);
+    // Calculate IST Midnight for 1st of this Month
+    const istTimeMonth = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
+    istTimeMonth.setDate(1);
+    istTimeMonth.setHours(0, 0, 0, 0);
+    const thisMonth = new Date(istTimeMonth.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
 
     const logs = await RevenueLog.find().populate('astrologerId', 'name').sort({ date: -1 });
 
@@ -103,11 +111,8 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     Astrologer.countDocuments({ approvalStatus: 'pending' })
   ]);
 
-  const deductionTransactions = await Transaction.find({ type: 'deduction' }).lean();
-  const totalDeductions = deductionTransactions.reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
-  const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const chatCommission = (settings.commissionRates?.chat || 30) / 100;
-  const chatRevenue = totalDeductions * chatCommission; // Admin takes dynamic %
+  const revenueLogs = await RevenueLog.find().lean();
+  const chatRevenue = revenueLogs.reduce((acc, log) => acc + (log.adminShare || 0), 0);
 
   const orders = await Order.find().lean();
   const storeRevenue = orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
@@ -304,29 +309,9 @@ export const getAdminAstrologerById = asyncHandler(async (req, res) => {
     .lean();
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
 
-  // Calculate earnings dynamically
-  const [sessions, poojas] = await Promise.all([
-    ChatSession.find({ astrologerId: astrologer._id, status: 'completed' }).lean(),
-    PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['completed', 'confirmed'] } }).lean()
-  ]);
-
-  const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
-
-  const getAstroShare = (type) => {
-    let comm = rates.chat;
-    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
-    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
-    return (100 - (comm || 30)) / 100;
-  };
-  const poojaShare = (100 - (rates.pooja || 20)) / 100;
-
-  const allEarnings = [
-    ...sessions.map((s) => parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2))),
-    ...poojas.map((p) => parseFloat(((p.price || 0) * poojaShare).toFixed(2)))
-  ];
-
-  const totalEarnings = allEarnings.reduce((sum, amount) => sum + amount, 0);
+  // Safely calculate earnings using immutable RevenueLog
+  const revenueLogs = await RevenueLog.find({ astrologerId: astrologer._id }).lean();
+  const totalEarnings = revenueLogs.reduce((sum, r) => sum + (r.astrologerShare || 0), 0);
 
   // Calculate Available Balance by deducting pending and completed withdrawals
   const withdrawals = await WithdrawalRequest.find({ astrologerId: astrologer._id, status: { $in: ['pending', 'completed'] } }).lean();
@@ -916,10 +901,10 @@ export const getAdminReports = asyncHandler(async (req, res) => {
   const chatSessions = await ChatSession.find().lean();
   const poojas = await PoojaBooking.find().lean();
 
-  const totalDeductions = transactions.filter(t => t.type === 'deduction').reduce((acc, curr) => acc + Math.abs(curr.amount), 0);
-  const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const chatCommission = (settings.commissionRates?.chat || 30) / 100;
-  const platformCommission = totalDeductions * chatCommission;
+  const revenueLogs = await RevenueLog.find().lean();
+  const platformCommission = revenueLogs.reduce((acc, log) => acc + (log.adminShare || 0), 0);
+  
+  const totalDeductions = revenueLogs.reduce((acc, log) => acc + (log.totalCost || 0), 0);
 
   const storeRevenue = orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
   const totalRevenue = (totalDeductions + storeRevenue) || 0;

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiVideo, FiPhone, FiPaperclip, FiSend, FiArrowLeft } from 'react-icons/fi';
+import { FiPaperclip, FiSend, FiArrowLeft } from 'react-icons/fi';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import getSocket from '../../socket/socketManager';
 import api from '../../api/axios';
+import { toast } from 'react-hot-toast';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeActiveSession } from '../../store/slices/astrologerSlice';
 
@@ -117,7 +118,7 @@ const ChatRoom = () => {
         };
       } catch (err) {
         console.error('Failed to load session:', err);
-        alert('Could not load chat session');
+        toast.error('Could not load chat session');
         navigate('/astrologer/chats');
       }
     };
@@ -187,12 +188,6 @@ const ChatRoom = () => {
         
         {!isViewOnly && (
         <div className="flex gap-2 items-center">
-          <button className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 transition-colors disabled:opacity-50" disabled={sessionEnded}>
-             <FiVideo size={18} />
-          </button>
-          <button className="w-9 h-9 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-100 transition-colors disabled:opacity-50" disabled={sessionEnded}>
-             <FiPhone size={18} />
-          </button>
           <button onClick={handleEndChat} disabled={sessionEnded} className="ml-2 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50">
             End Chat
           </button>

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiX, FiAlertTriangle, FiActivity } from 'react-icons/fi';
-import { getOrderById, requestCancelOrder, trackOrder } from '../../api/storeApis';
+import { trackOrder, getOrderById, requestCancelOrder } from '../../api/storeApis';
+import { toast } from 'react-hot-toast';
 
 const formatDate = (isoString) => {
   if (!isoString) return '';
@@ -45,7 +46,7 @@ const OrderDetails = () => {
           }
         }
       } catch (err) {
-        alert('Failed to load order details');
+        toast.error('Failed to load order details');
       } finally {
         setIsLoading(false);
       }
@@ -63,7 +64,7 @@ const OrderDetails = () => {
       setShowCancelModal(false);
       setCancelReason('');
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to submit cancel request');
+      toast.error(err.response?.data?.message || 'Failed to submit cancel request');
     } finally {
       setCancelLoading(false);
     }

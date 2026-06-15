@@ -306,23 +306,11 @@ export const bookPooja = asyncHandler(async (req, res) => {
 
   const poojaPrice = price || 500;
 
-  const user = await User.findById(req.user._id);
-  if (user.wallet < poojaPrice) {
-    throw new ApiError(400, `Insufficient wallet balance. You need ₹${poojaPrice} to book this Pooja.`);
-  }
-
-  // Deduct from User Wallet
-  user.wallet -= poojaPrice;
-  await user.save();
-
-  // Record Transaction
-  const transaction = await Transaction.create({
-    userId: user._id,
-    amount: poojaPrice, // Mongoose schema has `amount` which usually doesn't need to be negative for deduction if the type is 'deduction', but we can keep it negative or positive depending on other uses. Wait, looking at OrderHistory, it uses `txn.amount`, let's keep it `-poojaPrice` if that's what was intended, but let's just change type.
-    type: 'deduction',
-    paymentStatus: 'success',
-    desc: `Pooja Booking: ${poojaName}`
-  });
+  const { transaction } = await WalletService.deduct(
+    req.user._id,
+    poojaPrice,
+    `Pooja Booking: ${poojaName}`
+  );
 
   const booking = await PoojaBooking.create({
     userId: req.user._id,
@@ -352,7 +340,7 @@ export const bookPooja = asyncHandler(async (req, res) => {
 
 // GET /api/user/poojas
 export const getUserPoojas = asyncHandler(async (req, res) => {
-  const poojas = await PoojaBooking.find({ userId: req.user._id, deletedByUser: { $ne: true } })
+  const poojas = await PoojaBooking.find({ userId: new mongoose.Types.ObjectId(req.user._id), deletedByUser: { $ne: true } })
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
@@ -362,7 +350,7 @@ export const getUserPoojas = asyncHandler(async (req, res) => {
 
 // GET /api/user/poojas/:id
 export const getUserPoojaById = asyncHandler(async (req, res) => {
-  const pooja = await PoojaBooking.findOne({ _id: req.params.id, userId: req.user._id, deletedByUser: { $ne: true } })
+  const pooja = await PoojaBooking.findOne({ _id: req.params.id, userId: new mongoose.Types.ObjectId(req.user._id), deletedByUser: { $ne: true } })
     .populate('astrologerId', 'name avatar')
     .lean();
 
@@ -374,9 +362,7 @@ export const getUserPoojaById = asyncHandler(async (req, res) => {
 // GET /api/user/sessions
 export const getUserSessions = asyncHandler(async (req, res) => {
   const qObj = { 
-    userId: req.user._id, 
-    deletedByUser: { $ne: true },
-    $or: [{ type: 'chat' }, { type: { $exists: false } }]
+    userId: req.user._id
   };
   const sessions = await ChatSession.find(qObj)
     .populate('astrologerId', 'name avatar')
@@ -462,15 +448,18 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
     review
   });
 
-  // Save rating on Astrologer
-  const astrologer = await Astrologer.findById(astrologerId);
-  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  // Safely recalculate average rating using aggregation to avoid race conditions
+  const stats = await Rating.aggregate([
+    { $match: { astrologerId: new mongoose.Types.ObjectId(astrologerId) } },
+    { $group: { _id: '$astrologerId', avgRating: { $avg: '$rating' }, numRatings: { $sum: 1 } } }
+  ]);
 
-  const totalRatings = astrologer.totalRatings || 0;
-  const currentRating = astrologer.rating || 0;
-  astrologer.rating = ((currentRating * totalRatings) + rating) / (totalRatings + 1);
-  astrologer.totalRatings = totalRatings + 1;
-  await astrologer.save();
+  if (stats.length > 0) {
+    await Astrologer.findByIdAndUpdate(astrologerId, {
+      rating: Number(stats[0].avgRating.toFixed(1)),
+      totalRatings: stats[0].numRatings
+    });
+  }
 
   // Mark user as rated this astrologer
   await User.findByIdAndUpdate(userId, {

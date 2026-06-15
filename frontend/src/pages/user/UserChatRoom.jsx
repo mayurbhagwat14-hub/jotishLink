@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiPaperclip, FiSend, FiVideo, FiPhone } from 'react-icons/fi';
+import { FiArrowLeft, FiPaperclip, FiSend } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
 import { getSocket } from '../../socket/socketManager';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
 import { updateUser } from '../../store/slices/authSlice';
 import api from '../../api/axios';
+import { toast } from 'react-hot-toast';
 
 const UserChatRoom = () => {
   const navigate = useNavigate();
@@ -84,7 +85,8 @@ Please analyze my chart based on this information.`;
       }
 
       if (isBotSession) {
-        socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id });
+        const targetAstroId = astrologer.userId?._id || astrologer.userId || astrologer._id;
+        socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: targetAstroId });
       } else if (!viewOnly) {
         const rate = astrologer.pricing?.chat || astrologer.rate || 5;
         socket.emit('start_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate });
@@ -96,13 +98,22 @@ Please analyze my chart based on this information.`;
     const onTimerTick = (data) => setTimer(data.seconds);
 
     const onBotTimeUp = (data) => {
-      setIsBotActive(false);
-      socket.emit('end_session', { roomId, sessionId: data.sessionId, userId: user?._id });
-      setMessages((prev) => [...prev, {
-        sender: 'system',
-        text: 'Free chat ended. Start a new chat for paid consultation.',
-        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      }]);
+      // Logic removed: Bot ending is now handled completely natively via insufficient_balance
+      // to make it completely invisible.
+    };
+    
+    const onHandoffInitiated = () => {
+      // Optionally show a "Checking balance..." subtle indicator
+    };
+    
+    // When real astrologer accepts handoff
+    const onSessionAccepted = ({ roomId: acceptedRoomId }) => {
+      if (acceptedRoomId === roomId) {
+        // Silent transition!
+        setIsBotActive(false);
+        const rate = astrologer.pricing?.chat || astrologer.rate || 5;
+        socket.emit('transition_to_real_chat', { roomId, sessionId: sessionIdRef.current, userId: user?._id, astrologerRate: rate });
+      }
     };
 
     const onWalletUpdate = (data) => {
@@ -140,6 +151,8 @@ Please analyze my chart based on this information.`;
     socket.on('receive_message', onMessage);
     socket.on('timer_tick', onTimerTick);
     socket.on('bot_time_up', onBotTimeUp);
+    socket.on('handoff_initiated', onHandoffInitiated);
+    socket.on('session_accepted', onSessionAccepted);
     socket.on('wallet_update', onWalletUpdate);
     socket.on('session_ended', onSessionEnded);
 
@@ -148,6 +161,8 @@ Please analyze my chart based on this information.`;
       socket.off('receive_message', onMessage);
       socket.off('timer_tick', onTimerTick);
       socket.off('bot_time_up', onBotTimeUp);
+      socket.off('handoff_initiated', onHandoffInitiated);
+      socket.off('session_accepted', onSessionAccepted);
       socket.off('wallet_update', onWalletUpdate);
       socket.off('session_ended', onSessionEnded);
       // DO NOT emit end_session on cleanup — only on explicit End Chat button
@@ -227,7 +242,7 @@ Please analyze my chart based on this information.`;
     const onRejected = ({ reason }) => {
       socket.off('session_accepted', onAccepted);
       setIsConnecting(false);
-      alert(`Request declined: ${reason}`);
+      toast.error(`Request declined: ${reason}`);
     };
 
     socket.once('session_accepted', onAccepted);
@@ -249,23 +264,17 @@ Please analyze my chart based on this information.`;
             <img src={astrologer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name || 'A')}&background=ffedD5&color=f97316`} alt="Astrologer" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h3 className="font-bold text-gray-800 leading-tight">{astrologer.name || 'Astrologer'}</h3>
-            <p className="text-[11px] text-green-500 font-bold">
-              {viewOnly ? 'View Only' : isBotActive ? 'Free Chat' : `Active • ${formatTime(timer)}`}
+            <h1 className="font-extrabold text-gray-800 text-lg leading-tight truncate">
+              {astrologer.name || 'Astrologer'}
+            </h1>
+            <p className="text-[11px] font-bold text-gray-500 flex items-center gap-1.5 uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+              {viewOnly ? 'View Only' : `Active • ${formatTime(timer)}`}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isBotActive && !sessionEnded && !viewOnly && (
-            <>
-              <button onClick={() => handleRequestCall('video')} className="w-9 h-9 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100">
-                <FiVideo size={18} />
-              </button>
-              <button onClick={() => handleRequestCall('audio')} className="w-9 h-9 rounded-full bg-green-50 text-green-500 flex items-center justify-center hover:bg-green-100">
-                <FiPhone size={18} />
-              </button>
-            </>
-          )}
+          {/* Removed call buttons */}
           {!sessionEnded && !viewOnly && (
             <button onClick={handleEndChat} className="text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">
               End Chat

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSave, FiArrowLeft, FiCreditCard } from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
 
@@ -42,7 +43,7 @@ const BankDetails = () => {
       
       navigate('/astrologer/earnings');
     } catch (err) {
-      alert('Failed to update bank details: ' + (err.message || 'Unknown error'));
+      toast.error('Failed to update bank details: ' + (err.message || 'Unknown error'));
     }
   };
 

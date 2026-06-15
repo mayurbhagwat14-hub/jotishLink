@@ -36,7 +36,7 @@ const Profile = () => {
       navigate('/user/login');
     } catch (error) {
       console.error('Failed to delete account:', error);
-      alert('Failed to delete account. Please try again.');
+      toast.error('Failed to delete account. Please try again.');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);

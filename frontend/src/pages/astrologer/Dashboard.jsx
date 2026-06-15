@@ -1,162 +1,147 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiMessageSquare, FiPhoneCall, FiTrendingUp, FiVideo, FiArrowRight, FiClock } from 'react-icons/fi';
-import { GiFlowerPot } from 'react-icons/gi';
+import { FiMessageSquare, FiPhoneCall, FiTrendingUp, FiVideo, FiArrowRight, FiClock, FiCheckCircle, FiBell, FiBriefcase, FiUser } from 'react-icons/fi';
+import { GiWallet, GiFlowerPot } from 'react-icons/gi';
 import { fetchAstrologerDashboardThunk } from '../../store/slices/dashboardSlice';
 
 const Dashboard = () => {
   const dispatch = useDispatch();
   const { astrologerDashboard, loading, error } = useSelector((state) => state.dashboard);
   const { incomingRequests } = useSelector((state) => state.astrologer);
+  const { user } = useSelector((state) => state.astrologerAuth);
 
   useEffect(() => {
     dispatch(fetchAstrologerDashboardThunk());
   }, [dispatch]);
 
   const dbData = astrologerDashboard || {};
+  const activeSessionsCount = (incomingRequests?.length || 0) + (dbData.pendingActionCount || 0);
 
   return (
-    <div className="p-4 space-y-6 animate-fade-in mb-8">
+    <div className="p-4 space-y-6 animate-fade-in mb-8 bg-gray-50 min-h-screen">
       
-      {/* Earnings Summary Card */}
-      <div className="bg-gradient-to-br from-orange-500 via-orange-400 to-orange-500 rounded-3xl p-6 text-white shadow-xl shadow-orange-500/30 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 group-hover:scale-110 transition-transform duration-700"></div>
-        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-orange-600/20 rounded-full blur-2xl"></div>
-        <div className="relative z-10 flex items-center gap-2 mb-2 opacity-90">
-          <FiTrendingUp className="animate-pulse" />
-          <p className="text-orange-50 font-semibold text-sm uppercase tracking-wider">Today's Earnings</p>
-        </div>
-        <div className="flex items-end justify-between relative z-10">
-          <h2 className="text-4xl font-black tracking-tight drop-shadow-sm">
-            <span className="text-orange-200 mr-1">₹</span>
-            {dbData.totalEarnings?.toLocaleString() || '0'}
-          </h2>
-          <Link to="/astrologer/session-earnings" className="bg-white/20 hover:bg-white/30 border border-white/20 transition-all backdrop-blur-md text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:shadow-md hover:-translate-y-0.5">
-             Details <FiArrowRight size={14} />
-          </Link>
-        </div>
+      {/* Welcome Card */}
+      <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-3xl p-6 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden flex items-center justify-between">
+         <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-3xl"></div>
+         <div className="flex items-center gap-4 relative z-10">
+           <div className="w-14 h-14 rounded-2xl bg-orange-600/50 border border-orange-300 flex items-center justify-center overflow-hidden shrink-0">
+             {user?.avatar ? (
+                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+             ) : (
+                <FiUser size={24} className="text-white" />
+             )}
+           </div>
+           <div>
+             <p className="text-orange-100 font-bold text-[10px] uppercase tracking-widest mb-1">WELCOME BACK</p>
+             <h2 className="text-xl font-bold text-white leading-tight">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h2>
+             <p className="text-orange-100/80 text-xs mt-0.5">JyotishLink</p>
+           </div>
+         </div>
+         <div className="relative z-10">
+            <Link to="/astrologer/profile" className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 border border-white/20 flex items-center justify-center transition-colors relative">
+               <FiArrowRight size={18} className="text-white" />
+            </Link>
+         </div>
       </div>
 
-      {/* Actionable Incoming Requests */}
-      <div>
-        <div className="flex justify-between items-center mb-4 px-1">
-          <div className="flex items-center gap-2">
-            <h2 className="font-extrabold text-gray-800 text-lg">Action Required</h2>
-            {dbData.pendingActionCount > 0 && (
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-              </span>
-            )}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Today's Earnings */}
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow">
+          <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-3">
+             <GiWallet size={20} />
           </div>
-          <span className="bg-red-50 text-red-600 border border-red-100 text-[10px] font-black px-2.5 py-1 rounded-full animate-pulse-slow shadow-sm">
-            {dbData.pendingActionCount || '0'} PENDING
-          </span>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Today's Earnings</p>
+          <h3 className="text-xl font-black text-gray-800">₹{dbData.todayEarnings?.toLocaleString() || '0'}</h3>
         </div>
-        
-        <div className="space-y-3">
-          
-          {/* Incoming Chat */}
-          {dbData.chatRequest && (
-            <Link to="/astrologer/chats" className="bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex items-center gap-4 hover:shadow-md hover:border-orange-200 transition-all group relative overflow-hidden block">
-               <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-full blur-xl group-hover:bg-orange-500/10 transition-colors"></div>
-               <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center shrink-0 border border-orange-100">
-                 <FiMessageSquare size={20} />
-               </div>
-               <div className="flex-1 min-w-0">
-                 <h3 className="font-bold text-gray-800 text-sm">Chat Request</h3>
-                 <p className="text-xs text-gray-500 font-medium truncate">{dbData.chatRequest.message}</p>
-               </div>
-               <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                 <FiArrowRight size={16} />
-               </div>
-            </Link>
-          )}
 
-          {/* Incoming Video Call */}
-          {dbData.callRequest && (
-            <Link to="/astrologer/calls" className="bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex items-center gap-4 hover:shadow-md hover:border-orange-200 transition-all group relative overflow-hidden block">
-               <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-full blur-xl group-hover:bg-orange-500/10 transition-colors"></div>
-               <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center shrink-0 border border-orange-100">
-                 <FiVideo size={20} />
-               </div>
-               <div className="flex-1 min-w-0">
-                 <h3 className="font-bold text-gray-800 text-sm">Video Call Request</h3>
-                 <p className="text-xs text-gray-500 font-medium truncate">{dbData.callRequest.message}</p>
-               </div>
-               <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                 <FiArrowRight size={16} />
-               </div>
-            </Link>
-          )}
+        {/* Total Sessions */}
+        <Link to="/astrologer/history" className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow block">
+          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mb-3">
+             <FiBriefcase size={20} />
+          </div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Sessions</p>
+          <h3 className="text-xl font-black text-gray-800">{dbData.stats?.totalSessions || '0'}</h3>
+        </Link>
 
-        </div>
+        {/* Total Withdraw */}
+        <Link to="/astrologer/earnings" className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow block">
+          <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center mb-3">
+             <FiTrendingUp size={20} className="transform rotate-180" />
+          </div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Withdraw</p>
+          <h3 className="text-xl font-black text-gray-800">₹{dbData.totalWithdraw?.toLocaleString() || '0'}</h3>
+        </Link>
+
+        {/* Total Earnings */}
+        <Link to="/astrologer/earnings" className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow block">
+          <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center mb-3">
+             <GiWallet size={20} />
+          </div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Earnings</p>
+          <h3 className="text-xl font-black text-gray-800">₹{dbData.totalEarnings?.toLocaleString() || '0'}</h3>
+        </Link>
       </div>
 
-      {/* Pooja Requests Highlight */}
-      {dbData.upcomingPooja && (
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4 px-1">
-            <h2 className="font-extrabold text-gray-800 text-lg">Upcoming Pooja</h2>
-            <Link to="/astrologer/pooja" className="text-xs text-orange-500 font-bold hover:underline flex items-center gap-1">
-              View All <FiArrowRight size={12} />
+      {/* Recent Sessions */}
+      <div className="mb-24 mt-6">
+         <div className="flex justify-between items-center mb-4 px-1">
+            <h2 className="font-extrabold text-gray-800 text-lg">Recent Sessions</h2>
+            <Link to="/astrologer/history" className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-orange-200 transition-colors">
+              View All
             </Link>
-          </div>
-          
-          <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-16 h-16 bg-orange-500/5 rounded-full blur-xl"></div>
-             <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center shrink-0 border border-orange-100">
-               <GiFlowerPot size={22} />
-             </div>
-             <div className="flex-1">
-               <h3 className="font-bold text-gray-800 text-sm">{dbData.upcomingPooja.name}</h3>
-               <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-0.5"><FiClock size={10}/> {dbData.upcomingPooja.time}</p>
-             </div>
-             <Link to="/astrologer/pooja" className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold px-4 py-2 rounded-xl transition-colors shadow-sm shadow-orange-500/20">
-               Details
-             </Link>
-          </div>
-        </div>
-      )}
+         </div>
 
-      {/* Recent History Highlight */}
-      <div className="bg-white rounded-3xl p-5 shadow-lg shadow-gray-100/50 border border-gray-50/50 relative overflow-hidden mt-8 mb-24">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl"></div>
-        <div className="flex justify-between items-center mb-4 relative z-10 border-b border-gray-50 pb-3">
-          <h2 className="font-extrabold text-gray-800 text-base">Recent Sessions</h2>
-          <Link to="/astrologer/history" className="text-xs text-orange-500 font-bold hover:underline flex items-center gap-1">
-            View All <FiArrowRight size={12} />
-          </Link>
-        </div>
-        
-        <div className="space-y-2 relative z-10">
-           {dbData.recentSessions && dbData.recentSessions.length > 0 ? dbData.recentSessions.slice(0, 4).map((session, i) => (
-             <div key={i} className="flex justify-between items-center group p-2 hover:bg-orange-50 rounded-xl transition-colors">
-                <div className="flex items-center gap-3">
-                   <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center font-bold text-lg shadow-inner">
-                      {session.userId?.name ? session.userId.name.charAt(0).toUpperCase() : 'U'}
-                   </div>
-                   <div>
-                     <p className="font-bold text-gray-800 text-sm group-hover:text-orange-600 transition-colors">{session.userId?.name || 'Unknown User'}</p>
-                     <p className="text-xs text-gray-500 flex items-center gap-1 font-medium mt-0.5">
-                       <span className="text-orange-500 font-bold bg-orange-100 px-1.5 rounded-sm capitalize">{session.type || 'Chat'}</span> • {Math.floor((session.durationSeconds || 0) / 60)}m {(session.durationSeconds || 0) % 60}s
-                     </p>
-                   </div>
+         <div className="space-y-4">
+            {dbData.recentSessions && dbData.recentSessions.length > 0 ? dbData.recentSessions.slice(0, 4).map((session, i) => (
+              <div key={i} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 relative overflow-hidden flex flex-col group hover:shadow-md transition-all">
+                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-400"></div>
+                 <div className="flex items-start justify-between pl-3">
+                    <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center font-bold text-lg border border-orange-100">
+                          {session.userId?.name ? session.userId.name.charAt(0).toUpperCase() : 'U'}
+                       </div>
+                       <div>
+                         <p className="font-bold text-gray-800 text-sm">{session.userId?.name || 'Unknown User'}</p>
+                         <div className="mt-1">
+                           <span className="inline-block bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">
+                              Completed
+                           </span>
+                         </div>
+                       </div>
+                    </div>
+                    <Link 
+                      to={`/astrologer/chat/${session._id}`} 
+                      state={{ viewOnly: true, userName: session.userId?.name }}
+                      className="w-8 h-8 rounded-full bg-gray-50 hover:bg-orange-50 text-gray-400 hover:text-orange-500 flex items-center justify-center transition-colors"
+                    >
+                       <FiArrowRight size={16} />
+                    </Link>
+                 </div>
+                 
+                 <div className="mt-4 pl-3 flex flex-col gap-2">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                       <FiMessageSquare size={12} className="text-gray-400" />
+                       <span className="capitalize">{session.type || 'Chat'}</span> • {Math.floor((session.durationSeconds || 0) / 60)}m {(session.durationSeconds || 0) % 60}s
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                       <GiWallet size={12} className="text-gray-400" />
+                       <span>₹{((session.amountDeducted || 0) * 0.7).toFixed(2)}</span>
+                    </div>
+                 </div>
+              </div>
+            )) : (
+              <div className="text-center py-8 bg-white rounded-3xl border border-gray-100">
+                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
+                  <FiBriefcase size={20} />
                 </div>
-                <span className="font-black text-gray-800 text-sm group-hover:text-orange-600 transition-colors">₹{((session.amountDeducted || 0) * 0.7).toFixed(2)}</span>
-             </div>
-           )) : (
-             <div className="text-center py-6">
-               <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-300">
-                 <FiClock size={16} />
-               </div>
-               <p className="text-sm text-gray-500 font-medium">No recent sessions.</p>
-             </div>
-           )}
-        </div>
+                <p className="text-sm text-gray-500 font-medium">No recent sessions.</p>
+              </div>
+            )}
+         </div>
       </div>
-
+      
       {/* Floating Notification Badge */}
       {incomingRequests && incomingRequests.length > 0 && (
         <div className="fixed bottom-24 right-4 z-50 animate-bounce-short">
@@ -174,9 +159,10 @@ const Dashboard = () => {
           </Link>
         </div>
       )}
-
+      
     </div>
   );
 };
 
 export default Dashboard;
+

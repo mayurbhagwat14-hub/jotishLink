@@ -252,11 +252,19 @@ io.on('connection', (socket) => {
   });
 
   // ── Start Bot Timer (Dynamic free chat duration)
-  socket.on('start_bot_timer', async ({ roomId, sessionId, userId }) => {
+  socket.on('start_bot_timer', async ({ roomId, sessionId, userId, astrologerId }) => {
     if (activeTimers.has(roomId)) return;
 
     let settings = await SystemSettings.findOne();
     let durationSeconds = (settings?.freeChatDuration || 1) * 60;
+    
+    // Determine the real astrologer's rate for the background check
+    let rate = 5;
+    if (astrologerId) {
+      const astro = await Astrologer.findById(astrologerId);
+      if (astro && astro.pricing?.chat) rate = astro.pricing.chat;
+      else if (astro && astro.rate) rate = astro.rate;
+    }
 
     let seconds = 0;
     const intervalId = setInterval(async () => {
@@ -265,20 +273,60 @@ io.on('connection', (socket) => {
       if (timerData) timerData.seconds = seconds;
       io.to(roomId).emit('timer_tick', { seconds, isBot: true });
 
+      // T-minus 10 seconds check for handoff
+      if (seconds === durationSeconds - 10) {
+        try {
+          const user = await User.findById(userId);
+          // Check if user has enough balance for at least 5 minutes
+          if (user && user.wallet >= (rate * 5) && astrologerId) {
+            // Add to pending requests map so astrologer's accept_session works correctly
+            pendingRequests.set(roomId, {
+              roomId,
+              userId,
+              astrologerId,
+              userName: user.name,
+              type: 'chat',
+              userSocketId: socket.id
+            });
+
+            // Silently request real astrologer
+            io.to(`astro_${astrologerId}`).emit('incoming_chat_request', {
+              roomId,
+              userId,
+              userName: user.name,
+              isHandoff: true,
+              userSocketId: socket.id
+            });
+            // Let the frontend know we are attempting a handoff
+            io.to(roomId).emit('handoff_initiated');
+          }
+        } catch (e) {
+          console.error('[Socket.IO] Handoff check error:', e.message);
+        }
+      }
+
       if (seconds >= durationSeconds) {
-        io.to(roomId).emit('bot_time_up', { roomId, sessionId });
         clearInterval(intervalId);
         activeTimers.delete(roomId);
         
+        // Mark user's free chat offer as used
         await User.findByIdAndUpdate(userId, { 
           freeChatUsed: true, 
           freeChatUsedAt: new Date(), 
           freeChatDuration: settings?.freeChatDuration || 1 
         });
+
+        // If handoff didn't happen (or balance was low), force end session
+        io.to(roomId).emit('wallet_low_balance');
+        io.to(roomId).emit('session_ended', {
+          reason: 'insufficient_balance',
+          durationSeconds: seconds,
+        });
+        handleEndSession({ roomId, sessionId, userId, endedBy: 'system', finalSeconds: seconds, sessionType: 'chat' });
       }
     }, 1000);
 
-    activeTimers.set(roomId, { intervalId, seconds: 0, sessionId, userId, isBot: true });
+    activeTimers.set(roomId, { intervalId, seconds: 0, sessionId, userId, astrologerId, isBot: true });
     console.log(`[Socket.IO] Bot Timer started for room ${roomId} (${durationSeconds}s)`);
   });
 
@@ -340,7 +388,9 @@ io.on('connection', (socket) => {
       }
     }, 1000);
 
-    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, isBot: false, lastDeducted: 0, sessionType: 'chat' });
+    let sysComm = await SystemSettings.findOne();
+    let commissionRate = sysComm?.commissionRates?.chat || 20;
+    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, isBot: false, lastDeducted: 0, sessionType: 'chat', commissionRate });
     console.log(`[Socket.IO] Transitioned room ${roomId} to real chat with rate ${astrologerRate}`);
   });
 
@@ -373,17 +423,24 @@ io.on('connection', (socket) => {
         }
 
         if (seconds % 5 === 0) {
-          user.wallet = Number(Math.max(0, user.wallet - deltaCost).toFixed(2));
-          await user.save();
+          const updatedUser = await User.findOneAndUpdate(
+            { _id: userId },
+            { $inc: { wallet: -deltaCost } },
+            { new: true }
+          );
           timerData.lastDeducted = currentCost;
-          io.to(roomId).emit('wallet_update', { deducted: deltaCost, newBalance: user.wallet });
+          if (updatedUser) {
+            io.to(roomId).emit('wallet_update', { deducted: deltaCost, newBalance: updatedUser.wallet });
+          }
         }
       } catch (err) {
         console.error('[Socket.IO] Billing error:', err.message);
       }
     }, 1000);
 
-    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, lastDeducted: 0, sessionType: 'chat' });
+    let sysComm = await SystemSettings.findOne();
+    let commissionRate = sysComm?.commissionRates?.chat || 20;
+    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, lastDeducted: 0, sessionType: 'chat', commissionRate });
     console.log(`[Socket.IO] Timer started for room ${roomId}`);
   });
 
@@ -430,31 +487,35 @@ io.on('connection', (socket) => {
     // Final deduction and commission
     try {
       if (!finalSessionId) return;
-      const session = await ChatSession.findById(finalSessionId);
-      if (session && session.status === 'ongoing') {
-        session.status = 'completed';
-        session.durationSeconds = duration;
-        session.amountDeducted = currentCost;
-        await session.save();
-
-        if (currentCost > 0 && userId) {
-           const user = await User.findById(userId);
-           if (user && remainingDelta > 0) {
-             user.wallet = Number(Math.max(0, user.wallet - remainingDelta).toFixed(2));
-             await user.save();
-           }
+      // Atomic lock: Only process if it's currently 'ongoing'
+      const session = await ChatSession.findOneAndUpdate(
+        { _id: finalSessionId, status: 'ongoing' },
+        { status: 'completed', durationSeconds: duration, amountDeducted: currentCost },
+        { new: true }
+      );
+      
+      if (session) {
+        if (currentCost > 0 && userId && remainingDelta > 0) {
+           await User.updateOne(
+             { _id: userId },
+             { $inc: { wallet: -remainingDelta } }
+           );
            const Transaction = (await import('./models/transaction.model.js')).default;
+           const Astrologer = (await import('./models/astrologer.model.js')).default;
            
            let sessionTypeLabel = 'Chat Session';
            if (session.type === 'audio_call' || session.type === 'audio') sessionTypeLabel = 'Audio Call';
            if (session.type === 'video_call' || session.type === 'video') sessionTypeLabel = 'Video Call';
 
-           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${sessionTypeLabel} Cost (${duration}s)` });
+           let astroName = 'Astrologer';
+           if (session.astrologerId) {
+             const astro = await Astrologer.findById(session.astrologerId);
+             if (astro) astroName = astro.name;
+           }
 
-           const sys = await SystemSettings.findOne();
-           const comm = (session.type === 'audio_call' || session.type === 'audio') ? (sys?.commissionRates?.audioCall || sys?.commissionRates?.chat || 20) :
-                        (session.type === 'video_call' || session.type === 'video') ? (sys?.commissionRates?.videoCall || sys?.commissionRates?.chat || 20) :
-                        (sys?.commissionRates?.chat || 20);
+           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${sessionTypeLabel} with ${astroName} (${duration}s)` });
+
+           const comm = timerData?.commissionRate || 20;
 
            const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm);
            if (creditRes && creditRes.netAmount) {
@@ -462,9 +523,18 @@ io.on('connection', (socket) => {
            }
         }
       }
-      if (session) {
-        await Astrologer.findOneAndUpdate({ _id: session.astrologerId }, { onlineStatus: 'online' });
-        io.emit('astro_status_changed', { astrologerId: session.astrologerId, status: 'online' });
+      if (finalSessionId) {
+        const checkSession = await ChatSession.findById(finalSessionId);
+        if (checkSession && checkSession.astrologerId) {
+          const updatedAstro = await Astrologer.findOneAndUpdate(
+            { _id: checkSession.astrologerId, onlineStatus: 'busy' },
+            { onlineStatus: 'online' },
+            { new: true }
+          );
+          if (updatedAstro) {
+            io.emit('astro_status_changed', { astrologerId: checkSession.astrologerId, status: 'online' });
+          }
+        }
       }
     } catch (err) {
       console.error('[Socket.IO] Session end error:', err.message);
@@ -500,17 +570,24 @@ io.on('connection', (socket) => {
         }
 
         if (seconds % 5 === 0) {
-          user.wallet = Number(Math.max(0, user.wallet - deltaCost).toFixed(2));
-          await user.save();
+          const updatedUser = await User.findOneAndUpdate(
+            { _id: userId },
+            { $inc: { wallet: -deltaCost } },
+            { new: true }
+          );
           timerData.lastDeducted = currentCost;
-          io.to(roomId).emit('wallet_update', { deducted: deltaCost, newBalance: user.wallet });
+          if (updatedUser) {
+            io.to(roomId).emit('wallet_update', { deducted: deltaCost, newBalance: updatedUser.wallet });
+          }
         }
       } catch (err) {
         console.error('[Socket.IO] Call Billing error:', err.message);
       }
     }, 1000);
 
-    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type, lastDeducted: 0 });
+    let sysComm = await SystemSettings.findOne();
+    let commissionRate = type === 'video' ? (sysComm?.commissionRates?.videoCall || 25) : (sysComm?.commissionRates?.audioCall || 15);
+    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type, lastDeducted: 0, commissionRate });
     console.log(`[Socket.IO] ${type} Call Timer started for room ${roomId}`);
   });
 
@@ -541,32 +618,47 @@ io.on('connection', (socket) => {
 
     try {
       const { CallSession } = await import('./models/callSession.model.js');
-      const session = await CallSession.findOne({ callId });
-      if (session && (session.status === 'accepted' || session.status === 'ongoing' || session.status === 'ringing')) {
-        session.status = 'completed';
-        session.duration = duration;
-        session.endTime = new Date();
-        session.totalAmount = currentCost;
-        await session.save();
-
-        if (currentCost > 0 && userId) {
-           const user = await User.findById(userId);
-           if (user && remainingDelta > 0) {
-             user.wallet = Math.max(0, user.wallet - remainingDelta);
-             await user.save();
-           }
+      // Atomic lock for CallSession
+      const session = await CallSession.findOneAndUpdate(
+        { callId, status: { $in: ['accepted', 'ongoing', 'ringing'] } },
+        { status: 'completed', duration: duration, endTime: new Date(), totalAmount: currentCost },
+        { new: true }
+      );
+      
+      if (session) {
+        if (currentCost > 0 && userId && remainingDelta > 0) {
+           await User.updateOne(
+             { _id: userId },
+             { $inc: { wallet: -remainingDelta } }
+           );
            const Transaction = (await import('./models/transaction.model.js')).default;
-           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${type} Call Cost (${duration}s)` });
+           const Astrologer = (await import('./models/astrologer.model.js')).default;
+           
+           let astroName = 'Astrologer';
+           if (session.astrologerId) {
+             const astro = await Astrologer.findById(session.astrologerId);
+             if (astro) astroName = astro.name;
+           }
 
-           const sys = await SystemSettings.findOne();
-           const comm = type === 'video' ? (sys?.commissionRates?.videoCall || 25) : (sys?.commissionRates?.audioCall || 15);
+           const typeLabel = type === 'video' ? 'Video Call' : 'Audio Call';
+           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${typeLabel} with ${astroName} (${duration}s)` });
+
+           const comm = timerData?.commissionRate || (type === 'video' ? 25 : 15);
            const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm);
            if (creditRes && creditRes.netAmount) {
              io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
            }
         }
-        await Astrologer.findByIdAndUpdate(session.astrologerId, { onlineStatus: 'online' });
-        io.emit('astro_status_changed', { astrologerId: session.astrologerId, status: 'online' });
+        
+        const Astrologer = (await import('./models/astrologer.model.js')).default;
+        const updatedAstro = await Astrologer.findOneAndUpdate(
+          { _id: session.astrologerId, onlineStatus: 'busy' },
+          { onlineStatus: 'online' },
+          { new: true }
+        );
+        if (updatedAstro) {
+          io.emit('astro_status_changed', { astrologerId: session.astrologerId, status: 'online' });
+        }
       }
     } catch (err) {
       console.error('[Socket.IO] Call end error:', err.message);

@@ -16,6 +16,7 @@ import { getSocket } from '../../socket/socketManager';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUser } from '../../store/slices/authSlice';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
+import { toast } from 'react-hot-toast';
 
 const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user, dispatch }) => {
   const navigate = useNavigate();
@@ -226,7 +227,7 @@ const VideoRoom = () => {
     if (!astrologer) { navigate('/user/astrologers'); return; }
     api.get(`/agora/token?channelName=${id}&role=publisher`)
       .then(({ data }) => setTokenData(data.data))
-      .catch(() => { alert('Failed to connect to call server'); navigate('/user/astrologers'); });
+      .catch(() => { toast.error('Failed to connect to call server'); navigate('/user/astrologers'); });
   }, [id]);
 
   if (!astrologer || !tokenData) {

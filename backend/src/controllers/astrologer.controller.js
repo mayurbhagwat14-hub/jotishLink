@@ -12,6 +12,8 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import SmsService from '../services/sms.service.js';
 import { uploadMedia, deleteMedia } from '../config/cloudinary.js';
 import SystemSettings from '../models/systemSettings.model.js';
+import WalletService from '../services/wallet.service.js';
+import RevenueLog from '../models/revenueLog.model.js';
 
 const generateTokens = (userId, role) => {
   const accessToken = jwt.sign(
@@ -407,7 +409,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   const astrologer = await Astrologer.findById(req.user._id).lean();
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
-  const [sessions, bookings] = await Promise.all([
+  const [recentSessions, recentBookings, allSessions, allPoojas, withdrawals] = await Promise.all([
     ChatSession.find({ astrologerId: req.user._id })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
@@ -418,29 +420,43 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5)
       .lean(),
+    ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
+    PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['Completed'] } }).lean(),
+    WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['completed', 'pending'] } }).lean()
   ]);
 
-  const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
-  const getAstroShare = (type) => {
-    let comm = rates.chat;
-    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
-    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
-    return (100 - (comm || 30)) / 100;
-  };
+  // Safely calculate earnings using immutable RevenueLog
+  const revenueLogs = await RevenueLog.find({ astrologerId: req.user._id }).lean();
+  let totalEarnings = 0;
+  let todayEarnings = 0;
+  
+  // Calculate Start of Today in IST
+  const now = new Date();
+  const istOffset = 330; // IST is UTC+5:30
+  const istTime = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
+  istTime.setHours(0, 0, 0, 0);
+  const startOfTodayIST = new Date(istTime.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
 
-  const totalEarnings = sessions
-    .filter((s) => s.status === 'completed')
-    .reduce((sum, s) => sum + (s.amountDeducted || 0) * getAstroShare(s.type), 0);
+  revenueLogs.forEach(log => {
+    const amount = log.astrologerShare || 0;
+    totalEarnings += amount;
+    if (new Date(log.date || log.createdAt) >= startOfTodayIST) {
+      todayEarnings += amount;
+    }
+  });
+
+  const totalWithdraw = withdrawals.reduce((sum, w) => sum + w.amount, 0);
 
   return res.status(200).json(
     new ApiResponse(200, {
       astrologer,
-      recentSessions: sessions,
-      recentBookings: bookings,
+      recentSessions,
+      recentBookings,
       totalEarnings: parseFloat(totalEarnings.toFixed(2)),
+      todayEarnings: parseFloat(todayEarnings.toFixed(2)),
+      totalWithdraw: parseFloat(totalWithdraw.toFixed(2)),
       stats: {
-        totalSessions: sessions.length,
+        totalSessions: allSessions.length + allPoojas.length,
         onlineStatus: astrologer.onlineStatus,
         rating: astrologer.rating,
       },
@@ -450,37 +466,15 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
 
 // GET /api/astrologer/earnings
 export const getAstrologerEarnings = asyncHandler(async (req, res) => {
-  const [sessions, poojas] = await Promise.all([
-    ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
-    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } }).lean()
-  ]);
+  const revenueLogs = await RevenueLog.find({ astrologerId: req.user._id }).lean();
 
-  const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
-  const getAstroShare = (type) => {
-    let comm = rates.chat;
-    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
-    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
-    return (100 - (comm || 30)) / 100;
-  };
-  const poojaShare = (100 - (rates.pooja || 20)) / 100;
-
-  const allEarnings = [
-    ...sessions.map((s) => ({
-      sessionId: s._id,
-      date: s.createdAt,
-      type: s.type || 'session',
-      durationSeconds: s.durationSeconds,
-      amount: parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2)),
-    })),
-    ...poojas.map((p) => ({
-      sessionId: p._id,
-      date: p.createdAt,
-      type: 'pooja',
-      durationSeconds: 0,
-      amount: parseFloat(((p.price || 0) * poojaShare).toFixed(2)),
-    }))
-  ].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const allEarnings = revenueLogs.map((r) => ({
+    sessionId: r.sessionId,
+    date: r.date,
+    type: r.sessionType,
+    durationSeconds: r.durationSeconds,
+    amount: parseFloat(r.astrologerShare.toFixed(2)),
+  })).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const totalEarnings = allEarnings.reduce((sum, e) => sum + e.amount, 0);
 
@@ -541,27 +535,13 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Please complete your bank details before withdrawing');
   }
 
-  // Verify balance
-  const [sessions, poojas, withdrawals] = await Promise.all([
-    ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
-    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } }).lean(),
+  // Verify balance securely using RevenueLog
+  const [revenueLogs, withdrawals] = await Promise.all([
+    RevenueLog.find({ astrologerId: req.user._id }).lean(),
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean()
   ]);
 
-  const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
-  const getAstroShare = (type) => {
-    let comm = rates.chat;
-    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
-    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
-    return (100 - (comm || 30)) / 100;
-  };
-  const poojaShare = (100 - (rates.pooja || 20)) / 100;
-
-  const totalEarnings = [
-    ...sessions.map(s => parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2))),
-    ...poojas.map(p => parseFloat(((p.price || 0) * poojaShare).toFixed(2)))
-  ].reduce((a, b) => a + b, 0);
+  const totalEarnings = revenueLogs.reduce((sum, r) => sum + r.astrologerShare, 0);
 
   const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
   const availableBalance = totalEarnings - totalWithdrawnOrPending;
@@ -630,29 +610,35 @@ export const updatePoojaStatus = asyncHandler(async (req, res) => {
     if (!booking.proofMedia || booking.proofMedia.length < 3) {
       throw new ApiError(400, `Cannot mark as complete. Found ${booking.proofMedia?.length || 0} media files. Minimum 2 photos and 1 video required.`);
     }
+
+    const settings = await SystemSettings.findOne({}) || new SystemSettings();
+    const poojaComm = settings.commissionRates?.pooja || 20;
+
+    await WalletService.creditAstrologer(
+      booking.astrologerId,
+      booking.userId,
+      booking._id,
+      'pooja',
+      booking.amountHold,
+      `Earnings from Pooja: ${booking.poojaName}`,
+      poojaComm
+    );
+
     booking.paymentStatus = 'released';
   }
 
   if (status === 'Rejected') {
     if (booking.paymentStatus === 'held' && booking.amountHold > 0) {
-      const User = (await import('../models/user.model.js')).default;
-      const Transaction = (await import('../models/transaction.model.js')).default;
-      
-      const user = await User.findById(booking.userId);
-      if (user) {
-        user.wallet += booking.amountHold;
-        await user.save();
-
-        await Transaction.create({
-          userId: user._id,
-          amount: booking.amountHold,
-          type: 'pooja_refund',
-          status: 'completed',
-          paymentMethod: 'wallet',
-          desc: `Refund for Rejected Pooja: ${booking.poojaName}`
-        });
-
+      try {
+        await WalletService.credit(
+          booking.userId, 
+          booking.amountHold, 
+          'pooja_refund', 
+          `Refund for Rejected Pooja: ${booking.poojaName}`
+        );
         booking.paymentStatus = 'refunded';
+      } catch (err) {
+        throw new ApiError(500, `Failed to refund user wallet: ${err.message}`);
       }
     }
   }
@@ -851,11 +837,11 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
   const astrologer = await Astrologer.findById(astrologerId);
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
 
-  const { default: Review } = await import('../models/review.model.js');
+  const { default: Rating } = await import('../models/rating.model.js');
   const { CallSession } = await import('../models/callSession.model.js');
 
   // 1. Average Rating
-  const allReviews = await Review.find({ astrologerId: astrologer._id }).lean();
+  const allReviews = await Rating.find({ astrologerId: astrologer._id }).lean();
   let averageRating = astrologer.rating || 5.0;
   if (allReviews.length > 0) {
     const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
@@ -880,12 +866,17 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
     : 0;
 
   // 3. Consultation Trends (last 7 days)
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(today.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const istOffset = 330; // IST is UTC+5:30
+  
+  const istTimeToday = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
+  istTimeToday.setHours(23, 59, 59, 999);
+  const today = new Date(istTimeToday.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
 
+  const istTimeSevenDaysAgo = new Date(istTimeToday);
+  istTimeSevenDaysAgo.setDate(istTimeToday.getDate() - 6);
+  istTimeSevenDaysAgo.setHours(0, 0, 0, 0);
+  const sevenDaysAgo = new Date(istTimeSevenDaysAgo.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
   const recentChats = await ChatSession.find({
     astrologerId: astrologer._id,
     status: 'completed',
@@ -921,7 +912,7 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
   const normalizedTrends = trends.map(count => maxCount > 0 ? Math.round((count / maxCount) * 100) : 0);
 
   // 4. Top User Reviews
-  const topReviews = await Review.find({ astrologerId: astrologer._id, rating: { $gte: 4 } })
+  const topReviews = await Rating.find({ astrologerId: astrologer._id, rating: { $gte: 4 } })
     .populate('userId', 'name')
     .sort({ createdAt: -1 })
     .limit(2)

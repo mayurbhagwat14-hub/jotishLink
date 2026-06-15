@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import PoojaBooking from '../models/poojaBooking.model.js';
 import User from '../models/user.model.js';
 import Transaction from '../models/transaction.model.js';
+import WalletService from './wallet.service.js';
 
 export const initCronJobs = (io) => {
   // Run every day at 12:01 AM
@@ -22,21 +23,16 @@ export const initCronJobs = (io) => {
       for (const booking of expiredBookings) {
         // Auto-refund logic
         if (booking.amountHold > 0) {
-          const user = await User.findById(booking.userId);
-          if (user) {
-            user.wallet += booking.amountHold;
-            await user.save();
-
-            await Transaction.create({
-              userId: user._id,
-              amount: booking.amountHold,
-              type: 'pooja_refund',
-              status: 'completed',
-              paymentMethod: 'wallet',
-              desc: `Auto-Refund for Expired Pooja: ${booking.poojaName}`
-            });
-
+          try {
+            await WalletService.credit(
+              booking.userId,
+              booking.amountHold,
+              'pooja_refund',
+              `Auto-Refund for Expired Pooja: ${booking.poojaName}`
+            );
             booking.paymentStatus = 'refunded';
+          } catch (err) {
+            console.error('Failed to auto-refund pooja', err);
           }
         }
         

@@ -14,18 +14,18 @@ export const validate = (schema) => asyncHandler(async (req, res, next) => {
 
 // User schemas
 export const requestOtpSchema = Joi.object({
-  phoneNumber: Joi.string().pattern(/^[0-9]{10,15}$/).required().messages({
-    'string.pattern.base': 'Please provide a valid phone number',
+  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+    'string.pattern.base': 'Please provide a valid 10-digit phone number',
   }),
 });
 
 export const verifyOtpSchema = Joi.object({
-  phoneNumber: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
+  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required(),
   otp: Joi.string().length(4).required(),
 });
 
 export const registerUserSchema = Joi.object({
-  name: Joi.string().min(2).max(50).required(),
+  name: Joi.string().min(3).max(50).required(),
   email: Joi.string().email().optional(),
   gender: Joi.string().valid('Male', 'Female', 'Other').optional(),
   dob: Joi.string().optional(),
@@ -43,12 +43,12 @@ export const changePasswordSchema = Joi.object({
 
 // Astrologer schemas
 export const astrologerCheckPhoneSchema = Joi.object({
-  phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
+  phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
 });
 
 export const astrologerSignupSchema = Joi.object({
   name: Joi.string().min(2).max(50).required(),
-  phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
+  phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
   password: Joi.string().min(6).required(),
   otp: Joi.string().length(4).required(),
   skills: Joi.array().items(Joi.string()).optional(),
@@ -96,7 +96,7 @@ export const astrologerSignupSchema = Joi.object({
 });
 
 export const astrologerLoginSchema = Joi.object({
-  phone: Joi.string().pattern(/^[0-9]{10,15}$/).required(),
+  phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
   otp: Joi.string().length(4).required(),
 });
 

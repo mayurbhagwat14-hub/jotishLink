@@ -31,7 +31,9 @@ const transactionSchema = new mongoose.Schema(
       default: 'success'
     },
     razorpayReference: {
-      type: String
+      type: String,
+      unique: true,
+      sparse: true,
     }
   },
   {

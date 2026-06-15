@@ -193,6 +193,33 @@ const UserDetails = () => {
     }
   }, [user, navigate]);
 
+  // Load from local storage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('userDetailsApplyData');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.currentStep !== undefined) setCurrentStep(parsed.currentStep);
+        if (parsed.knowsTime !== undefined) setKnowsTime(parsed.knowsTime);
+        if (parsed.searchQuery !== undefined) setSearchQuery(parsed.searchQuery);
+      } catch (err) {
+        console.error('Failed to parse local storage data', err);
+      }
+    }
+  }, []);
+
+  // Save to local storage on change
+  useEffect(() => {
+    const dataToSave = {
+      formData,
+      currentStep,
+      knowsTime,
+      searchQuery
+    };
+    localStorage.setItem('userDetailsApplyData', JSON.stringify(dataToSave));
+  }, [formData, currentStep, knowsTime, searchQuery]);
+
   const step = steps[currentStep];
 
 
@@ -219,6 +246,7 @@ const UserDetails = () => {
       }
 
       dispatch(updateUser(payload));
+      localStorage.removeItem('userDetailsApplyData'); // Clear after successful completion
       navigate(redirectTo);
     }
   };
@@ -236,7 +264,7 @@ const UserDetails = () => {
 
   const canProceed = () => {
     switch (step.type) {
-      case 'name': return formData.name.trim().length > 0;
+      case 'name': return formData.name.trim().length >= 3;
       case 'gender': return formData.gender !== '';
       case 'dob': return formData.dobDay && formData.dobMonth && formData.dobYear;
       case 'time_choice': return true;
@@ -397,6 +425,7 @@ const UserDetails = () => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter Your Name"
+              maxLength={50}
               className="w-full border-b-2 border-gray-200 focus:border-[#FF6A1A] py-3 text-[16px] text-gray-800 font-semibold outline-none bg-transparent transition-colors placeholder-gray-300"
               autoFocus
             />

@@ -257,10 +257,14 @@ const Login = () => {
             <input
               type="tel"
               required
+              maxLength={10}
               className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-3.5 bg-white text-[15px] text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
-              placeholder="Enter Mobile Number"
+              placeholder="10 digit mobile number"
               value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                if (val.length <= 10) setPhoneNumber(val);
+              }}
             />
           </div>
 

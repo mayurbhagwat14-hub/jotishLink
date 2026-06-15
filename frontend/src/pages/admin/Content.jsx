@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX, FiCheck } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import * as adminApis from '../../api/adminApis';
+import { toast } from 'react-hot-toast';
 
 const AdminContent = () => {
   const [activeTab, setActiveTab] = useState('Banners');
@@ -23,6 +24,12 @@ const AdminContent = () => {
 
   const [broadcastData, setBroadcastData] = useState({ title: '', message: '', audience: 'All Users' });
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { title: '🔮 Free Kundli Report!', body: 'Generate your free Kundli now and get personalized predictions.', audience: 'All Users', sent: 'May 26, 2026 • 2:00 PM', status: 'Delivered' },
+    { title: '💰 50% OFF First Chat!', body: 'New users get 50% OFF on their first astrologer chat session.', audience: 'New Users', sent: 'May 25, 2026 • 10:00 AM', status: 'Delivered' },
+  ]);
+  const [deleteConfirmCoupon, setDeleteConfirmCoupon] = useState(null);
+  const [isDeletingCoupon, setIsDeletingCoupon] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'Banners') fetchBanners();
@@ -58,7 +65,7 @@ const AdminContent = () => {
     if (isSubmittingBanner) return;
     try {
       if (!newBanner.imageUrl) {
-        alert('Please select an image for the banner');
+        toast.error('Please select an image for the banner');
         return;
       }
       setIsSubmittingBanner(true);
@@ -68,7 +75,7 @@ const AdminContent = () => {
       fetchBanners();
     } catch (err) {
       console.error(err);
-      alert('Failed to create banner');
+      toast.error('Failed to create banner');
     } finally {
       setIsSubmittingBanner(false);
     }
@@ -95,7 +102,7 @@ const AdminContent = () => {
       fetchBanners();
     } catch (err) {
       console.error(err);
-      alert('Failed to delete banner');
+      toast.error('Failed to delete banner');
     } finally {
       setIsDeletingBanner(false);
     }
@@ -142,17 +149,22 @@ const AdminContent = () => {
       fetchCoupons();
     } catch (err) {
       console.error(err);
-      alert('Failed to create coupon');
+      toast.error('Failed to create coupon');
     }
   };
 
-  const handleDeleteCoupon = async (id) => {
-    if (!window.confirm('Delete this coupon?')) return;
+  const handleDeleteCoupon = async () => {
+    if (!deleteConfirmCoupon || isDeletingCoupon) return;
     try {
-      await adminApis.deleteAdminCoupon(id);
+      setIsDeletingCoupon(true);
+      await adminApis.deleteAdminCoupon(deleteConfirmCoupon._id);
+      setDeleteConfirmCoupon(null);
       fetchCoupons();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to delete coupon');
+    } finally {
+      setIsDeletingCoupon(false);
     }
   };
 
@@ -165,10 +177,6 @@ const AdminContent = () => {
     }
   };
 
-  const notifications = [
-    { title: '🔮 Free Kundli Report!', body: 'Generate your free Kundli now and get personalized predictions.', audience: 'All Users', sent: 'May 26, 2026 • 2:00 PM', status: 'Delivered' },
-    { title: '💰 50% OFF First Chat!', body: 'New users get 50% OFF on their first astrologer chat session.', audience: 'New Users', sent: 'May 25, 2026 • 10:00 AM', status: 'Delivered' },
-  ];
 
   return (
     <div className="space-y-6 animate-fade-in relative">
@@ -271,7 +279,7 @@ const AdminContent = () => {
                           {c.isActive ? <FiToggleRight size={14} /> : <FiToggleLeft size={14} />}
                           {c.isActive ? 'Active' : 'Inactive'}
                         </button>
-                        <button onClick={() => handleDeleteCoupon(c._id)} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-red-50 text-red-500 hover:bg-red-100">
+                        <button onClick={() => setDeleteConfirmCoupon(c)} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-red-50 text-red-500 hover:bg-red-100">
                           <FiTrash2 size={14} />
                         </button>
                       </td>
@@ -416,7 +424,7 @@ const AdminContent = () => {
                             if (currentPages.length > 1) {
                               setNewBanner({ ...newBanner, pages: currentPages.filter(p => p !== page) });
                             } else {
-                              alert('At least one page must be selected');
+                              toast.error('At least one page must be selected');
                             }
                           }
                         }}
@@ -518,7 +526,40 @@ const AdminContent = () => {
           </div>
         </div>
       )}
-
+      {/* ═══ DELETE COUPON CONFIRMATION MODAL ═══ */}
+      {deleteConfirmCoupon && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setDeleteConfirmCoupon(null)}>
+          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
+              <FiTrash2 size={32} className="text-red-500" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Delete Coupon?</h3>
+            <p className="text-gray-500 font-medium mb-8">
+              Are you sure you want to permanently delete this coupon? This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button 
+                onClick={() => setDeleteConfirmCoupon(null)}
+                className="flex-1 py-3.5 px-6 rounded-xl font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteCoupon}
+                disabled={isDeletingCoupon}
+                className={`flex-1 py-3.5 px-6 rounded-xl font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center ${isDeletingCoupon ? 'bg-red-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20'}`}
+              >
+                {isDeletingCoupon ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  'Yes, Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

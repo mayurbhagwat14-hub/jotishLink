@@ -15,6 +15,7 @@ import api from '../../api/axios';
 import { getSocket } from '../../socket/socketManager';
 import { useDispatch } from 'react-redux';
 import { removeActiveSession } from '../../store/slices/astrologerSlice';
+import { toast } from 'react-hot-toast';
 
 const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
   const navigate = useNavigate();
@@ -224,7 +225,7 @@ const AstrologerVideoRoom = () => {
         setTokenData(data.data);
       } catch (err) {
         console.error('Failed to init Agora:', err);
-        alert('Failed to connect to video server');
+        toast.error('Failed to connect to video server');
         navigate('/astrologer/calls');
       }
     };

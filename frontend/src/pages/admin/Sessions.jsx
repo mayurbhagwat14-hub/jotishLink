@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle, FiTrash2, FiX, FiCheck } from 'react-icons/fi';
 import { getSocket } from '../../socket/socketManager';
 import { getAdminSessions, getAdminCalls, deleteAdminSession, deleteAdminCall, bulkDeleteAdminSessions } from '../../api/adminApis';
+import { toast } from 'react-hot-toast';
 
 const AdminSessions = () => {
   const [liveSessions, setLiveSessions] = useState([]);
@@ -152,7 +153,7 @@ const AdminSessions = () => {
       setSelectedSessions([]);
     } catch (err) {
       console.error('Failed to delete sessions', err);
-      alert('Failed to delete some sessions');
+      toast.error('Failed to delete some sessions');
     } finally {
       setIsBulkDeleting(false);
       setDeleteConfirmSession(null);

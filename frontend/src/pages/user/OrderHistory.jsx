@@ -8,6 +8,7 @@ import { getUserOrders } from '../../api/storeApis';
 import { getSocket } from '../../socket/socketManager';
 import { useGlobalSocket } from '../../hooks/useGlobalSocket';
 import { formatTime12Hour } from '../../utils/formatTime';
+import { toast } from 'react-hot-toast';
 
 const historyTabs = ['Chat', 'Calls', 'Wallet', 'Orders', 'Poojas'];
 
@@ -173,20 +174,9 @@ const OrderHistory = () => {
     setIsConfirmModalOpen(true);
   };
 
-  const handleSingleDelete = async (id, type) => {
-    if (!window.confirm("Are you sure you want to delete this history?")) return;
-    try {
-      setIsLoading(true);
-      await deleteUserHistory({ ids: [id], type });
-      if (type === 'chat') setSessions(prev => prev.filter(x => x._id !== id));
-      if (type === 'call') setCalls(prev => prev.filter(x => x._id !== id));
-      if (type === 'pooja') setPoojas(prev => prev.filter(x => x._id !== id));
-      if (type === 'order') setStoreOrders(prev => prev.filter(x => x._id !== id));
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete history');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleSingleDelete = (id) => {
+    setSelectedIds([id]);
+    setIsConfirmModalOpen(true);
   };
 
   const executeDelete = async () => {
@@ -213,7 +203,7 @@ const OrderHistory = () => {
       setSelectedIds([]);
       setIsConfirmModalOpen(false);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete history');
+      toast.error(err.response?.data?.message || 'Failed to delete history');
     } finally {
       setIsLoading(false);
     }
@@ -342,7 +332,7 @@ const OrderHistory = () => {
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
-                            handleSingleDelete(item._id, 'chat'); 
+                            handleSingleDelete(item._id); 
                           }}
                           className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors self-start"
                         >
@@ -439,7 +429,7 @@ const OrderHistory = () => {
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
-                            handleSingleDelete(item._id, 'call'); 
+                            handleSingleDelete(item._id); 
                           }}
                           className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors self-start"
                         >
@@ -734,7 +724,10 @@ const OrderHistory = () => {
             </div>
             <div className="p-4 bg-gray-50 flex gap-3 border-t border-gray-100">
               <button 
-                onClick={() => setIsConfirmModalOpen(false)}
+                onClick={() => {
+                  setIsConfirmModalOpen(false);
+                  if (!isSelectionMode) setSelectedIds([]);
+                }}
                 className="flex-1 py-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 Cancel
