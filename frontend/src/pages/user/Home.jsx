@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, Sun, Grid, Target, MessageCircle, Phone, Lock, BadgeCheck, ShieldCheck, Bell, ChevronRight, Calendar, Clock, Star, Menu, Plus, Wallet } from 'lucide-react';
+import { Search, Sun, Grid, Target, MessageCircle, Phone, Lock, BadgeCheck, ShieldCheck, Bell, ChevronRight, Calendar, Clock, Star, Menu, Plus, Wallet, Heart, Users } from 'lucide-react';
 import { fetchProfileThunk } from '../../store/slices/authSlice';
 import { fetchUserHomeDataThunk } from '../../store/slices/dashboardSlice';
 import NotificationDropdown from '../../components/NotificationDropdown';
@@ -157,69 +157,62 @@ const Home = () => {
   return (
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
-      {/* ═══ PEACH HEADER ═══ */}
-      <div className="bg-gradient-to-b from-[#ffe4c4] via-[#fff0e0] to-white pt-3 pb-2 px-5 sticky top-0 z-50">
+      {/* ═══ HEADER ═══ */}
+      <div className="bg-white pt-4 pb-2 px-5 sticky top-0 z-50">
         {/* Top Navbar */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="relative cursor-pointer" onClick={openSidebar}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center text-[#ff8c00] font-bold text-lg bg-white shadow-sm border border-orange-100">
+              <div className="w-[42px] h-[42px] rounded-full flex items-center justify-center bg-[#ff8c00] text-white font-bold text-lg shadow-sm">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'N'}
               </div>
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
             <div className="flex flex-col">
               <span className="text-gray-900 font-bold text-[16px] tracking-wide leading-tight">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
-              <span className="text-gray-500 text-[12px] font-medium">Welcome back!</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => navigate('/user/recharge')}
-              className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-white shadow-sm border border-gray-100 transition-transform active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 transition-transform active:scale-95"
             >
-              <div className="w-5 h-5 flex items-center justify-center">
-                <Wallet size={16} className="text-[#ff8c00]" fill="currentColor" />
-              </div>
-              <span className="text-gray-900 text-[13px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
-              <div className="w-5 h-5 rounded-full bg-orange-50 flex items-center justify-center">
-                <Plus size={14} className="text-[#ff8c00] font-bold" strokeWidth={3} />
-              </div>
+              <Wallet size={15} className="text-[#ff8c00]" fill="currentColor" />
+              <span className="text-[#ff8c00] text-[13px] font-bold">₹ {Math.floor(user?.wallet || 0)}</span>
             </button>
             
-            <div className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white cursor-pointer shadow-sm border border-gray-100">
-              <NotificationDropdown iconSize={18} iconClassName="text-gray-700 w-full h-full flex items-center justify-center" />
-              {/* Notification dot (assuming the dropdown handles it, but adding a static one for visuals if needed) */}
-              <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#ff8c00] rounded-full border-2 border-white"></div>
+            <div className="relative w-[34px] h-[34px] flex items-center justify-center rounded-full bg-orange-50 cursor-pointer">
+              <NotificationDropdown iconSize={16} iconClassName="text-[#ff8c00] w-full h-full flex items-center justify-center" />
+              <div className="absolute top-0 right-0 w-2 h-2 bg-[#ff8c00] rounded-full border border-white"></div>
             </div>
           </div>
         </div>
 
         {/* Search Bar */}
         <div 
-          className="w-full bg-white rounded-full py-3 px-4 flex items-center gap-3 shadow-sm cursor-pointer border border-gray-100"
+          className="w-full bg-gray-50 rounded-xl py-3 px-4 flex items-center gap-3 cursor-pointer border border-gray-100"
           onClick={() => navigate('/user/search')}
         >
-          <Search size={18} className="text-[#ff8c00]" />
+          <Search size={18} className="text-gray-400" />
           <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
         </div>
       </div>
 
       {/* ═══ QUICK SERVICES ═══ */}
-      <div className="flex justify-between gap-2 px-4 mb-4 mt-1 w-full relative z-10">
+      <div className="flex justify-between gap-2 px-4 mb-4 mt-2 w-full relative z-10">
         {[
           { name: 'Daily\nHoroscope', icon: <Sun size={24} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
           { name: 'Free\nKundli', icon: <Grid size={24} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
-          { name: 'Kundli\nMatching', icon: <Target size={24} strokeWidth={2.5} className="text-white" />, path: '/user/matchmaking' },
+          { name: 'Kundli\nMatch', icon: <Heart size={24} strokeWidth={2.5} className="text-white" />, path: '/user/matchmaking' },
           { name: 'Panchang', icon: <Calendar size={24} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
           { name: 'Shubh\nMuhurat', icon: <Clock size={24} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
           <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-16">
-            <div className="w-[52px] h-[52px] bg-[#ff8c00] rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
+            <div className="w-[52px] h-[52px] bg-[#ff8c00] rounded-[18px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
               {service.icon}
             </div>
-            <span className="text-[11px] text-gray-800 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
+            <span className="text-[10px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
           </div>
         ))}
       </div>
@@ -264,8 +257,8 @@ const Home = () => {
       )}
 
       {/* ═══ OUR SERVICES GRID ═══ */}
-      <div className="px-5 mb-3 relative z-10">
-        <div className="flex justify-between items-center mb-2">
+      <div className="px-5 mb-5 relative z-10">
+        <div className="flex justify-between items-center mb-3">
           <h2 className="text-[18px] font-bold text-gray-900">Our Services</h2>
           <span 
             onClick={() => navigate('/user/astrologers')}
@@ -274,22 +267,19 @@ const Home = () => {
             View All
           </span>
         </div>
-        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 pt-1 -mx-5 px-5">
+        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
           {[
-            { name: 'Chat', subtitle: '', icon: <MessageCircle size={20} className="text-[#ff8c00]" fill="currentColor" />, path: '/user/astrologers?type=chat' },
-            { name: 'Call', subtitle: '', icon: <Phone size={20} className="text-[#ff8c00]" fill="currentColor" />, path: '/user/astrologers?type=call' },
-            { name: 'Video Call', subtitle: '', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/video-call' },
-            { name: 'Pooja', subtitle: 'Book Pooja', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>, path: '/user/store', state: { category: 'Pooja' } },
-            { name: 'Store', subtitle: 'Astro Products', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store' },
+            { name: 'Chat', icon: <MessageCircle size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers?type=chat' },
+            { name: 'Call', icon: <Phone size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers?type=call' },
+            { name: 'Video Call', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/video-call' },
+            { name: 'People', icon: <Users size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers' },
+            { name: 'Store', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store' },
           ].map((service, idx) => (
-            <div key={idx} onClick={() => navigate(service.path, { state: service.state })} className="shrink-0 flex flex-col items-center cursor-pointer group w-[90px]">
-              <div className="w-[85px] h-[105px] bg-white rounded-2xl flex flex-col items-center justify-center shadow-sm border border-gray-100 group-hover:shadow-md transition-all relative overflow-hidden">
-                 <div className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    {service.icon}
-                 </div>
-                 <span className="text-[12px] text-gray-900 font-bold mb-0.5 whitespace-nowrap">{service.name}</span>
-                 {service.subtitle && <span className="text-[10px] text-gray-400 font-medium text-center px-1 leading-tight whitespace-nowrap">{service.subtitle}</span>}
+            <div key={idx} onClick={() => navigate(service.path, { state: service.state })} className="shrink-0 flex flex-col items-center cursor-pointer group w-16">
+              <div className="w-[56px] h-[56px] rounded-full bg-orange-50 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                {service.icon}
               </div>
+              <span className="text-[11px] text-gray-700 font-semibold text-center whitespace-nowrap">{service.name}</span>
             </div>
           ))}
         </div>
@@ -313,27 +303,27 @@ const Home = () => {
           </div>
 
           {userHome?.activeSession ? (
-            <div className="bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="relative">
-                  <img src={userHome.activeSession.avatar} alt={userHome.activeSession.name} className="w-[60px] h-[60px] rounded-full object-cover border-[1.5px] border-orange-200" />
-                  <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm" />
+            <div className="bg-white rounded-[16px] p-3 border border-gray-100 shadow-sm flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <img src={userHome.activeSession.avatar} alt={userHome.activeSession.name} className="w-[42px] h-[42px] rounded-full object-cover bg-gray-100" />
+                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-[17px] leading-tight">{userHome.activeSession.name}</h3>
-                  <p className="text-[12px] text-gray-400 font-semibold mt-1 tracking-wide uppercase">{userHome.activeSession.date}</p>
+                <div className="flex flex-col">
+                  <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-0.5">{userHome.activeSession.name}</h3>
+                  <p className="text-[10px] text-gray-500 font-semibold uppercase">{userHome.activeSession.date}</p>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex items-center gap-2 shrink-0">
                 <button 
                   onClick={() => handleViewChat(userHome.activeSession)} 
-                  className="flex-1 bg-white border border-[#ff8c00] text-[#ff8c00] hover:bg-orange-50 font-bold py-2.5 rounded-full text-[14px] shadow-sm transition-colors"
+                  className="px-3 py-1.5 rounded-full border border-[#ff8c00] text-[#ff8c00] text-[11px] font-bold hover:bg-orange-50 transition-colors"
                 >
                   View Chat
                 </button>
                 <button 
                   onClick={() => handleChatAgain(userHome.activeSession)} 
-                  className="flex-1 bg-[#ff8c00] hover:bg-orange-600 text-white font-bold py-2.5 rounded-full text-[14px] shadow-sm transition-colors"
+                  className="px-3 py-1.5 rounded-full bg-[#ff8c00] text-white text-[11px] font-bold hover:bg-orange-600 transition-colors shadow-sm"
                 >
                   Chat Again
                 </button>
@@ -370,19 +360,17 @@ const Home = () => {
 
       {/* ═══ TOP VERIFIED ASTROLOGERS ═══ */}
       {userHome?.featuredAstrologers?.length > 0 && (
-        <div className="px-5 mb-3 relative z-10">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-[19px] font-bold text-gray-900 flex items-center gap-1">
-              Top Verified Astrologers <ChevronRight size={18} className="text-gray-900" strokeWidth={3} />
-            </h2>
+        <div className="px-5 mb-6 relative z-10">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-[18px] font-bold text-gray-900">Top Verified Astrologers</h2>
             <span 
               onClick={() => navigate('/user/astrologers')} 
-              className="text-[14px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors"
+              className="text-[13px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors"
             >
               View All
             </span>
           </div>
-          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pt-1 -mx-5 px-5">
+          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pt-1">
             {userHome.featuredAstrologers.map((astro, i) => {
               const isOffline = astro.onlineStatus === 'offline';
               const isBusy = astro.onlineStatus === 'busy';
@@ -391,55 +379,55 @@ const Home = () => {
               <div 
                 key={i} 
                 onClick={() => navigate('/user/astrologers')}
-                className={`shrink-0 w-[290px] bg-white rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.06)] border border-gray-100 p-3 cursor-pointer group hover:-translate-y-1 transition-transform relative flex gap-3 ${isOffline ? 'grayscale opacity-60' : ''}`}
+                className={`shrink-0 w-[150px] bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer group hover:shadow-md transition-shadow relative flex flex-col overflow-hidden ${isOffline ? 'grayscale opacity-60' : ''}`}
               >
-                {/* Left Image */}
-                <div className="relative w-[90px] h-[95px] rounded-xl overflow-hidden shrink-0 border border-gray-100 bg-gray-50">
+                {/* Top Image */}
+                <div className="w-full h-[110px] bg-gray-100 relative">
                   <img 
                     src={astro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astro.name)}&background=ffedD5&color=f97316`} 
                     alt={astro.name} 
                     className="w-full h-full object-cover"
                   />
                   {isOffline ? (
-                    <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-gray-400 rounded-full border border-white"></div>
+                    <div className="absolute -bottom-1.5 right-2 w-3.5 h-3.5 bg-gray-400 rounded-full border-2 border-white z-10"></div>
                   ) : isBusy ? (
-                    <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></div>
+                    <div className="absolute -bottom-1.5 right-2 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white z-10"></div>
                   ) : (
-                    <div className="absolute bottom-1 right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
+                    <div className="absolute -bottom-1.5 right-2 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white z-10"></div>
                   )}
                 </div>
                 
-                {/* Right Content */}
-                <div className="flex flex-col flex-1 min-w-0 py-1">
-                  <h3 className="font-bold text-[16px] text-gray-900 mb-0.5 truncate capitalize">{astro.name}</h3>
-                  <div className="flex items-center text-[12px] text-gray-500 font-medium mb-3">
+                {/* Details */}
+                <div className="p-3 flex flex-col flex-1">
+                  <h3 className="font-bold text-[14px] text-gray-900 mb-0.5 truncate capitalize">{astro.name}</h3>
+                  <p className="text-[11px] text-gray-500 mb-2 truncate">{astro.skills?.slice(0,2)?.join(', ') || 'Vedic Astrology'}</p>
+                  
+                  <div className="flex items-center text-[12px] text-gray-900 font-semibold mb-3">
                     <Star size={12} fill="#eab308" className="text-yellow-500 mr-1" />
-                    <span className="text-gray-900 font-bold mr-1">{astro.rating || 4.9}</span> 
-                    <span className="mx-1 text-gray-300">|</span> 
-                    <span className="truncate ml-1">{astro.skills?.slice(0,2)?.join(', ') || 'Vedic Astrology'}</span>
+                    <span>{astro.rating || 4.5}</span> 
                   </div>
                   
                   {/* Buttons */}
                   <div className="mt-auto flex gap-2 w-full">
                     {isOffline ? (
-                      <button disabled className="flex-1 py-1.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-400 text-[13px] font-bold cursor-not-allowed">
+                      <button disabled className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-400 text-[12px] font-bold cursor-not-allowed">
                         Offline
                       </button>
                     ) : isBusy ? (
-                      <button disabled className="flex-1 py-1.5 rounded-xl bg-red-50 border border-red-100 text-red-400 text-[13px] font-bold cursor-not-allowed">
+                      <button disabled className="flex-1 py-1.5 rounded-lg bg-red-50 text-red-400 text-[12px] font-bold cursor-not-allowed">
                         Busy
                       </button>
                     ) : (
                       <>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'chat'); }}
-                          className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors"
+                          className="flex-1 py-1.5 rounded-lg bg-orange-50 text-[#ff8c00] text-[12px] font-bold hover:bg-orange-100 transition-colors"
                         >
                           Chat
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'call'); }}
-                          className="flex-1 py-1.5 rounded-xl bg-orange-50/30 border border-orange-200 text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors"
+                          className="flex-1 py-1.5 rounded-lg bg-[#ff8c00] text-white text-[12px] font-bold hover:bg-orange-600 transition-colors"
                         >
                           Call
                         </button>
@@ -455,30 +443,34 @@ const Home = () => {
 
 
 
-      {/* ═══ JYOTISHLINK SERVICES ═══ */}
-      <div className="px-5 mb-3 relative z-10">
+      {/* ═══ JYOTISHLINK STORE ═══ */}
+      <div className="px-5 mb-5 relative z-10">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-[19px] font-bold text-[#1f2937]">JyotishLink Services</h2>
+          <h2 className="text-[18px] font-bold text-gray-900">JyotishLink Store</h2>
           <span
             onClick={() => navigate('/user/store')}
-            className="text-[14px] text-[#ff8c00] font-bold cursor-pointer flex items-center gap-1"
+            className="text-[13px] text-[#ff8c00] font-bold cursor-pointer flex items-center gap-1 hover:text-orange-600"
           >
             Visit Store <span className="text-lg leading-none">&rarr;</span>
           </span>
         </div>
         
         <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-          {(userHome?.services?.length > 0 ? userHome.services : [{name: 'Bracelets', img: '/store_bracelet.png'}, {name: 'Rudraksha', img: '/store_rudraksha.png'}]).map((item, i) => (
+          {(userHome?.services?.length > 0 ? userHome.services : [
+            {name: 'Bracelets', img: '/store_bracelet.png'}, 
+            {name: 'Rudraksha', img: '/store_rudraksha.png'},
+            {name: 'Crystals', img: '/store_crystal.png'}
+          ]).map((item, i) => (
             <div 
               key={i} 
-              className="flex flex-col gap-1.5 shrink-0 w-[90px] cursor-pointer group items-center"
+              className="flex flex-col gap-2 shrink-0 w-[90px] cursor-pointer group items-center"
               onClick={() => navigate('/user/store', { state: { category: item.name } })}
             >
-              <div className="w-[90px] h-[90px] bg-white rounded-[20px] flex items-center justify-center shadow-sm border border-gray-100 group-hover:shadow-md transition-shadow overflow-hidden p-2">
-                <img src={item.img} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+              <div className="w-[90px] h-[90px] rounded-[18px] flex items-center justify-center overflow-hidden">
+                <img src={item.img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
               </div>
-              <div className="mt-1 px-1 text-center">
-                <span className="block text-[12px] text-gray-800 font-bold">{item.name}</span>
+              <div className="px-1 text-center">
+                <span className="block text-[11px] text-gray-700 font-semibold">{item.name}</span>
               </div>
             </div>
           ))}
@@ -506,19 +498,18 @@ const Home = () => {
       </div>
 
       {/* ═══ TRUST BADGES ═══ */}
-      <div className="px-5 py-4 bg-[#fffdf5] border-y border-[#ffeac2]">
-        <p className="text-center text-[12px] text-[#8c7462] font-semibold mb-4">With verified astrologers your details are Private & Confidential!</p>
-        <div className="flex justify-between items-start px-4">
+      <div className="px-5 py-4 bg-orange-50/50 mb-6">
+        <div className="flex justify-between items-start px-2">
           {[
-            { name: 'Private &\nConfidential', icon: <Lock size={20} className="text-[#ff8c00]" /> },
-            { name: 'Verified\nAstrologers', icon: <BadgeCheck size={20} className="text-[#ff8c00]" /> },
-            { name: 'Secure\nPayments', icon: <ShieldCheck size={20} className="text-[#ff8c00]" /> },
+            { name: 'Private &\nConfidential', icon: <Lock size={18} className="text-[#ff8c00]" /> },
+            { name: 'Verified\nAstrologers', icon: <BadgeCheck size={18} className="text-[#ff8c00]" /> },
+            { name: 'Secure\nPayments', icon: <ShieldCheck size={18} className="text-[#ff8c00]" /> },
           ].map((item, idx) => (
-            <div key={idx} className="flex flex-col items-center text-center gap-2">
-              <div className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-sm border border-[#ffe0c2]">
+            <div key={idx} className="flex flex-col items-center text-center gap-2 w-1/3">
+              <div className="flex items-center justify-center">
                 {item.icon}
               </div>
-              <span className="text-[11px] text-gray-700 font-bold whitespace-pre-line leading-tight">{item.name}</span>
+              <span className="text-[10px] text-gray-600 font-semibold whitespace-pre-line leading-tight">{item.name}</span>
             </div>
           ))}
         </div>
