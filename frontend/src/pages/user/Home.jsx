@@ -158,54 +158,54 @@ const Home = () => {
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-[#ff8c00] rounded-b-[24px] pt-3 pb-4 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="bg-gradient-to-b from-[#ff8c00] to-[#ea580c] rounded-b-[30px] pt-4 pb-6 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         {/* Top Navbar */}
-        <div className="flex items-center justify-between mb-3.5">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
             <div className="relative cursor-pointer" onClick={openSidebar}>
-              <div className="w-[38px] h-[38px] rounded-full flex items-center justify-center bg-white text-[#ff8c00] font-bold text-lg shadow-sm">
+              <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center border-[1.5px] border-white text-white font-bold text-xl shadow-sm">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'N'}
               </div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#ff8c00] rounded-full"></div>
+              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#ea580c] rounded-full"></div>
             </div>
             <div className="flex flex-col">
-              <span className="text-white font-bold text-[15px] tracking-wide leading-tight">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
+              <span className="text-white font-bold text-[17px] tracking-wide leading-tight drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button 
               onClick={() => navigate('/user/recharge')}
-              className="flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full bg-white/20 border border-white/10 transition-transform active:scale-95 shadow-sm"
+              className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-white/20 border border-white/20 transition-transform active:scale-95 shadow-sm backdrop-blur-sm"
             >
-              <div className="w-[16px] h-[13px] bg-pink-500 rounded-sm relative shadow-sm">
-                 <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2 h-1.5 border-t border-l border-r border-[#fcd34d] rounded-t-[3px]"></div>
+              <div className="w-[18px] h-[14px] bg-pink-500 rounded-sm relative shadow-sm">
+                 <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2.5 h-2 border-t border-l border-r border-[#fcd34d] rounded-t-[3px]"></div>
                  <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1.5 h-1.5 bg-[#fcd34d] rounded-full"></div>
               </div>
-              <span className="text-white text-[13px] font-bold">₹ {Math.floor(user?.wallet || 0)}</span>
+              <span className="text-white text-[14px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
               <div className="w-5 h-5 rounded-full bg-[#fcd34d] flex items-center justify-center shadow-sm">
-                <Plus size={14} className="text-[#ff8c00] font-bold" strokeWidth={3} />
+                <Plus size={14} className="text-[#ea580c] font-bold" strokeWidth={3} />
               </div>
             </button>
             
-            <div className="relative w-[34px] h-[34px] flex items-center justify-center rounded-full bg-white/20 border border-white/10 cursor-pointer shadow-sm">
-              <NotificationDropdown iconSize={16} iconClassName="text-white w-full h-full flex items-center justify-center" />
+            <div className="relative w-[38px] h-[38px] flex items-center justify-center rounded-full bg-white/20 border border-white/20 cursor-pointer shadow-sm backdrop-blur-sm">
+              <NotificationDropdown iconSize={18} iconClassName="text-white w-full h-full flex items-center justify-center" />
             </div>
           </div>
         </div>
 
         {/* Search Bar */}
         <div 
-          className="w-full bg-white rounded-full py-2.5 px-4 flex items-center justify-between cursor-pointer shadow-sm"
+          className="w-full bg-white rounded-full py-3.5 px-5 flex items-center justify-between cursor-pointer shadow-sm"
           onClick={() => navigate('/user/search')}
         >
-          <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
-          <Search size={18} className="text-[#ff8c00]" />
+          <span className="text-gray-400 text-[14px] font-medium">Search astrologers, products...</span>
+          <Search size={20} className="text-[#ea580c]" />
         </div>
       </div>
 
       {/* ═══ QUICK SERVICES ═══ */}
-      <div className="flex justify-between gap-2 px-4 mb-4 mt-5 w-full relative z-10">
+      <div className="flex justify-between px-3.5 sm:px-5 mb-6 mt-6 w-full relative z-10 max-w-full overflow-hidden">
         {[
           { name: 'Daily\nHoroscope', icon: <Sun size={24} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
           { name: 'Free\nKundli', icon: <Grid size={24} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
@@ -213,18 +213,18 @@ const Home = () => {
           { name: 'Panchang', icon: <Calendar size={24} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
           { name: 'Shubh\nMuhurat', icon: <Clock size={24} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
-          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-[68px]">
-            <div className="w-[58px] h-[58px] bg-[#ff8c00] rounded-[20px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
+          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-[60px] sm:w-[68px] shrink-0">
+            <div className="w-[52px] h-[52px] sm:w-[62px] sm:h-[62px] bg-[#ff8c00] rounded-[18px] sm:rounded-[22px] flex items-center justify-center shadow-[0_8px_15px_rgba(255,140,0,0.3)] group-hover:scale-105 transition-transform active:scale-95 border border-orange-100/20">
               {service.icon}
             </div>
-            <span className="text-[11px] text-gray-800 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
+            <span className="text-[10px] sm:text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
           </div>
         ))}
       </div>
 
       {/* ═══ DYNAMIC BANNERS CAROUSEL (TOP) ═══ */}
       {topBanners.length > 0 && (
-        <div className="mb-4 relative z-10">
+        <div className="mb-4 relative z-10 w-full overflow-hidden">
           <div 
             ref={scrollRef}
             onScroll={handleBannerScroll}
@@ -233,7 +233,7 @@ const Home = () => {
             {topBanners.map((banner, idx) => (
               <div 
                 key={banner._id || idx} 
-                className="w-[92vw] sm:w-[400px] h-[175px] shrink-0 snap-center rounded-[24px] overflow-hidden shadow-md relative cursor-pointer bg-gray-50"
+                className="w-[calc(100vw-40px)] sm:w-[400px] h-[145px] shrink-0 snap-center rounded-[20px] overflow-hidden shadow-sm relative cursor-pointer bg-gray-50"
                 onClick={() => {
                   if (banner.linkUrl) {
                     if (banner.linkUrl.startsWith('http')) {
@@ -250,7 +250,7 @@ const Home = () => {
           </div>
           
           {/* Pagination Dots Indicator */}
-          <div className="flex justify-center gap-1.5 mt-2">
+          <div className="flex justify-center gap-1.5 mt-1.5">
             {topBanners.map((_, idx) => (
               <div 
                 key={idx} 
@@ -260,6 +260,25 @@ const Home = () => {
           </div>
         </div>
       )}
+
+      {/* ═══ GOT ANY QUESTIONS BANNER ═══ */}
+      <div className="px-5 mb-6 relative z-10">
+        <div 
+          onClick={() => handleChatCallAction('/user/astrologers')}
+          className="rounded-[20px] py-3.5 px-4 relative overflow-hidden shadow-md flex items-center justify-between cursor-pointer group bg-gradient-to-r from-[#802c1f] to-[#cf4b16]"
+        >
+          <div className="flex items-center gap-3.5 relative z-10">
+            <div className="w-[44px] h-[44px] rounded-full bg-white/20 flex items-center justify-center shrink-0 border border-white/10">
+              <MessageCircle size={22} className="text-white" fill="none" strokeWidth={1.5} />
+            </div>
+            <div className="flex flex-col">
+              <h3 className="text-white font-bold text-[16px] mb-0.5 leading-tight tracking-wide">Got any questions?</h3>
+              <p className="text-white/90 text-[12px] font-medium">Chat with Astrologer @ ₹5/min</p>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-white/90 relative z-10" />
+        </div>
+      </div>
 
       {/* ═══ OUR SERVICES GRID ═══ */}
       <div className="px-5 mb-5 relative z-10">
