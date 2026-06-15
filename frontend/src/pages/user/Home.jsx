@@ -158,37 +158,37 @@ const Home = () => {
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-gradient-to-b from-[#ff8c00] to-[#ea580c] rounded-b-[30px] pt-4 pb-6 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="bg-gradient-to-b from-[#ff8c00] to-[#ea580c] rounded-b-[24px] pt-3 pb-4 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         {/* Top Navbar */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="flex items-center gap-2.5">
             <div className="relative cursor-pointer" onClick={openSidebar}>
-              <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center border-[1.5px] border-white text-white font-bold text-xl shadow-sm">
+              <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center border-[1.5px] border-white text-white font-bold text-lg shadow-sm">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'N'}
               </div>
-              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[#ea580c] rounded-full"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#ea580c] rounded-full"></div>
             </div>
             <div className="flex flex-col">
-              <span className="text-white font-bold text-[17px] tracking-wide leading-tight drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
+              <span className="text-white font-bold text-[16px] tracking-wide leading-tight drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => navigate('/user/recharge')}
-              className="flex items-center gap-2 pl-3 pr-1.5 py-1.5 rounded-full bg-white/20 border border-white/20 transition-transform active:scale-95 shadow-sm backdrop-blur-sm"
+              className="flex items-center gap-1.5 pl-2.5 pr-1 py-1 rounded-full bg-white/20 border border-white/20 transition-transform active:scale-95 shadow-sm backdrop-blur-sm"
             >
-              <div className="w-[18px] h-[14px] bg-pink-500 rounded-sm relative shadow-sm">
-                 <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2.5 h-2 border-t border-l border-r border-[#fcd34d] rounded-t-[3px]"></div>
+              <div className="w-[16px] h-[13px] bg-pink-500 rounded-sm relative shadow-sm">
+                 <div className="absolute -top-[3px] left-1/2 -translate-x-1/2 w-2 h-1.5 border-t border-l border-r border-[#fcd34d] rounded-t-[3px]"></div>
                  <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1.5 h-1.5 bg-[#fcd34d] rounded-full"></div>
               </div>
-              <span className="text-white text-[14px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
+              <span className="text-white text-[13px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
               <div className="w-5 h-5 rounded-full bg-[#fcd34d] flex items-center justify-center shadow-sm">
                 <Plus size={14} className="text-[#ea580c] font-bold" strokeWidth={3} />
               </div>
             </button>
             
-            <div className="relative w-[38px] h-[38px] flex items-center justify-center rounded-full bg-white/20 border border-white/20 cursor-pointer shadow-sm backdrop-blur-sm">
+            <div className="relative w-[36px] h-[36px] flex items-center justify-center rounded-full bg-white/20 border border-white/20 cursor-pointer shadow-sm backdrop-blur-sm">
               <NotificationDropdown iconSize={18} iconClassName="text-white w-full h-full flex items-center justify-center" />
             </div>
           </div>
@@ -196,11 +196,11 @@ const Home = () => {
 
         {/* Search Bar */}
         <div 
-          className="w-full bg-white rounded-full py-3.5 px-5 flex items-center justify-between cursor-pointer shadow-sm"
+          className="w-full bg-white rounded-full py-2.5 px-4 flex items-center justify-between cursor-pointer shadow-sm"
           onClick={() => navigate('/user/search')}
         >
-          <span className="text-gray-400 text-[14px] font-medium">Search astrologers, products...</span>
-          <Search size={20} className="text-[#ea580c]" />
+          <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
+          <Search size={18} className="text-[#ea580c]" />
         </div>
       </div>
 
@@ -296,7 +296,7 @@ const Home = () => {
             { name: 'Chat', icon: <MessageCircle size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers?type=chat' },
             { name: 'Call', icon: <Phone size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers?type=call' },
             { name: 'Video Call', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/video-call' },
-            { name: 'People', icon: <Users size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers' },
+            { name: 'Pooja', icon: <Star size={22} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/pooja' },
             { name: 'Store', icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#ff8c00]"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store' },
           ].map((service, idx) => (
             <div key={idx} onClick={() => navigate(service.path, { state: service.state })} className="shrink-0 flex flex-col items-center cursor-pointer group w-16">
@@ -327,27 +327,27 @@ const Home = () => {
           </div>
 
           {userHome?.activeSession ? (
-            <div className="bg-white rounded-[16px] p-3 border border-gray-100 shadow-sm flex items-center justify-between">
+            <div className="bg-white rounded-[16px] p-4 border border-gray-100 shadow-sm flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <div className="relative shrink-0">
-                  <img src={userHome.activeSession.avatar} alt={userHome.activeSession.name} className="w-[42px] h-[42px] rounded-full object-cover bg-gray-100" />
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
+                  <img src={userHome.activeSession.avatar} alt={userHome.activeSession.name} className="w-[48px] h-[48px] rounded-full object-cover bg-gray-100" />
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
                 </div>
                 <div className="flex flex-col">
-                  <h3 className="font-bold text-gray-900 text-[14px] leading-tight mb-0.5">{userHome.activeSession.name}</h3>
-                  <p className="text-[10px] text-gray-500 font-semibold uppercase">{userHome.activeSession.date}</p>
+                  <h3 className="font-bold text-gray-900 text-[15px] leading-tight mb-0.5">{userHome.activeSession.name}</h3>
+                  <p className="text-[11px] text-gray-500 font-semibold uppercase">{userHome.activeSession.date}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-3">
                 <button 
                   onClick={() => handleViewChat(userHome.activeSession)} 
-                  className="px-3 py-1.5 rounded-full border border-[#ff8c00] text-[#ff8c00] text-[11px] font-bold hover:bg-orange-50 transition-colors"
+                  className="flex-1 py-2 rounded-full border border-[#ff8c00] text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors"
                 >
                   View Chat
                 </button>
                 <button 
                   onClick={() => handleChatAgain(userHome.activeSession)} 
-                  className="px-3 py-1.5 rounded-full bg-[#ff8c00] text-white text-[11px] font-bold hover:bg-orange-600 transition-colors shadow-sm"
+                  className="flex-1 py-2 rounded-full bg-[#ff8c00] text-white text-[13px] font-bold hover:bg-orange-600 transition-colors shadow-sm"
                 >
                   Chat Again
                 </button>
@@ -403,61 +403,58 @@ const Home = () => {
               <div 
                 key={i} 
                 onClick={() => navigate('/user/astrologers')}
-                className={`shrink-0 w-[150px] bg-white rounded-2xl border border-gray-100 shadow-sm cursor-pointer group hover:shadow-md transition-shadow relative flex flex-col overflow-hidden ${isOffline ? 'grayscale opacity-60' : ''}`}
+                className={`shrink-0 w-[270px] bg-white rounded-2xl border border-gray-100 shadow-sm p-3.5 cursor-pointer flex flex-col gap-3.5 group hover:shadow-md transition-shadow relative ${isOffline ? 'grayscale opacity-60' : ''}`}
               >
-                {/* Top Image */}
-                <div className="w-full h-[110px] bg-gray-100 relative">
-                  <img 
-                    src={astro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astro.name)}&background=ffedD5&color=f97316`} 
-                    alt={astro.name} 
-                    className="w-full h-full object-cover"
-                  />
-                  {isOffline ? (
-                    <div className="absolute -bottom-1.5 right-2 w-3.5 h-3.5 bg-gray-400 rounded-full border-2 border-white z-10"></div>
-                  ) : isBusy ? (
-                    <div className="absolute -bottom-1.5 right-2 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white z-10"></div>
-                  ) : (
-                    <div className="absolute -bottom-1.5 right-2 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white z-10"></div>
-                  )}
-                </div>
-                
-                {/* Details */}
-                <div className="p-3 flex flex-col flex-1">
-                  <h3 className="font-bold text-[14px] text-gray-900 mb-0.5 truncate capitalize">{astro.name}</h3>
-                  <p className="text-[11px] text-gray-500 mb-2 truncate">{astro.skills?.slice(0,2)?.join(', ') || 'Vedic Astrology'}</p>
-                  
-                  <div className="flex items-center text-[12px] text-gray-900 font-semibold mb-3">
-                    <Star size={12} fill="#eab308" className="text-yellow-500 mr-1" />
-                    <span>{astro.rating || 4.5}</span> 
-                  </div>
-                  
-                  {/* Buttons */}
-                  <div className="mt-auto flex gap-2 w-full">
+                <div className="flex items-center gap-3.5">
+                  <div className="relative w-[64px] h-[64px] shrink-0">
+                    <img 
+                      src={astro.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astro.name)}&background=ffedD5&color=f97316`} 
+                      alt={astro.name} 
+                      className="w-full h-full object-cover rounded-full border border-gray-100 shadow-sm"
+                    />
                     {isOffline ? (
-                      <button disabled className="flex-1 py-1.5 rounded-lg bg-gray-100 text-gray-400 text-[12px] font-bold cursor-not-allowed">
-                        Offline
-                      </button>
+                      <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-gray-400 rounded-full border-2 border-white z-10"></div>
                     ) : isBusy ? (
-                      <button disabled className="flex-1 py-1.5 rounded-lg bg-red-50 text-red-400 text-[12px] font-bold cursor-not-allowed">
-                        Busy
-                      </button>
+                      <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white z-10"></div>
                     ) : (
-                      <>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'chat'); }}
-                          className="flex-1 py-1.5 rounded-lg bg-orange-50 text-[#ff8c00] text-[12px] font-bold hover:bg-orange-100 transition-colors"
-                        >
-                          Chat
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'call'); }}
-                          className="flex-1 py-1.5 rounded-lg bg-[#ff8c00] text-white text-[12px] font-bold hover:bg-orange-600 transition-colors"
-                        >
-                          Call
-                        </button>
-                      </>
+                      <div className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white z-10"></div>
                     )}
                   </div>
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                    <h3 className="font-bold text-[16px] text-gray-900 mb-0.5 truncate capitalize">{astro.name}</h3>
+                    <p className="text-[12px] text-gray-500 mb-1.5 truncate">{astro.skills?.slice(0,2)?.join(', ') || 'Vedic Astrology'}</p>
+                    <div className="flex items-center text-[12px] text-gray-900 font-semibold">
+                      <Star size={12} fill="#eab308" className="text-yellow-500 mr-1" />
+                      <span>{astro.rating || 4.5}</span> 
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 mt-1 w-full">
+                  {isOffline ? (
+                    <button disabled className="flex-1 py-1.5 rounded-full bg-gray-100 text-gray-400 text-[12px] font-bold cursor-not-allowed">
+                      Offline
+                    </button>
+                  ) : isBusy ? (
+                    <button disabled className="flex-1 py-1.5 rounded-full bg-red-50 text-red-400 text-[12px] font-bold cursor-not-allowed">
+                      Busy
+                    </button>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'chat'); }}
+                        className="flex-1 py-1.5 rounded-full border border-[#ff8c00] text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors text-center"
+                      >
+                        Chat
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'call'); }}
+                        className="flex-1 py-1.5 rounded-full bg-[#ff8c00] text-white text-[13px] font-bold hover:bg-orange-600 transition-colors shadow-sm text-center"
+                      >
+                        Call
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )})}
