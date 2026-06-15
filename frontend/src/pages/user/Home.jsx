@@ -157,56 +157,57 @@ const Home = () => {
   return (
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
-      {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-gradient-to-b from-[#ff8c00] to-[#ea580c] rounded-b-[30px] pt-3 pb-4 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] backdrop-blur-md bg-opacity-95">
+      {/* ═══ PEACH HEADER ═══ */}
+      <div className="bg-gradient-to-b from-[#ffe4c4] via-[#fff0e0] to-white pt-3 pb-2 px-5 sticky top-0 z-50">
         {/* Top Navbar */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="relative cursor-pointer" onClick={openSidebar}>
-              <div className="w-10 h-10 rounded-full border border-white flex items-center justify-center text-[#ff8c00] font-bold text-lg bg-white">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-[#ff8c00] font-bold text-lg bg-white shadow-sm border border-orange-100">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'N'}
               </div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#ff8c00] rounded-full"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
-            <span className="text-white font-bold text-[16px] tracking-wide drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
+            <div className="flex flex-col">
+              <span className="text-gray-900 font-bold text-[16px] tracking-wide leading-tight">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
+              <span className="text-gray-500 text-[12px] font-medium">Welcome back!</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2.5">
             <button 
               onClick={() => navigate('/user/recharge')}
-              className="flex items-center gap-2 pl-2.5 pr-1 py-1 rounded-full bg-white/20 border border-white/30 transition-transform active:scale-95 shadow-sm"
+              className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full bg-white shadow-sm border border-gray-100 transition-transform active:scale-95"
             >
               <div className="w-5 h-5 flex items-center justify-center">
-                {/* Pink Wallet Icon */}
-                <div className="w-4 h-3.5 bg-pink-500 rounded-sm relative shadow-sm">
-                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-1.5 border-t border-l border-r border-yellow-300 rounded-t-sm"></div>
-                   <div className="absolute top-1/2 right-0.5 -translate-y-1/2 w-1 h-1 bg-yellow-300 rounded-full"></div>
-                </div>
+                <Wallet size={16} className="text-[#ff8c00]" fill="currentColor" />
               </div>
-              <span className="text-white text-[13px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
-              <div className="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center shadow-sm">
-                <Plus size={12} className="text-[#ff8c00] font-bold" strokeWidth={3} />
+              <span className="text-gray-900 text-[13px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
+              <div className="w-5 h-5 rounded-full bg-orange-50 flex items-center justify-center">
+                <Plus size={14} className="text-[#ff8c00] font-bold" strokeWidth={3} />
               </div>
             </button>
             
-            <div className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white/20 border border-white/30 cursor-pointer shadow-sm">
-              <NotificationDropdown iconSize={18} iconClassName="text-white w-full h-full flex items-center justify-center" />
+            <div className="relative w-9 h-9 flex items-center justify-center rounded-full bg-white cursor-pointer shadow-sm border border-gray-100">
+              <NotificationDropdown iconSize={18} iconClassName="text-gray-700 w-full h-full flex items-center justify-center" />
+              {/* Notification dot (assuming the dropdown handles it, but adding a static one for visuals if needed) */}
+              <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#ff8c00] rounded-full border-2 border-white"></div>
             </div>
           </div>
         </div>
 
-        {/* Search Bar (Inside Header) */}
+        {/* Search Bar */}
         <div 
-          className="w-full bg-white rounded-full py-3.5 px-5 flex items-center justify-between shadow-sm cursor-pointer"
+          className="w-full bg-white rounded-full py-3 px-4 flex items-center gap-3 shadow-sm cursor-pointer border border-gray-100"
           onClick={() => navigate('/user/search')}
         >
-          <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
           <Search size={18} className="text-[#ff8c00]" />
+          <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
         </div>
       </div>
 
       {/* ═══ QUICK SERVICES ═══ */}
-      <div className="flex justify-center gap-3 sm:gap-6 px-3 mb-8 mt-6 w-full relative z-10">
+      <div className="flex justify-between gap-2 px-4 mb-4 mt-1 w-full relative z-10">
         {[
           { name: 'Daily\nHoroscope', icon: <Sun size={24} strokeWidth={2.5} className="text-white" />, path: '/user/horoscope' },
           { name: 'Free\nKundli', icon: <Grid size={24} strokeWidth={2.5} className="text-white" />, path: '/user/kundli' },
@@ -214,18 +215,18 @@ const Home = () => {
           { name: 'Panchang', icon: <Calendar size={24} strokeWidth={2.5} className="text-white" />, path: '/user/panchang' },
           { name: 'Shubh\nMuhurat', icon: <Clock size={24} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
-          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-[64px]">
-            <div className="w-[56px] h-[56px] bg-[#ff8c00] rounded-[20px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
+          <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-16">
+            <div className="w-[52px] h-[52px] bg-[#ff8c00] rounded-full flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform active:scale-95">
               {service.icon}
             </div>
-            <span className="text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
+            <span className="text-[11px] text-gray-800 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
           </div>
         ))}
       </div>
 
       {/* ═══ DYNAMIC BANNERS CAROUSEL (TOP) ═══ */}
       {topBanners.length > 0 && (
-        <div className="mb-6 relative z-10">
+        <div className="mb-4 relative z-10">
           <div 
             ref={scrollRef}
             onScroll={handleBannerScroll}
@@ -263,8 +264,8 @@ const Home = () => {
       )}
 
       {/* ═══ OUR SERVICES GRID ═══ */}
-      <div className="px-5 mb-8 relative z-10">
-        <div className="flex justify-between items-center mb-4">
+      <div className="px-5 mb-3 relative z-10">
+        <div className="flex justify-between items-center mb-2">
           <h2 className="text-[18px] font-bold text-gray-900">Our Services</h2>
           <span 
             onClick={() => navigate('/user/astrologers')}
@@ -296,8 +297,8 @@ const Home = () => {
 
       {/* ═══ MY SESSIONS / EXCLUSIVE OFFER (Moved up here) ═══ */}
       {(userHome?.activeSession || (user && user.freeChatUsed === false)) && (
-        <div className="px-5 mb-8 relative z-10 bg-white">
-          <div className="flex justify-between items-center mb-4">
+        <div className="px-5 mb-3 relative z-10 bg-white">
+          <div className="flex justify-between items-center mb-2">
             <h2 className="text-[19px] font-bold text-gray-900">
               {userHome?.activeSession ? "My Sessions" : "Exclusive Offer"}
             </h2>
@@ -369,8 +370,8 @@ const Home = () => {
 
       {/* ═══ TOP VERIFIED ASTROLOGERS ═══ */}
       {userHome?.featuredAstrologers?.length > 0 && (
-        <div className="px-5 mb-8 relative z-10">
-          <div className="flex justify-between items-center mb-5">
+        <div className="px-5 mb-3 relative z-10">
+          <div className="flex justify-between items-center mb-3">
             <h2 className="text-[19px] font-bold text-gray-900 flex items-center gap-1">
               Top Verified Astrologers <ChevronRight size={18} className="text-gray-900" strokeWidth={3} />
             </h2>
@@ -455,8 +456,8 @@ const Home = () => {
 
 
       {/* ═══ JYOTISHLINK SERVICES ═══ */}
-      <div className="px-5 mb-8 relative z-10">
-        <div className="flex justify-between items-center mb-5">
+      <div className="px-5 mb-3 relative z-10">
+        <div className="flex justify-between items-center mb-3">
           <h2 className="text-[19px] font-bold text-[#1f2937]">JyotishLink Services</h2>
           <span
             onClick={() => navigate('/user/store')}
@@ -485,7 +486,7 @@ const Home = () => {
       </div>
 
       {/* ═══ UNLOCK COSMIC BANNER ═══ */}
-      <div className="px-5 mb-8">
+      <div className="px-5 mb-3">
         <div 
           className="rounded-[24px] p-6 relative overflow-hidden shadow-[0_8px_20px_rgba(255,140,0,0.2)] flex flex-col justify-center items-start bg-gradient-to-r from-[#ff8c00] to-[#f97316]"
         >
@@ -505,8 +506,8 @@ const Home = () => {
       </div>
 
       {/* ═══ TRUST BADGES ═══ */}
-      <div className="px-5 py-8 bg-[#fffdf5] border-y border-[#ffeac2]">
-        <p className="text-center text-[12px] text-[#8c7462] font-semibold mb-6">With verified astrologers your details are Private & Confidential!</p>
+      <div className="px-5 py-4 bg-[#fffdf5] border-y border-[#ffeac2]">
+        <p className="text-center text-[12px] text-[#8c7462] font-semibold mb-4">With verified astrologers your details are Private & Confidential!</p>
         <div className="flex justify-between items-start px-4">
           {[
             { name: 'Private &\nConfidential', icon: <Lock size={20} className="text-[#ff8c00]" /> },
@@ -525,8 +526,8 @@ const Home = () => {
 
       {/* ═══ LIVE ASTROLOGERS ═══ */}
       {userHome?.liveAstrologers?.length > 0 && (
-        <div className="px-5 pt-8 pb-6 relative z-10 bg-white">
-          <div className="flex justify-between items-center mb-6">
+        <div className="px-5 pt-3 pb-3 relative z-10 bg-white">
+          <div className="flex justify-between items-center mb-3">
             <h2 className="text-[19px] font-bold text-gray-900">Live Astrologers</h2>
             <span className="text-[14px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors">View All</span>
           </div>
