@@ -84,16 +84,58 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from './store/slices/authSlice';
 import { useEffect } from 'react';
 import { useGlobalSocket } from './hooks/useGlobalSocket';
+import { usePushNotifications } from './hooks/usePushNotifications';
+import { fetchPublicSettingsThunk } from './store/slices/settingsSlice';
+import getSocket from './socket/socketManager';
 
 const AppContent = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user, token } = useSelector((state) => state.auth) || {};
   const { isAuthenticated: isAdminAuthenticated, user: adminUser } = useSelector((state) => state.adminAuth) || {};
   const { isAuthenticated: isAstrologerAuthenticated, user: astrologerUser } = useSelector((state) => state.astrologerAuth) || {};
+  const { appName, appLogo } = useSelector((state) => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const userRole = user?.role || 'user';
 
   // Initialize Global Sockets
   useGlobalSocket();
+  
+  // Initialize Push Notifications
+  usePushNotifications();
+
+  // Fetch Public App Branding
+  useEffect(() => {
+    dispatch(fetchPublicSettingsThunk());
+    
+    // Listen for real-time updates
+    const socket = getSocket();
+    if (socket) {
+      const handleSettingsUpdate = () => {
+        dispatch(fetchPublicSettingsThunk());
+      };
+      socket.on('settings_updated', handleSettingsUpdate);
+      return () => {
+        socket.off('settings_updated', handleSettingsUpdate);
+      };
+    }
+  }, [dispatch]);
+
+  // Update Document Title and Favicon Dynamically
+  useEffect(() => {
+    if (appName) {
+      document.title = `${appName} | Connect with the Stars`;
+    }
+    if (appLogo) {
+      const link = document.querySelector("link[rel~='icon']");
+      if (link) {
+        link.href = appLogo;
+      } else {
+        const newLink = document.createElement('link');
+        newLink.rel = 'icon';
+        newLink.href = appLogo;
+        document.head.appendChild(newLink);
+      }
+    }
+  }, [appName, appLogo]);
 
   // Clear legacy mock guest state from local storage/Redux
   useEffect(() => {

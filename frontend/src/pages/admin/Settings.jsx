@@ -23,6 +23,7 @@ const AdminSettings = () => {
   
   const [generalSettings, setGeneralSettings] = useState({
     appName: 'JyotishLink',
+    appLogo: '',
     tagline: 'Connect with the Stars',
     supportEmail: 'support@jyotishlink.com',
     supportPhone: '+91 1800 000 000',
@@ -55,9 +56,22 @@ const AdminSettings = () => {
     try {
       await adminApis.updateAdminSettings({ ...generalSettings, maintenanceMode });
       toast.success('Settings saved successfully');
+      // If the admin changes the settings, it might be a good idea to reload after 1 sec so Redux picks it up
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       console.error(err);
       toast.error('Failed to save settings');
+    }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setGeneralSettings(prev => ({ ...prev, appLogo: reader.result }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -158,6 +172,25 @@ const AdminSettings = () => {
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Platform Name</label>
               <input type="text" value={generalSettings.appName} onChange={e => setGeneralSettings({...generalSettings, appName: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">App Logo (Leave blank for default)</label>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                  {generalSettings.appLogo ? (
+                    <img src={generalSettings.appLogo} alt="App Logo" className="w-full h-full object-contain p-1" />
+                  ) : (
+                    <span className="text-[10px] text-gray-400 font-bold">No Logo</span>
+                  )}
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleLogoUpload}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 transition-all cursor-pointer"
+                />
+              </div>
             </div>
 
             <div className="space-y-1.5">

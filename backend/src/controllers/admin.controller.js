@@ -105,7 +105,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     Order.countDocuments(),
     Order.countDocuments({ orderStatus: 'pending' }),
     Transaction.find().sort({ createdAt: -1 }).limit(10).lean(),
-    ChatSession.find({ status: 'ongoing' }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
+    ChatSession.find({ status: 'ongoing', isBotSession: { $ne: true } }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
     CallSession.find({ status: { $in: ['accepted', 'ongoing', 'ringing'] } }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
     Order.find().populate('userId', 'name').sort({ createdAt: -1 }).limit(5).lean(),
     Astrologer.countDocuments({ approvalStatus: 'pending' })
@@ -115,7 +115,21 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
   const chatRevenue = revenueLogs.reduce((acc, log) => acc + (log.adminShare || 0), 0);
 
   const orders = await Order.find().lean();
-  const storeRevenue = orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
+  let storeRevenue = 0;
+  let storeCost = 0;
+  orders.forEach(order => {
+    // Only count orders where money is actually received
+    const isPaid = order.paymentStatus === 'paid';
+    const isCompletedCOD = order.paymentMethod === 'cod' && (order.orderStatus === 'delivered' || order.orderStatus === 'completed');
+    
+    if (isPaid || isCompletedCOD) {
+      storeRevenue += (order.totalAmount || 0);
+      order.items?.forEach(item => {
+        storeCost += (item.costPrice || 0) * (item.quantity || 1);
+      });
+    }
+  });
+  const storeProfit = storeRevenue - storeCost;
 
   const totalRevenue = chatRevenue + storeRevenue;
 
@@ -133,7 +147,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
       astrologerAvatar: s.astrologerId?.avatar || '',
       type: callType,
       duration: s.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(s.createdAt).getTime()) / 60000)) + 'm ongoing' : 'Ongoing',
-      rate: s.isFreeChat ? 0 : (s.astrologerId?.rate || 5)
+      rate: (s.isFreeChat || s.isBotSession) ? 0 : (s.astrologerId?.rate || 5)
     };
   });
 
@@ -187,6 +201,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
         onlineAstrologers: onlineAstrologers,
         pendingOrders: pendingOrders,
         storeRevenue: Math.round(storeRevenue),
+        storeProfit: Math.round(storeProfit),
         pendingApprovals: pendingApprovalsCount
       },
       liveSessions,
@@ -203,7 +218,33 @@ export const getAdminUsers = asyncHandler(async (req, res) => {
     .select('-password -otpHash -otpExpires')
     .sort({ createdAt: -1 })
     .lean();
-  return res.status(200).json(new ApiResponse(200, { users }, 'Users fetched'));
+
+  const transactions = await Transaction.aggregate([
+    { $match: { type: 'deduction', paymentStatus: 'success' } },
+    { $group: { _id: '$userId', totalSpent: { $sum: { $abs: '$amount' } } } }
+  ]);
+
+  const chatSessions = await ChatSession.aggregate([
+    { $match: { status: 'completed' } },
+    { $group: { _id: '$userId', totalSpent: { $sum: { $abs: '$amountDeducted' } } } }
+  ]);
+
+  const callSessions = await CallSession.aggregate([
+    { $match: { status: 'completed' } },
+    { $group: { _id: '$userId', totalSpent: { $sum: { $abs: '$totalAmount' } } } }
+  ]);
+  
+  const spentMap = {};
+  transactions.forEach(t => spentMap[t._id.toString()] = (spentMap[t._id.toString()] || 0) + t.totalSpent);
+  chatSessions.forEach(c => spentMap[c._id.toString()] = (spentMap[c._id.toString()] || 0) + c.totalSpent);
+  callSessions.forEach(c => spentMap[c._id.toString()] = (spentMap[c._id.toString()] || 0) + c.totalSpent);
+
+  const usersWithStats = users.map(u => ({
+    ...u,
+    totalSpent: spentMap[u._id.toString()] || 0
+  }));
+
+  return res.status(200).json(new ApiResponse(200, { users: usersWithStats }, 'Users fetched'));
 });
 
 // PUT /api/admin/users/:id/status
@@ -231,19 +272,31 @@ export const sendBroadcast = asyncHandler(async (req, res) => {
   const { title, message, audience } = req.body;
   if (!title || !message) throw new ApiError(400, 'Title and message are required');
 
-  let filter = { role: 'user' };
+  let userFilter = { role: 'user' };
+  let astroFilter = {};
+
   if (audience === 'New Users') {
     // Users created in the last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    filter.createdAt = { $gte: sevenDaysAgo };
+    userFilter.createdAt = { $gte: sevenDaysAgo };
+    astroFilter.createdAt = { $gte: sevenDaysAgo };
   }
 
-  const users = await User.find(filter).select('_id fcmToken');
-  if (users.length === 0) {
-    return res.status(200).json(new ApiResponse(200, { sent: 0 }, 'No users matched the criteria'));
+  const [users, astrologers] = await Promise.all([
+    User.find(userFilter).select('_id fcmToken'),
+    Astrologer.find(astroFilter).select('_id fcmToken')
+  ]);
+
+  const allTargets = [...users, ...astrologers];
+
+  if (allTargets.length === 0) {
+    return res.status(200).json(new ApiResponse(200, { sent: 0 }, 'No users or astrologers matched the criteria'));
   }
 
+  // Note: Notification model uses userId ref to 'User'. 
+  // We might need to skip inserting into Notification for astrologers if the ref is strict, 
+  // or we can insert them. Astrologers don't have a notification panel fetching from Notification model in the same way, but it's safe if it allows any ObjectId.
   const notifications = users.map(user => ({
     userId: user._id,
     title,
@@ -254,35 +307,19 @@ export const sendBroadcast = asyncHandler(async (req, res) => {
   await Notification.insertMany(notifications);
 
   // Send real Push Notifications via Firebase
-  const adminSDK = getFirebaseAdmin();
-  if (adminSDK) {
-    const tokens = users.map(u => u.fcmToken).filter(t => t);
+  try {
+    const { sendMulticastPushNotification } = await import('../utils/firebaseHelper.js');
+    const tokens = allTargets.map(t => t.fcmToken).filter(t => t);
     
     if (tokens.length > 0) {
-      const payload = {
-        notification: {
-          title: title,
-          body: message
-        },
-        tokens: tokens
-      };
-
-      adminSDK.messaging().sendEachForMulticast(payload)
-        .then((response) => {
-          console.log(`Push Notifications Sent: ${response.successCount} successful, ${response.failureCount} failed.`);
-        })
-        .catch((error) => {
-          console.error('Error sending push notifications:', error);
-        });
+      await sendMulticastPushNotification(tokens, title, message);
     }
+  } catch (err) {
+    console.error('Error sending multicast broadcast:', err);
   }
 
   const io = req.app.get('io');
   if (io) {
-    // Notify connected users in real time
-    // For "All Users" or "New Users", we can broadcast to all connections, 
-    // and let frontend filter, but standard approach is iterating users or just broadcasting.
-    // For simplicity, emit a global event and let active user connections pick it up if they match.
     io.emit('new_notification', {
       title,
       message,
@@ -291,7 +328,7 @@ export const sendBroadcast = asyncHandler(async (req, res) => {
     });
   }
 
-  return res.status(200).json(new ApiResponse(200, { sent: users.length }, 'Broadcast sent successfully'));
+  return res.status(200).json(new ApiResponse(200, { sent: allTargets.length }, 'Broadcast sent successfully'));
 });
 
 // GET /api/admin/astrologers
@@ -409,22 +446,57 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   const updateFields = { orderStatus: status.toLowerCase() };
   if (status.toLowerCase() === 'delivered') {
     updateFields.paymentStatus = 'paid';
-  } else if (status.toLowerCase() === 'cancelled') {
+  }
+
+  let order = await Order.findById(req.params.id);
+  if (!order) throw new ApiError(404, 'Order not found');
+
+  if (status.toLowerCase() === 'cancelled' && order.paymentMethod !== 'cod') {
     updateFields.paymentStatus = 'refunded';
   }
 
-  const order = await Order.findByIdAndUpdate(
+  // Cancel on Shiprocket if status is becoming 'cancelled'
+  if (status.toLowerCase() === 'cancelled' && order.orderStatus !== 'cancelled') {
+    if (order.shiprocketOrderId) {
+      try {
+        await ShiprocketService.cancelOrder(order.shiprocketOrderId);
+      } catch (err) {
+        console.error("Failed to cancel Shiprocket order during status update", err);
+      }
+    }
+    
+    // Process refund if paid via wallet
+    if (order.paymentMethod !== 'cod' && order.paymentStatus !== 'refunded') {
+      const user = await User.findById(order.userId);
+      if (user) {
+        user.wallet = (user.wallet || 0) + order.totalAmount;
+        await user.save();
+        
+        await Transaction.create({
+          userId: order.userId,
+          amount: order.totalAmount,
+          type: 'refund',
+          desc: `Refund for cancelled order #${order._id.toString().slice(-6).toUpperCase()}`,
+          status: 'success'
+        });
+      }
+    }
+  }
+
+  order = await Order.findByIdAndUpdate(
     req.params.id,
     updateFields,
     { new: true }
   );
-  if (!order) throw new ApiError(404, 'Order not found');
 
   // Notify user about order status
+  const title = 'Order Status Updated';
+  const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} has been marked as ${status}.`;
+  
   const notification = await Notification.create({
     userId: order.userId,
-    title: 'Order Status Updated',
-    message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been marked as ${status}.`,
+    title,
+    message,
     type: 'info',
     link: '/user/history?tab=Orders'
   });
@@ -433,6 +505,21 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   const io = req.app.get('io');
   if (io) {
     io.emit(`notification_${order.userId}`, notification);
+    io.to(`room_user_${order.userId}`).emit('order_updated', { order });
+    io.emit('order_updated', { order }); // Broadcast to admin too
+  }
+
+  // Send Push Notification
+  try {
+    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+    await sendPushNotification({
+      userId: order.userId,
+      role: 'user',
+      title,
+      body: message,
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
   }
 
   return res.status(200).json(new ApiResponse(200, { order }, 'Order status updated'));
@@ -440,7 +527,7 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
 // PUT /api/admin/orders/:id/cancel — process cancel request
 export const processCancelRequest = asyncHandler(async (req, res) => {
-  const { action, refundPercent } = req.body; // action: 'approved' or 'rejected'
+  const { action, customRefundAmount } = req.body; // action: 'approved' or 'rejected'
   
   if (!['approved', 'rejected'].includes(action)) {
     throw new ApiError(400, 'Action must be "approved" or "rejected"');
@@ -450,30 +537,48 @@ export const processCancelRequest = asyncHandler(async (req, res) => {
   if (!order) throw new ApiError(404, 'Order not found');
   if (!order.cancelRequest?.requested) throw new ApiError(400, 'No cancel request found for this order');
 
-  const finalRefundPercent = refundPercent || order.cancelRequest.refundPercent || 80;
-  const refundAmount = Math.round((order.totalAmount * finalRefundPercent) / 100);
+  let refundAmount = 0;
+  
+  if (order.paymentMethod !== 'cod') {
+    if (customRefundAmount !== undefined && customRefundAmount !== null) {
+      refundAmount = Number(customRefundAmount);
+    } else {
+      const finalRefundPercent = order.cancelRequest.refundPercent || 80;
+      refundAmount = Math.round((order.totalAmount * finalRefundPercent) / 100);
+    }
+  }
 
   order.cancelRequest.adminResponse = action;
-  order.cancelRequest.refundPercent = finalRefundPercent;
   order.cancelRequest.refundAmount = refundAmount;
 
   if (action === 'approved') {
     order.orderStatus = 'cancelled';
     
-    // Process refund to wallet
-    const user = await User.findById(order.userId);
-    if (user) {
-      user.wallet = (user.wallet || 0) + refundAmount;
-      await user.save();
+    // Process refund to wallet if any refund is applicable
+    if (refundAmount > 0) {
+      const user = await User.findById(order.userId);
+      if (user) {
+        user.wallet = (user.wallet || 0) + refundAmount;
+        await user.save();
 
       // Create refund transaction
       await Transaction.create({
         userId: order.userId,
         amount: refundAmount,
         type: 'refund',
-        desc: `Order cancellation refund (${finalRefundPercent}%) - Order #${order._id.toString().slice(-6).toUpperCase()}`,
+        desc: `Order cancellation refund - Order #${order._id.toString().slice(-6).toUpperCase()}`,
         status: 'success'
       });
+      }
+    }
+
+    // Cancel Shiprocket Order if pushed
+    if (order.shiprocketOrderId) {
+      try {
+        await ShiprocketService.cancelOrder(order.shiprocketOrderId);
+      } catch (err) {
+        console.error("Failed to cancel Shiprocket order", err);
+      }
     }
   }
 
@@ -484,7 +589,7 @@ export const processCancelRequest = asyncHandler(async (req, res) => {
     userId: order.userId,
     title: action === 'approved' ? 'Order Cancelled & Refunded' : 'Cancel Request Rejected',
     message: action === 'approved'
-      ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled. ₹${refundAmount} (${finalRefundPercent}%) refunded to your wallet.`
+      ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled. ₹${refundAmount} refunded to your wallet.`
       : `Your cancel request for order #${order._id.toString().slice(-6).toUpperCase()} has been rejected by admin.`,
     type: action === 'approved' ? 'info' : 'warning',
     link: '/user/history?tab=Orders'
@@ -494,6 +599,17 @@ export const processCancelRequest = asyncHandler(async (req, res) => {
   if (io) {
     io.emit(`notification_${order.userId}`, notification);
   }
+
+  // FCM Notification
+  await sendPushNotification({
+    userId: order.userId.toString(),
+    role: 'user',
+    title: action === 'approved' ? 'Order Cancelled' : 'Cancel Request Rejected',
+    body: action === 'approved'
+      ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled.`
+      : `Your cancel request for order #${order._id.toString().slice(-6).toUpperCase()} has been rejected.`,
+    data: { orderId: order._id.toString() }
+  });
 
   return res.status(200).json(new ApiResponse(200, { order }, `Cancel request ${action}`));
 });
@@ -506,12 +622,11 @@ export const getAdminProducts = asyncHandler(async (req, res) => {
 
 // POST /api/admin/products
 export const createAdminProduct = asyncHandler(async (req, res) => {
-  const { name, description, price, originalPrice, category, image, stock, minStock, sku, featuredSection } = req.body;
+  const { name, description, price, originalPrice, costPrice, discount, category, image, stock, minStock, sku, featuredSection, weight, length, breadth, height } = req.body;
   if (!name || !price || !category) {
     throw new ApiError(400, 'Name, price, and category are required');
   }
   
-  const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) + '%' : '0%';
   const inStock = stock > 0;
 
   let uploadedImage = image || '';
@@ -523,13 +638,17 @@ export const createAdminProduct = asyncHandler(async (req, res) => {
   }
 
   const product = await Product.create({
-    name, description, price, originalPrice, discount, category, 
+    name, description, price, originalPrice, costPrice: costPrice || 0, discount, category, 
     image: uploadedImage,
     cloudinaryPublicId: pubId,
     stock: stock || 0,
     minStock: minStock || 10,
     sku: sku || Math.random().toString(36).substr(2, 6).toUpperCase(),
     featuredSection: featuredSection || 'none',
+    weight: weight || 0.5,
+    length: length || 10,
+    breadth: breadth || 10,
+    height: height || 10,
     inStock
   });
 
@@ -540,9 +659,6 @@ export const createAdminProduct = asyncHandler(async (req, res) => {
 export const updateAdminProduct = asyncHandler(async (req, res) => {
   const updates = req.body;
   
-  if (updates.price && updates.originalPrice) {
-    updates.discount = Math.round(((updates.originalPrice - updates.price) / updates.originalPrice) * 100) + '%';
-  }
   if (updates.stock !== undefined) {
     updates.inStock = updates.stock > 0;
   }
@@ -589,11 +705,29 @@ export const getAdminSettings = asyncHandler(async (req, res) => {
 // PUT /api/admin/settings
 export const updateAdminSettings = asyncHandler(async (req, res) => {
   const update = req.body;
+  
+  if (update.appLogo && update.appLogo.startsWith('data:image')) {
+    const { uploadMedia, deleteMedia } = await import('../config/cloudinary.js');
+    const existingSettings = await SystemSettings.findOne({});
+    if (existingSettings && existingSettings.appLogoPublicId) {
+      await deleteMedia(existingSettings.appLogoPublicId);
+    }
+    const uploadResult = await uploadMedia(update.appLogo, 'astrotalk_branding');
+    update.appLogo = uploadResult.url;
+    update.appLogoPublicId = uploadResult.publicId;
+  }
+
   let settings = await SystemSettings.findOneAndUpdate({}, update, {
     new: true,
     upsert: true,
     runValidators: true,
   });
+
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('settings_updated');
+  }
+
   return res.status(200).json(new ApiResponse(200, { settings }, 'Settings updated'));
 });
 
@@ -813,7 +947,20 @@ export const updateAdminBanner = asyncHandler(async (req, res) => {
   if (!banner) throw new ApiError(404, 'Banner not found');
   
   const io = req.app.get('io');
-  if (io) io.emit('banners_updated');
+  if (io) {
+    io.to(`room_user_${order.userId}`).emit('order_updated', { order });
+  }
+
+  // FCM Notification
+  const dbUser = await User.findById(order.userId);
+  if (dbUser && dbUser.fcmToken) {
+    await fcmService.sendPushNotification(
+      dbUser.fcmToken,
+      'Order Delivered 🎉',
+      `Your order #${order._id.toString().slice(-6).toUpperCase()} has been successfully delivered.`,
+      { orderId: order._id.toString() }
+    );
+  }
   
   return res.status(200).json(new ApiResponse(200, { banner }, 'Banner updated'));
 });
@@ -851,7 +998,7 @@ export const deleteAdminAuditLog = asyncHandler(async (req, res) => {
 
 // GET /api/admin/sessions
 export const getAdminSessions = asyncHandler(async (req, res) => {
-  const sessions = await ChatSession.find()
+  const sessions = await ChatSession.find({ isBotSession: { $ne: true } })
     .populate('userId', 'name avatar')
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
@@ -1051,6 +1198,19 @@ export const processAstrologerPayout = asyncHandler(async (req, res) => {
     io.to(`room_astro_${astrologer._id}`).emit('withdrawal_processed', { withdrawal });
   }
 
+  // Send Push Notification
+  try {
+    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+    await sendPushNotification({
+      userId: astrologer._id,
+      role: 'astrologer',
+      title: 'Withdrawal Approved',
+      body: `Your withdrawal request for ₹${withdrawal.amount} has been approved.`,
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
+  }
+
   return res.status(200).json(new ApiResponse(200, { withdrawal }, 'Payout processed successfully'));
 });
 
@@ -1123,6 +1283,7 @@ export const getAdminPendingCounts = asyncHandler(async (req, res) => {
 });
 
 import ShiprocketService from '../services/shiprocket.service.js';
+import { sendPushNotification } from '../utils/firebaseHelper.js';
 
 // POST /api/admin/orders/:id/shiprocket/push
 export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
@@ -1135,8 +1296,8 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
 
   // Prepare Shiprocket Order Payload
   const orderItems = order.items.map(item => ({
-    name: item.productId.name,
-    sku: item.productId.sku || item.productId._id.toString(),
+    name: item.productId?.name || 'Unknown Product',
+    sku: item.productId?.sku || item.productId?._id?.toString() || item._id.toString(),
     units: item.quantity,
     selling_price: item.price,
     discount: 0,
@@ -1144,28 +1305,45 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
     hsn: ''
   }));
 
+  let totalWeight = 0;
+  let maxLength = 10;
+  let maxBreadth = 10;
+  let maxHeight = 10;
+
+  order.items.forEach(item => {
+    const qty = item.quantity || 1;
+    const pWeight = item.productId?.weight || 0.5;
+    totalWeight += (pWeight * qty);
+
+    if ((item.productId?.length || 10) > maxLength) maxLength = item.productId.length;
+    if ((item.productId?.breadth || 10) > maxBreadth) maxBreadth = item.productId.breadth;
+    if ((item.productId?.height || 10) > maxHeight) maxHeight = item.productId.height;
+  });
+
+  if (totalWeight < 0.05) totalWeight = 0.05; // Minimum weight for Shiprocket
+
   const orderData = {
     order_id: order._id.toString(),
     order_date: order.createdAt.toISOString(),
-    pickup_location: "Primary", // Must match the pickup location added in Shiprocket dashboard
-    billing_customer_name: order.shippingAddress.fullName,
+    pickup_location: "warehouse", // Must match the pickup location added in Shiprocket dashboard
+    billing_customer_name: order.shippingAddress?.fullName || 'Customer',
     billing_last_name: "",
-    billing_address: order.shippingAddress.addressLine,
+    billing_address: order.shippingAddress?.addressLine || 'N/A',
     billing_address_2: "",
-    billing_city: order.shippingAddress.city,
-    billing_pincode: order.shippingAddress.pincode,
-    billing_state: order.shippingAddress.state,
+    billing_city: order.shippingAddress?.city || 'N/A',
+    billing_pincode: order.shippingAddress?.pincode || '000000',
+    billing_state: order.shippingAddress?.state || 'N/A',
     billing_country: "India",
-    billing_email: order.userId.email || "customer@example.com",
-    billing_phone: order.shippingAddress.phone || order.userId.phone,
+    billing_email: order.userId?.email || "customer@jyotishlink.com",
+    billing_phone: order.shippingAddress?.phone || order.userId?.phone || order.userId?.phoneNumber || "0000000000",
     shipping_is_billing: true,
     order_items: orderItems,
     payment_method: order.paymentMethod === 'cod' ? 'COD' : 'Prepaid',
     sub_total: order.totalAmount,
-    length: 10, // Default values if not in product
-    breadth: 10,
-    height: 10,
-    weight: 0.5 // Default weight in kg
+    length: maxLength,
+    breadth: maxBreadth,
+    height: maxHeight,
+    weight: totalWeight
   };
 
   const shiprocketResponse = await ShiprocketService.createOrder(orderData);
@@ -1200,6 +1378,15 @@ export const generateOrderAWB = asyncHandler(async (req, res) => {
     if (io) {
       io.to(`room_user_${order.userId}`).emit('order_updated', { order });
     }
+
+    // FCM Notification
+    await sendPushNotification({
+      userId: order.userId.toString(),
+      role: 'user',
+      title: 'Order Shipped',
+      body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been shipped. AWB: ${order.awbCode}`,
+      data: { orderId: order._id.toString() }
+    });
   } else {
      throw new ApiError(500, 'Failed to generate AWB: ' + JSON.stringify(awbResponse));
   }
@@ -1207,3 +1394,116 @@ export const generateOrderAWB = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { order, awbResponse }, 'AWB generated successfully'));
 });
 
+// GET /api/admin/orders/:id/shiprocket/details
+export const getShiprocketOrderDetails = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) throw new ApiError(404, 'Order not found');
+  if (!order.shiprocketOrderId) throw new ApiError(400, 'Order not pushed to Shiprocket yet');
+
+  const details = await ShiprocketService.getOrderDetails(order.shiprocketOrderId);
+  return res.status(200).json(new ApiResponse(200, { order, shiprocketDetails: details }, 'Shiprocket details fetched successfully'));
+});
+
+// POST /api/admin/shiprocket/webhook
+export const shiprocketWebhook = asyncHandler(async (req, res) => {
+  try {
+    const payload = req.body;
+    console.log('Shiprocket Webhook Payload Received:', JSON.stringify(payload, null, 2));
+    
+    // Shiprocket sends awb and current_status
+    if (payload) {
+      const awbCode = payload.awb || '';
+      const status = payload.current_status || '';
+      
+      // If status is DELIVERED
+      if (status.toUpperCase() === 'DELIVERED' && awbCode) {
+        const order = await Order.findOne({ awbCode: awbCode });
+        if (order && order.orderStatus !== 'delivered') {
+          order.orderStatus = 'delivered';
+          order.paymentStatus = 'paid'; // Assuming delivered means paid even for COD
+          await order.save();
+          
+          // Notify user
+          const io = req.app.get('io');
+          if (io) {
+            io.to(`room_user_${order.userId}`).emit('order_updated', { order });
+            io.emit('order_updated', { order }); // Broadcast to admin too
+          }
+          
+          // FCM Notification
+          await sendPushNotification({
+            userId: order.userId.toString(),
+            role: 'user',
+            title: 'Order Delivered 🎉',
+            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been successfully delivered.`,
+            data: { orderId: order._id.toString() }
+          });
+          
+          console.log(`Webhook: Order ${order._id} marked as DELIVERED via AWB ${awbCode}`);
+        }
+      }
+      
+      // If status is CANCELED
+      if (status.toUpperCase() === 'CANCELED' || status.toUpperCase() === 'CANCELLED') {
+        let orderQuery = {};
+        if (awbCode) {
+          orderQuery = { awbCode: awbCode };
+        } else if (payload.order_id) {
+          orderQuery = { shiprocketOrderId: payload.order_id.toString() };
+        } else {
+          return res.status(200).send('No AWB or Order ID to match');
+        }
+
+        const order = await Order.findOne(orderQuery);
+        if (order && order.orderStatus !== 'cancelled') {
+          order.orderStatus = 'cancelled';
+          
+          // Process full refund if not COD and not already refunded
+          if (order.paymentMethod !== 'cod' && order.paymentStatus !== 'refunded') {
+            order.paymentStatus = 'refunded';
+            const user = await User.findById(order.userId);
+            if (user) {
+              user.wallet = (user.wallet || 0) + order.totalAmount;
+              await user.save();
+
+              await Transaction.create({
+                userId: order.userId,
+                amount: order.totalAmount,
+                type: 'refund',
+                desc: `Refund for cancelled order #${order._id.toString().slice(-6).toUpperCase()}`,
+                status: 'success'
+              });
+            }
+          }
+          
+          await order.save();
+
+          // Notify user
+          const io = req.app.get('io');
+          if (io) {
+            io.to(`room_user_${order.userId}`).emit('order_updated', { order });
+            io.emit('order_updated', { order }); // Broadcast to admin too
+          }
+          
+          // FCM Notification
+          await sendPushNotification({
+            userId: order.userId.toString(),
+            role: 'user',
+            title: 'Order Cancelled',
+            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled by the courier.`,
+            data: { orderId: order._id.toString() }
+          });
+          
+          console.log(`Webhook: Order ${order._id} marked as CANCELED via AWB ${awbCode}`);
+        }
+      }
+    }
+    
+    // Always respond with 200 OK so Shiprocket knows we received it
+    res.status(200).send('Webhook received');
+  } catch (err) {
+    import('fs').then(fs => fs.writeFileSync('webhook_error.log', err.stack || err.toString())).catch(() => {});
+    console.error('Webhook processing error:', err);
+    res.status(200).send('Webhook received but error occurred'); // Keep sending 200 to prevent retries
+  }
+});

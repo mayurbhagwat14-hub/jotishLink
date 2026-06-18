@@ -67,8 +67,16 @@ const OrderHistory = () => {
     const handleStatusUpdate = (data) => {
       setPoojas(prev => prev.map(p => p._id === data.poojaId ? data.pooja : p));
     };
+    const handleOrderUpdate = (data) => {
+      if (!data || !data.order) return;
+      setStoreOrders(prev => prev.map(o => o.dbId === data.order._id ? { ...o, orderStatus: data.order.orderStatus, paymentStatus: data.order.paymentStatus } : o));
+    };
     socket.on('pooja_status_updated', handleStatusUpdate);
-    return () => socket.off('pooja_status_updated', handleStatusUpdate);
+    socket.on('order_updated', handleOrderUpdate);
+    return () => {
+      socket.off('pooja_status_updated', handleStatusUpdate);
+      socket.off('order_updated', handleOrderUpdate);
+    };
   }, [socket]);
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -622,11 +630,37 @@ const OrderHistory = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] text-gray-400 font-bold uppercase">STATUS</p>
-                      <p className={`text-[12px] font-bold capitalize ${(order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
-                        {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : order.paymentStatus}
+                      <p className={`text-[12px] font-bold capitalize ${
+                        (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : 
+                        (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 
+                        'text-orange-500'
+                      }`}>
+                        {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : 
+                         (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? 'Cancelled' : 
+                         order.paymentStatus}
                       </p>
                     </div>
                   </div>
+                  {/* Shiprocket Tracking Link */}
+                  {order.awbCode ? (
+                    <div className="mt-2 text-right">
+                      <a 
+                        href={`https://shiprocket.co/tracking/${order.awbCode}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[12px] font-bold text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <FiTruck size={14} /> Track Order
+                      </a>
+                    </div>
+                  ) : order.shiprocketOrderId && order.orderStatus !== 'cancelled' ? (
+                    <div className="mt-2 text-right">
+                      <span className="inline-flex items-center gap-1.5 text-[12px] font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
+                        <FiPackage size={14} /> Processing...
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))

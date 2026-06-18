@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import * as userApis from '../api/userApis';
 import { login } from '../store/slices/authSlice';
 import { FiChevronDown, FiArrowLeft } from 'react-icons/fi';
@@ -15,6 +15,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+  const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   
   const redirectTo = location.state?.redirectTo || 
@@ -210,26 +211,27 @@ const Login = () => {
 
       <div className="flex flex-col items-center flex-1 w-full max-w-sm mx-auto">
 
-        {/* Logo */}
-        <div className="w-[100px] h-[100px] bg-orange-500 rounded-full flex items-center justify-center mb-5 shadow-lg shadow-orange-200 relative">
-          <svg width="68" height="68" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="1.5" />
-            <circle cx="50" cy="50" r="28" stroke="white" strokeWidth="1.5" />
-            <circle cx="50" cy="50" r="8" fill="white" />
-            <path d="M50 34L53 40L59 38L55 43.5L62 46L56 50L62 54L55 56.5L59 62L53 60L50 66L47 60L41 62L45 56.5L38 54L44 50L38 46L45 43.5L41 38L47 40L50 34Z" fill="white" />
-            <circle cx="10" cy="50" r="4.5" fill="white" />
-            <circle cx="90" cy="50" r="3" fill="white" />
-            <circle cx="50" cy="10" r="3.5" fill="white" />
-            <circle cx="22" cy="22" r="2.5" fill="white" />
-            <circle cx="22" cy="70" r="3" fill="white" />
-            <circle cx="78" cy="28" r="5" stroke="white" strokeWidth="1.5" fill="none" />
-            <circle cx="78" cy="28" r="2" fill="white" />
-          </svg>
+        {/* Logo or Title */}
+        <div className="flex justify-center mb-10 mt-4 relative">
+          {appLogo ? (
+            <div className="flex flex-col items-center mb-4 mt-4 mix-blend-multiply relative z-10">
+              <img src={appLogo} alt={appName} className="h-[180px] w-auto object-contain drop-shadow-md mb-2" />
+              <div className="text-[44px] font-serif leading-none tracking-tight">
+                <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
+                <span className="text-gray-800 font-semibold">link</span>
+              </div>
+            </div>
+          ) : (
+            <div className="w-[100px] h-[100px] bg-orange-500 rounded-full flex flex-col items-center justify-center shadow-lg shadow-orange-200">
+              <span className="text-white font-black text-3xl">{(appName || 'JL').substring(0,2).toUpperCase()}</span>
+            </div>
+          )}
         </div>
 
-        {/* Title */}
-        <h1 className="text-[34px] font-bold text-gray-900 mb-3 tracking-tight">JyotishLink</h1>
-        <p className="text-orange-500 text-[14px] font-semibold mb-10">First Chat with Astrologer is FREE!</p>
+        {!appLogo && (
+          <h1 className="text-[34px] font-bold text-gray-900 mb-3 tracking-tight text-center">{appName}</h1>
+        )}
+        <p className="text-orange-500 text-[14px] font-semibold mb-10 text-center w-full">First Chat with Astrologer is FREE!</p>
 
         {/* Divider */}
         <div className="flex items-center w-full mb-6">

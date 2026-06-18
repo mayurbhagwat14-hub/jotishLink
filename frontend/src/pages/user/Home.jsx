@@ -16,7 +16,9 @@ const Home = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { user, isAuthenticated, settings } = useSelector((state) => state.auth) || {};
+  const { user, isAuthenticated } = useSelector((state) => state.auth) || {};
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
+  const { settings } = useSelector((state) => state.auth) || {};
   const { userHome } = useSelector((state) => state.dashboard);
 
   const [showBalanceModal, setShowBalanceModal] = useState(false);
@@ -467,7 +469,7 @@ const Home = () => {
       {/* ═══ JYOTISHLINK STORE ═══ */}
       <div className="px-5 mb-5 relative z-10">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-[18px] font-bold text-gray-900">JyotishLink Store</h2>
+          <h2 className="text-[18px] font-bold text-gray-900">{appName} Store</h2>
           <span
             onClick={() => navigate('/user/store')}
             className="text-[13px] text-[#ff8c00] font-bold cursor-pointer flex items-center gap-1 hover:text-orange-600"

@@ -14,6 +14,7 @@ const AstrologerLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.astrologerAuth);
+  const { appLogo } = useSelector((state) => state.settings) || {};
 
   useEffect(() => {
     // If the user is already authenticated but not approved, jump directly to step 3
@@ -150,9 +151,19 @@ const AstrologerLogin = () => {
         <div className="flex flex-col items-center">
           {step !== 3 && (
             <>
-              <div className="w-[80px] h-[80px] bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative mx-auto">
-                <FiMoon size={36} className="text-white" />
-              </div>
+              {appLogo ? (
+                <div className="flex flex-col items-center mb-4 mt-2 mx-auto mix-blend-multiply relative z-10">
+                  <img src={appLogo} alt="App Logo" className="h-[140px] w-auto object-contain drop-shadow-md mb-2" />
+                  <div className="text-[34px] font-serif leading-none tracking-tight">
+                    <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
+                    <span className="text-gray-800 font-semibold">link</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-[80px] h-[80px] bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative mx-auto">
+                  <FiMoon size={36} className="text-white" />
+                </div>
+              )}
               
               <h1 className="text-[32px] font-bold text-gray-900 mb-2 tracking-tight text-center">Astrologer Portal</h1>
               <p className="text-center text-gray-500 text-[14px] font-medium mb-10">Login to manage your sessions and earnings.</p>

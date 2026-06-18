@@ -10,6 +10,7 @@ const Dashboard = () => {
   const { astrologerDashboard, loading, error } = useSelector((state) => state.dashboard);
   const { incomingRequests } = useSelector((state) => state.astrologer);
   const { user } = useSelector((state) => state.astrologerAuth);
+  const { appName } = useSelector(state => state.settings) || { appName: 'JyotishLink' };
 
   useEffect(() => {
     dispatch(fetchAstrologerDashboardThunk());
@@ -35,7 +36,7 @@ const Dashboard = () => {
            <div>
              <p className="text-orange-100 font-bold text-[10px] uppercase tracking-widest mb-1">WELCOME BACK</p>
              <h2 className="text-xl font-bold text-white leading-tight">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h2>
-             <p className="text-orange-100/80 text-xs mt-0.5">JyotishLink</p>
+             <p className="text-orange-100/80 text-xs mt-0.5">{appName}</p>
            </div>
          </div>
          <div className="relative z-10">

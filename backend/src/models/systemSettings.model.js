@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 const systemSettingsSchema = new mongoose.Schema(
   {
     appName: { type: String, default: 'JyotishLink' },
+    appLogo: { type: String, default: '' },
+    appLogoPublicId: { type: String, default: '' },
     tagline: { type: String, default: 'Connect with the Stars' },
     supportEmail: { type: String, default: 'support@jyotishlink.com' },
     supportPhone: { type: String, default: '+91 9999999999' },

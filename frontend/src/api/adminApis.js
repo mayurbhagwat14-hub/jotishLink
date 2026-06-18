@@ -20,9 +20,10 @@ export const deleteAdminAstrologer = (id) => axios.delete(`/admin/astrologers/${
 export const refundUser = (id, data) => axios.post(`/admin/users/${id}/refund`, data);
 export const getAdminOrders = () => axios.get('/admin/orders');
 export const updateAdminOrderStatus = (id, status) => axios.put(`/admin/orders/${id}/status`, { status });
-export const processCancelRequest = (id, action, refundPercent) => axios.put(`/admin/orders/${id}/cancel`, { action, refundPercent });
+export const processCancelRequest = (id, action, customRefundAmount) => axios.put(`/admin/orders/${id}/cancel`, { action, customRefundAmount });
 export const pushOrderToShiprocket = (id) => axios.post(`/admin/orders/${id}/shiprocket/push`);
 export const generateOrderAWB = (id, courierId) => axios.post(`/admin/orders/${id}/shiprocket/awb`, { courierId });
+export const getShiprocketOrderDetails = (id) => axios.get(`/admin/orders/${id}/shiprocket/details`);
 export const getPendingCounts = () => axios.get('/admin/pending-counts');
 export const getAdminProducts = () => axios.get('/admin/products');
 export const createAdminProduct = (data) => axios.post('/admin/products', data);

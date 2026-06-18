@@ -39,7 +39,7 @@ const Matchmaking = () => {
           placeOfBirth: formData.girlPob
         }
       });
-      setResult(res.data);
+      setResult(res.data?.data || res.data);
       setLoading(false);
     } catch (error) {
       console.error(error);

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle, FiLoader } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB } from '../../api/adminApis';
-
+import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB, getShiprocketOrderDetails } from '../../api/adminApis';
+import { useGlobalSocket } from '../../hooks/useGlobalSocket';
 const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,7 +15,29 @@ const AdminOrders = () => {
   const [isCustomProvider, setIsCustomProvider] = useState(false);
   const [customProviderName, setCustomProviderName] = useState('');
   const [successToast, setSuccessToast] = useState(null);
+  const [shiprocketDetails, setShiprocketDetails] = useState(null);
   const itemsPerPage = 8;
+  const socket = useGlobalSocket();
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleOrderUpdate = (data) => {
+      if (!data || !data.order) return;
+      const updatedBackendOrder = data.order;
+      setOrders(prev => prev.map(o => {
+        if (o.dbId === updatedBackendOrder._id) {
+          return {
+            ...o,
+            status: updatedBackendOrder.orderStatus ? (updatedBackendOrder.orderStatus.charAt(0).toUpperCase() + updatedBackendOrder.orderStatus.slice(1)) : o.status,
+            payment: updatedBackendOrder.paymentStatus || o.payment
+          };
+        }
+        return o;
+      }));
+    };
+    socket.on('order_updated', handleOrderUpdate);
+    return () => socket.off('order_updated', handleOrderUpdate);
+  }, [socket]);
 
   const now = () => {
     const d = new Date();
@@ -28,42 +50,45 @@ const AdminOrders = () => {
   };
 
   const [orders, setOrders] = useState([]);
-  
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await getAdminOrders();
+      const fetchedOrders = res.data?.data?.orders || res.data?.orders || [];
+      
+      // Map backend Order models to frontend UI schema
+      const formattedOrders = fetchedOrders.map(o => ({
+        id: o._id.slice(-6).toUpperCase(),
+        dbId: o._id,
+        customer: o.userId?.name || 'Unknown',
+        phone: o.userId?.phoneNumber || o.userId?.phone || 'N/A',
+        email: o.userId?.email || 'N/A',
+        address: o.shippingAddress 
+          ? `${o.shippingAddress.fullName}, ${o.shippingAddress.addressLine}, ${o.shippingAddress.city}, ${o.shippingAddress.state} - ${o.shippingAddress.pincode}` 
+          : 'N/A',
+        addressPhone: o.shippingAddress?.phone || '',
+        products: o.items.map(item => ({ name: item.productId?.name || 'Product', qty: item.quantity, price: item.price })),
+        total: o.totalAmount || 0,
+        payment: o.paymentStatus || 'Paid',
+        status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending',
+        cancelRequest: o.cancelRequest || null,
+        shiprocketOrderId: o.shiprocketOrderId,
+        shipmentId: o.shipmentId,
+        tracking: o.trackingId || o.awbCode || null,
+        shippingProvider: o.courierPartner || 'Unknown',
+        date: new Date(o.createdAt).toLocaleDateString(),
+        time: new Date(o.createdAt).toLocaleTimeString(),
+        timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }]
+      }));
+      setOrders(formattedOrders);
+    } catch (err) {
+      console.error('Failed to fetch orders', err);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const res = await getAdminOrders();
-        const fetchedOrders = res.data?.data?.orders || res.data?.orders || [];
-        
-        // Map backend Order models to frontend UI schema
-        const formattedOrders = fetchedOrders.map(o => ({
-          id: o._id.slice(-6).toUpperCase(),
-          dbId: o._id,
-          customer: o.userId?.name || 'Unknown',
-          phone: o.userId?.phoneNumber || o.userId?.phone || 'N/A',
-          email: o.userId?.email || 'N/A',
-          address: o.shippingAddress 
-            ? `${o.shippingAddress.fullName}, ${o.shippingAddress.addressLine}, ${o.shippingAddress.city}, ${o.shippingAddress.state} - ${o.shippingAddress.pincode}` 
-            : 'N/A',
-          addressPhone: o.shippingAddress?.phone || '',
-          products: o.items.map(item => ({ name: item.productId?.name || 'Product', qty: item.quantity, price: item.price })),
-          total: o.totalAmount || 0,
-          payment: o.paymentStatus || 'Paid',
-          status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending',
-          cancelRequest: o.cancelRequest || null,
-          shiprocketOrderId: o.shiprocketOrderId,
-          shipmentId: o.shipmentId,
-          tracking: o.trackingId || o.awbCode || null,
-          shippingProvider: o.courierPartner || 'Unknown',
-          date: new Date(o.createdAt).toLocaleDateString(),
-          time: new Date(o.createdAt).toLocaleTimeString(),
-          timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }]
-        }));
-        setOrders(formattedOrders);
-      } catch (err) {
-        console.error('Failed to fetch orders', err);
-      }
-    };
+
     fetchOrders();
   }, []);
 
@@ -179,7 +204,7 @@ const AdminOrders = () => {
           return {
             ...o,
             status: 'Cancelled',
-            payment: 'Refunded',
+            payment: o.payment === 'Paid' ? 'Refunded' : o.payment,
             timeline: [...o.timeline, { label: 'Cancelled', time: now(), icon: 'cancel', detail: 'Cancelled by Admin' }]
           };
         }
@@ -263,6 +288,20 @@ const AdminOrders = () => {
 
   // Refresh detail modal when orders change
   const getOrderById = (id) => orders.find(o => o.id === id);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      const order = getOrderById(selectedOrder.id) || selectedOrder;
+      if (order.shiprocketOrderId) {
+        setShiprocketDetails(null);
+        getShiprocketOrderDetails(order.dbId).then(res => {
+          setShiprocketDetails(res.data.data.shiprocketDetails.data);
+        }).catch(err => console.error("Failed to fetch shiprocket details:", err));
+      } else {
+        setShiprocketDetails(null);
+      }
+    }
+  }, [selectedOrder]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -429,7 +468,9 @@ const AdminOrders = () => {
                   </td>
                   <td className="py-4 px-5">
                     <span className="text-sm font-black text-gray-900">₹{order.total.toLocaleString()}</span>
-                    <p className={`text-[10px] font-bold mt-0.5 ${order.payment === 'Paid' ? 'text-green-500' : order.payment === 'Refunded' ? 'text-red-500' : 'text-orange-500'}`}>{order.payment}</p>
+                    <p className={`text-[10px] font-bold mt-0.5 ${order.payment === 'Paid' ? 'text-green-500' : (order.payment === 'Refunded' || order.status === 'Cancelled') ? 'text-red-500' : 'text-orange-500'}`}>
+                      {order.status === 'Cancelled' && order.payment.toLowerCase() === 'pending' ? 'Cancelled' : order.payment}
+                    </p>
                   </td>
                   <td className="py-4 px-5">
                     <p className="text-xs text-gray-500 font-medium">{order.date}</p>
@@ -453,19 +494,74 @@ const AdminOrders = () => {
                       {(!order.cancelRequest?.requested || order.cancelRequest?.adminResponse !== 'pending') && (
                         <>
                           {order.status === 'Pending' && (
-                            <button
-                              onClick={() => acceptOrder(order.id, order.dbId)}
-                              className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
-                            >
-                              <FiCheck size={12} /> Accept
-                            </button>
+                            <>
+                              <button
+                                onClick={() => acceptOrder(order.id, order.dbId)}
+                                className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-green-500/20 hover:shadow-md hover:shadow-green-500/30 active:scale-95"
+                              >
+                                <FiCheck size={12} /> Accept
+                              </button>
+                              <button
+                                onClick={() => cancelOrder(order.id, order.dbId)}
+                                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm"
+                              >
+                                <FiX size={12} /> Cancel
+                              </button>
+                            </>
                           )}
 
                           {order.status === 'Processing' && (
-                            <button
-                              onClick={() => { setShowShipModal(order); setTrackingNumber(''); setShippingProvider('DHL Express'); setIsCustomProvider(false); setCustomProviderName(''); }}
-                              className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm shadow-blue-500/20 hover:shadow-md hover:shadow-blue-500/30 active:scale-95"
-                            ><FiTruck size={12} /> Ship</button>
+                            <>
+                              {!order.shipmentId ? (
+                                <button
+                                  disabled={actionLoadingId === order.id}
+                                  onClick={async () => {
+                                    if (actionLoadingId === order.id) return;
+                                    try {
+                                      setActionLoadingId(order.id);
+                                      await pushOrderToShiprocket(order.dbId);
+                                      showToast(`Order ${order.id} pushed to SR!`);
+                                      await fetchOrders();
+                                    } catch (e) {
+                                      showToast('Failed to push to SR');
+                                    } finally {
+                                      setActionLoadingId(null);
+                                    }
+                                  }}
+                                  className={`px-3 py-1.5 ${actionLoadingId === order.id ? 'bg-purple-300' : 'bg-purple-500 hover:bg-purple-600 active:scale-95 shadow-purple-500/20'} text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm`}
+                                >
+                                  {actionLoadingId === order.id ? <FiLoader className="animate-spin" size={12} /> : <FiPackage size={12} />} 
+                                  {actionLoadingId === order.id ? 'Pushing...' : 'Push to SR'}
+                                </button>
+                              ) : (
+                                <button
+                                  disabled={actionLoadingId === order.id}
+                                  onClick={async () => {
+                                    if (actionLoadingId === order.id) return;
+                                    try {
+                                      setActionLoadingId(order.id);
+                                      await generateOrderAWB(order.dbId);
+                                      showToast(`AWB Generated!`);
+                                      await fetchOrders();
+                                    } catch (e) {
+                                      showToast('Failed to generate AWB');
+                                    } finally {
+                                      setActionLoadingId(null);
+                                    }
+                                  }}
+                                  className={`px-3 py-1.5 ${actionLoadingId === order.id ? 'bg-blue-300' : 'bg-blue-500 hover:bg-blue-600 active:scale-95 shadow-blue-500/20'} text-white rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm`}
+                                >
+                                  {actionLoadingId === order.id ? <FiLoader className="animate-spin" size={12} /> : <FiTruck size={12} />} 
+                                  {actionLoadingId === order.id ? 'Generating...' : 'Generate AWB'}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => cancelOrder(order.id, order.dbId)}
+                                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-all text-[11px] font-bold flex items-center gap-1 shadow-sm"
+                              >
+                                <FiX size={12} /> Cancel
+                              </button>
+                            </>
                           )}
 
                           {order.status === 'Shipped' && (
@@ -585,6 +681,33 @@ const AdminOrders = () => {
                       </div>
                     )}
 
+                    {/* Shiprocket Live Details */}
+                    {shiprocketDetails && (
+                      <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                        <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <FiPackage size={12} /> Live Shiprocket Details
+                        </p>
+                        <div className="grid grid-cols-2 gap-3 mt-2">
+                          <div>
+                            <p className="text-[10px] text-gray-500">SR Order ID</p>
+                            <p className="text-xs font-bold text-gray-800">{shiprocketDetails.id}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500">Status</p>
+                            <p className="text-xs font-bold text-purple-700">{shiprocketDetails.status}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500">Courier Name</p>
+                            <p className="text-xs font-bold text-gray-800">{shiprocketDetails.shipments?.[0]?.courier || 'Pending'}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-gray-500">AWB Code</p>
+                            <p className="text-xs font-bold text-gray-800">{shiprocketDetails.shipments?.[0]?.awb || 'Pending'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Status Timeline */}
                     <div>
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Order Timeline</p>
@@ -633,79 +756,8 @@ const AdminOrders = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2">
-                      {order.status === 'Pending' && (
-                        <>
-                          <button
-                            onClick={() => { acceptOrder(order.id, order.dbId); }}
-                            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-green-600/20 active:scale-[0.98]"
-                          ><FiCheck size={14} /> Accept Order</button>
-                          <button
-                            onClick={() => cancelOrder(order.id, order.dbId)}
-                            className="flex-1 px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2"
-                          ><FiX size={14} /> Cancel</button>
-                        </>
-                      )}
-                      {order.status === 'Processing' && (
-                        <>
-                          {!order.shipmentId ? (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await pushOrderToShiprocket(order.dbId);
-                                  showToast(`Order ${order.id} pushed to Shiprocket!`);
-                                  // Re-fetch to get new state
-                                  window.location.reload(); 
-                                } catch (e) {
-                                  showToast('Failed to push to Shiprocket');
-                                }
-                              }}
-                              className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-purple-600/20 active:scale-[0.98]"
-                            ><FiPackage size={14} /> Push to Shiprocket</button>
-                          ) : (
-                            <button
-                              onClick={async () => {
-                                try {
-                                  await generateOrderAWB(order.dbId);
-                                  showToast(`AWB Generated for ${order.id}!`);
-                                  window.location.reload();
-                                } catch (e) {
-                                  showToast('Failed to generate AWB');
-                                }
-                              }}
-                              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-blue-600/20 active:scale-[0.98]"
-                            ><FiTruck size={14} /> Generate AWB (Ship)</button>
-                          )}
-                        </>
-                      )}
-                      {order.status === 'Shipped' && (
-                        <button
-                          onClick={() => { markDelivered(order.id, order.dbId); }}
-                          className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm shadow-green-600/20 active:scale-[0.98]"
-                        ><FiCheckCircle size={14} /> Mark as Delivered</button>
-                      )}
-                      {order.status === 'Delivered' && (
-                        <button
-                          onClick={() => markCompleted(order.id, order.dbId)}
-                          className="flex-1 px-4 py-3 bg-teal-50 text-teal-600 hover:bg-teal-100 font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                        >
-                          <FiCheckCircle size={14} /> Order Complete
-                        </button>
-                      )}
-                      {order.status === 'Completed' && (
-                        <div className="flex-1 px-4 py-3 bg-teal-50 text-teal-700 font-bold text-sm rounded-xl flex items-center justify-center gap-2">
-                          <FiCheckCircle size={14} /> Completed
-                        </div>
-                      )}
-                      {order.status === 'Cancelled' && (
-                        <div className="flex-1 px-4 py-3 bg-red-50 text-red-500 font-bold text-sm rounded-xl flex items-center justify-center gap-2">
-                          <FiX size={14} /> Order Cancelled — Refunded
-                        </div>
-                      )}
-                    </div>
-
+                    {/* Actions removed as per user request */}
+                    
                     {/* Cancel Request Section */}
                     {order.cancelRequest?.requested && order.cancelRequest?.adminResponse === 'pending' && (
                       <div className="mt-4 bg-yellow-50 rounded-xl p-4 border border-yellow-200">
@@ -713,31 +765,32 @@ const AdminOrders = () => {
                           <FiAlertCircle size={14} /> Cancel Request from Customer
                         </p>
                         <p className="text-xs text-gray-600 mb-3">Reason: {order.cancelRequest.reason || 'No reason given'}</p>
-                        <div className="flex items-center gap-2 mb-3">
-                          <label className="text-[11px] font-bold text-gray-500">Refund %:</label>
+                        <div className="flex flex-col gap-2 mb-4">
+                          <label className="text-[12px] font-bold text-gray-700">Custom Refund Amount (₹):</label>
                           <input
                             type="number"
-                            defaultValue={order.cancelRequest.refundPercent || 80}
+                            defaultValue={order.payment === 'cod' || order.paymentMethod === 'cod' ? 0 : Math.round(order.total * (order.cancelRequest.refundPercent || 80) / 100)}
                             min={0}
-                            max={100}
+                            max={order.total}
                             id={`refund-${order.id}`}
-                            className="w-20 px-2 py-1 rounded-lg bg-white border border-gray-200 text-sm font-bold text-center"
+                            className="w-full px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold focus:ring-2 focus:ring-yellow-400 outline-none"
+                            placeholder="Enter amount to refund"
                           />
-                          <span className="text-[11px] text-gray-400">(₹{Math.round(order.total * (order.cancelRequest.refundPercent || 80) / 100)} refund)</span>
+                          <span className="text-[11px] text-gray-500">Max allowed: ₹{order.total}</span>
                         </div>
                         <div className="flex gap-2">
                           <button
                             onClick={async () => {
                               const refundEl = document.getElementById(`refund-${order.id}`);
-                              const refundPct = parseInt(refundEl?.value) || 80;
+                              const customRefundAmount = parseInt(refundEl?.value) || 0;
                               try {
-                                await processCancelRequestApi(order.dbId, 'approved', refundPct);
+                                await processCancelRequestApi(order.dbId, 'approved', customRefundAmount);
                                 setOrders(prev => prev.map(o => o.id === order.id ? {
-                                  ...o, status: 'Cancelled', payment: 'Refunded',
+                                  ...o, status: 'Cancelled', payment: o.payment === 'Paid' ? 'Refunded' : o.payment,
                                   cancelRequest: { ...o.cancelRequest, adminResponse: 'approved' },
-                                  timeline: [...o.timeline, { label: 'Cancelled by User Request', time: now(), icon: 'cancel', detail: `Refunded ${refundPct}%` }]
+                                  timeline: [...o.timeline, { label: 'Cancelled by User Request', time: now(), icon: 'cancel', detail: `Refunded ₹${customRefundAmount}` }]
                                 } : o));
-                                showToast(`${order.id} cancelled. ${refundPct}% refund issued.`);
+                                showToast(`${order.id} cancelled. ₹${customRefundAmount} refund issued.`);
                                 setSelectedOrder(null);
                               } catch(e) { showToast('Failed to process cancel'); }
                             }}
@@ -746,7 +799,7 @@ const AdminOrders = () => {
                           <button
                             onClick={async () => {
                               try {
-                                await processCancelRequestApi(order.dbId, 'rejected');
+                                await processCancelRequestApi(order.dbId, 'rejected', 0);
                                 setOrders(prev => prev.map(o => o.id === order.id ? {
                                   ...o, cancelRequest: { ...o.cancelRequest, adminResponse: 'rejected' }
                                 } : o));

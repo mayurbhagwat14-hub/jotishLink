@@ -506,6 +506,20 @@ io.on('connection', (socket) => {
 
     io.to(roomId).emit('session_ended', endPayload);
 
+    try {
+      const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+      if (userId) {
+        await sendPushNotification({
+          userId: userId,
+          role: 'user',
+          title: 'Session Ended',
+          body: `Your session has ended. Duration: ${duration}s.`,
+        });
+      }
+    } catch (err) {
+      console.error('Push notification failed on end session:', err);
+    }
+
     let astroId = null;
     const roomInfo = socketRoomMap.get(socket.id);
     if (roomInfo && roomInfo.astrologerId) astroId = roomInfo.astrologerId;
@@ -517,6 +531,14 @@ io.on('connection', (socket) => {
       }
       if (astroId) {
          io.to(`astro_${astroId}`).emit('session_ended', { ...endPayload, sessionId: finalSessionId });
+         
+         const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+         await sendPushNotification({
+           userId: astroId,
+           role: 'astrologer',
+           title: 'Session Ended',
+           body: `Session ended. Duration: ${duration}s.`,
+         });
       }
     } catch (e) { /* ignore */ }
 
@@ -642,13 +664,43 @@ io.on('connection', (socket) => {
     const remainingDelta = Number((currentCost - lastDeducted).toFixed(2));
 
     io.to(roomId).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
+    
+    try {
+      const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+      if (userId) {
+        await sendPushNotification({
+          userId: userId,
+          role: 'user',
+          title: 'Call Ended',
+          body: `Your call has ended. Duration: ${duration}s.`,
+        });
+      }
+    } catch (err) {
+      console.error('Push notification failed on end call:', err);
+    }
     try {
       if (timerData && timerData.astrologerId) {
         io.to(`astro_${timerData.astrologerId}`).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
+        const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+        await sendPushNotification({
+          userId: timerData.astrologerId,
+          role: 'astrologer',
+          title: 'Call Ended',
+          body: `Call ended. Duration: ${duration}s.`,
+        });
       } else {
         const { CallSession } = await import('./models/callSession.model.js');
         const sess = await CallSession.findOne({ callId });
-        if (sess) io.to(`astro_${sess.astrologerId}`).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
+        if (sess) {
+          io.to(`astro_${sess.astrologerId}`).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
+          const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+          await sendPushNotification({
+            userId: sess.astrologerId,
+            role: 'astrologer',
+            title: 'Call Ended',
+            body: `Call ended. Duration: ${duration}s.`,
+          });
+        }
       }
     } catch (e) { /* ignore */ }
 

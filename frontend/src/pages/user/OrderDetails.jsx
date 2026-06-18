@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiX, FiAlertTriangle, FiActivity } from 'react-icons/fi';
-import { trackOrder, getOrderById, requestCancelOrder } from '../../api/storeApis';
+import { trackOrder, getOrderById, requestCancelOrder, getUserShiprocketOrderDetails } from '../../api/storeApis';
 import { toast } from 'react-hot-toast';
 
 const formatDate = (isoString) => {
@@ -25,6 +25,7 @@ const OrderDetails = () => {
   const [cancelLoading, setCancelLoading] = useState(false);
 
   const [trackingData, setTrackingData] = useState(null);
+  const [shiprocketDetails, setShiprocketDetails] = useState(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -42,6 +43,16 @@ const OrderDetails = () => {
                }
             } catch (trackErr) {
                console.log("Could not load advanced tracking data");
+            }
+          }
+          if (fetchedOrder.shiprocketOrderId) {
+            try {
+              const srDetailsRes = await getUserShiprocketOrderDetails(fetchedOrder._id);
+              if (srDetailsRes.data?.success) {
+                setShiprocketDetails(srDetailsRes.data.data.shiprocketDetails.data);
+              }
+            } catch (err) {
+              console.log("Could not load shiprocket live details");
             }
           }
         }
@@ -143,8 +154,14 @@ const OrderDetails = () => {
             </div>
             <div className="flex flex-col text-right">
               <span className="text-[10px] text-gray-400 font-bold uppercase">Status</span>
-              <span className={`text-[13px] font-bold capitalize ${(order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : order.paymentStatus === 'failed' ? 'text-red-500' : 'text-orange-500'}`}>
-                {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : order.paymentStatus}
+              <span className={`text-[13px] font-bold capitalize ${
+                (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : 
+                (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 
+                'text-orange-500'
+              }`}>
+                {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : 
+                 (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? 'Cancelled' : 
+                 order.paymentStatus}
               </span>
             </div>
           </div>
@@ -157,6 +174,32 @@ const OrderDetails = () => {
         {/* Timeline UI */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
           <h3 className="text-[13px] font-bold text-gray-800 mb-5 flex items-center gap-2"><FiTruck className="text-gray-400" /> Track Order</h3>
+
+          {/* Shiprocket Live Details */}
+          {shiprocketDetails && (
+            <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100 mb-5">
+              <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <FiPackage size={12} /> Live Shipment Info
+              </p>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <p className="text-[10px] text-gray-500">Status</p>
+                  <p className="text-xs font-bold text-orange-700">{shiprocketDetails.status}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-500">Courier Name</p>
+                  <p className="text-xs font-bold text-gray-800">{shiprocketDetails.shipments?.[0]?.courier || 'Pending'}</p>
+                </div>
+                {shiprocketDetails.shipments?.[0]?.awb && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] text-gray-500">Tracking (AWB) Code</p>
+                    <p className="text-xs font-bold text-gray-800 font-mono">{shiprocketDetails.shipments[0].awb}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="relative pl-2">
             <div className="absolute left-[19px] top-2 bottom-4 w-0.5 bg-gray-100 z-0"></div>
             <div className="space-y-6 relative z-10">
@@ -286,7 +329,11 @@ const OrderDetails = () => {
             
             <div className="bg-green-50 rounded-xl p-3 mb-4 border border-green-100">
               <p className="text-[12px] text-green-700 font-medium">
-                You will receive <span className="font-bold">80% refund (₹{Math.round(order.totalAmount * 0.8)})</span> to your wallet upon approval.
+                {order.paymentMethod === 'cod' ? (
+                  <span>You will not receive any wallet refund since this is a <strong>Cash on Delivery</strong> order.</span>
+                ) : (
+                  <span>You will receive <span className="font-bold">80% refund (₹{Math.round(order.totalAmount * 0.8)})</span> to your wallet upon approval.</span>
+                )}
               </p>
             </div>
 

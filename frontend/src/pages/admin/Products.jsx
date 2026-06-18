@@ -17,7 +17,7 @@ const AdminProducts = () => {
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
-    name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none'
+    name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: 0.5, length: 10, breadth: 10, height: 10
   });
   const itemsPerPage = 8;
 
@@ -35,10 +35,11 @@ const AdminProducts = () => {
         name: p.name,
         category: p.category || 'General',
         price: p.price,
-        originalPrice: p.mrp || Math.round(p.price * 1.5), // fallback if mrp not present
+        costPrice: p.costPrice || '',
+        originalPrice: p.originalPrice || '',
         description: p.description || '',
         featuredSection: p.featuredSection || 'none',
-        discount: p.mrp ? Math.round(((p.mrp - p.price) / p.mrp) * 100) + '%' : '0%',
+        discount: p.discount === '0%' ? '' : (p.discount || ''),
         stock: p.stock || 0,
         status: p.isActive === false || p.stock === 0 ? (p.stock === 0 ? 'Out of Stock' : 'Draft') : 'Active',
         img: p.image || '/store_bracelet.png',
@@ -71,8 +72,14 @@ const AdminProducts = () => {
       const payload = {
         ...formData,
         price: Number(formData.price),
+        costPrice: Number(formData.costPrice || 0),
         originalPrice: Number(formData.originalPrice),
-        stock: Number(formData.stock)
+        discount: formData.discount,
+        stock: Number(formData.stock),
+        weight: Number(formData.weight || 0.5),
+        length: Number(formData.length || 10),
+        breadth: Number(formData.breadth || 10),
+        height: Number(formData.height || 10)
       };
 
       if (editingProductId) {
@@ -83,7 +90,7 @@ const AdminProducts = () => {
       
       setShowAddModal(false);
       setEditingProductId(null);
-      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none' });
+      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: 0.5, length: 10, breadth: 10, height: 10 });
       fetchProducts();
     } catch (err) {
       console.error('Failed to save product', err);
@@ -100,10 +107,16 @@ const AdminProducts = () => {
       category: product.category,
       sku: product.sku,
       price: product.price,
+      costPrice: product.costPrice,
       originalPrice: product.originalPrice,
+      discount: product.discount,
       stock: product.stock,
       image: product.img,
-      featuredSection: product.featuredSection || 'none'
+      featuredSection: product.featuredSection || 'none',
+      weight: product.weight || 0.5,
+      length: product.length || 10,
+      breadth: product.breadth || 10,
+      height: product.height || 10
     });
     setOpenActionDropdown(null);
     setShowAddModal(true);
@@ -128,7 +141,7 @@ const AdminProducts = () => {
   const filteredProducts = products.filter(p => {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (p.sku || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'All' || categoryFilter === '' || (p.category || '').toLowerCase().includes(categoryFilter.toLowerCase());
     const matchesTab = activeTab === 'All Products' ||
       (activeTab === 'Active' && p.status === 'Active') ||
       (activeTab === 'Draft' && p.status === 'Draft') ||
@@ -170,7 +183,7 @@ const AdminProducts = () => {
         <button
           onClick={() => {
             setEditingProductId(null);
-            setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', stock: '', image: '', featuredSection: 'none' });
+            setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: 0.5, length: 10, breadth: 10, height: 10 });
             setShowAddModal(true);
           }}
           className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all"
@@ -215,16 +228,12 @@ const AdminProducts = () => {
         </div>
         <div className="flex items-center gap-2">
           <FiFilter size={14} className="text-gray-400" />
-          <div className="relative">
-            <select
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-              className="appearance-none px-4 py-3 pr-10 rounded-xl bg-gray-50 border-0 focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm font-bold text-gray-700 cursor-pointer"
-            >
-              {categories.map(c => <option key={c}>{c}</option>)}
-            </select>
-            <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
-          </div>
+          <CategorySearchDropdown 
+            categories={categories}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            setCurrentPage={setCurrentPage}
+          />
         </div>
       </div>
 
@@ -433,18 +442,45 @@ const AdminProducts = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-5 gap-4">
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Price (₹)</label>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Selling Price</label>
                   <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Cost Price</label>
+                  <input type="number" value={formData.costPrice} onChange={e => setFormData({...formData, costPrice: e.target.value})} placeholder="200" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">MRP (₹)</label>
                   <input type="number" value={formData.originalPrice} onChange={e => setFormData({...formData, originalPrice: e.target.value})} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Discount Tag</label>
+                  <input type="text" value={formData.discount} onChange={e => setFormData({...formData, discount: e.target.value})} placeholder="e.g. 50% OFF" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Stock</label>
                   <input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Weight (kg)</label>
+                  <input type="number" step="0.01" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} placeholder="0.5" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Length (cm)</label>
+                  <input type="number" value={formData.length} onChange={e => setFormData({...formData, length: e.target.value})} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Breadth (cm)</label>
+                  <input type="number" value={formData.breadth} onChange={e => setFormData({...formData, breadth: e.target.value})} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Height (cm)</label>
+                  <input type="number" value={formData.height} onChange={e => setFormData({...formData, height: e.target.value})} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 
@@ -501,6 +537,64 @@ const AdminProducts = () => {
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+};
+
+const CategorySearchDropdown = ({ categories, categoryFilter, setCategoryFilter, setCurrentPage }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  
+  const filteredOptions = categories.filter(c => c.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="relative">
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="appearance-none px-4 py-3 pr-10 rounded-xl bg-gray-50 border-0 hover:bg-gray-100 transition-colors text-sm font-bold text-gray-700 cursor-pointer min-w-[150px] flex items-center justify-between select-none"
+      >
+        <span className="truncate max-w-[120px]">{categoryFilter || 'All'}</span>
+        <FiChevronDown className={`text-gray-400 transition-transform absolute right-4 ${isOpen ? 'rotate-180' : ''}`} size={14} />
+      </div>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => { setIsOpen(false); setSearch(''); }} />
+          <div className="absolute top-full right-0 mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-50 p-2 overflow-hidden animate-slide-down origin-top-right">
+            <div className="relative mb-2">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+              <input 
+                type="text" 
+                autoFocus 
+                placeholder="Search category..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-100 rounded-lg text-sm font-medium focus:outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-500/20 transition-all"
+              />
+            </div>
+            <div className="max-h-48 overflow-y-auto no-scrollbar space-y-1">
+              {filteredOptions.map(c => (
+                <div 
+                  key={c} 
+                  onClick={() => {
+                    setCategoryFilter(c);
+                    setCurrentPage(1);
+                    setIsOpen(false);
+                    setSearch('');
+                  }}
+                  className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors flex items-center justify-between ${categoryFilter === c ? 'bg-orange-50 text-orange-600 font-bold' : 'text-gray-700 font-medium hover:bg-gray-50'}`}
+                >
+                  {c}
+                  {categoryFilter === c && <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
+                </div>
+              ))}
+              {filteredOptions.length === 0 && (
+                <div className="px-3 py-4 text-center text-sm text-gray-400 font-medium">No categories found</div>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

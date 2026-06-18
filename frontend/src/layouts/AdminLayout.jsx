@@ -19,6 +19,7 @@ import { getSocket } from '../socket/socketManager';
 const AdminLayout = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.adminAuth);
+  const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -127,6 +128,7 @@ const AdminLayout = () => {
     {
       title: 'Operations',
       icon: <FiMessageSquare size={18} />,
+      badge: liveSessionsCount > 0 ? liveSessionsCount.toString() : null,
       children: [
         { path: '/admin/sessions', name: 'Live Sessions', icon: <FiMessageSquare size={16} />, badge: liveSessionsCount > 0 ? liveSessionsCount.toString() : null },
         { path: '/admin/ratings', name: 'Ratings', icon: <FiStar size={16} /> },
@@ -206,16 +208,27 @@ const AdminLayout = () => {
         <div className={`h-[60px] flex items-center shrink-0 border-b border-gray-100 ${sidebarCollapsed ? 'justify-center px-2' : 'px-4'}`}>
           {!sidebarCollapsed && (
             <div className="flex items-center gap-3 w-full">
-              <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm shadow-orange-500/20">
-                <FiShield size={17} className="text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-[14px] font-black text-gray-900 tracking-tight leading-tight">JyotishLink</h1>
-                <p className="text-[10px] font-semibold text-gray-400 tracking-widest uppercase">Admin Panel</p>
-              </div>
+              {appLogo ? (
+                <>
+                  <img src={appLogo} alt={appName} className="h-12 w-12 object-contain mix-blend-multiply drop-shadow-sm shrink-0" />
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <p className="text-[10px] font-black text-gray-400 tracking-widest uppercase mt-1">Admin Panel</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm shadow-orange-500/20 shrink-0">
+                    <FiShield size={17} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <h1 className="text-[14px] font-black text-gray-900 tracking-tight leading-tight">{appName}</h1>
+                    <p className="text-[10px] font-semibold text-gray-400 tracking-widest uppercase mt-0.5">Admin Panel</p>
+                  </div>
+                </>
+              )}
               <button
                 onClick={() => setSidebarCollapsed(true)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all ml-auto"
               >
                 <FiChevronLeft size={16} />
               </button>
@@ -224,9 +237,15 @@ const AdminLayout = () => {
           {sidebarCollapsed && (
             <button
               onClick={() => setSidebarCollapsed(false)}
-              className="w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm shadow-orange-500/20 hover:scale-105 transition-transform"
+              className="w-9 h-9 rounded-xl flex items-center justify-center hover:scale-105 transition-transform"
             >
-              <FiShield size={17} className="text-white" />
+              {appLogo ? (
+                <img src={appLogo} alt={appName} className="h-10 w-10 object-contain mix-blend-multiply drop-shadow-sm" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm shadow-orange-500/20">
+                  <FiShield size={17} className="text-white" />
+                </div>
+              )}
             </button>
           )}
         </div>
@@ -252,8 +271,8 @@ const AdminLayout = () => {
                   {isLinkActive(section.path) && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-orange-500 rounded-r-full" />}
                   <span className={`shrink-0 relative ${isLinkActive(section.path) ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
                     {section.icon}
-                    {sidebarCollapsed && section.badge && (
-                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse" />
+                    {section.badge && (
+                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse shadow-sm" />
                     )}
                   </span>
                   {!sidebarCollapsed && <span className="font-semibold text-[12px]">{section.title}</span>}
@@ -277,8 +296,8 @@ const AdminLayout = () => {
                 >
                   <span className={`shrink-0 relative ${sectionIsActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
                     {section.icon}
-                    {sidebarCollapsed && section.badge && (
-                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse" />
+                    {section.badge && (
+                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white animate-pulse shadow-sm" />
                     )}
                   </span>
                   {!sidebarCollapsed && (

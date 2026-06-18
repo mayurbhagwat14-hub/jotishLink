@@ -15,7 +15,7 @@ const Panchang = () => {
     const fetchPanchang = async () => {
       try {
         const res = await getPanchang();
-        setResult(res.data);
+        setResult(res.data?.data || res.data);
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -105,7 +105,11 @@ const Panchang = () => {
             <div className="mt-6 bg-red-50 p-5 rounded-2xl border border-red-100 flex items-center justify-between">
               <div>
                 <p className="text-[11px] font-bold text-red-500 uppercase tracking-wider mb-1">Rahu Kaal (Inauspicious)</p>
-                <p className="text-[20px] font-bold text-red-600">{result.rahuKaal}</p>
+                <p className="text-[20px] font-bold text-red-600">
+                  {typeof result.rahuKaal === 'object' && result.rahuKaal
+                    ? `${result.rahuKaal.start} - ${result.rahuKaal.end}`
+                    : result.rahuKaal}
+                </p>
               </div>
               <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-red-500 text-xl shadow-sm border border-red-100">
                 ⚠️

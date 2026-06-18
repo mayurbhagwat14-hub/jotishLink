@@ -15,6 +15,10 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     required: true, // Price at the time of order
   },
+  costPrice: {
+    type: Number,
+    default: 0, // Cost price at the time of order
+  },
 });
 
 const orderSchema = new mongoose.Schema(
@@ -56,7 +60,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['pending', 'paid', 'failed'],
+      enum: ['pending', 'paid', 'failed', 'refunded'],
       default: 'pending',
     },
     orderStatus: {

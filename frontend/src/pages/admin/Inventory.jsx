@@ -39,9 +39,9 @@ const AdminInventory = () => {
   };
 
   const handleRestock = async () => {
-    if (!restockModal || !restockQty || parseInt(restockQty) <= 0) return;
+    if (!restockModal || !restockQty || parseInt(restockQty) === 0) return;
     try {
-      const newStock = restockModal.stock + parseInt(restockQty);
+      const newStock = Math.max(0, restockModal.stock + parseInt(restockQty));
       await updateAdminProduct(restockModal.id, { stock: newStock });
       
       // Update local state
@@ -273,10 +273,10 @@ const AdminInventory = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Add Quantity</label>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Update Quantity (+/-)</label>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setRestockQty(prev => String(Math.max(1, (parseInt(prev) || 0) - 1)))}
+                    onClick={() => setRestockQty(prev => String(Math.max(-restockModal.stock, (parseInt(prev) || 0) - 1)))}
                     className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
                   ><FiMinus size={16} /></button>
                   <input
@@ -298,16 +298,16 @@ const AdminInventory = () => {
                 <input type="text" placeholder="e.g., Restocked from supplier XYZ" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
               </div>
 
-              {restockQty && parseInt(restockQty) > 0 && (
-                <div className="bg-green-50 rounded-xl p-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-green-700">New stock after restock:</span>
-                  <span className="text-lg font-black text-green-700">{restockModal.stock + parseInt(restockQty)}</span>
+              {restockQty && parseInt(restockQty) !== 0 && (
+                <div className={`rounded-xl p-3 flex items-center justify-between ${parseInt(restockQty) > 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+                  <span className={`text-xs font-bold ${parseInt(restockQty) > 0 ? 'text-green-700' : 'text-orange-700'}`}>New stock after update:</span>
+                  <span className={`text-lg font-black ${parseInt(restockQty) > 0 ? 'text-green-700' : 'text-orange-700'}`}>{Math.max(0, restockModal.stock + parseInt(restockQty))}</span>
                 </div>
               )}
 
               <button
                 onClick={handleRestock}
-                disabled={!restockQty || parseInt(restockQty) <= 0}
+                disabled={!restockQty || parseInt(restockQty) === 0 || (restockModal.stock + parseInt(restockQty) < 0)}
                 className="w-full px-6 py-3.5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all text-sm disabled:opacity-50"
               >
                 <FiRefreshCcw size={14} /> Update Stock

@@ -1,8 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiMessageCircle, FiBell } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 
 const DesktopNavbar = () => {
   const navigate = useNavigate();
+  const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
 
   const navLinks = [
     { name: 'Chat with Astrologer', path: '/user/astrologers?type=chat' },
@@ -10,20 +12,24 @@ const DesktopNavbar = () => {
     { name: 'Horoscope', path: '/user/home' },
     { name: 'Free Kundli', path: '/user/kundli' },
     { name: 'Kundli Matching', path: '/user/matchmaking' },
-    { name: 'JyotishLink Services', path: '/user/home' },
+    { name: `${appName} Services`, path: '/user/home' },
   ];
 
   return (
     <div className="hidden lg:flex items-center justify-between px-8 py-3 bg-white sticky top-0 z-50 shadow-sm border-b border-orange-50">
       {/* Logo */}
       <Link to="/" className="flex items-center gap-2.5 shrink-0">
-        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
-          <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
-            <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="3" />
-            <circle cx="50" cy="50" r="8" fill="white" />
-          </svg>
-        </div>
-        <span className="text-[22px] font-bold text-gray-900">JyotishLink</span>
+        {appLogo ? (
+          <img src={appLogo} alt={appName} className="h-14 object-contain mix-blend-multiply" />
+        ) : (
+          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
+            <svg width="22" height="22" viewBox="0 0 100 100" fill="none">
+              <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="3" />
+              <circle cx="50" cy="50" r="8" fill="white" />
+            </svg>
+          </div>
+        )}
+        {!appLogo && <span className="text-[22px] font-bold text-gray-900">{appName}</span>}
       </Link>
 
       {/* Nav Links */}

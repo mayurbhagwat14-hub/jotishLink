@@ -9,6 +9,9 @@ import { getSocket } from '../../socket/socketManager';
 
 const AdminFinance = () => {
   const [typeFilter, setTypeFilter] = useState('All');
+  const [searchFilter, setSearchFilter] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [payouts, setPayouts] = useState([]);
   const [inflow, setInflow] = useState(0);
@@ -318,11 +321,42 @@ const AdminFinance = () => {
           <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
             <h2 className="font-bold text-gray-900">All Transactions</h2>
             <div className="flex gap-2">
-              <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                <input type="text" placeholder="Search TXN ID..." className="pl-9 pr-4 py-2 rounded-xl bg-gray-50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 font-medium" />
+              <div className="relative flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1 sm:max-w-[200px]">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                  <input 
+                    type="text" 
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    placeholder="Search TXN ID..." 
+                    className="w-full pl-9 pr-4 py-2 rounded-xl bg-gray-50 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 font-medium" 
+                  />
+                </div>
+                <div className="relative flex items-center gap-1 bg-gray-50 rounded-xl px-2">
+                  <input 
+                    type="date" 
+                    value={startDateFilter}
+                    onChange={(e) => setStartDateFilter(e.target.value)}
+                    className="appearance-none w-full sm:w-auto px-2 py-2 bg-transparent border-0 text-sm font-bold text-gray-700 cursor-pointer focus:outline-none" 
+                  />
+                  <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">TO</span>
+                  <input 
+                    type="date" 
+                    value={endDateFilter}
+                    onChange={(e) => setEndDateFilter(e.target.value)}
+                    className="appearance-none w-full sm:w-auto px-2 py-2 bg-transparent border-0 text-sm font-bold text-gray-700 cursor-pointer focus:outline-none" 
+                  />
+                  {(startDateFilter || endDateFilter) && (
+                    <button 
+                      onClick={() => { setStartDateFilter(''); setEndDateFilter(''); }} 
+                      className="ml-1 px-2 py-1 bg-gray-200 hover:bg-red-100 hover:text-red-600 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="appearance-none px-3 py-2 pr-8 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/20">
                   <option>All</option>
                   <option>Wallet Recharge</option>
@@ -350,6 +384,14 @@ const AdminFinance = () => {
               <tbody className="divide-y divide-gray-50">
                 {transactions
                   .filter(t => typeFilter === 'All' || t.type.includes(typeFilter))
+                  .filter(t => {
+                    if (!startDateFilter && !endDateFilter) return true;
+                    const txnDate = new Date(t.rawDate).toISOString().split('T')[0];
+                    if (startDateFilter && txnDate < startDateFilter) return false;
+                    if (endDateFilter && txnDate > endDateFilter) return false;
+                    return true;
+                  })
+                  .filter(t => !searchFilter || t.id.toLowerCase().includes(searchFilter.toLowerCase()))
                   .map((txn, i) => (
                   <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                     <td className="py-3.5 px-6 font-bold text-sm text-gray-800 font-mono">{txn.id}</td>

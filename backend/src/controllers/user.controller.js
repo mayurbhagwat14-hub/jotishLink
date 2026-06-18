@@ -24,7 +24,14 @@ export const getUserProfile = asyncHandler(async (req, res) => {
   const SystemSettings = (await import('../models/systemSettings.model.js')).default;
   const settings = await SystemSettings.findOne({}) || new SystemSettings();
   
-  return res.status(200).json(new ApiResponse(200, { user, settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration, astrologerBannerMessage: settings.astrologerBannerMessage, supportEmail: settings.supportEmail, supportPhone: settings.supportPhone } }, 'Profile fetched'));
+  return res.status(200).json(new ApiResponse(200, { user, settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration, astrologerBannerMessage: settings.astrologerBannerMessage, supportEmail: settings.supportEmail, supportPhone: settings.supportPhone, appName: settings.appName, appLogo: settings.appLogo } }, 'Profile fetched'));
+});
+
+// GET /api/settings/public
+export const getPublicSettings = asyncHandler(async (req, res) => {
+  const SystemSettings = (await import('../models/systemSettings.model.js')).default;
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+  return res.status(200).json(new ApiResponse(200, { appName: settings.appName, appLogo: settings.appLogo }, 'Public settings fetched'));
 });
 
 // PUT /api/user/profile
@@ -76,14 +83,14 @@ export const getHomepageData = asyncHandler(async (req, res) => {
       .sort({ rating: -1 })
       .limit(10)
       .lean(),
-    Product.find({ inStock: true }).limit(6).lean(),
+    Product.find().sort({ inStock: -1, createdAt: -1 }).limit(6).lean(),
     Celebrity.find({ isActive: true }).sort({ createdAt: -1 }).lean(),
     Astrologer.find({ isVerified: true, onlineStatus: { $in: ['online', 'busy'] }, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
       .lean(),
     Product.aggregate([
-      { $match: { inStock: true } },
+      { $match: {} }, // Include all products to determine categories
       { $group: { _id: '$category', img: { $first: { $cond: [ { $ifNull: ['$image', false] }, '$image', '$img' ] } } } },
       { $project: { _id: 0, name: '$_id', img: 1 } },
       { $limit: 6 }
@@ -231,7 +238,7 @@ export const getProductById = asyncHandler(async (req, res) => {
 
 // GET /api/products
 export const getStoreProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ $or: [{ inStock: true }, { inStock: { $exists: false } }] }).sort({ createdAt: -1 }).lean();
+  const products = await Product.find().sort({ inStock: -1, createdAt: -1 }).lean();
   
   // Calculate distinct categories with an image
   const categories = [];

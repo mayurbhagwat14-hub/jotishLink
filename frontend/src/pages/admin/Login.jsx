@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { adminLogin, adminLoginThunk } from '../../store/slices/adminAuthSlice';
 import { FiLock, FiUser, FiArrowRight, FiShield, FiCheckCircle, FiCpu, FiKey } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 const AdminLogin = () => {
   const [step, setStep] = useState(1); // 1: Credentials, 2: OTP
@@ -13,6 +14,7 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
+  const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const otpRefs = useRef([]);
@@ -23,7 +25,6 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      // Call real backend: POST /api/admin/auth/login with { email, password }
       const resultAction = await dispatch(adminLoginThunk({ email: username, password }));
       if (resultAction.payload && resultAction.payload.data) {
         const payloadData = resultAction.payload.data;
@@ -43,6 +44,7 @@ const AdminLogin = () => {
       }
     } catch (err) {
       setError(err?.message || 'Invalid admin credentials');
+      toast.error('Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -55,14 +57,12 @@ const AdminLogin = () => {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Auto focus next input
     if (value !== '' && index < 5) {
       otpRefs.current[index + 1].focus();
     }
   };
 
   const handleOtpKeyDown = (index, e) => {
-    // Handle backspace to focus previous input
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       otpRefs.current[index - 1].focus();
     }
@@ -70,7 +70,6 @@ const AdminLogin = () => {
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    // OTP step is now optional — direct login on step 1
     navigate('/admin/dashboard');
   };
 
@@ -81,18 +80,16 @@ const AdminLogin = () => {
       {/* Left Column - Graphic / Brand Side */}
       <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 bg-gradient-to-br from-gray-900 to-black border-r border-gray-800">
         
-        {/* Background Decorative Pattern */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
           <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-orange-500 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-10"></div>
-          {/* Cyber Grid */}
           <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
         </div>
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 text-orange-500 mb-8">
             <FiShield size={32} />
-            <span className="text-2xl font-black tracking-widest uppercase">JyotishLink Security</span>
+            <span className="text-2xl font-black tracking-widest uppercase">{appName} Security</span>
           </div>
           
           <h1 className="text-5xl font-black leading-tight mb-6">
@@ -102,7 +99,7 @@ const AdminLogin = () => {
             </span>
           </h1>
           <p className="text-gray-400 text-lg max-w-md">
-            Restricted access. Advanced authentication required to access administrative privileges and system controls.
+            Restricted. Secure authentication for {appName} administrators. Unauthorized access is strictly prohibited and monitored.
           </p>
         </div>
 
@@ -133,7 +130,16 @@ const AdminLogin = () => {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 relative">
         <div className="max-w-md w-full relative z-10">
           
-          <div className="mb-10 text-center lg:text-left">
+          <div className="mb-10 text-center lg:text-left relative">
+            {appLogo ? (
+              <div className="flex flex-col items-center lg:items-start mb-6 w-fit mx-auto lg:mx-0 mix-blend-multiply relative z-10">
+                <img src={appLogo} alt={appName} className="h-[120px] w-auto object-contain drop-shadow-md mb-2" />
+                <div className="text-[32px] font-serif leading-none tracking-tight">
+                  <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
+                  <span className="text-gray-800 font-semibold">link</span>
+                </div>
+              </div>
+            ) : null}
             <h2 className="text-3xl font-black mb-2">Admin Portal</h2>
             <p className="text-gray-400">
               {step === 1 ? 'Enter your credentials to initiate secure connection.' : 'Enter the 6-digit OTP sent to your secure device.'}
@@ -141,7 +147,6 @@ const AdminLogin = () => {
           </div>
 
           <div className="bg-gray-900 border border-gray-800 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-            {/* Subtle glow inside card */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-50"></div>
 
             {error && (
@@ -208,10 +213,20 @@ const AdminLogin = () => {
             ) : (
               <form onSubmit={handleOtpSubmit} className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                 
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 bg-orange-500/10 rounded-full flex items-center justify-center border border-orange-500/30 text-orange-500 shadow-[0_0_20px_rgba(234,88,12,0.2)]">
-                    <FiKey size={28} />
-                  </div>
+                <div className="flex justify-center mb-8 relative">
+                  {appLogo ? (
+                    <div className="flex flex-col items-center mb-4 mix-blend-multiply relative z-10">
+                      <img src={appLogo} alt={appName} className="h-[96px] w-auto object-contain drop-shadow-md mb-2" />
+                      <div className="text-[28px] font-serif leading-none tracking-tight">
+                        <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
+                        <span className="text-gray-800 font-semibold">link</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                      <FiShield size={32} className="text-white" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 justify-center">

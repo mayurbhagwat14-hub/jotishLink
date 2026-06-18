@@ -2,7 +2,7 @@ import axios from 'axios';
 
 class ShiprocketService {
   constructor() {
-    this.baseURL = 'https://apiv2.shiprocket.in/v1/external';
+    this.baseURL = process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in/v1/external';
     this.token = null;
     this.tokenExpiry = null;
   }
@@ -113,6 +113,39 @@ class ShiprocketService {
       throw new Error(error.response?.data?.message || 'Failed to fetch couriers');
     }
   }
+
+  async getOrderDetails(orderId) {
+    try {
+      const token = await this.authenticate();
+      const response = await axios.get(`${this.baseURL}/orders/show/${orderId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Shiprocket Get Order Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to fetch order details from Shiprocket');
+    }
+  }
+  async cancelOrder(orderId) {
+    try {
+      const token = await this.authenticate();
+      const response = await axios.post(`${this.baseURL}/orders/cancel`, {
+        ids: [orderId]
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Shiprocket Cancel Order Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.message || 'Failed to cancel order on Shiprocket');
+    }
+  }
 }
 
 export default new ShiprocketService();
+

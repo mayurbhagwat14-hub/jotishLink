@@ -32,6 +32,7 @@ const Checkout = () => {
   
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
   const [loading, setLoading] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -68,17 +69,11 @@ const Checkout = () => {
         })).unwrap();
         navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
       } else {
-        // If wallet has enough balance, use it directly
+        // If wallet has enough balance, show confirmation modal
         if (user?.wallet >= total) {
-          const res = await dispatch(createOrderThunk({
-            shippingAddress: formData,
-            paymentMethod: 'wallet'
-          })).unwrap();
-          
-          // Refresh user wallet state
-          dispatch(fetchWalletThunk());
-          
-          navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
+          setShowWalletModal(true);
+          setLoading(false);
+          return;
         } else {
           // Wallet insufficient, use Razorpay
           const res = await loadRazorpayScript();
@@ -136,6 +131,28 @@ const Checkout = () => {
         navigate('/user/cart', { replace: true });
         window.location.reload(); // Force sync
       }
+    } finally {
+      if (paymentMethod !== 'online' || user?.wallet < total) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleConfirmWalletPayment = async () => {
+    setShowWalletModal(false);
+    setLoading(true);
+    try {
+      const res = await dispatch(createOrderThunk({
+        shippingAddress: formData,
+        paymentMethod: 'wallet'
+      })).unwrap();
+      
+      // Refresh user wallet state
+      dispatch(fetchWalletThunk());
+      
+      navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to place order');
     } finally {
       setLoading(false);
     }
@@ -251,6 +268,37 @@ const Checkout = () => {
           {loading ? 'PROCESSING...' : 'PLACE ORDER'}
         </button>
       </div>
+
+      {/* Wallet Confirmation Modal */}
+      {showWalletModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiCreditCard size={28} className="text-orange-500" />
+              </div>
+              <h3 className="text-[20px] font-black text-gray-900 mb-2">Confirm Payment</h3>
+              <p className="text-[14px] text-gray-600 mb-6 leading-relaxed">
+                <span className="font-bold text-gray-900">₹{total}</span> will be deducted from your wallet to place this order.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowWalletModal(false)}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl text-[14px] hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmWalletPayment}
+                  className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl text-[14px] hover:bg-orange-600 transition-colors shadow-sm"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

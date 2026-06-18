@@ -36,6 +36,18 @@ export const requestCall = asyncHandler(async (req, res) => {
     status: 'pending',
   });
 
+  try {
+    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+    await sendPushNotification({
+      userId: astrologerId,
+      role: 'astrologer',
+      title: 'Incoming Call Request',
+      body: `You have a new call request from ${user.name || 'a user'}.`,
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
+  }
+
   return res.status(200).json(new ApiResponse(200, { callSession }, 'Call requested successfully'));
 });
 
@@ -76,6 +88,18 @@ export const acceptCall = asyncHandler(async (req, res) => {
     expirationTimeInSeconds,
     privilegeExpiredTs
   );
+
+  try {
+    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+    await sendPushNotification({
+      userId: callSession.userId,
+      role: 'user',
+      title: 'Call Started',
+      body: 'The astrologer has accepted your call.',
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
+  }
 
   return res.status(200).json(new ApiResponse(200, {
     callSession,

@@ -1,37 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const slides = [
-  {
-    id: 1,
-    type: 'logo',
-    title: 'JyotishLink',
-    subtitle: 'Your Personal Astrology Guide',
-  },
-  {
-    id: 2,
-    stat: '100%',
-    label: 'Privacy',
-    desc: 'Your conversations are fully private & confidential',
-  },
-  {
-    id: 3,
-    stat: '10000+',
-    label: 'Top Astrologers of India',
-    desc: 'Verified & experienced astrologers at your fingertips',
-  },
-  {
-    id: 4,
-    stat: '3Cr+',
-    label: 'Happy Customers',
-    desc: 'Trusted by millions across India',
-  },
-];
+import { useSelector } from 'react-redux';
 
 const Onboarding = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const navigate = useNavigate();
+  const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
+
+  const slides = [
+    {
+      id: 1,
+      type: 'logo',
+      title: appName,
+      subtitle: 'Your Personal Astrology Guide',
+    },
+    {
+      id: 2,
+      stat: '100%',
+      label: 'Privacy',
+      desc: 'Your conversations are fully private & confidential',
+    },
+    {
+      id: 3,
+      stat: '10000+',
+      label: 'Top Astrologers of India',
+      desc: 'Verified & experienced astrologers at your fingertips',
+    },
+    {
+      id: 4,
+      stat: '3Cr+',
+      label: 'Happy Customers',
+      desc: 'Trusted by millions across India',
+    },
+  ];
 
   useEffect(() => {
     setIsLoaded(true);
@@ -95,23 +97,33 @@ const Onboarding = () => {
       <div className="flex flex-col items-center justify-center flex-1 px-8 text-center animate-fade-in" key={slide.id}>
         {slide.type === 'logo' ? (
           <>
-            {/* Logo Circle */}
-            <div className="w-[140px] h-[140px] bg-astro-yellow border-4 border-yellow-600/30 rounded-full flex items-center justify-center mb-8 shadow-lg relative">
-              <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="40" stroke="#8B6914" strokeWidth="1.5" />
-                <circle cx="50" cy="50" r="28" stroke="#8B6914" strokeWidth="1.5" />
-                <circle cx="50" cy="50" r="8" fill="#8B6914" />
-                <path d="M50 34L53 40L59 38L55 43.5L62 46L56 50L62 54L55 56.5L59 62L53 60L50 66L47 60L41 62L45 56.5L38 54L44 50L38 46L45 43.5L41 38L47 40L50 34Z" fill="#8B6914" />
-                <circle cx="10" cy="50" r="4.5" fill="#8B6914" />
-                <circle cx="90" cy="50" r="3" fill="#8B6914" />
-                <circle cx="50" cy="10" r="3.5" fill="#8B6914" />
-                <circle cx="22" cy="22" r="2.5" fill="#8B6914" />
-                <circle cx="22" cy="70" r="3" fill="#8B6914" />
-                <circle cx="78" cy="28" r="5" stroke="#8B6914" strokeWidth="1.5" fill="none" />
-                <circle cx="78" cy="28" r="2" fill="#8B6914" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{slide.title}</h1>
+            {appLogo ? (
+              <div className="flex flex-col items-center mb-4 mt-4 mix-blend-multiply relative z-10">
+                <img src={appLogo} alt={appName} className="h-[180px] w-auto object-contain drop-shadow-md mb-2" />
+                <div className="text-[44px] font-serif leading-none tracking-tight">
+                  <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
+                  <span className="text-gray-800 font-semibold">link</span>
+                </div>
+              </div>
+            ) : (
+              <div className="w-[140px] h-[140px] bg-astro-yellow border-4 border-yellow-600/30 rounded-full flex items-center justify-center mb-8 shadow-lg relative">
+                <svg width="80" height="80" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="40" stroke="#8B6914" strokeWidth="1.5" />
+                  <circle cx="50" cy="50" r="28" stroke="#8B6914" strokeWidth="1.5" />
+                  <circle cx="50" cy="50" r="8" fill="#8B6914" />
+                  <path d="M50 34L53 40L59 38L55 43.5L62 46L56 50L62 54L55 56.5L59 62L53 60L50 66L47 60L41 62L45 56.5L38 54L44 50L38 46L45 43.5L41 38L47 40L50 34Z" fill="#8B6914" />
+                  <circle cx="10" cy="50" r="4.5" fill="#8B6914" />
+                  <circle cx="90" cy="50" r="3" fill="#8B6914" />
+                  <circle cx="50" cy="10" r="3.5" fill="#8B6914" />
+                  <circle cx="22" cy="22" r="2.5" fill="#8B6914" />
+                  <circle cx="22" cy="70" r="3" fill="#8B6914" />
+                  <circle cx="78" cy="28" r="5" stroke="#8B6914" strokeWidth="1.5" fill="none" />
+                  <circle cx="78" cy="28" r="2" fill="#8B6914" />
+                </svg>
+              </div>
+            )}
+            {/* Hidden original slide title since we render it above if logo is present */}
+            {!appLogo && <h1 className="text-3xl font-bold text-gray-900 mb-2">{slide.title}</h1>}
             <p className="text-gray-700 text-[15px]">{slide.subtitle}</p>
           </>
         ) : (

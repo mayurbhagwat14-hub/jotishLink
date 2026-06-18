@@ -14,6 +14,7 @@ import notificationReducer from './slices/notificationSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import cartReducer from './slices/cartSlice';
 import sessionReducer from './slices/sessionSlice';
+import settingsReducer from './slices/settingsSlice';
 
 // Custom localStorage adapter — avoids Vite ESM compatibility issues with redux-persist's storage module
 const storage = {
@@ -61,6 +62,7 @@ const store = configureStore({
     dashboard: dashboardReducer,
     cart: cartReducer,
     session: sessionReducer,
+    settings: settingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiCheckCircle, FiPackage, FiTruck, FiHome, FiArrowLeft, FiClock } from 'react-icons/fi';
+import { FiCheckCircle, FiPackage, FiTruck, FiHome, FiArrowLeft, FiClock, FiCreditCard } from 'react-icons/fi';
 import { useSelector } from 'react-redux';
+import { getOrderById } from '../../api/storeApis';
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -10,19 +11,42 @@ const OrderSuccess = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real scenario, fetch order details by orderId here.
-    // For now, we simulate a fetch or pull from a global state if needed.
-    // Assuming the order is recently placed, we can display a standard success.
-    setTimeout(() => {
-      setOrder({
-        id: orderId || 'ORD-' + Math.floor(Math.random() * 1000000),
-        status: 'accepted',
-        date: new Date().toLocaleDateString(),
-        amount: '₹...', // We might want to pass this in state or fetch it
-        paymentMethod: 'wallet',
-      });
-      setLoading(false);
-    }, 500);
+    const fetchOrderDetails = async () => {
+      try {
+        if (!orderId || orderId === 'recent') {
+          // Fallback if no specific orderId is passed, although it shouldn't happen normally
+          setOrder({
+            id: 'ORD-' + Math.floor(Math.random() * 1000000),
+            status: 'accepted',
+            date: new Date().toLocaleDateString(),
+            amount: 'N/A',
+            paymentMethod: 'wallet',
+          });
+          setLoading(false);
+          return;
+        }
+
+        const res = await getOrderById(orderId);
+        const orderData = res.data?.data?.order || res.data?.order;
+        
+        if (orderData) {
+          setOrder({
+            id: orderData._id.toString().slice(-6).toUpperCase(),
+            fullId: orderData._id,
+            status: orderData.orderStatus,
+            date: new Date(orderData.createdAt).toLocaleDateString(),
+            amount: '₹' + orderData.totalAmount,
+            paymentMethod: orderData.paymentMethod,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderDetails();
   }, [orderId]);
 
   if (loading) {
@@ -35,10 +59,10 @@ const OrderSuccess = () => {
   }
 
   const steps = [
-    { label: 'Order Accepted', icon: FiCheckCircle, date: new Date().toLocaleDateString(), active: true },
-    { label: 'Processing', icon: FiPackage, date: 'Pending', active: false },
-    { label: 'Shipped', icon: FiTruck, date: 'Pending', active: false },
-    { label: 'Delivered', icon: FiHome, date: 'Expected in 3-5 days', active: false }
+    { label: 'Order Accepted', icon: FiCheckCircle, date: order?.date || 'Today', active: true },
+    { label: 'Processing', icon: FiPackage, date: 'Pending', active: ['processing', 'shipped', 'delivered'].includes(order?.status) },
+    { label: 'Shipped', icon: FiTruck, date: 'Pending', active: ['shipped', 'delivered'].includes(order?.status) },
+    { label: 'Delivered', icon: FiHome, date: 'Expected in 3-5 days', active: order?.status === 'delivered' }
   ];
 
   return (
@@ -61,15 +85,23 @@ const OrderSuccess = () => {
           </div>
           <h2 className="text-2xl font-black text-gray-900 mb-2">Order Placed Successfully!</h2>
           <p className="text-sm text-gray-500 font-medium mb-4">Thank you for your purchase. Your order has been received and is currently being processed.</p>
-          <div className="bg-gray-50 w-full py-3 rounded-xl border border-gray-100 flex justify-center gap-6">
+          <div className="bg-gray-50 w-full py-3 rounded-xl border border-gray-100 flex justify-center gap-6 mt-4">
             <div>
               <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Order ID</p>
               <p className="text-sm font-bold text-gray-800">#{order?.id}</p>
             </div>
             <div className="w-px bg-gray-200"></div>
             <div>
-              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Date</p>
-              <p className="text-sm font-bold text-gray-800">{order?.date}</p>
+              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Total Amount</p>
+              <p className="text-sm font-bold text-gray-800">{order?.amount}</p>
+            </div>
+            <div className="w-px bg-gray-200"></div>
+            <div>
+              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Payment</p>
+              <p className="text-sm font-bold text-gray-800 capitalize flex items-center gap-1">
+                <FiCreditCard size={12} className="text-orange-500" />
+                {order?.paymentMethod}
+              </p>
             </div>
           </div>
         </div>

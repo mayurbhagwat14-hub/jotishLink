@@ -76,6 +76,18 @@ class WalletService {
       io.to('admin_room').emit('dashboard_updated');
     }
 
+    try {
+      const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+      await sendPushNotification({
+        userId,
+        role: 'user',
+        title: 'Wallet Recharged',
+        body: `₹${amount} has been successfully added to your wallet.`,
+      });
+    } catch (err) {
+      console.error('Push notification failed:', err);
+    }
+
     return { user, transaction };
   }
 
@@ -141,6 +153,18 @@ class WalletService {
       if (io) {
         io.to(`room_astro_${astrologer._id}`).emit('wallet_updated', { wallet: astrologer.earnings.available, transaction });
         io.to('admin_room').emit('dashboard_updated');
+      }
+
+      try {
+        const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+        await sendPushNotification({
+          userId: astrologer._id,
+          role: 'astrologer',
+          title: 'Earnings Added',
+          body: `₹${netAmount.toFixed(2)} added to your wallet for a ${sessionType} session.`,
+        });
+      } catch (err) {
+        console.error('Push notification failed:', err);
       }
 
       return { astrologer, netAmount, commissionAmount };

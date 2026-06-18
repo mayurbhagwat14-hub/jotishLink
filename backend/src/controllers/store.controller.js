@@ -9,12 +9,20 @@ import Transaction from '../models/transaction.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { createShiprocketOrder } from '../utils/shiprocketHelper.js';
+import { sendPushNotification } from '../utils/firebaseHelper.js';
 
 // GET /api/store/cart
 export const getCart = asyncHandler(async (req, res) => {
   let cart = await Cart.findOne({ userId: req.user._id }).populate('items.productId');
   if (!cart) {
     cart = await Cart.create({ userId: req.user._id, items: [] });
+  } else {
+    const originalLength = cart.items.length;
+    cart.items = cart.items.filter(item => item.productId != null);
+    if (cart.items.length !== originalLength) {
+      await cart.save();
+    }
   }
   return res.status(200).json(new ApiResponse(200, { cart }, 'Cart fetched'));
 });
@@ -26,6 +34,13 @@ export const updateCart = asyncHandler(async (req, res) => {
   let cart = await Cart.findOne({ userId: req.user._id });
   if (!cart) {
     cart = new Cart({ userId: req.user._id, items: [] });
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) throw new ApiError(404, 'Product not found');
+
+  if (quantity > product.stock) {
+    throw new ApiError(400, `Only ${product.stock} units of ${product.name} are available in stock.`);
   }
 
   const itemIndex = cart.items.findIndex((item) => item.productId.toString() === productId);
@@ -84,15 +99,24 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Cart is empty');
   }
 
-  // Calculate total
+  // Calculate total and validate stock
   let totalAmount = 0;
+  for (const item of cart.items) {
+    if (!item.productId) continue;
+    if (item.quantity > item.productId.stock) {
+      throw new ApiError(400, `Product ${item.productId.name} is out of stock or requested quantity is not available. Available stock: ${item.productId.stock}`);
+    }
+  }
+
   const orderItems = cart.items.map((item) => {
     const price = item.productId.price;
+    const costPrice = item.productId.costPrice || 0;
     totalAmount += price * item.quantity;
     return {
       productId: item.productId._id,
       quantity: item.quantity,
-      price: price
+      price: price,
+      costPrice: costPrice
     };
   });
 
@@ -180,21 +204,39 @@ export const createOrder = asyncHandler(async (req, res) => {
     discountAmount,
   });
 
+  // Send FCM notification
+  await sendPushNotification({
+    userId: user._id.toString(),
+    role: 'user',
+    title: 'Order Confirmed! 🎉',
+    body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been placed successfully. ${paymentStatus === 'paid' ? '₹' + totalAmount + ' deducted.' : 'Payment pending (COD).'}`,
+    data: { orderId: order._id.toString() }
+  });
+
   if (appliedCoupon) {
     appliedCoupon.currentUsage += 1;
     await appliedCoupon.save();
   }
 
-  // Increment sold count in Products
+  // Increment sold count in Products and update stock
   for (const item of orderItems) {
-    await Product.findByIdAndUpdate(item.productId, {
-      $inc: { sold: item.quantity, stock: -item.quantity }
-    });
+    const product = await Product.findById(item.productId);
+    if (product) {
+      product.sold += item.quantity;
+      product.stock -= item.quantity;
+      if (product.stock <= 0) {
+        product.stock = 0;
+        product.inStock = false;
+      }
+      await product.save();
+    }
   }
 
   // Clear cart
   cart.items = [];
   await cart.save();
+
+  // Removed automatic Shiprocket Integration as admin wants manual control
 
   // Emit event to admins
   const io = req.app.get('io');
@@ -309,4 +351,14 @@ export const trackOrder = asyncHandler(async (req, res) => {
   } catch (error) {
     throw new ApiError(500, 'Failed to fetch tracking details from Shiprocket');
   }
+});
+
+// GET /api/store/orders/:id/shiprocket/details
+export const getUserShiprocketOrderDetails = asyncHandler(async (req, res) => {
+  const order = await Order.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!order) throw new ApiError(404, 'Order not found');
+  if (!order.shiprocketOrderId) throw new ApiError(400, 'Order not pushed to Shiprocket yet');
+
+  const details = await ShiprocketService.getOrderDetails(order.shiprocketOrderId);
+  return res.status(200).json(new ApiResponse(200, { shiprocketDetails: details }, 'Shiprocket order details fetched successfully'));
 });

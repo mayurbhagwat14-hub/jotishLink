@@ -22,3 +22,4 @@ export const getAstrologerAnalytics = () => axios.get('/astrologer/analytics');
 export const requestWithdrawal = (amount) => axios.post('/astrologer/withdraw', { amount });
 export const deleteWithdrawalRequest = (id) => axios.delete(`/astrologer/withdraw/${id}`);
 export const deleteAstrologerHistoryBulk = (ids) => axios.post('/astrologer/history/delete', { ids });
+export const updateFcmToken = (fcmToken) => axios.put('/astrologer/fcm-token', { fcmToken });

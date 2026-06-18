@@ -10,7 +10,7 @@ const rechargeOptions = [
   { amount: 3000 },
 ];
 
-const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targetName = "Astrologer", redirectTo }) => {
+const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targetName = "Astrologer", redirectTo, replaceHistory = false }) => {
   const navigate = useNavigate();
   const [selectedAmount, setSelectedAmount] = useState(200);
 
@@ -19,6 +19,7 @@ const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targ
   const handleProceed = () => {
     onClose();
     navigate('/user/recharge', { 
+      replace: replaceHistory,
       state: { 
         amount: selectedAmount,
         redirectTo: redirectTo || location.pathname

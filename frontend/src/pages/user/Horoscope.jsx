@@ -19,8 +19,8 @@ const Horoscope = () => {
     const fetchHoroscope = async () => {
       setLoading(true);
       try {
-        const res = await getHoroscope({ sign: selectedSign, timeframe: selectedDay.toLowerCase() });
-        setHoroscopeData(res.data);
+        const res = await getHoroscope({ sign: selectedSign, period: selectedDay.toLowerCase() });
+        setHoroscopeData(res.data?.data || res.data);
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch horoscope:", error);
@@ -51,7 +51,7 @@ const Horoscope = () => {
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-50 shadow-sm border-b border-orange-50">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors -ml-1.5">
+          <button onClick={() => navigate('/user/home')} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors -ml-1.5">
             <FiArrowLeft size={20} />
           </button>
           <h1 className="text-[17px] font-semibold text-gray-800">Daily Horoscope</h1>
@@ -222,18 +222,24 @@ const Horoscope = () => {
           <h3 className="text-center text-[16px] font-bold text-gray-900 mb-2">{selectedSign} {selectedPeriod}</h3>
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="h-[1px] w-8 bg-orange-200" />
-            <span className="text-[11px] font-bold text-orange-500 uppercase tracking-widest">24 May - 30 May</span>
+            <span className="text-[11px] font-bold text-orange-500 uppercase tracking-widest">
+              {selectedPeriod.includes('Weekly') ? horoscopeData?.alsoCheck?.weekly?.date : selectedPeriod.includes('Monthly') ? horoscopeData?.alsoCheck?.monthly?.date : horoscopeData?.alsoCheck?.yearly?.date}
+            </span>
             <div className="h-[1px] w-8 bg-orange-200" />
           </div>
 
           <h4 className="text-[14px] font-bold text-gray-800 mb-2">Overview</h4>
           <p className="text-gray-600 text-[13px] leading-relaxed mb-5">
-            {selectedSign}, the first sign of the zodiac, embodies the raw energy of new beginnings and fearless leadership. Ruled by Mars, the planet of action and courage, you are natural-born warriors...
+            {selectedPeriod.includes('Weekly') 
+              ? horoscopeData?.alsoCheck?.weekly?.overview 
+              : selectedPeriod.includes('Monthly') ? horoscopeData?.alsoCheck?.monthly?.overview : horoscopeData?.alsoCheck?.yearly?.overview}
           </p>
 
           <h4 className="text-[14px] font-bold text-gray-800 mb-2">Love & Relationships</h4>
           <p className="text-gray-600 text-[13px] leading-relaxed">
-            Romance blazes brightly this week, with passionate energy infusing your love life. For coupled {selectedSign}, Monday through Wednesday bring opportunities to reignite the spark...
+            {selectedPeriod.includes('Weekly') 
+              ? horoscopeData?.alsoCheck?.weekly?.love 
+              : selectedPeriod.includes('Monthly') ? horoscopeData?.alsoCheck?.monthly?.love : horoscopeData?.alsoCheck?.yearly?.love}
           </p>
         </div>
       </div>

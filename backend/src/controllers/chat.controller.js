@@ -39,6 +39,19 @@ export const startChatSession = asyncHandler(async (req, res) => {
   // Mark astrologer as busy
   await Astrologer.findByIdAndUpdate(astrologerId, { onlineStatus: 'busy' });
 
+  // Send Push Notification
+  try {
+    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+    await sendPushNotification({
+      userId: astrologerId,
+      role: 'astrologer',
+      title: 'Incoming Chat Request',
+      body: `You have a new chat request from ${user.name || 'a user'}.`,
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
+  }
+
   return res.status(201).json(
     new ApiResponse(201, {
       roomId,

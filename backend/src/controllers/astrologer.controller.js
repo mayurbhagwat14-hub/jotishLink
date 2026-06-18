@@ -149,7 +149,11 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     if (consultationStyle) astrologer.consultationStyle = consultationStyle;
     if (education) astrologer.education = education;
     if (certificationDetails) astrologer.certificationDetails = certificationDetails;
-    if (email) astrologer.email = email;
+    if (email) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) throw new ApiError(400, 'Invalid email format');
+      astrologer.email = email;
+    }
     if (isPandit !== undefined) astrologer.isPandit = isPandit;
     if (poojasOffered) astrologer.poojasOffered = typeof poojasOffered === 'string' ? JSON.parse(poojasOffered) : poojasOffered;
     
@@ -235,7 +239,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = generateTokens(astrologer._id, 'astrologer');
-  res.cookie('refreshToken', refreshToken, {
+  res.cookie('astrologerRefreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
@@ -285,7 +289,7 @@ export const astrologerLogin = asyncHandler(async (req, res) => {
   }
 
   const { accessToken, refreshToken } = generateTokens(astrologer._id, 'astrologer');
-  res.cookie('refreshToken', refreshToken, {
+  res.cookie('astrologerRefreshToken', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
@@ -934,4 +938,19 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
       topReviews: formattedReviews
     }
   }, 'Analytics fetched'));
+});
+// PUT /api/astrologer/fcm-token
+export const updateFcmToken = asyncHandler(async (req, res) => {
+  const { fcmToken } = req.body;
+  if (!fcmToken) throw new ApiError(400, 'FCM token is required');
+
+  const astrologer = await Astrologer.findByIdAndUpdate(
+    req.user._id,
+    { fcmToken },
+    { new: true }
+  ).select('-password');
+
+  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  
+  return res.status(200).json(new ApiResponse(200, { fcmToken: astrologer.fcmToken }, 'FCM token updated successfully'));
 });

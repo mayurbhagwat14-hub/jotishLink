@@ -15,7 +15,7 @@ const Muhurat = () => {
     const fetchMuhurat = async () => {
       try {
         const res = await getMuhurat();
-        setResult(res.data);
+        setResult(res.data?.data || res.data);
         setLoading(false);
       } catch (error) {
         console.error(error);

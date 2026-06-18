@@ -59,7 +59,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══ METRIC CARDS ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
         {/* Revenue */}
         <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-orange-200 hover:shadow-sm transition-all">
@@ -120,6 +120,18 @@ const AdminDashboard = () => {
           </div>
           <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.storeRevenue || 0}</h3>
           <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +18% vs last month</span>
+        </div>
+
+        {/* Store Profit */}
+        <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-teal-200 hover:shadow-sm transition-all">
+          <div className="flex justify-between items-start mb-3">
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Store Profit</p>
+            <div className="w-9 h-9 bg-teal-50 text-teal-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiActivity size={16} /></div>
+          </div>
+          <h3 className={`text-2xl font-black mb-1 ${(dbData.metrics?.storeProfit || 0) < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+            ₹{dbData.metrics?.storeProfit || 0}
+          </h3>
+          <span className="text-[11px] font-bold text-gray-400 flex items-center gap-0.5">Net Profit Margin</span>
         </div>
       </div>
 

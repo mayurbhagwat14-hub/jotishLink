@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiUser, FiStar, FiShield } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 import Home from './Home';
 
 const MainLanding = () => {
+  const navigate = useNavigate();
+  const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
@@ -19,10 +22,15 @@ const MainLanding = () => {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center p-8 bg-gray-50">
       <div className="text-center mb-16">
+        {appLogo && (
+          <img src={appLogo} alt={appName} className="h-36 mx-auto mb-8 object-contain mix-blend-multiply drop-shadow-sm" />
+        )}
         <h1 className="text-5xl font-serif font-bold text-gray-900 mb-4">
-          Welcome to <span className="text-orange-500">JyotishLink</span>
+          Welcome to <span className="text-orange-500">{appName}</span>
         </h1>
-        <p className="text-lg text-gray-600">Select your portal to continue</p>
+        <p className="text-[14px] text-gray-500 font-medium max-w-sm mx-auto mb-10 leading-relaxed">
+          Connect with India's best astrologers via chat or call and get instant answers to your life problems.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">

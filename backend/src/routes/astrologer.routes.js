@@ -21,6 +21,7 @@ import {
   getAstrologerAnalytics,
   requestWithdrawal,
   deleteWithdrawalRequest,
+  updateFcmToken,
 } from '../controllers/astrologer.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { uploadFields } from '../middlewares/upload.middleware.js';
@@ -62,5 +63,6 @@ router.get('/astrologer/history', astroAuth, getAstrologerHistory);
 router.post('/astrologer/history/delete', astroAuth, deleteAstrologerHistoryBulk);
 router.get('/astrologer/analytics', astroAuth, getAstrologerAnalytics);
 router.put('/astrologer/status', astroAuth, updateOnlineStatus);
+router.put('/astrologer/fcm-token', astroAuth, updateFcmToken);
 
 export default router;

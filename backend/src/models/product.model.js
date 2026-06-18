@@ -23,6 +23,10 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    costPrice: {
+      type: Number,
+      default: 0,
+    },
     originalPrice: {
       type: Number,
     },
@@ -68,6 +72,22 @@ const productSchema = new mongoose.Schema(
       type: String,
       enum: ['none', 'top_selling', 'newly_launch'],
       default: 'none',
+    },
+    weight: {
+      type: Number,
+      default: 0.5,
+    },
+    length: {
+      type: Number,
+      default: 10,
+    },
+    breadth: {
+      type: Number,
+      default: 10,
+    },
+    height: {
+      type: Number,
+      default: 10,
     },
   },
   {

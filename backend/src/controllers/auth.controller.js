@@ -22,8 +22,8 @@ const generateTokens = (userId, role) => {
   return { accessToken, refreshToken };
 };
 
-const setRefreshCookie = (res, token) => {
-  res.cookie('refreshToken', token, {
+const setRefreshCookie = (res, token, cookieName = 'userRefreshToken') => {
+  res.cookie(cookieName, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
@@ -151,7 +151,15 @@ export const register = asyncHandler(async (req, res) => {
 
 // POST /api/auth/refresh
 export const refreshToken = asyncHandler(async (req, res) => {
-  const token = req.body.refreshToken || req.cookies?.refreshToken;
+  let token = req.body.refreshToken;
+  
+  if (!token && req.cookies) {
+    const role = req.body.role || 'user'; // 'user', 'astrologer', 'admin'
+    if (role === 'astrologer') token = req.cookies.astrologerRefreshToken;
+    else if (role === 'admin') token = req.cookies.adminRefreshToken;
+    else token = req.cookies.userRefreshToken;
+  }
+  
   if (!token) throw new ApiError(401, 'No refresh token');
 
   let decoded;
@@ -174,7 +182,12 @@ export const refreshToken = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(401, 'User not found');
 
   const { accessToken, refreshToken: newRefresh } = generateTokens(user._id, decoded.role || user.role);
-  setRefreshCookie(res, newRefresh);
+  
+  let cookieName = 'userRefreshToken';
+  if (decoded.role === 'admin') cookieName = 'adminRefreshToken';
+  if (decoded.role === 'astrologer') cookieName = 'astrologerRefreshToken';
+  
+  setRefreshCookie(res, newRefresh, cookieName);
 
   return res.status(200).json(new ApiResponse(200, { accessToken, refreshToken: newRefresh }, 'Token refreshed'));
 });
@@ -207,7 +220,7 @@ export const adminLogin = asyncHandler(async (req, res) => {
   if (!isMatch) throw new ApiError(401, 'Invalid credentials');
 
   const { accessToken, refreshToken } = generateTokens(user._id, 'admin');
-  setRefreshCookie(res, refreshToken);
+  setRefreshCookie(res, refreshToken, 'adminRefreshToken');
 
   return res.status(200).json(
     new ApiResponse(200, {

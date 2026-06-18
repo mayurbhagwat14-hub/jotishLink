@@ -53,7 +53,9 @@ import {
   deleteAdminRating,
   pushOrderToShiprocket,
   generateOrderAWB,
-  getAdminPendingCounts
+  getAdminPendingCounts,
+  getShiprocketOrderDetails,
+  shiprocketWebhook
 } from '../controllers/admin.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { auditLogMiddleware } from '../middlewares/audit.middleware.js';
@@ -61,6 +63,9 @@ import { validate, refundUserSchema } from '../middlewares/validation.middleware
 import { upload } from '../middlewares/upload.middleware.js';
 
 const router = Router();
+
+// Public webhook route for Shiprocket
+router.post('/admin/shiprocket/webhook', shiprocketWebhook);
 
 // All admin routes require admin role
 router.use('/admin', verifyJWT, authorizeRoles('admin'), auditLogMiddleware);
@@ -105,6 +110,7 @@ router.put('/admin/orders/:id/status', updateOrderStatus);
 router.put('/admin/orders/:id/cancel', processCancelRequest);
 router.post('/admin/orders/:id/shiprocket/push', pushOrderToShiprocket);
 router.post('/admin/orders/:id/shiprocket/awb', generateOrderAWB);
+router.get('/admin/orders/:id/shiprocket/details', getShiprocketOrderDetails);
 
 // Products
 router.get('/admin/products', getAdminProducts);

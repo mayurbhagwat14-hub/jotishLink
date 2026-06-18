@@ -209,15 +209,15 @@ const Store = () => {
             <div className="px-4 py-4">
               <h2 className="text-[16px] font-bold text-gray-800 mb-3">Search Results</h2>
               {filteredProducts.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {filteredProducts.map((product, i) => (
                     <div 
                       key={product.id || product._id || i} 
                       onClick={() => navigate(`/user/product/${product._id || product.id}`)}
                       className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow"
                     >
-                      <div className="h-[140px] bg-orange-50 overflow-hidden">
-                        <img src={product.image || product.img} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                      <div className="h-[100px] bg-orange-50 overflow-hidden">
+                        <img src={product.image || product.img} alt={product.name} className={`w-full h-full object-cover hover:scale-105 transition-transform duration-500 ${(!product.inStock || product.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                       </div>
                       <div className="p-3">
                         <h4 className="text-[13px] font-semibold text-gray-800 line-clamp-1 mb-1">{product.name}</h4>
@@ -227,14 +227,19 @@ const Store = () => {
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-[15px] font-bold text-gray-900">₹{product.price}</span>
-                          <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span>
-                          <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>
+                          {product.originalPrice ? <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span> : null}
+                          {product.discount && product.discount !== '0%' && <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>}
                         </div>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
-                          className="w-full border-2 border-orange-500 text-orange-500 font-bold text-[12px] py-1.5 rounded-xl hover:bg-orange-50 active:scale-95 transition-all"
+                          onClick={(e) => { e.stopPropagation(); if(product.inStock !== false && product.stock > 0) handleAddToCart(product); }}
+                          disabled={product.inStock === false || product.stock <= 0}
+                          className={`w-full border-2 font-bold text-[12px] py-1.5 rounded-xl transition-all ${
+                            (!product.inStock || product.stock <= 0)
+                              ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                              : 'border-orange-500 text-orange-500 hover:bg-orange-50 active:scale-95'
+                          }`}
                         >
-                          Add to cart
+                          {(!product.inStock || product.stock <= 0) ? 'Out of Stock' : 'Add to cart'}
                         </button>
                       </div>
                     </div>
@@ -312,7 +317,7 @@ const Store = () => {
                     >
                       <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors flex items-center justify-center text-orange-300">
                         {p.image || p.img ? (
-                          <img src={p.image || p.img} alt={p.name} className="w-full h-full object-cover" />
+                          <img src={p.image || p.img} alt={p.name} className={`w-full h-full object-cover ${(!p.inStock || p.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                         ) : (
                           <span className="text-xs font-bold text-gray-400">No Img</span>
                         )}
@@ -338,7 +343,7 @@ const Store = () => {
                     >
                       <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors flex items-center justify-center text-orange-300">
                         {p.image || p.img ? (
-                          <img src={p.image || p.img} alt={p.name} className="w-full h-full object-cover" />
+                          <img src={p.image || p.img} alt={p.name} className={`w-full h-full object-cover ${(!p.inStock || p.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                         ) : (
                           <span className="text-xs font-bold text-gray-400">No Img</span>
                         )}
@@ -355,16 +360,16 @@ const Store = () => {
                   <h2 className="text-[16px] font-bold text-gray-800">All Products</h2>
                   <span className="text-[12px] text-orange-500 font-semibold cursor-pointer">View All</span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {products.map((product, i) => (
                     <div 
                       key={product.id || product._id || i} 
                       onClick={() => navigate(`/user/product/${product._id || product.id}`)}
                       className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow"
                     >
-                      <div className="h-[140px] bg-orange-50 overflow-hidden flex items-center justify-center text-orange-300">
+                      <div className="h-[100px] bg-orange-50 overflow-hidden flex items-center justify-center text-orange-300">
                         {product.image || product.img ? (
-                          <img src={product.image || product.img} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                          <img src={product.image || product.img} alt={product.name} className={`w-full h-full object-cover hover:scale-105 transition-transform duration-500 ${(!product.inStock || product.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                         ) : (
                           <span className="text-sm font-bold text-gray-400">No Img</span>
                         )}
@@ -377,14 +382,19 @@ const Store = () => {
                         </div>
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-[15px] font-bold text-gray-900">₹{product.price}</span>
-                          {product.originalPrice && <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span>}
-                          {product.discount && <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>}
+                          {product.originalPrice ? <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span> : null}
+                          {product.discount && product.discount !== '0%' && <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>}
                         </div>
                         <button 
-                          onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
-                          className="w-full border-2 border-orange-500 text-orange-500 font-bold text-[12px] py-1.5 rounded-xl hover:bg-orange-50 active:scale-95 transition-all"
+                          onClick={(e) => { e.stopPropagation(); if(product.inStock !== false && product.stock > 0) handleAddToCart(product); }}
+                          disabled={product.inStock === false || product.stock <= 0}
+                          className={`w-full border-2 font-bold text-[12px] py-1.5 rounded-xl transition-all ${
+                            (!product.inStock || product.stock <= 0)
+                              ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                              : 'border-orange-500 text-orange-500 hover:bg-orange-50 active:scale-95'
+                          }`}
                         >
-                          Add to cart
+                          {(!product.inStock || product.stock <= 0) ? 'Out of Stock' : 'Add to cart'}
                         </button>
                       </div>
                     </div>

@@ -23,10 +23,11 @@ instance.interceptors.request.use(
       const state = store.getState();
       let token = state.auth.token; // default to user token
       
-      // Determine context based on the API URL path
-      if (config.url && config.url.startsWith('/admin')) {
+      // Determine context based on the current window path
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/admin')) {
         token = state.adminAuth?.token;
-      } else if (config.url && config.url.startsWith('/astrologer')) {
+      } else if (currentPath.startsWith('/astrologer')) {
         token = state.astrologerAuth?.token;
       } else {
         token = state.auth?.token;
@@ -77,22 +78,27 @@ instance.interceptors.response.use(
       try {
         console.log('🔄 [Axios] Token expired. Attempting to refresh token...');
         
-        // Determine which refresh token to use based on the failed request URL context
+        // Determine which refresh token to use based on the current window path
         let tokenKey = 'refreshToken'; // default user
         let actionType = 'auth/login';
         
-        if (originalRequest.url.startsWith('/admin')) {
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin')) {
           tokenKey = 'adminRefreshToken';
           actionType = 'adminAuth/adminLogin';
-        } else if (originalRequest.url.startsWith('/astrologer')) {
+        } else if (currentPath.startsWith('/astrologer')) {
           tokenKey = 'astrologerRefreshToken';
           actionType = 'astrologerAuth/astrologerLogin';
         }
 
+        let roleStr = 'user';
+        if (tokenKey === 'adminRefreshToken') roleStr = 'admin';
+        else if (tokenKey === 'astrologerRefreshToken') roleStr = 'astrologer';
+
         const refreshTokenStr = localStorage.getItem(tokenKey);
         const res = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/refresh`,
-          { refreshToken: refreshTokenStr },
+          { refreshToken: refreshTokenStr, role: roleStr },
           { withCredentials: true }
         );
         const newAccessToken = res.data?.data?.accessToken || res.data?.accessToken;
@@ -123,8 +129,9 @@ instance.interceptors.response.use(
         isRefreshing = false;
         
         if (store) {
-          if (originalRequest.url.includes('/admin')) store.dispatch({ type: 'adminAuth/adminLogout' });
-          else if (originalRequest.url.includes('/astrologer')) store.dispatch({ type: 'astrologerAuth/astrologerLogout' });
+          const currentPath = window.location.pathname;
+          if (currentPath.startsWith('/admin')) store.dispatch({ type: 'adminAuth/adminLogout' });
+          else if (currentPath.startsWith('/astrologer')) store.dispatch({ type: 'astrologerAuth/astrologerLogout' });
           else store.dispatch({ type: 'auth/logout' });
         }
         toast.error('Session expired. Please login again.');

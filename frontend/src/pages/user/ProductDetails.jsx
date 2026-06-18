@@ -143,7 +143,7 @@ const ProductDetails = () => {
               <img 
                 src={product.image || product.img} 
                 alt={product.name} 
-                className={`w-[90%] h-[90%] object-contain transition-opacity duration-500 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`w-[90%] h-[90%] object-contain transition-opacity duration-500 relative z-10 ${imageLoaded ? 'opacity-100' : 'opacity-0'} ${(!product.inStock || product.stock <= 0) ? 'grayscale opacity-70' : ''}`}
                 onLoad={() => setImageLoaded(true)}
               />
             </>
@@ -204,7 +204,14 @@ const ProductDetails = () => {
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-50 rounded-t-[32px] shadow-[0_-10px_40px_rgba(0,0,0,0.06)] px-5 py-4 pb-6">
         <div className="flex items-center gap-4">
           
-          {currentQuantity > 0 ? (
+          {(!product.inStock || product.stock <= 0) ? (
+            <button
+              disabled
+              className="w-full py-4 rounded-2xl font-bold text-[16px] flex items-center justify-center gap-2 bg-gray-100 text-gray-400 cursor-not-allowed transition-all"
+            >
+              Out of Stock
+            </button>
+          ) : currentQuantity > 0 ? (
             <>
               {/* Quantity Selector */}
               <div className="flex items-center justify-between bg-white border border-gray-100 shadow-sm rounded-2xl px-2 py-2 flex-1 max-w-[130px]">

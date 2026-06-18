@@ -21,6 +21,9 @@ const categories = [
   { name: 'Health', icon: <MdOutlineHealthAndSafety /> },
   { name: 'Wealth', icon: <FaRupeeSign size={10} /> },
   { name: 'Legal', icon: <MdOutlineGavel /> },
+  { name: 'Career', icon: <span className="text-sm">💼</span> },
+  { name: 'Business', icon: <span className="text-sm">🏢</span> },
+  { name: 'Kids', icon: <span className="text-sm">👶</span> },
 ];
 
 const ChatScreen = () => {

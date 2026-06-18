@@ -29,6 +29,8 @@ const Cart = () => {
   const shipping = subtotal > 0 ? 50 : 0;
   const total = subtotal + shipping;
 
+  const hasOutOfStockItems = items.some(item => !item.productId?.inStock || item.productId?.stock < item.quantity);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* ═══ HEADER ═══ */}
@@ -82,7 +84,14 @@ const Cart = () => {
                         <FiTrash2 size={16} />
                       </button>
                     </div>
-                    <p className="text-orange-500 font-bold text-[15px] mt-1">₹{item.productId?.price}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-orange-500 font-bold text-[15px]">₹{item.productId?.price}</p>
+                      {(!item.productId?.inStock || item.productId?.stock < item.quantity) && (
+                        <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-md uppercase">
+                          {item.productId?.stock === 0 ? 'Out of Stock' : `Only ${item.productId?.stock} left`}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="flex items-center gap-4 mt-2">
@@ -127,9 +136,17 @@ const Cart = () => {
           </div>
           
           <div className="mt-auto pt-4">
+            {hasOutOfStockItems && (
+              <p className="text-red-500 text-sm font-bold text-center mb-3">Please remove or adjust out of stock items to proceed.</p>
+            )}
             <button
               onClick={() => navigate('/user/checkout', { state: { total } })}
-              className="w-full bg-orange-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 hover:bg-orange-600 active:scale-[0.98] transition-all"
+              disabled={hasOutOfStockItems}
+              className={`w-full font-bold py-4 rounded-xl shadow-lg transition-all ${
+                hasOutOfStockItems 
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none' 
+                  : 'bg-orange-500 text-white shadow-orange-500/30 hover:bg-orange-600 active:scale-[0.98]'
+              }`}
             >
               Proceed to Checkout
             </button>

@@ -65,6 +65,10 @@ const astrologerSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
     },
+    fcmToken: {
+      type: String,
+      default: null,
+    },
 
     // Professional Details
     skills: {

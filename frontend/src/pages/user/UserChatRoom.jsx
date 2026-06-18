@@ -138,7 +138,7 @@ Please analyze my chart based on this information.`;
         setShowLowBalance(true);
         setTimeout(() => {
           setShowLowBalance(false);
-          navigate('/user/wallet');
+          navigate('/user/wallet', { replace: true });
         }, 3000);
       } else {
         // Show summary first, then rating
@@ -148,7 +148,7 @@ Please analyze my chart based on this information.`;
           if (!hasRated && astrologer._id) {
             setShowRating(true);
           } else {
-            navigate('/user/home');
+            navigate('/user/home', { replace: true });
           }
         }, 3000);
       }
@@ -238,7 +238,7 @@ Please analyze my chart based on this information.`;
     } catch (e) {
       console.error('Rating error:', e);
     }
-    navigate('/user/home');
+    navigate('/user/home', { replace: true });
   };
 
   const handleRequestCall = (type) => {
@@ -348,7 +348,12 @@ Please analyze my chart based on this information.`;
                   {msg.text && msg.text.startsWith('data:image/') ? (
                     <img src={msg.text} alt="attachment" className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" onClick={() => window.open(msg.text)} />
                   ) : (
-                    msg.text
+                    (msg.text || '').split(/(\*\*.*?\*\*)/g).map((part, i) => {
+                      if (part.startsWith('**') && part.endsWith('**')) {
+                        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+                      }
+                      return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
+                    })
                   )}
                 </div>
                 <span className={`text-[10px] text-gray-400 mt-1 font-bold block ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
@@ -407,6 +412,7 @@ Please analyze my chart based on this information.`;
         currentBalance={shortBalanceInfo.current || user?.wallet || 0}
         targetName={shortBalanceInfo.targetName || astrologer.name}
         redirectTo="/user/wallet"
+        replaceHistory={true}
       />
 
       {/* Incoming call request loading overlay */}
@@ -463,7 +469,7 @@ Please analyze my chart based on this information.`;
                 if (!hasRated && astrologer._id) {
                   setShowRating(true);
                 } else {
-                  navigate('/user/home');
+                  navigate('/user/home', { replace: true });
                 }
               }}
               className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/20"

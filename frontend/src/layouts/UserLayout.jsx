@@ -19,6 +19,7 @@ const UserLayout = () => {
   const dispatch = useDispatch();
 
   const { user, settings, isAuthenticated } = useSelector((state) => state.auth) || {};
+  const { appName, appLogo } = useSelector((state) => state.settings) || { appName: 'JyotishLink', appLogo: '' };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -158,14 +159,18 @@ const UserLayout = () => {
           </button>
           
           <div className="flex flex-col items-center shrink-0 mt-1">
-            <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mb-0.5 border border-orange-100 shadow-sm">
-               <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" className="w-6 h-6">
-                  <circle cx="12" cy="12" r="3"/>
-                  <circle cx="12" cy="12" r="7" strokeDasharray="2 2"/>
-                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-               </svg>
-            </div>
-            <span className="text-[9px] text-orange-500 font-bold leading-none">JyotishLink</span>
+            {appLogo ? (
+              <img src={appLogo} alt={appName} className="w-10 h-10 object-contain mb-0.5" />
+            ) : (
+              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mb-0.5 border border-orange-100 shadow-sm">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" className="w-6 h-6">
+                    <circle cx="12" cy="12" r="3"/>
+                    <circle cx="12" cy="12" r="7" strokeDasharray="2 2"/>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                 </svg>
+              </div>
+            )}
+            <span className="text-[9px] text-orange-500 font-bold leading-none">{appName}</span>
           </div>
 
           <div className="flex-1 pr-2">

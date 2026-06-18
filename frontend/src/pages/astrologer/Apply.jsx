@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera } from 'react-icons/fi';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { astrologerLogin, astrologerSignupThunk } from '../../store/slices/astrologerAuthSlice';
 import { checkAstrologerPhone, requestOtp, astrologerSignup } from '../../api/astrologerApis';
 
-const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career'];
+const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career', 'Business', 'Kids'];
 const SPECIALITIES = ['Vedic Astrology', 'Tarot Reading', 'Numerology', 'Palmistry', 'Vastu Shastra'];
+const LANGUAGES = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Gujarati', 'Bengali'];
 const POOJA_TYPES = ['Satyanarayan Pooja', 'Griha Pravesh', 'Navagraha Shanti', 'Rudrabhishek', 'Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya', 'Kaal Sarp Dosh Nivaran', 'Mangal Dosh Nivaran'];
 
 const ApplyAstrologer = () => {
@@ -17,10 +18,10 @@ const ApplyAstrologer = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
-  const [profilePic, setProfilePic] = useState(null);
   const [identityProof, setIdentityProof] = useState('');
   const [apiError, setApiError] = useState('');
   const [tempAuthData, setTempAuthData] = useState(null);
+  const { appName } = useSelector(state => state.settings) || { appName: 'JyotishLink' };
   
   const prefilledPhone = location.state?.phone || '';
   
@@ -36,8 +37,9 @@ const ApplyAstrologer = () => {
     city: '',
     state: '',
     pincode: '',
-    specialities: [],
+    skills: [],
     categories: [],
+    languages: [],
     experience: '',
     description: '',
     consultationStyle: '',
@@ -76,38 +78,65 @@ const ApplyAstrologer = () => {
 
   const [otp, setOtp] = useState(['', '', '', '']);
 
-  const [aadhaarFront, setAadhaarFront] = useState('');
-  const [aadhaarBack, setAadhaarBack] = useState('');
-  const [panCard, setPanCard] = useState('');
-  const [certificate, setCertificate] = useState('');
-  const [selfieVerification, setSelfieVerification] = useState('');
+  // Load photos from sessionStorage
+  const [profilePic, setProfilePic] = useState(() => sessionStorage.getItem('apply_profilePic') || null);
+  const [aadhaarFront, setAadhaarFront] = useState(() => sessionStorage.getItem('apply_aadhaarFront') || '');
+  const [aadhaarBack, setAadhaarBack] = useState(() => sessionStorage.getItem('apply_aadhaarBack') || '');
+  const [panCard, setPanCard] = useState(() => sessionStorage.getItem('apply_panCard') || '');
+  const [certificate, setCertificate] = useState(() => sessionStorage.getItem('apply_certificate') || '');
+  const [selfieVerification, setSelfieVerification] = useState(() => sessionStorage.getItem('apply_selfieVerification') || '');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const compressImage = (file, maxWidth = 800, callback) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        callback(canvas.toDataURL('image/jpeg', 0.7)); // Compress to 70% quality JPEG
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePic(reader.result);
-      };
-      reader.readAsDataURL(file);
+      compressImage(file, 400, (compressedDataUrl) => {
+        setProfilePic(compressedDataUrl);
+        try { sessionStorage.setItem('apply_profilePic', compressedDataUrl); } catch (e) { console.warn('Storage full'); }
+      });
     }
   };
 
-  const handleDocUpload = (e, setter) => {
+  const handleDocUpload = (e, setter, storageKey) => {
     const file = e.target.files[0];
     if (file) {
       if (file.type === 'application/pdf') {
         setter(file);
+        // Can't reliably store File objects in sessionStorage, but we can store a flag
+        try { sessionStorage.setItem(storageKey, 'pdf_attached'); } catch (e) {}
       } else {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setter(reader.result);
-        };
-        reader.readAsDataURL(file);
+        compressImage(file, 800, (compressedDataUrl) => {
+          setter(compressedDataUrl);
+          try { sessionStorage.setItem(storageKey, compressedDataUrl); } catch (e) { console.warn('Storage full'); }
+        });
       }
     }
   };
@@ -123,13 +152,13 @@ const ApplyAstrologer = () => {
     });
   };
 
-  const handleSpecialityToggle = (speciality) => {
+  const handleSkillToggle = (skill) => {
     setFormData(prev => {
-      const isSelected = prev.specialities.includes(speciality);
+      const isSelected = prev.skills.includes(skill);
       if (isSelected) {
-        return { ...prev, specialities: prev.specialities.filter(s => s !== speciality) };
+        return { ...prev, skills: prev.skills.filter(s => s !== skill) };
       } else {
-        return { ...prev, specialities: [...prev.specialities, speciality] };
+        return { ...prev, skills: [...prev.skills, skill] };
       }
     });
   };
@@ -141,6 +170,17 @@ const ApplyAstrologer = () => {
     } else {
       setFormData({ ...formData, poojasOffered: [...formData.poojasOffered, { poojaName, price: 500 }] });
     }
+  };
+
+  const handleLanguageToggle = (language) => {
+    setFormData(prev => {
+      const isSelected = prev.languages.includes(language);
+      if (isSelected) {
+        return { ...prev, languages: prev.languages.filter(l => l !== language) };
+      } else {
+        return { ...prev, languages: [...prev.languages, language] };
+      }
+    });
   };
 
   const updatePoojaPrice = (poojaName, price) => {
@@ -164,7 +204,7 @@ const ApplyAstrologer = () => {
     if (!/^\d{10}$/.test(formData.mobile)) { toast.error('Mobile Number must be exactly 10 digits.'); return setLoading(false); }
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(formData.email)) { 
-      toast.error('Please enter a valid email format.'); 
+      toast.error('Please enter a valid email format (e.g. name@domain.com).'); 
       return setLoading(false); 
     }
     const domain = formData.email.split('@')[1]?.toLowerCase();
@@ -177,8 +217,9 @@ const ApplyAstrologer = () => {
     if (!formData.dob || !formData.address || !formData.city || !formData.state || !formData.pincode) { toast.error('All Personal Details are required.'); return setLoading(false); }
     if (!/^\d{6}$/.test(formData.pincode)) { toast.error('Pincode must be exactly 6 digits.'); return setLoading(false); }
     
-    if (formData.specialities.length === 0) { toast.error('Please select at least one Primary Speciality.'); return setLoading(false); }
+    if (formData.skills.length === 0) { toast.error('Please select at least one Primary Skill.'); return setLoading(false); }
     if (formData.categories.length === 0) { toast.error('Please select at least one Expertise Category.'); return setLoading(false); }
+    if (formData.languages.length === 0) { toast.error('Please select at least one Language.'); return setLoading(false); }
     
     if (!formData.education || !formData.consultationStyle) { toast.error('Professional details like education and style are required.'); return setLoading(false); }
     if (Number(formData.chatPrice) < 5 || Number(formData.callPrice) < 5 || Number(formData.videoPrice) < 5) { toast.error('All prices (Chat, Call, Video) must be at least ₹5/min.'); return setLoading(false); }
@@ -221,8 +262,9 @@ const ApplyAstrologer = () => {
         email: formData.email,
         password: formData.password,
         otp: otp.join(''),
-        skills: formData.specialities,
+        skills: formData.skills,
         categories: formData.categories,
+        languages: formData.languages,
         experience: Number(formData.experience),
         about: formData.description,
         avatar: profilePic,
@@ -272,8 +314,14 @@ const ApplyAstrologer = () => {
         });
       }
 
-      // Clear local storage after successful submission
+      // Clear local storage and session storage after successful submission
       localStorage.removeItem('astrologerApplyData');
+      sessionStorage.removeItem('apply_profilePic');
+      sessionStorage.removeItem('apply_aadhaarFront');
+      sessionStorage.removeItem('apply_aadhaarBack');
+      sessionStorage.removeItem('apply_panCard');
+      sessionStorage.removeItem('apply_certificate');
+      sessionStorage.removeItem('apply_selfieVerification');
 
       setLoading(false);
       setStep(3); // Pending screen
@@ -335,7 +383,7 @@ const ApplyAstrologer = () => {
               <FiArrowLeft size={16} /> Back
             </button>
             <h1 className="text-3xl font-black mb-2">Join as an Astrologer</h1>
-            <p className="text-orange-100 font-medium">Partner with JyotishLink and guide millions of users worldwide.</p>
+            <p className="text-orange-100 font-medium">Partner with {appName} and guide millions of users worldwide.</p>
           </div>
         </div>
 
@@ -480,16 +528,16 @@ const ApplyAstrologer = () => {
                   </div>
                 </div>
 
-                {/* Speciality */}
+                {/* Skills */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Primary Specialities <span className="text-red-500">*</span></label>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Primary Skills <span className="text-red-500">*</span></label>
                   <div className="flex flex-wrap gap-3">
                     {SPECIALITIES.map(spec => (
                       <label key={spec} className="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 hover:border-orange-300 transition-all">
                         <input 
                           type="checkbox" 
-                          checked={formData.specialities.includes(spec)}
-                          onChange={() => handleSpecialityToggle(spec)}
+                          checked={formData.skills.includes(spec)}
+                          onChange={() => handleSkillToggle(spec)}
                           className="accent-orange-500 w-4 h-4"
                         />
                         <span className="text-sm font-medium text-gray-700">{spec}</span>
@@ -511,6 +559,24 @@ const ApplyAstrologer = () => {
                           className="accent-orange-500 w-4 h-4"
                         />
                         <span className="text-sm font-medium text-gray-700">{cat}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Languages */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Languages <span className="text-red-500">*</span></label>
+                  <div className="flex flex-wrap gap-3">
+                    {LANGUAGES.map(lang => (
+                      <label key={lang} className="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 hover:border-orange-300 transition-all">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.languages.includes(lang)}
+                          onChange={() => handleLanguageToggle(lang)}
+                          className="accent-orange-500 w-4 h-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{lang}</span>
                       </label>
                     ))}
                   </div>
@@ -676,14 +742,14 @@ const ApplyAstrologer = () => {
               {/* Document Uploads Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {[
-                  { label: "Aadhaar Front", state: aadhaarFront, setter: setAadhaarFront },
-                  { label: "Aadhaar Back", state: aadhaarBack, setter: setAadhaarBack },
-                  { label: "PAN Card", state: panCard, setter: setPanCard },
-                  { label: "Astrology Certificate", state: certificate, setter: setCertificate },
-                  { label: "Selfie Verification", state: selfieVerification, setter: setSelfieVerification },
+                  { label: "Aadhaar Front", state: aadhaarFront, setter: setAadhaarFront, key: 'apply_aadhaarFront' },
+                  { label: "Aadhaar Back", state: aadhaarBack, setter: setAadhaarBack, key: 'apply_aadhaarBack' },
+                  { label: "PAN Card", state: panCard, setter: setPanCard, key: 'apply_panCard' },
+                  { label: "Astrology Certificate", state: certificate, setter: setCertificate, key: 'apply_certificate' },
+                  { label: "Selfie Verification", state: selfieVerification, setter: setSelfieVerification, key: 'apply_selfieVerification' },
                 ].map((doc, idx) => (
                   <label key={idx} className="relative cursor-pointer border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-orange-300 transition-colors bg-gray-50">
-                    <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter)} required />
+                    <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter, doc.key)} required={!doc.state} />
                     {doc.state ? (
                       doc.state.startsWith('data:image/') ? (
                         <div className="relative w-full h-24 rounded-xl overflow-hidden group">

@@ -8,7 +8,8 @@ import {
   getOrderById,
   createRazorpayOrder,
   requestCancelOrder,
-  trackOrder
+  trackOrder,
+  getUserShiprocketOrderDetails
 } from '../controllers/store.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 
@@ -23,5 +24,6 @@ router.get('/store/orders', verifyJWT, getUserOrders);
 router.get('/store/orders/:id', verifyJWT, getOrderById);
 router.post('/store/orders/:id/cancel', verifyJWT, requestCancelOrder);
 router.get('/store/orders/:id/track', verifyJWT, trackOrder);
+router.get('/store/orders/:id/shiprocket/details', verifyJWT, getUserShiprocketOrderDetails);
 
 export default router;

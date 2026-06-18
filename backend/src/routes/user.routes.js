@@ -18,12 +18,14 @@ import {
   deleteUserHistory,
   rateAstrologer,
   updateFcmToken,
+  getPublicSettings,
 } from '../controllers/user.controller.js';
 import { verifyJWT, authorizeRoles, optionalAuth } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
 // Public Routes (Optional authentication for personalized data)
+router.get('/settings/public', getPublicSettings);
 router.get('/user/homepage-data', optionalAuth, getHomepageData);
 router.get('/astrologers', optionalAuth, getAstrologers);
 router.get('/astrologers/:id', optionalAuth, getAstrologerById);

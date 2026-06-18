@@ -16,6 +16,7 @@ const AstrologerLayout = () => {
   const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.astrologerAuth);
   const { profile } = useSelector((state) => state.astrologer);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const location = useLocation();
   const navigate = useNavigate();
   const [isOnline, setIsOnline] = useState(user?.onlineStatus === 'online' || false);
@@ -286,7 +287,7 @@ const AstrologerLayout = () => {
             </div>
             
             <div className="p-4 border-t border-gray-100 text-center">
-              <p className="text-xs font-bold text-gray-400">JyotishLink Panel v1.0</p>
+              <p className="text-xs font-bold text-gray-400">{appName} Panel v1.0</p>
             </div>
           </div>
         </div>
