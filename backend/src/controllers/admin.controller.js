@@ -50,11 +50,13 @@ export const getAdminEarnings = async (req, res, next) => {
         chat: 0,
         audio: 0,
         video: 0,
+        pooja: 0,
       },
       astroBreakdown: {
         chat: 0,
         audio: 0,
         video: 0,
+        pooja: 0,
       },
       history: logs
     };
@@ -77,6 +79,9 @@ export const getAdminEarnings = async (req, res, next) => {
       } else if (log.sessionType === 'video' || log.sessionType === 'video_call') {
         result.breakdown.video += share;
         result.astroBreakdown.video += astroShare;
+      } else if (log.sessionType === 'pooja') {
+        result.breakdown.pooja += share;
+        result.astroBreakdown.pooja += astroShare;
       }
     });
 

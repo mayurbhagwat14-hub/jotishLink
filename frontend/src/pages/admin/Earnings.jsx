@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiTrendingUp, FiActivity, FiVideo, FiPhone, FiMessageCircle } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
+import { GiFlowerPot } from 'react-icons/gi';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import getSocket from '../../socket/socketManager';
@@ -11,8 +12,8 @@ const Earnings = () => {
     weekly: 0,
     monthly: 0,
     total: 0,
-    breakdown: { chat: 0, audio: 0, video: 0 },
-    astroBreakdown: { chat: 0, audio: 0, video: 0 },
+    breakdown: { chat: 0, audio: 0, video: 0, pooja: 0 },
+    astroBreakdown: { chat: 0, audio: 0, video: 0, pooja: 0 },
     history: []
   });
   const [loading, setLoading] = useState(true);
@@ -92,7 +93,14 @@ const Earnings = () => {
                 <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><FiVideo /></div>
                 <span className="font-medium text-gray-700">Video Calls</span>
               </div>
-              <span className="font-bold text-gray-900">₹{data.breakdown.video.toFixed(2)}</span>
+              <span className="font-bold text-gray-900">₹{(data.breakdown.video || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center"><GiFlowerPot /></div>
+                <span className="font-medium text-gray-700">Pooja</span>
+              </div>
+              <span className="font-bold text-gray-900">₹{(data.breakdown.pooja || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -120,6 +128,13 @@ const Earnings = () => {
                 <span className="font-medium text-gray-700">Video Calls</span>
               </div>
               <span className="font-bold text-blue-600">₹{(data.astroBreakdown?.video || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center"><GiFlowerPot /></div>
+                <span className="font-medium text-gray-700">Pooja</span>
+              </div>
+              <span className="font-bold text-blue-600">₹{(data.astroBreakdown?.pooja || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -153,9 +168,10 @@ const Earnings = () => {
                       <span className={`px-2 py-1 rounded text-xs font-bold whitespace-nowrap ${
                         log.sessionType === 'chat' ? 'bg-blue-100 text-blue-700' :
                         (log.sessionType === 'audio' || log.sessionType === 'audio_call') ? 'bg-orange-100 text-orange-700' :
+                        log.sessionType === 'pooja' ? 'bg-pink-100 text-pink-700' :
                         'bg-purple-100 text-purple-700'
                       }`}>
-                        {log.sessionType === 'audio_call' ? 'Audio Call' : log.sessionType === 'video_call' ? 'Video Call' : log.sessionType}
+                        {log.sessionType === 'audio_call' ? 'Audio Call' : log.sessionType === 'video_call' ? 'Video Call' : log.sessionType === 'pooja' ? 'Pooja' : log.sessionType}
                       </span>
                     </td>
                     <td className="p-4 text-sm font-bold text-gray-700">₹{log.totalCost?.toFixed(2)}</td>

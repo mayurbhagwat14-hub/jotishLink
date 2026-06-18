@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FiClock, FiBox, FiTruck, FiCheck, FiMoreHorizontal, FiX } from 'react-icons/fi';
+import { FiClock, FiBox, FiTruck, FiCheck, FiMoreHorizontal, FiX, FiCheckCircle } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminPoojas, getAdminOrders } from '../../api/adminApis';
+import { Link } from 'react-router-dom';
 
 const AdminServices = () => {
   const [activeTab, setActiveTab] = useState('Poojas');
@@ -41,10 +42,10 @@ const AdminServices = () => {
       setOrders(ordersData.map(o => ({
         id: `#${o._id.toString().slice(-6).toUpperCase()}`,
         user: o.userId?.name || 'Unknown User',
-        product: 'E-commerce Item(s)',
+        product: o.items && o.items.length > 0 ? o.items.map(i => i.productId?.name || 'Product').join(', ') : 'E-commerce Item(s)',
         amount: o.totalAmount || 0,
         date: new Date(o.createdAt).toLocaleDateString(),
-        status: o.orderStatus === 'delivered' ? 'Delivered' : o.orderStatus === 'shipped' ? 'Shipped' : 'Processing'
+        status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending'
       })));
     } catch (err) {
       console.error('Failed to fetch services data', err);
@@ -188,17 +189,24 @@ const AdminServices = () => {
                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 ${
                         order.status === 'Delivered' ? 'bg-green-50 text-green-600' :
                         order.status === 'Shipped' ? 'bg-blue-50 text-blue-600' :
+                        order.status === 'Cancelled' ? 'bg-red-50 text-red-500' :
+                        order.status === 'Completed' ? 'bg-teal-50 text-teal-600' :
+                        order.status === 'Processing' ? 'bg-yellow-50 text-yellow-700' :
                         'bg-orange-50 text-orange-600'
                       }`}>
                         {order.status === 'Shipped' && <FiTruck size={10} />}
                         {order.status === 'Delivered' && <FiCheck size={10} />}
+                        {order.status === 'Cancelled' && <FiX size={10} />}
+                        {order.status === 'Completed' && <FiCheckCircle size={10} />}
+                        {order.status === 'Processing' && <FiBox size={10} />}
+                        {order.status === 'Pending' && <FiClock size={10} />}
                         {order.status}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors text-[11px] font-bold opacity-0 group-hover:opacity-100">
-                        Update
-                      </button>
+                      <Link to="/admin/orders" className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-[11px] font-bold whitespace-nowrap">
+                        Manage Order
+                      </Link>
                     </td>
                   </tr>
                 ))}

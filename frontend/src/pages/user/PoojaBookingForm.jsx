@@ -112,14 +112,27 @@ const PoojaBookingForm = () => {
           {/* Time Picker */}
           <div>
             <label className="block text-gray-700 text-[13px] font-bold mb-2">Select Time</label>
-            <input
-              type="time"
-              required
-              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
-              value={formData.time}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              onClick={(e) => e.target.showPicker && e.target.showPicker()}
-            />
+            <div className="relative">
+              <select
+                required
+                className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer appearance-none"
+                value={formData.time}
+                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+              >
+                <option value="" disabled>Select AM/PM Time</option>
+                {Array.from({ length: 48 }).map((_, i) => {
+                  const h = Math.floor(i / 2);
+                  const m = i % 2 === 0 ? '00' : '30';
+                  const isPM = h >= 12;
+                  const hour12 = h % 12 || 12;
+                  const timeStr = `${hour12}:${m} ${isPM ? 'PM' : 'AM'}`;
+                  return <option key={timeStr} value={timeStr}>{timeStr}</option>;
+                })}
+              </select>
+              <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                <FiClock size={18} />
+              </div>
+            </div>
           </div>
 
 

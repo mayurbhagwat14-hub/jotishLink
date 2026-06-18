@@ -111,7 +111,7 @@ io.on('connection', (socket) => {
         return;
       }
     } catch (err) {
-      console.error('[Socket.IO] Busy check failed:', err.message);
+      console.error('[Socket.IO] Busy check failed:', err);
     }
 
     const roomId = `room_${Date.now()}_${userId}`;
@@ -146,7 +146,7 @@ io.on('connection', (socket) => {
         await Astrologer.findByIdAndUpdate(reqData.astrologerId, { onlineStatus: 'busy' });
         io.emit('astro_status_changed', { astrologerId: reqData.astrologerId, status: 'busy' });
       } catch (err) {
-        console.error('Failed to set busy status:', err.message);
+        console.error('Failed to set busy status:', err);
       }
     }
     pendingRequests.delete(roomId);
@@ -237,7 +237,7 @@ io.on('connection', (socket) => {
       
       socket.emit('session_created', emitData);
     } catch (err) {
-      console.error('[Socket.IO] Join room DB error:', err.message);
+      console.error('[Socket.IO] Join room DB error:', err);
     }
   });
 
@@ -265,12 +265,12 @@ io.on('connection', (socket) => {
             await ChatSession.findByIdAndUpdate(sessionId, { $push: { messages: botMsg } });
             io.to(roomId).emit('receive_message', botMsg);
           } catch (e) {
-            console.error('Bot reply error:', e.message);
+            console.error('Bot reply error:', e);
           }
         }, 1500);
       }
     } catch (err) {
-      console.error('[Socket.IO] Failed to persist message:', err.message);
+      console.error('[Socket.IO] Failed to persist message:', err);
     }
   });
 
@@ -328,7 +328,7 @@ io.on('connection', (socket) => {
             io.to(roomId).emit('handoff_initiated');
           }
         } catch (e) {
-          console.error('[Socket.IO] Handoff check error:', e.message);
+          console.error('[Socket.IO] Handoff check error:', e);
         }
       }
 
@@ -382,7 +382,7 @@ io.on('connection', (socket) => {
         freeChatDuration: settings?.freeChatDuration || 1 
       });
     } catch (e) {
-      console.error('Transition DB error:', e.message);
+      console.error('Transition DB error:', e);
     }
 
     const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -471,7 +471,7 @@ io.on('connection', (socket) => {
           }
         }
       } catch (err) {
-        console.error('[Socket.IO] Billing error:', err.message);
+        console.error('[Socket.IO] Billing error:', err);
       }
     }, 1000);
 
@@ -596,7 +596,7 @@ io.on('connection', (socket) => {
         }
       }
     } catch (err) {
-      console.error('[Socket.IO] Session end error:', err.message);
+      console.error('[Socket.IO] Session end error:', err);
     }
     console.log(`[Socket.IO] Session ended for room ${roomId}`);
   };
@@ -640,7 +640,7 @@ io.on('connection', (socket) => {
           }
         }
       } catch (err) {
-        console.error('[Socket.IO] Call Billing error:', err.message);
+        console.error('[Socket.IO] Call Billing error:', err);
       }
     }, 1000);
 

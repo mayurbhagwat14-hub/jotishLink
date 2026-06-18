@@ -52,12 +52,15 @@ const AstrologerProfile = () => {
     const walletBalance = user?.wallet || 0;
     const astroName = astrologer.name || astrologer.userId?.name || 'Astrologer';
 
-    if (walletBalance < requiredAmount) {
+    const isFreeChatEligible = type === 'chat' && user?.freeChatUsed === false;
+
+    if (walletBalance < requiredAmount && !isFreeChatEligible) {
       setShortBalanceInfo({ required: requiredAmount, current: walletBalance, name: astroName });
       setShowBalanceModal(true);
+    } else if (isFreeChatEligible) {
+      navigate(`/user/chat`, { state: { astrologer, startWithBot: true, roomId: `room_${user._id}_bot_${Date.now()}` } });
     } else {
-      // Direct back to Astrologers page with correct tab for now, or implement direct connection
-      navigate(`/user/astrologers?type=${type === 'video' ? 'video call' : type === 'call' ? 'call' : 'chat'}`);
+      navigate('/user/waiting', { state: { astrologer, type: type === 'video' ? 'video' : type === 'call' ? 'audio' : 'chat' } });
     }
   };
 
