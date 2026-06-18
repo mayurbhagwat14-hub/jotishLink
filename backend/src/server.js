@@ -50,6 +50,7 @@ initFirebase();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'https://jotish-link.vercel.app',
   ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
 ];
 
