@@ -51,6 +51,10 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
   'https://jotish-link.vercel.app',
+  "https://jyotishlink.in",
+  "https://www.jyotishlink.in",
+  "https://jyotishlink.in/api",
+  "https://www.jyotishlink.in/api",
   ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : [])
 ];
 
@@ -100,12 +104,12 @@ io.on('connection', (socket) => {
     try {
       const Astrologer = (await import('./models/astrologer.model.js')).default;
       const astrologer = await Astrologer.findById(astrologerId);
-      
+
       if (!astrologer || astrologer.onlineStatus === 'offline') {
         io.to(socket.id).emit('session_rejected', { reason: 'Astrologer is currently offline.' });
         return;
       }
-      
+
       if (astrologer.onlineStatus === 'busy') {
         io.to(socket.id).emit('session_rejected', { reason: 'Astrologer is currently busy.' });
         return;
@@ -219,7 +223,7 @@ io.on('connection', (socket) => {
           roomId: { $ne: roomId },
           type: 'chat'
         }).sort({ createdAt: 1 }).lean();
-        
+
         pastSessions.forEach(ps => {
           if (ps.messages && ps.messages.length > 0) {
             pastMessages = pastMessages.concat(ps.messages);
@@ -227,14 +231,14 @@ io.on('connection', (socket) => {
         });
       }
 
-      const emitData = { 
-        sessionId: session._id, 
-        messages: [...pastMessages, ...(session.messages || [])], 
-        roomId, 
+      const emitData = {
+        sessionId: session._id,
+        messages: [...pastMessages, ...(session.messages || [])],
+        roomId,
         isBotSession: !!isBot,
         isNewSession
       };
-      
+
       socket.emit('session_created', emitData);
     } catch (err) {
       console.error('[Socket.IO] Join room DB error:', err);
@@ -281,7 +285,7 @@ io.on('connection', (socket) => {
 
     let settings = await SystemSettings.findOne();
     let durationSeconds = (settings?.freeChatDuration || 1) * 60;
-    
+
     // Determine the real astrologer's rate for the background check
     let rate = 5;
     if (astrologerId) {
@@ -335,12 +339,12 @@ io.on('connection', (socket) => {
       if (seconds >= durationSeconds) {
         clearInterval(intervalId);
         activeTimers.delete(roomId);
-        
+
         // Mark user's free chat offer as used
-        await User.findByIdAndUpdate(userId, { 
-          freeChatUsed: true, 
-          freeChatUsedAt: new Date(), 
-          freeChatDuration: settings?.freeChatDuration || 1 
+        await User.findByIdAndUpdate(userId, {
+          freeChatUsed: true,
+          freeChatUsedAt: new Date(),
+          freeChatDuration: settings?.freeChatDuration || 1
         });
 
         // If handoff didn't happen (or balance was low), force end session
@@ -373,13 +377,13 @@ io.on('connection', (socket) => {
     try {
       // Mark session as real (no longer bot session) in the DB
       await ChatSession.findByIdAndUpdate(sessionId, { isBotSession: false });
-      
+
       let settings = await SystemSettings.findOne();
       // Mark user's free chat offer as used in backend
-      await User.findByIdAndUpdate(userId, { 
-        freeChatUsed: true, 
-        freeChatUsedAt: new Date(), 
-        freeChatDuration: settings?.freeChatDuration || 1 
+      await User.findByIdAndUpdate(userId, {
+        freeChatUsed: true,
+        freeChatUsedAt: new Date(),
+        freeChatDuration: settings?.freeChatDuration || 1
       });
     } catch (e) {
       console.error('Transition DB error:', e);
@@ -531,15 +535,15 @@ io.on('connection', (socket) => {
         if (sessionForEnd?.astrologerId) astroId = sessionForEnd.astrologerId;
       }
       if (astroId) {
-         io.to(`astro_${astroId}`).emit('session_ended', { ...endPayload, sessionId: finalSessionId });
-         
-         const { sendPushNotification } = await import('./utils/firebaseHelper.js');
-         await sendPushNotification({
-           userId: astroId,
-           role: 'astrologer',
-           title: 'Session Ended',
-           body: `Session ended. Duration: ${duration}s.`,
-         });
+        io.to(`astro_${astroId}`).emit('session_ended', { ...endPayload, sessionId: finalSessionId });
+
+        const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+        await sendPushNotification({
+          userId: astroId,
+          role: 'astrologer',
+          title: 'Session Ended',
+          body: `Session ended. Duration: ${duration}s.`,
+        });
       }
     } catch (e) { /* ignore */ }
 
@@ -552,34 +556,34 @@ io.on('connection', (socket) => {
         { status: 'completed', durationSeconds: duration, amountDeducted: currentCost },
         { new: true }
       );
-      
+
       if (session) {
         if (currentCost > 0 && userId && remainingDelta > 0) {
-           await User.updateOne(
-             { _id: userId },
-             { $inc: { wallet: -remainingDelta } }
-           );
-           const Transaction = (await import('./models/transaction.model.js')).default;
-           const Astrologer = (await import('./models/astrologer.model.js')).default;
-           
-           let sessionTypeLabel = 'Chat Session';
-           if (session.type === 'audio_call' || session.type === 'audio') sessionTypeLabel = 'Audio Call';
-           if (session.type === 'video_call' || session.type === 'video') sessionTypeLabel = 'Video Call';
+          await User.updateOne(
+            { _id: userId },
+            { $inc: { wallet: -remainingDelta } }
+          );
+          const Transaction = (await import('./models/transaction.model.js')).default;
+          const Astrologer = (await import('./models/astrologer.model.js')).default;
 
-           let astroName = 'Astrologer';
-           if (session.astrologerId) {
-             const astro = await Astrologer.findById(session.astrologerId);
-             if (astro) astroName = astro.name;
-           }
+          let sessionTypeLabel = 'Chat Session';
+          if (session.type === 'audio_call' || session.type === 'audio') sessionTypeLabel = 'Audio Call';
+          if (session.type === 'video_call' || session.type === 'video') sessionTypeLabel = 'Video Call';
 
-           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${sessionTypeLabel} with ${astroName} (${duration}s)` });
+          let astroName = 'Astrologer';
+          if (session.astrologerId) {
+            const astro = await Astrologer.findById(session.astrologerId);
+            if (astro) astroName = astro.name;
+          }
 
-           const comm = timerData?.commissionRate || 20;
+          await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${sessionTypeLabel} with ${astroName} (${duration}s)` });
 
-           const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm);
-           if (creditRes && creditRes.netAmount) {
-             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
-           }
+          const comm = timerData?.commissionRate || 20;
+
+          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm);
+          if (creditRes && creditRes.netAmount) {
+            io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
+          }
         }
       }
       if (finalSessionId) {
@@ -665,7 +669,7 @@ io.on('connection', (socket) => {
     const remainingDelta = Number((currentCost - lastDeducted).toFixed(2));
 
     io.to(roomId).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
-    
+
     try {
       const { sendPushNotification } = await import('./utils/firebaseHelper.js');
       if (userId) {
@@ -713,32 +717,32 @@ io.on('connection', (socket) => {
         { status: 'completed', duration: duration, endTime: new Date(), totalAmount: currentCost },
         { new: true }
       );
-      
+
       if (session) {
         if (currentCost > 0 && userId && remainingDelta > 0) {
-           await User.updateOne(
-             { _id: userId },
-             { $inc: { wallet: -remainingDelta } }
-           );
-           const Transaction = (await import('./models/transaction.model.js')).default;
-           const Astrologer = (await import('./models/astrologer.model.js')).default;
-           
-           let astroName = 'Astrologer';
-           if (session.astrologerId) {
-             const astro = await Astrologer.findById(session.astrologerId);
-             if (astro) astroName = astro.name;
-           }
+          await User.updateOne(
+            { _id: userId },
+            { $inc: { wallet: -remainingDelta } }
+          );
+          const Transaction = (await import('./models/transaction.model.js')).default;
+          const Astrologer = (await import('./models/astrologer.model.js')).default;
 
-           const typeLabel = type === 'video' ? 'Video Call' : 'Audio Call';
-           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${typeLabel} with ${astroName} (${duration}s)` });
+          let astroName = 'Astrologer';
+          if (session.astrologerId) {
+            const astro = await Astrologer.findById(session.astrologerId);
+            if (astro) astroName = astro.name;
+          }
 
-           const comm = timerData?.commissionRate || (type === 'video' ? 25 : 15);
-           const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm);
-           if (creditRes && creditRes.netAmount) {
-             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
-           }
+          const typeLabel = type === 'video' ? 'Video Call' : 'Audio Call';
+          await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${typeLabel} with ${astroName} (${duration}s)` });
+
+          const comm = timerData?.commissionRate || (type === 'video' ? 25 : 15);
+          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm);
+          if (creditRes && creditRes.netAmount) {
+            io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
+          }
         }
-        
+
         const Astrologer = (await import('./models/astrologer.model.js')).default;
         const updatedAstro = await Astrologer.findOneAndUpdate(
           { _id: session.astrologerId, onlineStatus: 'busy' },
@@ -761,7 +765,7 @@ io.on('connection', (socket) => {
   socket.on('update_status', async ({ astrologerId, status }) => {
     try {
       await Astrologer.findOneAndUpdate({ _id: astrologerId }, { onlineStatus: status });
-      
+
       if (status === 'online') {
         // Self-healing: clear any stuck ongoing sessions in DB
         const { CallSession } = await import('./models/callSession.model.js');
@@ -784,20 +788,20 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', async () => {
     console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
-    
+
     // Strict Disconnect Handling
     const roomInfo = socketRoomMap.get(socket.id);
     if (roomInfo) {
       const { roomId, astrologerId } = roomInfo;
       const timerData = activeTimers.get(roomId);
-      
+
       // Always emit to room and astrologer so UI can clear ghost active sessions
       io.to(roomId).emit('call_ended', { reason: 'peer_disconnected', roomId });
       io.to(roomId).emit('session_ended', { reason: 'peer_disconnected', roomId });
       const targetAstroId = (timerData && timerData.astrologerId) || astrologerId;
       if (targetAstroId) {
-         io.to(`astro_${targetAstroId}`).emit('call_ended', { reason: 'peer_disconnected', roomId });
-         io.to(`astro_${targetAstroId}`).emit('session_ended', { reason: 'peer_disconnected', roomId });
+        io.to(`astro_${targetAstroId}`).emit('call_ended', { reason: 'peer_disconnected', roomId });
+        io.to(`astro_${targetAstroId}`).emit('session_ended', { reason: 'peer_disconnected', roomId });
       }
 
       if (timerData) {
@@ -807,7 +811,7 @@ io.on('connection', (socket) => {
           await handleEndSession({ roomId, sessionId: timerData.sessionId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds, sessionType: timerData.sessionType });
         }
       }
-      
+
       socketRoomMap.delete(socket.id);
     }
   });
@@ -874,7 +878,7 @@ connectDB().then(() => {
     console.log(`\n🚀 JyotishLink backend running on http://localhost:${PORT}`);
     console.log(`📡 Socket.IO ready for real-time chat`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
-    
+
     // Initialize background cron jobs
     initCronJobs(io);
   });

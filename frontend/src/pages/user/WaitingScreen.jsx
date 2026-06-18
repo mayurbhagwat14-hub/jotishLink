@@ -29,6 +29,12 @@ const WaitingScreen = () => {
 
     const astrologerId = astrologer._id;
 
+    console.log('[WaitingScreen] Emit request_session with data:', {
+      astrologerId,
+      userId: user._id,
+      userName: user.name || user.phone,
+      type,
+    });
     socket.emit('request_session', {
       astrologerId,
       userId: user._id,
@@ -37,6 +43,7 @@ const WaitingScreen = () => {
     });
 
     const onAccepted = ({ roomId }) => {
+      console.log('[WaitingScreen] session_accepted received for roomId:', roomId);
       clearInterval(timerRef.current);
       setStatus('accepted');
       setTimeout(() => {
@@ -49,6 +56,7 @@ const WaitingScreen = () => {
     };
 
     const onRejected = ({ reason }) => {
+      console.log('[WaitingScreen] session_rejected received with reason:', reason);
       clearInterval(timerRef.current);
       
       const rejectReasonStr = reason || 'Astrologer is busy right now.';
