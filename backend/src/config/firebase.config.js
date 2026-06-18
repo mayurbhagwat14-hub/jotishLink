@@ -6,24 +6,37 @@ let firebaseApp = null;
 
 export const initFirebase = () => {
   try {
-    const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-    
-    if (!serviceAccountPath) {
-      console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_PATH is not set in .env. Push notifications will not work.');
-      return null;
-    }
+    let credential;
 
-    const absolutePath = path.resolve(process.cwd(), serviceAccountPath);
-    
-    if (!fs.existsSync(absolutePath)) {
-      console.warn(`⚠️ Firebase service account file not found at: ${absolutePath}. Push notifications disabled.`);
-      return null;
-    }
+    // Try reading from individual environment variables first
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      credential = admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      });
+    } else {
+      // Fallback to reading from file if variables are not set
+      const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+      
+      if (!serviceAccountPath) {
+        console.warn('⚠️ Firebase credentials not set in .env (either via FIREBASE_PRIVATE_KEY or FIREBASE_SERVICE_ACCOUNT_PATH). Push notifications will not work.');
+        return null;
+      }
 
-    const serviceAccount = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+      const absolutePath = path.resolve(process.cwd(), serviceAccountPath);
+      
+      if (!fs.existsSync(absolutePath)) {
+        console.warn(`⚠️ Firebase service account file not found at: ${absolutePath}. Push notifications disabled.`);
+        return null;
+      }
+
+      const serviceAccount = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+      credential = admin.credential.cert(serviceAccount);
+    }
 
     firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: credential
     });
 
     console.log('✅ Firebase Admin SDK initialized successfully');
