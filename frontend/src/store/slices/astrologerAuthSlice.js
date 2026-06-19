@@ -77,6 +77,7 @@ const astrologerAuthSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       localStorage.removeItem('astrologerRefreshToken');
+      localStorage.removeItem('persist:auth_astrologer');
     },
     updateAstrologer: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -96,6 +97,7 @@ const astrologerAuthSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem('astrologerRefreshToken');
+        localStorage.removeItem('persist:auth_astrologer');
       });
   }
 });

@@ -142,6 +142,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('persist:auth_user');
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -202,6 +203,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('persist:auth_user');
       })
       .addCase(userDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;

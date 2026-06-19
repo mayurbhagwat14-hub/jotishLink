@@ -64,6 +64,7 @@ const adminAuthSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
       localStorage.removeItem('adminRefreshToken');
+      localStorage.removeItem('persist:auth_admin');
     },
     updateAdmin: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -83,6 +84,7 @@ const adminAuthSlice = createSlice({
         state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem('adminRefreshToken');
+        localStorage.removeItem('persist:auth_admin');
       });
   }
 });
