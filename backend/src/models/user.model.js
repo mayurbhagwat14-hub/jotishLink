@@ -70,6 +70,11 @@ const userSchema = new mongoose.Schema(
     pincode: {
       type: String,
     },
+    zodiacSign: {
+      type: String,
+      lowercase: true,
+      trim: true
+    },
     isBlocked: {
       type: Boolean,
       default: false,

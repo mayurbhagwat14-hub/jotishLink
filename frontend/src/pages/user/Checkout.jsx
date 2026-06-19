@@ -114,7 +114,7 @@ const Checkout = () => {
               contact: formData.phone
             },
             theme: {
-              color: '#f97316'
+              color: '#ff8c00'
             }
           };
 

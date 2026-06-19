@@ -130,7 +130,7 @@ const RechargeWallet = () => {
           email: user?.email,
           contact: user?.phone,
         },
-        theme: { color: '#f97316' },
+        theme: { color: '#ff8c00' },
       };
 
       const rzp = new window.Razorpay(options);

@@ -84,7 +84,7 @@ const Wallet = () => {
           contact: user?.phone,
         },
         theme: {
-          color: '#f97316', // Orange-500
+          color: '#ff8c00', // Orange-500
         },
       };
 

@@ -165,7 +165,7 @@ const AstrologerLogin = () => {
                 </div>
               )}
               
-              <h1 className="text-[32px] font-bold text-gray-900 mb-2 tracking-tight text-center">Astrologer Portal</h1>
+              <h1 className="text-[32px] font-bold text-gray-700 mb-2 tracking-tight text-center">Astrologer Portal</h1>
               <p className="text-center text-gray-500 text-[14px] font-medium mb-10">Login to manage your sessions and earnings.</p>
 
               {error && (

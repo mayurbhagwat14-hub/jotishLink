@@ -221,7 +221,7 @@ const AppContent = () => {
       </Route>
 
       {/* Admin Panel (Public Login) */}
-      <Route path="/admin/login" element={isAdminAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin />} />
+      <Route path="/admin/login" element={isAdminAuthenticated && adminUser ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin />} />
 
       {/* Admin Panel (Protected) */}
       <Route path="/admin" element={

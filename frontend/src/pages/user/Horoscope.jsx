@@ -129,7 +129,7 @@ const Horoscope = () => {
                 <div>
                   <p className="text-orange-100 text-[11px] font-bold uppercase tracking-wider mb-1.5">Lucky Colours</p>
                   <div className="flex gap-2">
-                    {(horoscopeData?.luckyColors || ['#f97316', '#fbbf24']).map((color, i) => (
+                    {(horoscopeData?.luckyColors || ['#ff8c00', '#fbbf24']).map((color, i) => (
                       <div key={i} className="w-5 h-5 rounded-full shadow-sm border border-white/30" style={{ backgroundColor: color }} />
                     ))}
                   </div>
