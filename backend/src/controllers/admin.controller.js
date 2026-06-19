@@ -289,8 +289,8 @@ export const sendBroadcast = asyncHandler(async (req, res) => {
   }
 
   const [users, astrologers] = await Promise.all([
-    User.find(userFilter).select('_id fcmToken'),
-    Astrologer.find(astroFilter).select('_id fcmToken')
+    User.find(userFilter).select('_id fcmToken fcmTokens'),
+    Astrologer.find(astroFilter).select('_id fcmToken fcmTokens')
   ]);
 
   const allTargets = [...users, ...astrologers];
@@ -314,7 +314,14 @@ export const sendBroadcast = asyncHandler(async (req, res) => {
   // Send real Push Notifications via Firebase
   try {
     const { sendMulticastPushNotification } = await import('../utils/firebaseHelper.js');
-    const tokens = allTargets.map(t => t.fcmToken).filter(t => t);
+    let tokens = [];
+    allTargets.forEach(t => {
+      if (t.fcmTokens && t.fcmTokens.length > 0) {
+        t.fcmTokens.forEach(ft => { if (ft.token) tokens.push(ft.token) });
+      } else if (t.fcmToken) {
+        tokens.push(t.fcmToken);
+      }
+    });
     
     if (tokens.length > 0) {
       await sendMulticastPushNotification(tokens, title, message);

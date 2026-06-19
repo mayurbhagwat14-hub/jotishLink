@@ -13,50 +13,29 @@ import Astrologer from '../models/astrologer.model.js';
  */
 export const sendPushNotification = async ({ userId, role, title, body, data = {} }) => {
   try {
-    const adminSDK = getFirebaseAdmin();
-    if (!adminSDK) {
-      console.warn('Firebase Admin SDK is not initialized. Skipping push notification.');
-      return false;
-    }
-
-    let token = null;
+    let tokens = [];
 
     if (role === 'user') {
-      const user = await User.findById(userId).select('fcmToken');
-      if (user && user.fcmToken) {
-        token = user.fcmToken;
+      const user = await User.findById(userId).select('fcmTokens fcmToken');
+      if (user) {
+        if (user.fcmTokens && user.fcmTokens.length > 0) tokens = user.fcmTokens.map(t => t.token);
+        else if (user.fcmToken) tokens = [user.fcmToken];
       }
     } else if (role === 'astrologer') {
-      const astrologer = await Astrologer.findById(userId).select('fcmToken');
-      if (astrologer && astrologer.fcmToken) {
-        token = astrologer.fcmToken;
+      const astrologer = await Astrologer.findById(userId).select('fcmTokens fcmToken');
+      if (astrologer) {
+        if (astrologer.fcmTokens && astrologer.fcmTokens.length > 0) tokens = astrologer.fcmTokens.map(t => t.token);
+        else if (astrologer.fcmToken) tokens = [astrologer.fcmToken];
       }
     }
 
-    if (!token) {
+    if (!tokens || tokens.length === 0) {
       console.warn(`No FCM token found for ${role} with ID ${userId}. Skipping push notification.`);
       return false;
     }
 
-    const payload = {
-      notification: {
-        title: title,
-        body: body,
-      },
-      token: token,
-    };
-
-    // Data payload values must be strings
-    if (Object.keys(data).length > 0) {
-      payload.data = {};
-      for (const [key, value] of Object.entries(data)) {
-        payload.data[key] = String(value);
-      }
-    }
-
-    const response = await adminSDK.messaging().send(payload);
-    console.log(`Successfully sent push notification to ${role} (${userId}):`, response);
-    return true;
+    // Use multicast helper which handles array of tokens
+    return await sendMulticastPushNotification(tokens, title, body, data);
   } catch (error) {
     console.error(`Error sending push notification to ${role} (${userId}):`, error.message);
     return false;

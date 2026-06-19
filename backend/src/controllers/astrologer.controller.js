@@ -946,9 +946,10 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
 
   if (!token) throw new ApiError(400, 'FCM token is required');
 
+  await Astrologer.findByIdAndUpdate(req.user._id, { $pull: { fcmTokens: { token } } });
   const astrologer = await Astrologer.findByIdAndUpdate(
     req.user._id,
-    { fcmToken: token },
+    { $push: { fcmTokens: { token, platform } } },
     { new: true }
   ).select('-password');
 

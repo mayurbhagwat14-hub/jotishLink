@@ -8,10 +8,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: 'Guest User',
     },
-    fcmToken: {
-      type: String,
-      default: null,
-    },
+    fcmTokens: [{
+      token: { type: String, required: true },
+      platform: { type: String, enum: ['web', 'mobile'], default: 'mobile' }
+    }],
     phone: {
       type: String,
       unique: true,

@@ -482,7 +482,6 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { rated: true }, 'Rating saved successfully'));
 });
 
-// PUT /api/user/fcm-token
 export const updateFcmToken = asyncHandler(async (req, res) => {
   const token = req.body.token || req.body.fcmToken;
   const platform = req.body.platform || 'mobile';
@@ -491,7 +490,9 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'FCM token is required');
   }
 
-  await User.findByIdAndUpdate(req.user._id, { fcmToken: token });
+  // Remove the exact token if it exists (to prevent duplicates) and push it with the platform
+  await User.findByIdAndUpdate(req.user._id, { $pull: { fcmTokens: { token } } });
+  await User.findByIdAndUpdate(req.user._id, { $push: { fcmTokens: { token, platform } } });
   
   return res.status(200).json({
     success: true,
