@@ -365,11 +365,11 @@ const Home = () => {
             { name: 'Reports', icon: <FileText size={20} className="text-teal-500" strokeWidth={2} />, path: '/user/history', bg: 'bg-teal-50' },
             { name: 'Live', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-500"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 14.5a4.5 4.5 0 1 1 4.5-4.5 4.5 4.5 0 0 1-4.5 4.5Z"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>, path: '/user/live', bg: 'bg-red-50' },
           ].map((service, idx) => (
-            <div key={idx} onClick={() => service.path && navigate(service.path)} className="bg-white rounded-[16px] p-2 py-3 border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col items-center gap-2 cursor-pointer active:scale-95 transition-transform hover:shadow-md">
-              <div className={`w-[40px] h-[40px] rounded-full ${service.bg} flex items-center justify-center`}>
+            <div key={idx} onClick={() => service.path && navigate(service.path)} className="bg-white rounded-[20px] p-2 py-4 border border-gray-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-all hover:shadow-md hover:border-gray-200">
+              <div className={`w-[48px] h-[48px] rounded-full ${service.bg} flex items-center justify-center`}>
                 {service.icon}
               </div>
-              <span className="text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
+              <span className="text-[12px] text-gray-800 font-semibold whitespace-nowrap">{service.name}</span>
             </div>
           ))}
         </div>
@@ -396,7 +396,7 @@ const Home = () => {
               <div 
                 key={i} 
                 onClick={() => navigate('/user/astrologers')}
-                className={`shrink-0 w-[240px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 cursor-pointer flex flex-col gap-3 group hover:shadow-md transition-shadow relative ${isOffline ? 'grayscale opacity-60' : ''}`}
+                className={`shrink-0 w-[240px] bg-white rounded-[20px] border border-gray-200 shadow-[0_4px_16px_rgba(0,0,0,0.06)] p-4 cursor-pointer flex flex-col gap-3 group hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 relative ${isOffline ? 'grayscale opacity-60' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   <div className="relative w-[56px] h-[56px] shrink-0">
