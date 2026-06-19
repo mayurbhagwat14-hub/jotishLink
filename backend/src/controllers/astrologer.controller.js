@@ -941,16 +941,26 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
 });
 // PUT /api/astrologer/fcm-token
 export const updateFcmToken = asyncHandler(async (req, res) => {
-  const { fcmToken } = req.body;
-  if (!fcmToken) throw new ApiError(400, 'FCM token is required');
+  const token = req.body.token || req.body.fcmToken;
+  const platform = req.body.platform || 'mobile';
+
+  if (!token) throw new ApiError(400, 'FCM token is required');
 
   const astrologer = await Astrologer.findByIdAndUpdate(
     req.user._id,
-    { fcmToken },
+    { fcmToken: token },
     { new: true }
   ).select('-password');
 
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
   
-  return res.status(200).json(new ApiResponse(200, { fcmToken: astrologer.fcmToken }, 'FCM token updated successfully'));
+  return res.status(200).json({
+    success: true,
+    message: `${platform === 'mobile' ? 'Mobile' : 'Web'} FCM token saved successfully`,
+    data: {
+      ownerType: 'ASTROLOGER',
+      ownerId: req.user._id,
+      platform
+    }
+  });
 });

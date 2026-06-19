@@ -484,13 +484,22 @@ export const rateAstrologer = asyncHandler(async (req, res) => {
 
 // PUT /api/user/fcm-token
 export const updateFcmToken = asyncHandler(async (req, res) => {
-  const { fcmToken } = req.body;
+  const token = req.body.token || req.body.fcmToken;
+  const platform = req.body.platform || 'mobile';
   
-  if (!fcmToken) {
+  if (!token) {
     throw new ApiError(400, 'FCM token is required');
   }
 
-  await User.findByIdAndUpdate(req.user._id, { fcmToken });
+  await User.findByIdAndUpdate(req.user._id, { fcmToken: token });
   
-  return res.status(200).json(new ApiResponse(200, {}, 'FCM token updated successfully'));
+  return res.status(200).json({
+    success: true,
+    message: `${platform === 'mobile' ? 'Mobile' : 'Web'} FCM token saved successfully`,
+    data: {
+      ownerType: 'USER',
+      ownerId: req.user._id,
+      platform
+    }
+  });
 });
