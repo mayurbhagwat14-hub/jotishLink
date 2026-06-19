@@ -2,7 +2,7 @@ import axios from './axios';
 
 export const checkAstrologerPhone = (data) => axios.post('/astrologer/auth/check-phone', data);
 export const requestOtp = (phone) => axios.post('/astrologer/auth/request-otp', { phone });
-export const astrologerLogin = (data) => axios.post('/astrologer/auth/login', data);
+export const astrologerLogin = (data) => axios.post('/astrologer/auth/verify-otp', data);
 export const astrologerSignup = (data) => axios.post('/astrologer/auth/signup', data);
 export const astrologerChangePassword = (data) => axios.post('/astrologer/auth/change-password', data);
 export const astrologerDeleteAccount = () => axios.delete('/astrologer/profile');

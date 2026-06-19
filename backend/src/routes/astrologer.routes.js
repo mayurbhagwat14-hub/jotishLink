@@ -40,7 +40,7 @@ const router = Router();
 router.post('/astrologer/auth/check-phone', validate(astrologerCheckPhoneSchema), checkAstrologerPhone);
 router.post('/astrologer/auth/request-otp', otpRateLimiter, validate(astrologerCheckPhoneSchema), astrologerRequestOtp);
 router.post('/astrologer/auth/signup', uploadFields, validate(astrologerSignupSchema), astrologerSignup);
-router.post('/astrologer/auth/login', validate(astrologerLoginSchema), astrologerLogin);
+router.post('/astrologer/auth/verify-otp', validate(astrologerLoginSchema), astrologerLogin);
 
 // Protected astrologer routes
 const astroAuth = [verifyJWT, authorizeRoles('astrologer', 'admin')];
