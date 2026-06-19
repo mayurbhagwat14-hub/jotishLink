@@ -14,15 +14,17 @@ export const validate = (schema) => asyncHandler(async (req, res, next) => {
 
 // User schemas
 export const requestOtpSchema = Joi.object({
-  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required().messages({
+  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).messages({
     'string.pattern.base': 'Please provide a valid 10-digit phone number',
   }),
-});
+  phone: Joi.string().pattern(/^[0-9]{10}$/)
+}).or('phoneNumber', 'phone');
 
 export const verifyOtpSchema = Joi.object({
-  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/).required(),
+  phoneNumber: Joi.string().pattern(/^[0-9]{10}$/),
+  phone: Joi.string().pattern(/^[0-9]{10}$/),
   otp: Joi.string().length(4).required(),
-});
+}).or('phoneNumber', 'phone');
 
 export const registerUserSchema = Joi.object({
   name: Joi.string().min(3).max(50).required(),

@@ -33,7 +33,7 @@ const setRefreshCookie = (res, token, cookieName = 'userRefreshToken') => {
 
 // POST /api/user/auth/request-otp
 export const requestOtp = asyncHandler(async (req, res) => {
-  const { phoneNumber } = req.body;
+  const phoneNumber = req.body.phone || req.body.phoneNumber;
   if (!phoneNumber) throw new ApiError(400, 'Phone number is required');
 
   const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -61,7 +61,8 @@ export const requestOtp = asyncHandler(async (req, res) => {
 
 // POST /api/user/auth/verify-otp
 export const verifyOtp = asyncHandler(async (req, res) => {
-  const { phoneNumber, otp } = req.body;
+  const phoneNumber = req.body.phone || req.body.phoneNumber;
+  const { otp } = req.body;
   if (!phoneNumber || !otp) throw new ApiError(400, 'Phone and OTP are required');
 
   const user = await User.findOne({ phone: phoneNumber });
@@ -97,7 +98,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
 // POST /api/user/auth/login-signup  (combined flow)
 export const loginOrSignup = asyncHandler(async (req, res) => {
-  const { phoneNumber } = req.body;
+  const phoneNumber = req.body.phone || req.body.phoneNumber;
   if (!phoneNumber) throw new ApiError(400, 'Phone number is required');
 
   // Just trigger OTP for simplicity; frontend will call verify-otp next
@@ -124,8 +125,8 @@ export const loginOrSignup = asyncHandler(async (req, res) => {
 
 // POST /api/user/auth/login  (verify + login)
 export const login = asyncHandler(async (req, res) => {
-  const { phoneNumber, otp } = req.body;
-  return verifyOtp(req, res); // reuse verify-otp logic
+  // Logic reuses verifyOtp which will correctly read phone or phoneNumber
+  return verifyOtp(req, res);
 });
 
 // POST /api/user/auth/register  (complete profile after OTP)
