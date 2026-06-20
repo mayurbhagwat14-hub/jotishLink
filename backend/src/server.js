@@ -830,24 +830,24 @@ io.on('connection', (socket) => {
     // Strict Disconnect Handling
     const roomInfo = socketRoomMap.get(socket.id);
     if (roomInfo) {
-      const { roomId, astrologerId } = roomInfo;
+      const { roomId, astrologerId, type } = roomInfo;
       const timerData = activeTimers.get(roomId);
 
-      // Always emit to room and astrologer so UI can clear ghost active sessions
-      io.to(roomId).emit('call_ended', { reason: 'peer_disconnected', roomId });
-      io.to(roomId).emit('session_ended', { reason: 'peer_disconnected', roomId });
-      const targetAstroId = (timerData && timerData.astrologerId) || astrologerId;
-      if (targetAstroId) {
-        io.to(`astro_${targetAstroId}`).emit('call_ended', { reason: 'peer_disconnected', roomId });
-        io.to(`astro_${targetAstroId}`).emit('session_ended', { reason: 'peer_disconnected', roomId });
-      }
-
-      if (timerData) {
-        if (timerData.callId) {
-          await handleEndCall({ roomId, callId: timerData.callId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds });
-        } else if (timerData.sessionId) {
-          await handleEndSession({ roomId, sessionId: timerData.sessionId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds, sessionType: timerData.sessionType });
+      if (type === 'audio_call' || type === 'video_call' || (timerData && timerData.callId)) {
+        // ALWAYS End call on disconnect for Audio/Video
+        io.to(roomId).emit('call_ended', { reason: 'peer_disconnected', roomId });
+        const targetAstroId = (timerData && timerData.astrologerId) || astrologerId;
+        if (targetAstroId) {
+          io.to(`astro_${targetAstroId}`).emit('call_ended', { reason: 'peer_disconnected', roomId });
         }
+
+        if (timerData && timerData.callId) {
+          await handleEndCall({ roomId, callId: timerData.callId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds });
+        }
+      } else {
+        // For CHAT sessions, DO NOT end the chat on disconnect!
+        // This allows users to refresh the page without losing the chat.
+        io.to(roomId).emit('peer_disconnected_temp', { sender: socket.id });
       }
 
       socketRoomMap.delete(socket.id);

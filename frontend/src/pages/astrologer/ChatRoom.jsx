@@ -20,7 +20,9 @@ const ChatRoom = () => {
   const [timer, setTimer] = useState(0);
   const [endSessionInfo, setEndSessionInfo] = useState(null);
   const [sessionEnded, setSessionEnded] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const { user: astrologer } = useSelector((state) => state.astrologerAuth);
 
@@ -77,11 +79,15 @@ const ChatRoom = () => {
 
         const onReceiveMessage = (msg) => {
           setMessages(prev => [...prev, msg]);
+          setIsTyping(false);
         };
 
         const onTimerTick = ({ seconds }) => {
           setTimer(seconds);
         };
+
+        const onUserTyping = () => setIsTyping(true);
+        const onUserStoppedTyping = () => setIsTyping(false);
 
         const onSessionEnded = ({ reason, durationSeconds }) => {
           if (sessionEnded) return;
@@ -108,6 +114,8 @@ const ChatRoom = () => {
         socket.on('timer_tick', onTimerTick);
         socket.on('session_ended', onSessionEnded);
         socket.on('earning_credited', onEarningCredited);
+        socket.on('user_typing', onUserTyping);
+        socket.on('user_stopped_typing', onUserStoppedTyping);
 
         return () => {
           socket.off('session_created', onSessionCreated);
@@ -115,6 +123,8 @@ const ChatRoom = () => {
           socket.off('timer_tick', onTimerTick);
           socket.off('session_ended', onSessionEnded);
           socket.off('earning_credited', onEarningCredited);
+          socket.off('user_typing', onUserTyping);
+          socket.off('user_stopped_typing', onUserStoppedTyping);
         };
       } catch (err) {
         console.error('Failed to load session:', err);
@@ -129,6 +139,20 @@ const ChatRoom = () => {
     };
   }, [sessionId, navigate]);
 
+  const handleInputChange = (e) => {
+    setInputText(e.target.value);
+    if (sessionEnded || isViewOnly) return;
+    
+    const socket = getSocket();
+    const roomIdToUse = sessionData?.roomId || location.state?.roomId || sessionId;
+    socket.emit('typing', { roomId: roomIdToUse, sender: 'astrologer' });
+    
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit('stop_typing', { roomId: roomIdToUse, sender: 'astrologer' });
+    }, 1500);
+  };
+
   const handleSend = () => {
     if (!inputText.trim() || !sessionData || sessionEnded) return;
     
@@ -140,6 +164,8 @@ const ChatRoom = () => {
       text: inputText.trim()
     });
     
+    socket.emit('stop_typing', { roomId: sessionData.roomId, sender: 'astrologer' });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setInputText('');
   };
 
@@ -182,7 +208,13 @@ const ChatRoom = () => {
           </div>
           <div>
             <h3 className="font-bold text-gray-800 leading-tight">{userName}</h3>
-            <p className="text-xs text-orange-500 font-bold">{isViewOnly ? 'View Only' : `Session Active • ${formatTime(timer)}`}</p>
+            <p className="text-xs text-orange-500 font-bold flex items-center gap-1.5 uppercase tracking-wider mt-0.5">
+              {isTyping ? (
+                <span className="text-orange-500 lowercase animate-pulse tracking-normal text-[13px]">typing...</span>
+              ) : (
+                isViewOnly ? 'View Only' : `Session Active • ${formatTime(timer)}`
+              )}
+            </p>
           </div>
         </div>
         
@@ -218,8 +250,8 @@ const ChatRoom = () => {
                    <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
                  </div>
                )}
-               <div>
-                 <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-700 rounded-bl-sm border border-gray-100'} px-4 py-2.5 rounded-2xl shadow-sm text-[14px] max-w-[260px] whitespace-pre-wrap break-words`}>
+               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
+                 <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit whitespace-pre-wrap break-words`}>
                    {msg.text}
                  </div>
                  <span className={`text-[10px] text-gray-400 mt-1 font-bold block ${isMe ? 'text-right mr-1' : 'ml-1'}`}>{msg.time}</span>
@@ -242,7 +274,7 @@ const ChatRoom = () => {
             <textarea 
               rows="1"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder={sessionEnded ? 'Session ended' : 'Type your guidance...'}
               disabled={sessionEnded}
