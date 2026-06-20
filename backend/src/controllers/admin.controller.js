@@ -1134,9 +1134,9 @@ export const getAstrologerPayouts = asyncHandler(async (req, res) => {
     
   const formattedPayouts = payouts.map(p => ({
     _id: p._id,
-    astrologerId: p.astrologerId._id,
-    name: p.astrologerId.name,
-    phone: p.astrologerId.phone,
+    astrologerId: p.astrologerId?._id || 'deleted',
+    name: p.astrologerId?.name || 'Deleted Astrologer',
+    phone: p.astrologerId?.phone || 'N/A',
     wallet: p.amount,
     status: p.status,
     bankDetails: p.bankDetailsSnapshot,
