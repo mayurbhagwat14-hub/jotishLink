@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useOutletContext, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiX, FiArrowLeft } from 'react-icons/fi';
 import { BiCategoryAlt, BiHeart, BiBookHeart } from 'react-icons/bi';
 import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
@@ -139,6 +139,9 @@ const Astrologers = () => {
       <div className="bg-white sticky top-0 z-50 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
+              <FiArrowLeft size={22} />
+            </button>
             <div 
               onClick={openSidebar}
               className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-orange-200 cursor-pointer shrink-0"

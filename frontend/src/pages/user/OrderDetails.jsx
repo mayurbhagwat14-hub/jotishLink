@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPackage, FiTruck, FiCheckCircle, FiClock, FiCreditCard, FiX, FiAlertTriangle, FiActivity } from 'react-icons/fi';
+import { ArrowLeft, Package, Truck, Clock, CreditCard, X, AlertTriangle, MapPin, Check, FileText, ChevronRight, Map, Phone, CheckCircle2 } from 'lucide-react';
 import { trackOrder, getOrderById, requestCancelOrder, getUserShiprocketOrderDetails } from '../../api/storeApis';
 import { toast } from 'react-hot-toast';
 
@@ -74,6 +74,7 @@ const OrderDetails = () => {
       }
       setShowCancelModal(false);
       setCancelReason('');
+      toast.success('Cancellation request submitted.');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit cancel request');
     } finally {
@@ -82,221 +83,308 @@ const OrderDetails = () => {
   };
 
   if (isLoading) {
-    return <div className="h-screen flex items-center justify-center bg-gray-50 text-gray-400">Loading Order...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50 text-orange-500">
+        <div className="flex flex-col items-center gap-3">
+           <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+           <p className="font-semibold text-gray-500">Loading Order...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!order) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
-        <FiPackage size={40} className="text-gray-300 mb-4" />
+        <Package size={48} strokeWidth={1.5} className="text-gray-300 mb-4" />
         <p className="text-gray-500 font-medium">Order not found.</p>
-        <button onClick={() => navigate(-1)} className="mt-4 text-orange-500 font-bold">Go Back</button>
+        <button onClick={() => navigate(-1)} className="mt-4 text-orange-500 font-bold hover:underline">Go Back</button>
       </div>
     );
   }
 
+  const getOrderStatusProgress = () => {
+    if (order.orderStatus === 'cancelled') return -1;
+    const statuses = ['pending', 'processing', 'shipped', 'delivered'];
+    return statuses.indexOf(order.orderStatus);
+  };
+
+  const currentStepIndex = getOrderStatusProgress();
+
   return (
     <div className="w-full bg-gray-50 min-h-screen font-sans pb-24 animate-fade-in">
-      
       {/* ═══ TOP NAVBAR ═══ */}
-      <div className="flex items-center gap-3 px-4 py-4 bg-white sticky top-0 z-30 shadow-sm">
-        <button onClick={() => navigate(-1)} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
-          <FiArrowLeft size={20} />
+      <div className="bg-white sticky top-0 z-30 shadow-[0_2px_10px_rgba(0,0,0,0.05)] border-b border-gray-100 flex items-center px-4 py-4">
+        <button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
+          <ArrowLeft size={22} />
         </button>
-        <span className="text-gray-800 font-bold text-[17px]">Order Details</span>
+        <h1 className="text-[17px] font-bold text-gray-800 ml-3">Order Details</h1>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Order Header Summary */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start mb-4 border-b border-gray-50 pb-3">
-            <div className="flex gap-2 items-center">
-              <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
-                <FiPackage size={16} />
-              </div>
-              <div>
-                <span className="text-[14px] font-black text-gray-800 block leading-tight">Order ID: {order._id.slice(-6).toUpperCase()}</span>
-                <span className="text-[11px] text-gray-400">{formatDate(order.createdAt)}</span>
-              </div>
-            </div>
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
-              order.orderStatus === 'pending' ? 'bg-orange-50 text-orange-500' :
-              order.orderStatus === 'delivered' ? 'bg-green-50 text-green-600' :
-              order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
-            }`}>
-              {order.orderStatus}
-            </span>
-          </div>
+      <div className="px-3 py-4 max-w-2xl mx-auto space-y-4">
 
-          <div className="space-y-3">
+        {/* ORDER ID & DATE */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
+           <div>
+              <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Order ID</p>
+              <p className="font-mono text-[14px] font-black text-gray-800">#{order._id.toUpperCase()}</p>
+           </div>
+           <div className="text-right">
+              <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Order Date</p>
+              <p className="text-[13px] font-bold text-gray-800">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+           </div>
+        </div>
+
+        {/* SHIPROCKET & EXPECTED DELIVERY HIGHLIGHT */}
+        <div className={`rounded-2xl p-5 shadow-sm border ${
+          order.orderStatus === 'cancelled' ? 'bg-red-50 border-red-100' :
+          order.orderStatus === 'delivered' ? 'bg-green-50 border-green-100' :
+          'bg-orange-50 border-orange-100'
+        }`}>
+          <div className="flex items-start gap-4">
+             <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
+               order.orderStatus === 'cancelled' ? 'bg-red-500 text-white' :
+               order.orderStatus === 'delivered' ? 'bg-green-500 text-white' :
+               'bg-orange-500 text-white'
+             }`}>
+               {order.orderStatus === 'delivered' ? <CheckCircle2 size={24} /> :
+                order.orderStatus === 'cancelled' ? <X size={24} /> :
+                <Truck size={24} />}
+             </div>
+             <div>
+                <h2 className={`text-xl font-black capitalize mb-1 ${
+                  order.orderStatus === 'cancelled' ? 'text-red-700' :
+                  order.orderStatus === 'delivered' ? 'text-green-700' :
+                  'text-orange-700'
+                }`}>
+                  {order.orderStatus === 'pending' ? 'Order Confirmed' : order.orderStatus}
+                </h2>
+                <p className={`text-[13px] font-medium leading-snug ${
+                  order.orderStatus === 'cancelled' ? 'text-red-600' :
+                  order.orderStatus === 'delivered' ? 'text-green-600' :
+                  'text-orange-700'
+                }`}>
+                  {order.orderStatus === 'delivered' ? `Your package was delivered on ${formatDate(order.updatedAt)}` :
+                   order.orderStatus === 'cancelled' ? 'This order has been cancelled.' :
+                   trackingData?.etd ? `Expected Delivery by ${new Date(trackingData.etd).toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}` :
+                   shiprocketDetails?.status ? `Current Status: ${shiprocketDetails.status}` :
+                   'Your order is being processed and will be shipped soon.'}
+                </p>
+             </div>
+          </div>
+        </div>
+
+        {/* TRACKING PROGRESS BAR (AMAZON STYLE) */}
+        {order.orderStatus !== 'cancelled' && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+             <h3 className="text-[14px] font-bold text-gray-800 mb-6 flex items-center gap-2">
+               <MapPin className="text-orange-500" size={18} /> Delivery Status
+             </h3>
+             <div className="relative flex items-center justify-between z-0 px-2">
+                {/* Background Track */}
+                <div className="absolute top-4 left-6 right-6 h-1 bg-gray-200 -translate-y-1/2 z-[-1]" />
+                {/* Fill Track */}
+                <div className="absolute top-4 left-6 h-1 bg-green-500 -translate-y-1/2 transition-all duration-1000 z-[-1]" style={{ width: `calc(${Math.max(0, currentStepIndex)} * (100% - 48px) / 3)` }} />
+                
+                {['Placed', 'Packed', 'Shipped', 'Delivered'].map((step, idx) => {
+                  const isCompleted = currentStepIndex >= idx;
+                  const isCurrent = currentStepIndex === idx;
+                  return (
+                    <div key={step} className="flex flex-col items-center gap-2 relative">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 ${
+                         isCompleted ? 'bg-green-500 text-white shadow-md shadow-green-500/30' : 'bg-gray-200 text-white'
+                      }`}>
+                        <Check size={16} strokeWidth={3} />
+                      </div>
+                      <span className={`text-[11px] font-bold absolute top-10 w-20 text-center -ml-6 transition-colors ${
+                        isCurrent ? 'text-green-600' : isCompleted ? 'text-gray-800' : 'text-gray-400'
+                      }`}>
+                        {step}
+                      </span>
+                    </div>
+                  );
+                })}
+             </div>
+             <div className="h-6"></div>
+          </div>
+        )}
+
+        {/* DETAILED TRACKING TIMELINE */}
+        {order.orderStatus !== 'cancelled' && (trackingData?.shipment_track_activities?.length > 0 || trackingData?.shipment_track?.[0] || shiprocketDetails) && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+             <h3 className="text-[14px] font-bold text-gray-800 mb-5 flex items-center gap-2">
+               <Truck className="text-orange-500" size={18} /> Shipping Details
+             </h3>
+             
+             {/* Courier Highlights */}
+             {(order.courierPartner || trackingData?.shipment_track?.[0] || shiprocketDetails?.courier_name) && (
+               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 mb-6 flex flex-wrap gap-4 justify-between items-center">
+                 <div>
+                   <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Courier Partner</p>
+                   <p className="text-[13px] font-black text-gray-800">{trackingData?.shipment_track?.[0]?.courier_name || shiprocketDetails?.courier_name || order.courierPartner || 'Awaiting Assignment'}</p>
+                 </div>
+                 <div className="text-right">
+                   <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Tracking AWB</p>
+                   <p className="text-[13px] font-bold text-orange-600 font-mono">{trackingData?.shipment_track?.[0]?.awb_code || order.awbCode || 'Pending'}</p>
+                 </div>
+               </div>
+             )}
+
+             {/* Vertical Activities Timeline */}
+             {trackingData?.shipment_track_activities?.length > 0 ? (
+               <div className="relative pl-3 space-y-6">
+                 {/* Timeline Line */}
+                 <div className="absolute left-[15px] top-2 bottom-2 w-[2px] bg-gray-200" />
+                 
+                 {trackingData.shipment_track_activities.map((activity, idx) => {
+                   const isFirst = idx === 0; // Most recent
+                   return (
+                     <div key={idx} className="relative flex items-start gap-4">
+                       <div className={`w-3.5 h-3.5 rounded-full z-10 shrink-0 mt-1.5 ring-4 ring-white ${
+                         isFirst && order.orderStatus !== 'delivered' ? 'bg-orange-500' :
+                         isFirst && order.orderStatus === 'delivered' ? 'bg-green-500' : 'bg-gray-400'
+                       }`} />
+                       <div className="flex-1 min-w-0">
+                         <p className={`text-[13px] font-bold mb-0.5 ${isFirst ? 'text-gray-900' : 'text-gray-600'}`}>
+                           {activity.activity || activity.status}
+                         </p>
+                         {activity.location && (
+                           <p className="text-[11px] text-gray-500 font-medium flex items-center gap-1 mb-1">
+                             <MapPin size={10} className="shrink-0" /> <span className="truncate">{activity.location}</span>
+                           </p>
+                         )}
+                         <p className="text-[10px] text-gray-400 font-mono font-medium">
+                           {formatDate(activity.date)}
+                         </p>
+                       </div>
+                     </div>
+                   );
+                 })}
+               </div>
+             ) : (
+               <div className="text-center py-4 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
+                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mx-auto mb-2 text-gray-400 shadow-sm">
+                   <Clock size={18} />
+                 </div>
+                 <p className="text-[12px] font-bold text-gray-700">Awaiting Courier Updates</p>
+                 <p className="text-[11px] text-gray-500 mt-0.5">Tracking events will appear here once the courier updates the status.</p>
+               </div>
+             )}
+          </div>
+        )}
+
+        {/* ORDER ITEMS */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <h3 className="text-[14px] font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Package size={18} className="text-orange-500" /> Products Ordered
+          </h3>
+          <div className="space-y-4">
             {order.items.map((item, idx) => (
-              <div key={idx} className="flex gap-3 items-center">
-                <div className="w-14 h-14 rounded-xl bg-orange-50 overflow-hidden border border-gray-100 shrink-0 shadow-inner">
+              <div key={idx} className="flex gap-4 items-start pb-4 border-b border-gray-50 last:border-0 last:pb-0 cursor-pointer group" onClick={() => navigate(`/user/product/${item.productId?._id}`)}>
+                <div className="w-20 h-20 rounded-xl bg-gray-50 overflow-hidden border border-gray-100 shrink-0 relative group-hover:border-orange-200 transition-colors">
                   <img src={item.productId?.image || item.productId?.img || '/store_bracelet.png'} alt="Product" className="w-full h-full object-cover" />
+                  <div className="absolute top-1 right-1 bg-white/90 backdrop-blur text-[10px] font-black px-1.5 py-0.5 rounded text-gray-800 shadow-sm">
+                    x{item.quantity}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-[14px] font-bold text-gray-800 line-clamp-2 leading-tight">{item.productId?.name}</h4>
-                  <p className="text-[12px] text-gray-500 mt-1">Qty: {item.quantity}</p>
+                <div className="flex-1 min-w-0 pt-1">
+                  <h4 className="text-[14px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-orange-600 transition-colors">{item.productId?.name}</h4>
+                  <p className="text-[11px] text-gray-500 mt-1 font-medium">{item.productId?.category || 'Store Item'}</p>
+                  <p className="text-[15px] font-black text-gray-900 mt-2">₹{item.price}</p>
                 </div>
-                <div className="text-[14px] font-black text-gray-900 shrink-0">₹{item.price * item.quantity}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Payment Summary */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <h3 className="text-[13px] font-bold text-gray-800 mb-3 flex items-center gap-2"><FiCreditCard className="text-gray-400" /> Payment Summary</h3>
-          <div className="bg-gray-50 rounded-xl p-3 flex justify-between items-center mb-3">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-gray-400 font-bold uppercase">Payment Method</span>
-              <span className="text-[13px] text-gray-800 font-bold capitalize">{order.paymentMethod}</span>
-            </div>
-            <div className="flex flex-col text-right">
-              <span className="text-[10px] text-gray-400 font-bold uppercase">Status</span>
-              <span className={`text-[13px] font-bold capitalize ${
-                (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : 
-                (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 
-                'text-orange-500'
-              }`}>
-                {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : 
-                 (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? 'Cancelled' : 
-                 order.paymentStatus}
-              </span>
-            </div>
-          </div>
-          <div className="flex justify-between items-center px-1">
-            <span className="text-[14px] font-bold text-gray-800">Total Amount</span>
-            <span className="text-[18px] text-orange-500 font-black">₹{order.totalAmount}</span>
-          </div>
-        </div>
-
-        {/* Timeline UI */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-[13px] font-bold text-gray-800 mb-5 flex items-center gap-2"><FiTruck className="text-gray-400" /> Track Order</h3>
-
-          {/* Shiprocket Live Details */}
-          {shiprocketDetails && (
-            <div className="bg-orange-50/50 rounded-xl p-4 border border-orange-100 mb-5">
-              <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <FiPackage size={12} /> Live Shipment Info
-              </p>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <div>
-                  <p className="text-[10px] text-gray-500">Status</p>
-                  <p className="text-xs font-bold text-orange-700">{shiprocketDetails.status}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-gray-500">Courier Name</p>
-                  <p className="text-xs font-bold text-gray-800">{shiprocketDetails.shipments?.[0]?.courier || 'Pending'}</p>
-                </div>
-                {shiprocketDetails.shipments?.[0]?.awb && (
-                  <div className="col-span-2">
-                    <p className="text-[10px] text-gray-500">Tracking (AWB) Code</p>
-                    <p className="text-xs font-bold text-gray-800 font-mono">{shiprocketDetails.shipments[0].awb}</p>
-                  </div>
+        {/* SHIPPING ADDRESS */}
+        {order.shippingAddress && (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+             <h3 className="text-[14px] font-bold text-gray-800 mb-4 flex items-center gap-2">
+               <Map className="text-orange-500" size={18} /> Shipping Address
+             </h3>
+             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                <p className="text-[13px] font-bold text-gray-900 mb-1">{order.shippingAddress.name || 'Customer'}</p>
+                <p className="text-[12px] text-gray-600 leading-relaxed mb-2">
+                  {order.shippingAddress.street}<br/>
+                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.zipCode}
+                </p>
+                {order.shippingAddress.phone && (
+                  <p className="text-[12px] font-medium text-gray-700 flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-200">
+                    <Phone size={12} className="text-gray-400" /> {order.shippingAddress.phone}
+                  </p>
                 )}
-              </div>
-            </div>
-          )}
-
-          <div className="relative pl-2">
-            <div className="absolute left-[19px] top-2 bottom-4 w-0.5 bg-gray-100 z-0"></div>
-            <div className="space-y-6 relative z-10">
-              {['pending', 'processing', 'shipped', 'delivered'].map((step, idx) => {
-                const statusOrder = ['pending', 'processing', 'shipped', 'delivered'];
-                const currentIndex = statusOrder.indexOf(order.orderStatus);
-                const isCompleted = currentIndex >= idx;
-                const isCurrent = currentIndex === idx;
-                
-                if (order.orderStatus === 'cancelled' && step !== 'pending') return null;
-
-                let icon = <FiClock size={14} />;
-                if (step === 'processing') icon = <FiPackage size={14} />;
-                if (step === 'shipped') icon = <FiTruck size={14} />;
-                if (step === 'delivered') icon = <FiCheckCircle size={14} />;
-
-                return (
-                  <div key={step} className={`flex items-start gap-4 ${isCompleted ? 'opacity-100' : 'opacity-40'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 bg-white shadow-sm ${
-                      isCurrent ? 'border-orange-500 text-orange-500' : 
-                      isCompleted ? 'border-green-500 text-green-500' : 'border-gray-300 text-gray-400'
-                    }`}>
-                      {icon}
-                    </div>
-                    <div className="pt-1.5">
-                      <p className={`text-[14px] font-bold capitalize ${isCurrent ? 'text-orange-600' : isCompleted ? 'text-gray-800' : 'text-gray-400'}`}>
-                        {step === 'pending' ? 'Order Placed' : step}
-                      </p>
-                      {isCurrent && step === 'shipped' && order.trackingId && (
-                        <p className="text-[11px] text-blue-500 font-mono mt-1 bg-blue-50 inline-block px-2 py-0.5 rounded-md">
-                          Tracking: {order.trackingId}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {/* Shiprocket Advanced Tracking Data */}
-              {trackingData && trackingData.shipment_track && trackingData.shipment_track.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <h4 className="text-[12px] font-bold text-gray-600 mb-3 flex items-center gap-2"><FiActivity /> Live Courier Updates ({order.courierPartner})</h4>
-                  <div className="space-y-4">
-                    {trackingData.shipment_track[0].origin && (
-                      <p className="text-[11px] text-gray-500">Origin: <strong>{trackingData.shipment_track[0].origin}</strong> → Destination: <strong>{trackingData.shipment_track[0].destination}</strong></p>
-                    )}
-                    <p className="text-[11px] text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded inline-block">
-                       Current Status: {trackingData.shipment_status === 1 ? 'AWB Assigned' : trackingData.shipment_track[0].current_status}
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {order.orderStatus === 'cancelled' && (
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 bg-white border-red-500 text-red-500 shadow-sm">
-                    <FiCheckCircle size={14} />
-                  </div>
-                  <div className="pt-1.5">
-                    <p className="text-[14px] font-bold text-red-500 capitalize">Cancelled</p>
-                    {order.cancelRequest?.refundAmount > 0 && (
-                      <p className="text-[11px] text-green-600 font-bold mt-1 bg-green-50 inline-block px-2 py-0.5 rounded-md">
-                        ₹{order.cancelRequest.refundAmount} refunded to wallet
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+             </div>
           </div>
+        )}
+        
+        {/* PRICE SUMMARY */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+           <h3 className="text-[14px] font-bold text-gray-800 mb-4 flex items-center gap-2">
+             <CreditCard size={18} className="text-orange-500" /> Payment Summary
+           </h3>
+           <div className="space-y-3 mb-4">
+              <div className="flex justify-between text-[13px] font-medium text-gray-600">
+                <span>Items Subtotal</span>
+                <span className="font-bold text-gray-800">₹{order.totalAmount + (order.discountAmount || 0)}</span>
+              </div>
+              {order.discountAmount > 0 && (
+                <div className="flex justify-between text-[13px] font-medium text-green-600">
+                  <span>Coupon Discount</span>
+                  <span className="font-bold">-₹{order.discountAmount}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-[13px] font-medium text-gray-600">
+                <span>Shipping Fee</span>
+                <span className="font-bold text-green-600">FREE</span>
+              </div>
+           </div>
+           
+           <div className="pt-4 border-t border-gray-100 flex justify-between items-center bg-gray-50 -mx-5 px-5 -mb-5 pb-5 rounded-b-2xl">
+             <div className="flex flex-col">
+               <span className="text-[10px] text-gray-500 uppercase font-black tracking-wider mb-1">
+                 {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}
+               </span>
+               <span className={`text-[12px] font-black flex items-center gap-1 ${
+                  (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-600' : 
+                  (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 'text-orange-500'
+               }`}>
+                  {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? <><CheckCircle size={14}/> Payment Successful</> : 
+                   (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? <><X size={14}/> Cancelled</> : <><Clock size={14}/> Pending Payment</>}
+               </span>
+             </div>
+             <div className="text-right">
+               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-0.5">Grand Total</span>
+               <span className="text-[22px] text-gray-900 font-black">₹{order.totalAmount}</span>
+             </div>
+           </div>
         </div>
 
         {/* Cancel Request Status Card */}
         {order.cancelRequest?.requested && order.orderStatus !== 'cancelled' && (
-          <div className={`rounded-2xl p-4 border shadow-sm ${
+          <div className={`rounded-2xl p-5 border shadow-sm ${
             order.cancelRequest.adminResponse === 'pending' ? 'bg-yellow-50 border-yellow-200' :
             order.cancelRequest.adminResponse === 'rejected' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
           }`}>
             <div className="flex items-center gap-2 mb-2">
-              <FiAlertTriangle size={16} className={
+              <AlertTriangle size={18} className={
                 order.cancelRequest.adminResponse === 'pending' ? 'text-yellow-600' :
                 order.cancelRequest.adminResponse === 'rejected' ? 'text-red-500' : 'text-green-500'
               } />
-              <span className={`text-[14px] font-bold ${
+              <span className={`text-[14px] font-black ${
                 order.cancelRequest.adminResponse === 'pending' ? 'text-yellow-700' :
                 order.cancelRequest.adminResponse === 'rejected' ? 'text-red-600' : 'text-green-700'
               }`}>
                 {order.cancelRequest.adminResponse === 'pending' 
-                  ? 'Cancel Request Sent' 
+                  ? 'Cancellation Requested' 
                   : order.cancelRequest.adminResponse === 'rejected' 
-                    ? 'Cancel Request Rejected' 
-                    : 'Cancel Approved'}
+                    ? 'Cancellation Rejected' 
+                    : 'Cancellation Approved'}
               </span>
             </div>
             {order.cancelRequest.adminResponse === 'pending' && (
-              <p className="text-[12px] text-gray-700 leading-relaxed">
-                Your cancellation request is being reviewed. Expected refund: <span className="font-bold text-green-600">₹{order.cancelRequest.refundAmount} ({order.cancelRequest.refundPercent}%)</span>
+              <p className="text-[12px] text-gray-700 font-medium leading-relaxed">
+                Your request is under review. If approved, you will receive <span className="font-black text-green-600">₹{order.cancelRequest.refundAmount}</span> in your wallet.
               </p>
             )}
           </div>
@@ -306,9 +394,9 @@ const OrderDetails = () => {
         {['pending', 'processing', 'shipped'].includes(order.orderStatus) && !order.cancelRequest?.requested && (
           <button 
             onClick={() => setShowCancelModal(true)}
-            className="w-full py-3.5 border-2 border-red-200 bg-white text-red-500 font-bold rounded-2xl text-[14px] hover:bg-red-50 transition-colors flex items-center justify-center gap-2 shadow-sm mt-6"
+            className="w-full py-4 border border-red-200 bg-white text-red-500 font-black rounded-2xl text-[14px] hover:bg-red-50 transition-all flex items-center justify-center gap-2 shadow-sm mt-6"
           >
-            <FiX size={18} /> Cancel Order
+            <X size={18} strokeWidth={3} /> Cancel Order
           </button>
         )}
       </div>
@@ -316,23 +404,23 @@ const OrderDetails = () => {
       {/* ═══ CANCEL ORDER MODAL ═══ */}
       {showCancelModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <FiAlertTriangle size={20} className="text-red-500" />
+          <div className="bg-white rounded-[2rem] p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+                <AlertTriangle size={20} className="text-red-500" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 text-[16px]">Cancel Order</h3>
-                <p className="text-[11px] text-gray-400">Order #{order._id.slice(-6).toUpperCase()}</p>
+                <h3 className="font-black text-gray-900 text-[18px]">Cancel Order</h3>
+                <p className="text-[12px] text-gray-500 font-mono font-bold">#{order._id.slice(-8).toUpperCase()}</p>
               </div>
             </div>
             
-            <div className="bg-green-50 rounded-xl p-3 mb-4 border border-green-100">
-              <p className="text-[12px] text-green-700 font-medium">
+            <div className="bg-gray-50 rounded-2xl p-4 mb-5 border border-gray-100">
+              <p className="text-[13px] text-gray-700 font-medium leading-relaxed">
                 {order.paymentMethod === 'cod' ? (
-                  <span>You will not receive any wallet refund since this is a <strong>Cash on Delivery</strong> order.</span>
+                  <span>This is a <strong>Cash on Delivery</strong> order. No refund is required to be processed.</span>
                 ) : (
-                  <span>You will receive <span className="font-bold">80% refund (₹{Math.round(order.totalAmount * 0.8)})</span> to your wallet upon approval.</span>
+                  <span>If approved, you will receive an <span className="font-black text-green-600">80% refund (₹{Math.round(order.totalAmount * 0.8)})</span> directly to your wallet.</span>
                 )}
               </p>
             </div>
@@ -340,24 +428,24 @@ const OrderDetails = () => {
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Reason for cancellation (optional)"
+              placeholder="Tell us why you're cancelling (optional)"
               rows={3}
-              className="w-full bg-gray-50 rounded-xl p-3 text-[13px] outline-none border border-gray-100 focus:border-orange-300 resize-none mb-4"
+              className="w-full bg-white rounded-2xl p-4 text-[13px] font-medium outline-none border border-gray-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-50 resize-none mb-5 transition-all placeholder:text-gray-400"
             />
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button 
                 onClick={() => { setShowCancelModal(false); setCancelReason(''); }}
-                className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl text-[13px] hover:bg-gray-200 transition-colors"
+                className="flex-1 py-3.5 bg-gray-100 text-gray-700 font-black rounded-2xl text-[13px] hover:bg-gray-200 transition-colors"
               >
                 Keep Order
               </button>
               <button 
                 onClick={handleCancelRequest}
                 disabled={cancelLoading}
-                className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl text-[13px] hover:bg-red-600 transition-colors shadow-sm disabled:opacity-50"
+                className="flex-1 py-3.5 bg-red-500 text-white font-black rounded-2xl text-[13px] hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 disabled:opacity-50 flex items-center justify-center"
               >
-                {cancelLoading ? 'Sending...' : 'Cancel Order'}
+                {cancelLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Confirm Cancel'}
               </button>
             </div>
           </div>

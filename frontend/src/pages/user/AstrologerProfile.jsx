@@ -138,7 +138,7 @@ const AstrologerProfile = () => {
         <div className="bg-white rounded-2xl m-4 p-5 shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-900 mb-3 text-lg">About Me</h3>
           <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
-            {astrologer.bio || `Hello, I am ${astroName}, a verified and experienced astrologer on JyotishLink. I specialize in providing accurate predictions and guidance on various aspects of life including love, marriage, career, and health. With over ${astrologer.experience} years of experience, I am here to help you navigate your journey.`}
+            {astrologer.about || `Hello, I am ${astroName}, a verified and experienced astrologer on JyotishLink. I specialize in providing accurate predictions and guidance on various aspects of life including love, marriage, career, and health. With over ${astrologer.experience} years of experience, I am here to help you navigate your journey.`}
           </p>
         </div>
 

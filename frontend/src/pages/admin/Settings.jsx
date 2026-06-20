@@ -223,20 +223,6 @@ const AdminSettings = () => {
           <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
             <h3 className="font-bold text-gray-900 flex items-center gap-2"><FiSliders size={16} className="text-orange-500" /> Platform Controls</h3>
 
-            <ToggleSwitch
-              enabled={maintenanceMode}
-              onToggle={() => setMaintenanceMode(!maintenanceMode)}
-              label="Maintenance Mode"
-            />
-            <div className={`rounded-xl p-3 text-xs font-medium transition-all ${maintenanceMode ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-400'}`}>
-              {maintenanceMode ? '⚠️ Platform is in maintenance mode. Users will see a maintenance page.' : 'Platform is live and accessible to all users.'}
-            </div>
-
-            <ToggleSwitch
-              enabled={autoApprove}
-              onToggle={() => setAutoApprove(!autoApprove)}
-              label="Auto-approve Astrologer Applications"
-            />
 
             <div className="space-y-1.5 pt-2">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Min Wallet Balance for Chat (₹)</label>

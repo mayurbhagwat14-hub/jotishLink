@@ -20,6 +20,10 @@ module.exports = {
           800: '#9a3412',
           900: '#7c2d12',
         }
+      },
+      boxShadow: {
+        'card': '0 2px 10px rgba(0, 0, 0, 0.08)',
+        'card-hover': '0 10px 25px rgba(0, 0, 0, 0.12)',
       }
     },
   },
