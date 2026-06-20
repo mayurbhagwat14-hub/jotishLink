@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhoneOff } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhoneOff, FiRefreshCw } from 'react-icons/fi';
 import AgoraRTC, {
   AgoraRTCProvider,
   useLocalMicrophoneTrack,
@@ -121,6 +121,28 @@ const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user,
     else navigate('/user/home');
   };
 
+  const handleFlipCamera = async () => {
+    if (!localCameraTrack) return;
+    try {
+      const cameras = await AgoraRTC.getCameras();
+      if (cameras.length <= 1) {
+        toast.error('No other camera devices found');
+        return;
+      }
+      
+      const currentDeviceId = localCameraTrack.getMediaStreamTrack()?.getSettings()?.deviceId;
+      const currentIndex = cameras.findIndex(c => c.deviceId === currentDeviceId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      const nextDevice = cameras[nextIndex];
+      
+      await localCameraTrack.setDevice(nextDevice.deviceId);
+      toast.success(`Switched camera to ${nextDevice.label || `Device ${nextIndex + 1}`}`);
+    } catch (err) {
+      console.error('Failed to flip camera:', err);
+      toast.error('Failed to switch camera');
+    }
+  };
+
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   return (
@@ -185,9 +207,14 @@ const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user,
           <FiPhoneOff size={28} />
         </button>
         {!isAudio && (
-          <button onClick={() => setIsVideoOff(!isVideoOff)} className={`w-14 h-14 rounded-full flex items-center justify-center ${isVideoOff ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-gray-700/80 text-white border border-gray-600/50'}`}>
-            {isVideoOff ? <FiVideoOff size={24} /> : <FiVideo size={24} />}
-          </button>
+          <>
+            <button onClick={() => setIsVideoOff(!isVideoOff)} className={`w-14 h-14 rounded-full flex items-center justify-center ${isVideoOff ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-gray-700/80 text-white border border-gray-600/50'}`}>
+              {isVideoOff ? <FiVideoOff size={24} /> : <FiVideo size={24} />}
+            </button>
+            <button onClick={handleFlipCamera} className="w-14 h-14 rounded-full flex items-center justify-center bg-gray-700/80 text-white border border-gray-600/50 hover:bg-gray-600">
+              <FiRefreshCw size={24} />
+            </button>
+          </>
         )}
       </div>
 

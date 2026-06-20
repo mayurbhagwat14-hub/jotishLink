@@ -36,8 +36,10 @@ const UserChatRoom = () => {
   const [finalDuration, setFinalDuration] = useState(0);
   const [finalAmount, setFinalAmount] = useState(0);
   const [viewOnly, setViewOnly] = useState(location.state?.viewOnly || false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   // Use roomId from WaitingScreen navigation state or generate a stable one
   const initialRoomId = useMemo(() => {
@@ -99,9 +101,15 @@ Please analyze my chart based on this information.`;
       }
     };
 
-    const onMessage = (msg) => setMessages((prev) => [...prev, msg]);
+    const onMessage = (msg) => {
+      setMessages((prev) => [...prev, msg]);
+      setIsTyping(false);
+    };
 
     const onTimerTick = (data) => setTimer(data.seconds);
+
+    const onUserTyping = () => setIsTyping(true);
+    const onUserStoppedTyping = () => setIsTyping(false);
 
     const onBotTimeUp = (data) => {
       // Logic removed: Bot ending is now handled completely natively via insufficient_balance
@@ -163,6 +171,8 @@ Please analyze my chart based on this information.`;
     socket.on('wallet_update', onWalletUpdate);
     socket.on('user_joined', onMessage);
     socket.on('session_ended', onSessionEnded);
+    socket.on('user_typing', onUserTyping);
+    socket.on('user_stopped_typing', onUserStoppedTyping);
 
     return () => {
       socket.off('session_created', onSessionCreated);
@@ -175,6 +185,8 @@ Please analyze my chart based on this information.`;
       socket.off('session_ended', onSessionEnded);
       socket.off('wallet_low_balance');
       socket.off('user_joined', onMessage);
+      socket.off('user_typing', onUserTyping);
+      socket.off('user_stopped_typing', onUserStoppedTyping);
     };
   }, [roomId, user?._id]);
 
@@ -203,10 +215,25 @@ Please analyze my chart based on this information.`;
     e.target.value = null; // Reset input
   };
 
+  const handleInputChange = (e) => {
+    setInputText(e.target.value);
+    if (sessionEnded || viewOnly) return;
+    
+    const socket = getSocket();
+    socket.emit('typing', { roomId, sender: 'user' });
+    
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit('stop_typing', { roomId, sender: 'user' });
+    }, 1500);
+  };
+
   const handleSend = () => {
     if (!inputText.trim() || showLowBalance || sessionEnded || viewOnly) return;
     const socket = getSocket();
     socket.emit('send_message', { roomId, sessionId, sender: 'user', text: inputText });
+    socket.emit('stop_typing', { roomId, sender: 'user' });
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setInputText('');
   };
 
@@ -297,9 +324,15 @@ Please analyze my chart based on this information.`;
             <h1 className="font-extrabold text-gray-800 text-lg leading-tight truncate">
               {astrologer.name || 'Astrologer'}
             </h1>
-            <p className="text-[11px] font-bold text-gray-500 flex items-center gap-1.5 uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
-              {viewOnly ? 'View Only' : `Active • ${formatTime(timer)}`}
+            <p className="text-[11px] font-bold flex items-center gap-1.5 uppercase tracking-wider">
+              {isTyping ? (
+                <span className="text-green-500 lowercase animate-pulse tracking-normal text-[13px]">typing...</span>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+                  <span className="text-gray-500">{viewOnly ? 'View Only' : `Active • ${formatTime(timer)}`}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -343,8 +376,8 @@ Please analyze my chart based on this information.`;
                   <img src={astrologer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name || 'A')}&background=ffedD5&color=f97316`} alt="Astro" className="w-full h-full object-cover" />
                 </div>
               )}
-              <div>
-                <div className={`${isMe ? 'bg-orange-500 text-white rounded-br-sm' : 'bg-white text-gray-700 rounded-bl-sm border border-gray-100'} px-4 py-2.5 rounded-2xl shadow-sm text-[14px] max-w-[260px]`}>
+              <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
+                <div className={`${isMe ? 'bg-orange-500 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit`}>
                   {msg.text && msg.text.startsWith('data:image/') ? (
                     <img src={msg.text} alt="attachment" className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" onClick={() => window.open(msg.text)} />
                   ) : (
@@ -387,7 +420,7 @@ Please analyze my chart based on this information.`;
           <div className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl overflow-hidden focus-within:border-orange-300 focus-within:bg-white transition-all shadow-inner relative">
             <textarea
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               rows="1"
               placeholder={sessionEnded || viewOnly ? 'Session ended' : showLowBalance ? 'Recharge to continue...' : 'Type your message...'}

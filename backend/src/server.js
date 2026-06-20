@@ -245,6 +245,15 @@ io.on('connection', (socket) => {
     }
   });
 
+  // ── Typing indicators
+  socket.on('typing', ({ roomId, sender }) => {
+    socket.to(roomId).emit('user_typing', { sender });
+  });
+
+  socket.on('stop_typing', ({ roomId, sender }) => {
+    socket.to(roomId).emit('user_stopped_typing', { sender });
+  });
+
   // ── Send a message
   socket.on('send_message', async ({ roomId, sessionId, sender, text }) => {
     const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
@@ -261,15 +270,44 @@ io.on('connection', (socket) => {
       // Trigger AI Bot if this session exists in DB and sender is user (keep demo responsive)
       if (session && session.isBotSession && sender === 'user') {
         const AiService = (await import('./services/ai.service.js')).default;
+        
+        // Indicate bot is typing right away
+        io.to(roomId).emit('user_typing', { sender: 'bot' });
+        
         setTimeout(async () => {
           try {
-            const botReply = await AiService.getChatResponse(text);
-            const botTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-            const botMsg = { sender: 'bot', text: botReply, time: botTime };
-            await ChatSession.findByIdAndUpdate(sessionId, { $push: { messages: botMsg } });
-            io.to(roomId).emit('receive_message', botMsg);
+            const botReply = await AiService.getChatResponse(text, session.userId, session);
+            const rawSentences = botReply.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 0);
+            
+            const sentences = [];
+            for (let s of rawSentences) {
+              if (s.length <= 4 && sentences.length > 0) {
+                sentences[sentences.length - 1] += ' ' + s;
+              } else {
+                sentences.push(s);
+              }
+            }
+
+            for (let i = 0; i < sentences.length; i++) {
+              const sentence = sentences[i];
+              // Base delay is 0 for first sentence (already waited 1.5s), dynamic for others
+              const typingDelay = i === 0 ? 0 : Math.min(1000 + (sentence.length * 20), 3000);
+              
+              if (typingDelay > 0) {
+                io.to(roomId).emit('user_typing', { sender: 'bot' });
+                await new Promise(resolve => setTimeout(resolve, typingDelay));
+              }
+              
+              const botTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+              const botMsg = { sender: 'bot', text: sentence, time: botTime };
+              await ChatSession.findByIdAndUpdate(sessionId, { $push: { messages: botMsg } });
+              
+              io.to(roomId).emit('user_stopped_typing', { sender: 'bot' });
+              io.to(roomId).emit('receive_message', botMsg);
+            }
           } catch (e) {
             console.error('Bot reply error:', e);
+            io.to(roomId).emit('user_stopped_typing', { sender: 'bot' });
           }
         }, 1500);
       }

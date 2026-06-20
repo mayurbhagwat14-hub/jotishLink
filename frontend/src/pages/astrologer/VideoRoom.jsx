@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FiMic, FiMicOff, FiPhoneOff, FiVideo, FiVideoOff } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiPhoneOff, FiVideo, FiVideoOff, FiRefreshCw } from 'react-icons/fi';
 import AgoraRTC, {
   AgoraRTCProvider,
   useLocalMicrophoneTrack,
@@ -107,6 +107,28 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
     navigate('/astrologer/calls');
   };
 
+  const handleFlipCamera = async () => {
+    if (!localCameraTrack) return;
+    try {
+      const cameras = await AgoraRTC.getCameras();
+      if (cameras.length <= 1) {
+        toast.error('No other camera devices found');
+        return;
+      }
+      
+      const currentDeviceId = localCameraTrack.getMediaStreamTrack()?.getSettings()?.deviceId;
+      const currentIndex = cameras.findIndex(c => c.deviceId === currentDeviceId);
+      const nextIndex = (currentIndex + 1) % cameras.length;
+      const nextDevice = cameras[nextIndex];
+      
+      await localCameraTrack.setDevice(nextDevice.deviceId);
+      toast.success(`Switched camera to ${nextDevice.label || `Device ${nextIndex + 1}`}`);
+    } catch (err) {
+      console.error('Failed to flip camera:', err);
+      toast.error('Failed to switch camera');
+    }
+  };
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -185,14 +207,22 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
         </button>
 
         {!isAudio && (
-          <button 
-            onClick={() => setIsVideoEnabled(!isVideoEnabled)}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
-              !isVideoEnabled ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-gray-700/80 text-white border border-gray-600/50 hover:bg-gray-600'
-            }`}
-          >
-            {isVideoEnabled ? <FiVideo size={24} /> : <FiVideoOff size={24} />}
-          </button>
+          <>
+            <button 
+              onClick={() => setIsVideoEnabled(!isVideoEnabled)}
+              className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                !isVideoEnabled ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-gray-700/80 text-white border border-gray-600/50 hover:bg-gray-600'
+              }`}
+            >
+              {isVideoEnabled ? <FiVideo size={24} /> : <FiVideoOff size={24} />}
+            </button>
+            <button 
+              onClick={handleFlipCamera}
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all bg-gray-700/80 text-white border border-gray-600/50 hover:bg-gray-600"
+            >
+              <FiRefreshCw size={24} />
+            </button>
+          </>
         )}
       </div>
     </div>

@@ -22,6 +22,9 @@ const chatSessionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    botSessionId: {
+      type: String,
+    },
     botStartedAt: {
       type: Date,
     },
