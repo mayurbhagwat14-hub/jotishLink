@@ -302,7 +302,7 @@ const Earnings = () => {
 
       {/* Receipt Viewer Modal */}
       {selectedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedReceipt(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedReceipt(null)}>
           <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
             <button 
               onClick={() => setSelectedReceipt(null)}

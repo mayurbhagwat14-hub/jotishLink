@@ -113,8 +113,8 @@ const Dashboard = () => {
                        </div>
                     </div>
                     <Link 
-                      to={`/astrologer/chat/${session._id}`} 
-                      state={{ viewOnly: true, userName: session.userId?.name }}
+                      to={session.type === 'chat' ? `/astrologer/chat/${session._id}` : '/astrologer/history'} 
+                      state={session.type === 'chat' ? { viewOnly: true, userName: session.userId?.name } : undefined}
                       className="w-8 h-8 rounded-full bg-gray-50 hover:bg-orange-50 text-gray-400 hover:text-orange-500 flex items-center justify-center transition-colors"
                     >
                        <FiArrowRight size={16} />
@@ -123,8 +123,13 @@ const Dashboard = () => {
                  
                  <div className="mt-4 pl-3 flex flex-col gap-2">
                     <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
-                       <FiMessageSquare size={12} className="text-gray-400" />
-                       <span className="capitalize">{session.type || 'Chat'}</span> • {Math.floor((session.durationSeconds || 0) / 60)}m {(session.durationSeconds || 0) % 60}s
+                       {session.type?.includes('video') ? <FiVideo size={12} className="text-gray-400" /> : 
+                        session.type?.includes('audio') ? <FiPhoneCall size={12} className="text-gray-400" /> : 
+                        <FiMessageSquare size={12} className="text-gray-400" />}
+                       <span className="capitalize">
+                         {session.type === 'video_call' || session.type === 'video' ? 'Video Call' : 
+                          session.type === 'audio_call' || session.type === 'audio' ? 'Audio Call' : 'Chat'}
+                       </span> • {Math.floor((session.durationSeconds || 0) / 60)}m {(session.durationSeconds || 0) % 60}s
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                        <GiWallet size={12} className="text-gray-400" />
