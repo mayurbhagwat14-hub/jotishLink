@@ -87,6 +87,8 @@ import { useGlobalSocket } from './hooks/useGlobalSocket';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { fetchPublicSettingsThunk } from './store/slices/settingsSlice';
 import getSocket from './socket/socketManager';
+import SplashScreen from './components/SplashScreen';
+import { useState } from 'react';
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -95,6 +97,16 @@ const AppContent = () => {
   const { isAuthenticated: isAstrologerAuthenticated, user: astrologerUser } = useSelector((state) => state.astrologerAuth) || {};
   const { appName, appLogo } = useSelector((state) => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const userRole = user?.role || 'user';
+
+  const [isAppLoading, setIsAppLoading] = useState(true);
+
+  useEffect(() => {
+    // Show the splash screen for 1.5 seconds on full page reload
+    const timer = setTimeout(() => {
+      setIsAppLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Initialize Global Sockets
   useGlobalSocket();
@@ -156,6 +168,10 @@ const AppContent = () => {
     
     return '/user/home';
   };
+
+  if (isAppLoading) {
+    return <SplashScreen />;
+  }
 
   return (
     <Routes>

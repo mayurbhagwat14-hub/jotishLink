@@ -414,7 +414,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
   const [recentSessions, recentBookings, allSessions, allPoojas, withdrawals] = await Promise.all([
-    ChatSession.find({ astrologerId: req.user._id })
+    ChatSession.find({ astrologerId: req.user._id, isFreeChat: { $ne: true } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .limit(5)
@@ -424,13 +424,34 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5)
       .lean(),
-    ChatSession.find({ astrologerId: req.user._id, status: 'completed' }).lean(),
+    ChatSession.find({ astrologerId: req.user._id, status: 'completed', isFreeChat: { $ne: true } }).lean(),
     PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['Completed'] } }).lean(),
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['completed', 'pending'] } }).lean()
   ]);
 
   // Safely calculate earnings using immutable RevenueLog
   const revenueLogs = await RevenueLog.find({ astrologerId: req.user._id }).lean();
+
+  const processedRecentSessions = recentSessions.map(s => {
+    // Find matching revenue log to ensure astrologerShare is historically accurate
+    const rLog = revenueLogs.find(r => r.sessionId === s._id.toString());
+    let finalAmount = rLog ? rLog.astrologerShare : 0;
+    
+    // For poojas or other items that might not have a revenue log in the same format
+    if (!rLog && s.amountDeducted) {
+       finalAmount = parseFloat((s.amountDeducted * 0.7).toFixed(2));
+    }
+    
+    // If it's effectively 0, treat it as a Free Chat
+    const isFree = s.isFreeChat || finalAmount === 0;
+
+    return {
+      ...s,
+      amount: finalAmount,
+      isFreeChat: isFree
+    };
+  }).filter(s => !s.isFreeChat);
+
   let totalEarnings = 0;
   let todayEarnings = 0;
   
@@ -454,7 +475,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       astrologer,
-      recentSessions,
+      recentSessions: processedRecentSessions,
       recentBookings,
       totalEarnings: parseFloat(totalEarnings.toFixed(2)),
       todayEarnings: parseFloat(todayEarnings.toFixed(2)),
@@ -470,15 +491,39 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
 
 // GET /api/astrologer/earnings
 export const getAstrologerEarnings = asyncHandler(async (req, res) => {
-  const revenueLogs = await RevenueLog.find({ astrologerId: req.user._id }).lean();
+  const [revenueLogs, chatSessions, callSessions] = await Promise.all([
+    RevenueLog.find({ astrologerId: req.user._id }).lean(),
+    ChatSession.find({ astrologerId: req.user._id }).lean(),
+    // Need to dynamically import CallSession if it's not imported at the top
+  ]);
 
-  const allEarnings = revenueLogs.map((r) => ({
-    sessionId: r.sessionId,
-    date: r.date,
-    type: r.sessionType,
-    durationSeconds: r.durationSeconds,
-    amount: parseFloat(r.astrologerShare.toFixed(2)),
-  })).sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Import CallSession inline to avoid top-level import issues if it exists
+  const { CallSession } = await import('../models/callSession.model.js');
+  const calls = await CallSession.find({ astrologerId: req.user._id }).lean();
+
+  let allEarnings = revenueLogs.map((r) => {
+    let duration = r.durationSeconds || 0;
+    const chat = chatSessions.find(c => c._id.toString() === r.sessionId);
+    
+    // Mark if it's a free chat so we can filter it out
+    const isFree = chat ? chat.isFreeChat : false;
+
+    if (duration === 0) {
+      if (chat && chat.durationSeconds) duration = chat.durationSeconds;
+      else {
+        const call = calls.find(c => c._id.toString() === r.sessionId);
+        if (call && call.duration) duration = call.duration;
+      }
+    }
+    return {
+      sessionId: r.sessionId,
+      date: r.date,
+      type: r.sessionType,
+      durationSeconds: duration,
+      amount: parseFloat(r.astrologerShare.toFixed(2)),
+      isFree
+    };
+  }).filter(e => !e.isFree).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const totalEarnings = allEarnings.reduce((sum, e) => sum + e.amount, 0);
 
@@ -784,26 +829,33 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
       .lean()
   ]);
 
+  const revenueLogs = await RevenueLog.find({ astrologerId: req.user._id }).lean();
+  
+  // For poojas, we might not have it in revenueLogs yet depending on structure, so fallback to setting or 20%
   const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const rates = settings.commissionRates || { chat: 30, audioCall: 30, videoCall: 30, pooja: 20 };
-  const getAstroShare = (type) => {
-    let comm = rates.chat;
-    if (type === 'audio_call' || type === 'audio') comm = rates.audioCall;
-    if (type === 'video_call' || type === 'video') comm = rates.videoCall;
-    return (100 - (comm || 30)) / 100;
-  };
+  const rates = settings.commissionRates || { pooja: 20 };
   const poojaShare = (100 - (rates.pooja || 20)) / 100;
 
   const history = [
-    ...sessions.map(s => ({
-      _id: s._id,
-      type: s.type || 'chat',
-      userName: s.userId?.name || 'User',
-      date: s.createdAt,
-      duration: s.durationSeconds || 0,
-      amount: parseFloat(((s.amountDeducted || 0) * getAstroShare(s.type)).toFixed(2)),
-      status: s.status
-    })),
+    ...sessions.map(s => {
+      const rLog = revenueLogs.find(r => r.sessionId === s._id.toString());
+      let finalAmount = rLog ? rLog.astrologerShare : 0;
+      if (!rLog && s.amountDeducted) {
+         finalAmount = parseFloat((s.amountDeducted * 0.7).toFixed(2));
+      }
+      const isFree = s.isFreeChat || finalAmount === 0;
+
+      return {
+        _id: s._id,
+        type: s.type || 'chat',
+        userName: s.userId?.name || 'User',
+        date: s.createdAt,
+        duration: rLog && rLog.durationSeconds ? rLog.durationSeconds : (s.durationSeconds || 0),
+        amount: finalAmount,
+        status: s.status,
+        isFreeChat: isFree
+      };
+    }),
     ...poojas.map(p => ({
       _id: p._id,
       type: 'pooja',

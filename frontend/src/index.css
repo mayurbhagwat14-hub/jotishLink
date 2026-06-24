@@ -84,6 +84,9 @@
   .animate-scale-in {
     animation: scaleIn 0.3s ease-out forwards;
   }
+  .animate-pulse-zoom {
+    animation: pulseZoom 2s ease-in-out infinite;
+  }
 }
 
 /* Keyframes */
@@ -114,6 +117,10 @@
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+@keyframes pulseZoom {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 /* Custom Scrollbar */

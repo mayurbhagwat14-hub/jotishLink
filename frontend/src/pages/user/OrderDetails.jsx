@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, Truck, Clock, CreditCard, X, AlertTriangle, MapPin, Check, FileText, ChevronRight, Map, Phone, CheckCircle2 } from 'lucide-react';
 import { trackOrder, getOrderById, requestCancelOrder, getUserShiprocketOrderDetails } from '../../api/storeApis';
 import { toast } from 'react-hot-toast';
+import SplashScreen from '../../components/SplashScreen';
 
 const formatDate = (isoString) => {
   if (!isoString) return '';
@@ -83,14 +84,7 @@ const OrderDetails = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 text-orange-500">
-        <div className="flex flex-col items-center gap-3">
-           <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-           <p className="font-semibold text-gray-500">Loading Order...</p>
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   if (!order) {

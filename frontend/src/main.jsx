@@ -5,12 +5,13 @@ import store, { persistor } from './store/store'
 import { injectStore } from './api/axios'
 import './index.css'
 import App from './App.jsx'
+import SplashScreen from './components/SplashScreen.jsx'
 
 injectStore(store);
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
-    <PersistGate loading={null} persistor={persistor}>
+    <PersistGate loading={<SplashScreen />} persistor={persistor}>
       <App />
     </PersistGate>
   </Provider>

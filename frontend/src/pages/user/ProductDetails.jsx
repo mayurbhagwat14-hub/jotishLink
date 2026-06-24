@@ -5,6 +5,7 @@ import { FiArrowLeft, FiStar, FiShoppingCart, FiMinus, FiPlus, FiCheck, FiTruck,
 import { getProductById } from '../../api/userApis';
 import { updateCartThunk } from '../../store/slices/cartSlice';
 import toast from 'react-hot-toast';
+import SplashScreen from '../../components/SplashScreen';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -60,19 +61,7 @@ const ProductDetails = () => {
 
   /* ═══ LOADING STATE ═══ */
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col font-sans">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
-            <FiArrowLeft size={20} />
-          </button>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-[3px] border-orange-200 border-t-orange-500"></div>
-          <span className="text-gray-400 text-sm font-medium">Loading product...</span>
-        </div>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   /* ═══ NOT FOUND STATE ═══ */

@@ -28,8 +28,10 @@ const History = () => {
   // Filter history based on active tab
   const filteredHistory = history.filter(item => {
     if (activeTab === 'pooja') return item.type === 'pooja';
-    if (activeTab === 'consultations') return item.type === 'chat' || item.type.includes('call');
-    return true;
+    if (activeTab === 'freeChats') return item.isFreeChat;
+    if (activeTab === 'consultations') return !item.isFreeChat && (item.type === 'chat' || item.type.includes('call'));
+    // For 'all', we exclude free chats to keep them completely separate
+    return !item.isFreeChat;
   });
 
   // Group history by date string (e.g. "Today, May 27", "Yesterday, May 26", etc)
@@ -122,6 +124,12 @@ const History = () => {
           Consultations
         </button>
         <button 
+          onClick={() => { setActiveTab('freeChats'); setSelectedIds([]); }} 
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'freeChats' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+        >
+          Free Chats
+        </button>
+        <button 
           onClick={() => { setActiveTab('pooja'); setSelectedIds([]); }} 
           className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'pooja' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
@@ -165,8 +173,11 @@ const History = () => {
                           {getIconForType(item.type)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-800 text-sm capitalize">
+                          <h4 className="font-bold text-gray-800 text-sm capitalize flex items-center gap-2">
                             {item.type === 'pooja' ? item.poojaName : item.userName}
+                            {item.isFreeChat && (
+                              <span className="bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-widest border border-green-200">Free</span>
+                            )}
                           </h4>
                           <p className="text-[10px] uppercase font-bold tracking-wider mt-0.5 text-gray-400 flex items-center gap-1">
                             {item.type.replace('_', ' ')}
@@ -182,7 +193,10 @@ const History = () => {
                         </div>
                       </div>
                       <div className="text-right flex flex-col items-end gap-1">
-                        <p className="font-black text-gray-800 text-lg">₹{item.amount}</p>
+                        <p className="font-black text-gray-800 text-lg flex items-baseline gap-1">
+                          ₹{item.amount}
+                        </p>
+                        <p className="text-[9px] text-gray-400 italic mb-1">(Platform fees deducted)</p>
                         {item.status === 'completed' || item.status === 'confirmed' ? (
                           <span className="text-[10px] text-green-500 font-bold flex items-center gap-1 justify-end">
                             <FiCheckCircle size={10} /> Completed

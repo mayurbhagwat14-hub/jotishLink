@@ -618,7 +618,7 @@ io.on('connection', (socket) => {
 
           const comm = timerData?.commissionRate || 20;
 
-          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm);
+          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm, duration);
           if (creditRes && creditRes.netAmount) {
             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
           }
@@ -775,7 +775,7 @@ io.on('connection', (socket) => {
           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${typeLabel} with ${astroName} (${duration}s)` });
 
           const comm = timerData?.commissionRate || (type === 'video' ? 25 : 15);
-          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm);
+          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm, duration);
           if (creditRes && creditRes.netAmount) {
             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
           }

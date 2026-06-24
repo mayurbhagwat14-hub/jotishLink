@@ -104,7 +104,12 @@ const Dashboard = () => {
                           {session.userId?.name ? session.userId.name.charAt(0).toUpperCase() : 'U'}
                        </div>
                        <div>
-                         <p className="font-bold text-gray-800 text-sm">{session.userId?.name || 'Unknown User'}</p>
+                         <p className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                           {session.userId?.name || 'Unknown User'}
+                           {session.isFreeChat && (
+                             <span className="bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-widest border border-green-200">Free</span>
+                           )}
+                         </p>
                          <div className="mt-1">
                            <span className="inline-block bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">
                               Completed
@@ -133,7 +138,8 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                        <GiWallet size={12} className="text-gray-400" />
-                       <span>₹{((session.amountDeducted || 0) * 0.7).toFixed(2)}</span>
+                       <span>₹{session.amount !== undefined ? session.amount : ((session.amountDeducted || 0) * 0.7).toFixed(2)}</span>
+                       <span className="text-[9px] text-gray-400 italic ml-1">(Platform fees deducted)</span>
                     </div>
                  </div>
               </div>

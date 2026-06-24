@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiCheckCircle, FiPackage, FiTruck, FiHome, FiArrowLeft, FiClock, FiCreditCard } from 'react-icons/fi';
 import { useSelector } from 'react-redux';
 import { getOrderById } from '../../api/storeApis';
+import SplashScreen from '../../components/SplashScreen';
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -50,12 +51,7 @@ const OrderSuccess = () => {
   }, [orderId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-        <p className="mt-4 text-gray-500 font-medium">Fetching order details...</p>
-      </div>
-    );
+    return <SplashScreen />;
   }
 
   const steps = [

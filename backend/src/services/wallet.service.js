@@ -101,7 +101,7 @@ class WalletService {
   /**
    * Credit balance to an astrologer's wallet (after platform commission)
    */
-  static async creditAstrologer(astrologerId, userId, sessionId, sessionType, grossAmount, desc, commissionPercent = 30) {
+  static async creditAstrologer(astrologerId, userId, sessionId, sessionType, grossAmount, desc, commissionPercent = 30, durationSeconds = 0) {
     if (grossAmount <= 0) return null;
 
     try {
@@ -143,7 +143,7 @@ class WalletService {
         userId,
         astrologerId,
         sessionType,
-        durationSeconds: 0, // This can be updated by caller if needed, but totalCost matters more here. Or pass it down.
+        durationSeconds, 
         totalCost: grossAmount,
         commissionPercent,
         adminShare: commissionAmount,
