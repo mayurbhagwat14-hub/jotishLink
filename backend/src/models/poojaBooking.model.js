@@ -36,6 +36,10 @@ const poojaBookingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedByAstrologer: {
+      type: Boolean,
+      default: false,
+    },
     mode: {
       type: String,
       enum: ['online', 'offline'],

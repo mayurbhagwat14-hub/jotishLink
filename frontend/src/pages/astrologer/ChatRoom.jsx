@@ -6,6 +6,7 @@ import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeActiveSession } from '../../store/slices/astrologerSlice';
+import LogoLoader from '../../components/LogoLoader';
 
 const ChatRoom = () => {
   const navigate = useNavigate();
@@ -186,7 +187,7 @@ const ChatRoom = () => {
     return `${m}:${s}`;
   };
 
-  if (!sessionData && !endSessionInfo) return <div className="flex h-screen items-center justify-center">Loading session...</div>;
+  if (!sessionData && !endSessionInfo) return <div className="flex h-screen items-center justify-center"><LogoLoader /></div>;
 
   const userName = location.state?.userName || sessionData?.userId?.name || 'User';
   const userAvatar = sessionData?.userId?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=ffedD5&color=f97316`;

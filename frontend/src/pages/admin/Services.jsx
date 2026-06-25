@@ -3,6 +3,7 @@ import { FiClock, FiBox, FiTruck, FiCheck, FiMoreHorizontal, FiX, FiCheckCircle 
 import { GiFlowerPot } from 'react-icons/gi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminPoojas, getAdminOrders } from '../../api/adminApis';
+import LogoLoader from '../../components/LogoLoader';
 import { Link } from 'react-router-dom';
 
 const AdminServices = () => {
@@ -109,7 +110,7 @@ const AdminServices = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {loading ? (
-                  <tr><td colSpan="5" className="py-8 text-center text-gray-400 text-sm">Loading poojas...</td></tr>
+                  <tr><td colSpan="5" className="py-8"><div className="flex justify-center"><LogoLoader /></div></td></tr>
                 ) : poojas.length === 0 ? (
                   <tr><td colSpan="5" className="py-8 text-center text-gray-400 text-sm">No poojas found</td></tr>
                 ) : poojas.map((p) => (
@@ -175,7 +176,7 @@ const AdminServices = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {loading ? (
-                  <tr><td colSpan="7" className="py-8 text-center text-gray-400 text-sm">Loading orders...</td></tr>
+                  <tr><td colSpan="7" className="py-8"><div className="flex justify-center"><LogoLoader /></div></td></tr>
                 ) : orders.length === 0 ? (
                   <tr><td colSpan="7" className="py-8 text-center text-gray-400 text-sm">No orders found</td></tr>
                 ) : orders.map((order) => (

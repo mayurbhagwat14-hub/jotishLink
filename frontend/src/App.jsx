@@ -88,6 +88,7 @@ import { usePushNotifications } from './hooks/usePushNotifications';
 import { fetchPublicSettingsThunk } from './store/slices/settingsSlice';
 import getSocket from './socket/socketManager';
 import SplashScreen from './components/SplashScreen';
+import IOSInstallPrompt from './components/IOSInstallPrompt';
 import { useState } from 'react';
 
 const AppContent = () => {
@@ -174,7 +175,9 @@ const AppContent = () => {
   }
 
   return (
-    <Routes>
+    <>
+      <IOSInstallPrompt />
+      <Routes>
       {/* Onboarding */}
       <Route path="/onboarding" element={<Onboarding />} />
 
@@ -308,6 +311,7 @@ const AppContent = () => {
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 };
 

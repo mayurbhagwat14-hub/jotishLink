@@ -69,6 +69,10 @@ const chatSessionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedByAstrologer: {
+      type: Boolean,
+      default: false,
+    },
     type: {
       type: String,
       enum: ['chat', 'audio', 'video', 'audio_call', 'video_call'],

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
 import { fetchCartThunk, updateCartThunk } from '../../store/slices/cartSlice';
+import LogoLoader from '../../components/LogoLoader';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -45,7 +46,7 @@ const Cart = () => {
 
       {loading && items.length === 0 ? (
         <div className="flex-1 flex justify-center items-center">
-          <p className="text-gray-500 font-medium">Loading cart...</p>
+          <LogoLoader />
         </div>
       ) : items.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">

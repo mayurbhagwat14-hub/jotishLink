@@ -9,6 +9,7 @@ import { getSocket } from '../../socket/socketManager';
 import { useGlobalSocket } from '../../hooks/useGlobalSocket';
 import { formatTime12Hour } from '../../utils/formatTime';
 import { toast } from 'react-hot-toast';
+import LogoLoader from '../../components/LogoLoader';
 
 const historyTabs = ['Chat', 'Calls', 'Wallet', 'Orders', 'Poojas'];
 
@@ -203,7 +204,10 @@ const OrderHistory = () => {
       
       // Update local state
       if (type === 'chat') setSessions(prev => prev.filter(x => !selectedIds.includes(x._id)));
-      if (type === 'call') setCalls(prev => prev.filter(x => !selectedIds.includes(x._id)));
+      if (type === 'call') {
+        setCalls(prev => prev.filter(x => !selectedIds.includes(x._id)));
+        setSessions(prev => prev.filter(x => !selectedIds.includes(x._id)));
+      }
       if (type === 'pooja') setPoojas(prev => prev.filter(x => !selectedIds.includes(x._id)));
       if (type === 'order') setStoreOrders(prev => prev.filter(x => !selectedIds.includes(x._id)));
       
@@ -279,7 +283,7 @@ const OrderHistory = () => {
         <div className="divide-y divide-gray-50">
           {debugError && <div className="p-4 bg-red-100 text-red-700 text-xs font-mono break-words">{debugError}</div>}
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Loading...</div>
+            <div className="flex justify-center p-8"><LogoLoader /></div>
           ) : chatSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
@@ -379,7 +383,7 @@ const OrderHistory = () => {
         return (
         <div className="divide-y divide-gray-50">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Loading...</div>
+            <div className="flex justify-center p-8"><LogoLoader /></div>
           ) : callSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
@@ -513,7 +517,7 @@ const OrderHistory = () => {
           </div>
           <div className="divide-y divide-gray-50/50 space-y-2 px-4 pb-4">
             {isLoading ? (
-               <div className="p-8 text-center text-gray-400">Loading...</div>
+               <div className="flex justify-center p-8"><LogoLoader /></div>
             ) : transactions.length === 0 ? (
                <div className="p-8 text-center text-gray-400">No transactions found.</div>
             ) : (
@@ -559,7 +563,7 @@ const OrderHistory = () => {
       {activeTab === 'Orders' && (
         <div className="p-4 space-y-4">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Loading...</div>
+            <div className="flex justify-center p-8"><LogoLoader /></div>
           ) : storeOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
@@ -672,7 +676,7 @@ const OrderHistory = () => {
       {activeTab === 'Poojas' && (
         <div className="p-4 space-y-4">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Loading...</div>
+            <div className="flex justify-center p-8"><LogoLoader /></div>
           ) : poojas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-purple-50 rounded-full flex items-center justify-center mb-4 text-purple-500">

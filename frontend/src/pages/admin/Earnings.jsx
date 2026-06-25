@@ -5,6 +5,7 @@ import { GiFlowerPot } from 'react-icons/gi';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import getSocket from '../../socket/socketManager';
+import LogoLoader from '../../components/LogoLoader';
 
 const Earnings = () => {
   const [data, setData] = useState({
@@ -40,7 +41,7 @@ const Earnings = () => {
   }, []);
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading earnings...</div>;
+    return <div className="flex justify-center p-8"><LogoLoader /></div>;
   }
 
   const stats = [

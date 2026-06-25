@@ -43,6 +43,7 @@ export const requestCall = asyncHandler(async (req, res) => {
       role: 'astrologer',
       title: 'Incoming Call Request',
       body: `You have a new call request from ${user.name || 'a user'}.`,
+      data: { type: 'incoming_call', callId, channelName, url: '/astrologer/calls' }
     });
   } catch (err) {
     console.error('Push notification failed:', err);
@@ -96,6 +97,7 @@ export const acceptCall = asyncHandler(async (req, res) => {
       role: 'user',
       title: 'Call Started',
       body: 'The astrologer has accepted your call.',
+      data: { type: 'call_accepted', callId, channelName: callSession.channelName, url: `/user/video-room/${callSession.channelName}` }
     });
   } catch (err) {
     console.error('Push notification failed:', err);
@@ -121,12 +123,14 @@ export const rejectCall = asyncHandler(async (req, res) => {
 });
 
 export const getCallHistory = asyncHandler(async (req, res) => {
-  let query = { deletedByUser: { $ne: true } };
+  let query = {};
   
   if (req.user?.role === 'astrologer') {
     query.astrologerId = req.user._id;
+    query.deletedByAstrologer = { $ne: true };
   } else if (req.user) {
     query.userId = req.user._id;
+    query.deletedByUser = { $ne: true };
   }
 
   const calls = await CallSession.find(query)

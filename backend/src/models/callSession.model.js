@@ -48,6 +48,10 @@ const callSessionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    deletedByAstrologer: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

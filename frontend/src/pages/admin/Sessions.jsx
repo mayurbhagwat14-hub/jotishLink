@@ -3,6 +3,7 @@ import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle, FiTrash2
 import { getSocket } from '../../socket/socketManager';
 import { getAdminSessions, getAdminCalls, deleteAdminSession, deleteAdminCall, bulkDeleteAdminSessions } from '../../api/adminApis';
 import { toast } from 'react-hot-toast';
+import LogoLoader from '../../components/LogoLoader';
 
 const AdminSessions = () => {
   const [liveSessions, setLiveSessions] = useState([]);
@@ -217,7 +218,7 @@ const AdminSessions = () => {
         </div>
         <div className="divide-y divide-gray-50">
           {loading ? (
-            <div className="p-8 text-center text-gray-400 text-sm font-medium">Loading sessions...</div>
+            <div className="flex justify-center p-8"><LogoLoader /></div>
           ) : liveSessions.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm font-medium">No live sessions currently</div>
           ) : liveSessions.map((s) => (
@@ -335,7 +336,7 @@ const AdminSessions = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">Loading recent sessions...</td></tr>
+                <tr><td colSpan="6" className="py-8"><div className="flex justify-center"><LogoLoader /></div></td></tr>
               ) : recentSessions.length === 0 ? (
                 <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">No recent sessions found</td></tr>
               ) : filteredRecentSessions.map((s) => (

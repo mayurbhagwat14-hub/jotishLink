@@ -1,0 +1,21 @@
+{
+  "name": "JyotishLink — Connect with the Stars",
+  "short_name": "JyotishLink",
+  "description": "Connect with expert astrologers for chat, call, and personalized astrology services.",
+  "start_url": "/user/home",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#f97316",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "entertainment"],
+  "lang": "en",
+  "dir": "ltr"
+}

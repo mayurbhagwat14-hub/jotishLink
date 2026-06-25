@@ -132,6 +132,19 @@ io.on('connection', (socket) => {
       userSocketId: socket.id
     });
     console.log(`[Socket.IO] User ${userId} requested ${type} session with Astrologer ${astrologerId}`);
+
+    try {
+      const { sendPushNotification } = await import('./utils/firebaseHelper.js');
+      await sendPushNotification({
+        userId: astrologerId,
+        role: 'astrologer',
+        title: `Incoming ${type === 'chat' ? 'Chat' : 'Call'} Request`,
+        body: `You have a new ${type} request from ${userName || 'a user'}.`,
+        data: { type: `incoming_${type}`, roomId, url: type === 'chat' ? '/astrologer/chats' : '/astrologer/calls' }
+      });
+    } catch (err) {
+      console.error('[Socket.IO] Push notification failed:', err);
+    }
   });
 
   // ── User cancels their session request

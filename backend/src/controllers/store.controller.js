@@ -210,7 +210,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     role: 'user',
     title: 'Order Confirmed! 🎉',
     body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been placed successfully. ${paymentStatus === 'paid' ? '₹' + totalAmount + ' deducted.' : 'Payment pending (COD).'}`,
-    data: { orderId: order._id.toString() }
+    data: { type: 'order_confirmed', orderId: order._id.toString(), url: `/user/order/${order._id}` }
   });
 
   if (appliedCoupon) {

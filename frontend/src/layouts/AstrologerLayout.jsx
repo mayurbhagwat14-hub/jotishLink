@@ -216,7 +216,6 @@ const AstrologerLayout = () => {
          {/* Subtle background decoration */}
          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
          <Outlet />
-
       </main>
 
       {/* Side Drawer Navbar */}

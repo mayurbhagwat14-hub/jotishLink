@@ -3,6 +3,7 @@ import { ArrowLeft, Bell, Check, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axios';
 import { useGlobalSocket } from '../../hooks/useGlobalSocket';
+import LogoLoader from '../../components/LogoLoader';
 
 const Notifications = () => {
   const navigate = useNavigate();
@@ -128,9 +129,8 @@ const Notifications = () => {
       {/* Content */}
       <div className="p-4 space-y-3">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 opacity-50">
-            <div className="w-10 h-10 border-4 border-orange-200 border-t-orange-500 rounded-full animate-spin mb-4" />
-            <p className="text-gray-500 font-medium">Loading notifications...</p>
+          <div className="flex justify-center py-20">
+            <LogoLoader />
           </div>
         ) : notifications.length === 0 ? (
           <div className="bg-white rounded-3xl border border-gray-100 p-10 flex flex-col items-center text-center shadow-sm">

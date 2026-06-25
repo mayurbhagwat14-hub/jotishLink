@@ -1,5 +1,6 @@
 import { Navigate, useLocation, Outlet, useOutletContext } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import SplashScreen from './SplashScreen';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const userAuth = useSelector((state) => state.auth);

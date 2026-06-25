@@ -12,23 +12,32 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const userAuth = useSelector((state) => state.auth);
+  const astrologerAuth = useSelector((state) => state.astrologerAuth);
+  const adminAuth = useSelector((state) => state.adminAuth);
   const astrologerState = useSelector((state) => state.astrologer);
   const incomingRequests = astrologerState?.incomingRequests || [];
 
+  const isUserAuthenticated = userAuth?.isAuthenticated || astrologerAuth?.isAuthenticated || adminAuth?.isAuthenticated;
+
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isUserAuthenticated) {
       fetchNotifications();
     }
     
     // Set up socket listener for real-time notifications
     try {
       const socket = getSocket();
+      
+      // Listen for new notifications for the current user
+      socket.on('new_notification', fetchNotifications);
+
       if (window.location.pathname.startsWith('/admin')) {
         socket.on('admin_new_order', fetchNotifications);
       }
       
       return () => {
+        socket.off('new_notification', fetchNotifications);
         if (window.location.pathname.startsWith('/admin')) {
           socket.off('admin_new_order', fetchNotifications);
         }

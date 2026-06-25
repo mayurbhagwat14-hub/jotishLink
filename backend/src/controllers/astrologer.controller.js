@@ -414,18 +414,18 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
   const [recentSessions, recentBookings, allSessions, allPoojas, withdrawals] = await Promise.all([
-    ChatSession.find({ astrologerId: req.user._id, isFreeChat: { $ne: true } })
+    ChatSession.find({ astrologerId: req.user._id, isFreeChat: { $ne: true }, deletedByAstrologer: { $ne: true } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .limit(5)
       .lean(),
-    PoojaBooking.find({ astrologerId: astrologer._id })
+    PoojaBooking.find({ astrologerId: astrologer._id, deletedByAstrologer: { $ne: true } })
       .populate('userId', 'name phone')
       .sort({ createdAt: -1 })
       .limit(5)
       .lean(),
-    ChatSession.find({ astrologerId: req.user._id, status: 'completed', isFreeChat: { $ne: true } }).lean(),
-    PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['Completed'] } }).lean(),
+    ChatSession.find({ astrologerId: req.user._id, status: 'completed', isFreeChat: { $ne: true }, deletedByAstrologer: { $ne: true } }).lean(),
+    PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['Completed'] }, deletedByAstrologer: { $ne: true } }).lean(),
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['completed', 'pending'] } }).lean()
   ]);
 
@@ -774,7 +774,8 @@ export const uploadPoojaProof = asyncHandler(async (req, res) => {
 export const getAstrologerChats = asyncHandler(async (req, res) => {
   const sessions = await ChatSession.find({ 
     astrologerId: req.user._id,
-    type: { $nin: ['audio_call', 'video_call', 'audio', 'video'] }
+    type: { $nin: ['audio_call', 'video_call', 'audio', 'video'] },
+    deletedByAstrologer: { $ne: true }
   })
     .populate('userId', 'name avatar phone')
     .sort({ createdAt: -1 })
@@ -786,7 +787,7 @@ export const getAstrologerChats = asyncHandler(async (req, res) => {
 // GET /api/astrologer/calls
 export const getAstrologerCalls = asyncHandler(async (req, res) => {
   // Return chat sessions that represent calls
-  const sessions = await ChatSession.find({ astrologerId: req.user._id, status: 'completed', type: { $in: ['audio_call', 'video_call'] } })
+  const sessions = await ChatSession.find({ astrologerId: req.user._id, status: 'completed', type: { $in: ['audio_call', 'video_call'] }, deletedByAstrologer: { $ne: true } })
     .populate('userId', 'name avatar phone')
     .sort({ createdAt: -1 })
     .lean();
@@ -819,11 +820,11 @@ export const updateOnlineStatus = asyncHandler(async (req, res) => {
 // GET /api/astrologer/history
 export const getAstrologerHistory = asyncHandler(async (req, res) => {
   const [sessions, poojas] = await Promise.all([
-    ChatSession.find({ astrologerId: req.user._id, status: 'completed' })
+    ChatSession.find({ astrologerId: req.user._id, status: 'completed', deletedByAstrologer: { $ne: true } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .lean(),
-    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] } })
+    PoojaBooking.find({ astrologerId: req.user._id, status: { $in: ['Completed'] }, deletedByAstrologer: { $ne: true } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .lean()
@@ -878,12 +879,17 @@ export const deleteAstrologerHistoryBulk = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Please provide an array of ids');
   }
 
-  // Delete from ChatSessions
-  await ChatSession.deleteMany({ _id: { $in: ids }, astrologerId: req.user._id });
-  // Delete from PoojaBookings
-  await PoojaBooking.deleteMany({ _id: { $in: ids }, astrologerId: req.user._id });
+  // Soft Delete from ChatSessions and CallSessions
+  await ChatSession.updateMany({ _id: { $in: ids }, astrologerId: req.user._id }, { $set: { deletedByAstrologer: true } });
+  
+  // Need to dynamically import CallSession if not top-level
+  const { CallSession } = await import('../models/callSession.model.js');
+  await CallSession.updateMany({ _id: { $in: ids }, astrologerId: req.user._id }, { $set: { deletedByAstrologer: true } });
 
-  return res.status(200).json(new ApiResponse(200, {}, 'History records deleted from database'));
+  // Soft Delete from PoojaBookings
+  await PoojaBooking.updateMany({ _id: { $in: ids }, astrologerId: req.user._id }, { $set: { deletedByAstrologer: true } });
+
+  return res.status(200).json(new ApiResponse(200, {}, 'History records soft-deleted'));
 });
 
 // GET /api/astrologer/analytics
@@ -998,14 +1004,37 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
 
   if (!token) throw new ApiError(400, 'FCM token is required');
 
-  await Astrologer.findByIdAndUpdate(req.user._id, { $pull: { fcmTokens: { token } } });
-  const astrologer = await Astrologer.findByIdAndUpdate(
+  // Determine target field based on platform
+  const targetField = platform === 'web' ? 'fcmToken' : 'fcmTokenMobile';
+
+  // Extract the device prefix (part before ':') to identify same-device tokens
+  const devicePrefix = token.includes(':') ? token.split(':')[0] : null;
+
+  // Remove the exact token first (dedup)
+  await Astrologer.findByIdAndUpdate(req.user._id, { $pull: { [targetField]: token } });
+
+  // Also remove all old tokens from the SAME device (prevents dead token buildup)
+  if (devicePrefix) {
+    const astrologer = await Astrologer.findById(req.user._id).select(targetField);
+    if (astrologer && astrologer[targetField]) {
+      const staleTokens = astrologer[targetField]
+        .filter(t => t !== token && t.startsWith(devicePrefix + ':'));
+      if (staleTokens.length > 0) {
+        await Astrologer.findByIdAndUpdate(req.user._id, {
+          $pull: { [targetField]: { $in: staleTokens } }
+        });
+        console.log(`Removed ${staleTokens.length} stale ${platform} FCM tokens for astrologer ${req.user._id}`);
+      }
+    }
+  }
+
+  const updatedAstrologer = await Astrologer.findByIdAndUpdate(
     req.user._id,
-    { $push: { fcmTokens: { token, platform } } },
+    { $push: { [targetField]: token } },
     { new: true }
   ).select('-password');
 
-  if (!astrologer) throw new ApiError(404, 'Astrologer not found');
+  if (!updatedAstrologer) throw new ApiError(404, 'Astrologer not found');
   
   return res.status(200).json({
     success: true,
@@ -1016,4 +1045,23 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
       platform
     }
   });
+});
+
+// POST /api/astrologer/test-push
+export const testPushNotification = asyncHandler(async (req, res) => {
+  const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+  
+  const success = await sendPushNotification({
+    userId: req.user._id,
+    role: 'astrologer',
+    title: 'Test Notification',
+    body: 'This is a test notification from the Astrologer Profile.',
+    data: { type: 'test', url: '/astrologer/dashboard' }
+  });
+
+  if (!success) {
+    throw new ApiError(500, 'Failed to send push notification. Please check if your token is saved properly.');
+  }
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Test notification sent successfully'));
 });

@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
 import { astrologerDeleteAccountThunk } from '../../store/slices/astrologerAuthSlice';
+import { testPushNotification } from '../../api/astrologerApis';
+import { FiBell } from 'react-icons/fi';
 
 const POOJA_TYPES = ['Satyanarayan Pooja', 'Griha Pravesh', 'Navagraha Shanti', 'Rudrabhishek', 'Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya', 'Kaal Sarp Dosh Nivaran', 'Mangal Dosh Nivaran'];
 
@@ -217,6 +219,15 @@ const Profile = () => {
     }
   };
 
+  const handleTestPush = async () => {
+    try {
+      await testPushNotification();
+      toast.success("Test push notification sent! Check your device/browser.");
+    } catch (err) {
+      toast.error("Failed to send test push: " + (err.response?.data?.message || err.message));
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 animate-fade-in max-w-5xl mx-auto space-y-8">
       
@@ -225,12 +236,20 @@ const Profile = () => {
           <h1 className="text-3xl font-bold text-gray-800 mb-1">Profile & Settings</h1>
           <p className="text-gray-500 font-medium">Manage your public presence and pricing</p>
         </div>
-        <button 
-          onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-all"
-        >
-          <FiSave /> Save Changes
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={handleTestPush}
+            className="flex items-center gap-2 px-6 py-2.5 bg-purple-500 text-white rounded-xl font-bold hover:bg-purple-600 shadow-md shadow-purple-500/20 transition-all"
+          >
+            <FiBell /> Test Push
+          </button>
+          <button 
+            onClick={handleSave}
+            className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-all"
+          >
+            <FiSave /> Save Changes
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

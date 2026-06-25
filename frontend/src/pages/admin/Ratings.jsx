@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiSearch, FiTrash2, FiStar, FiCalendar, FiX, FiCheck } from 'react-icons/fi';
 import { FaStar } from 'react-icons/fa';
 import api from '../../api/axios';
+import LogoLoader from '../../components/LogoLoader';
 
 const AdminRatings = () => {
   const [ratings, setRatings] = useState([]);
@@ -137,7 +138,7 @@ const AdminRatings = () => {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-500">Loading ratings...</td>
+                  <td colSpan={6} className="py-12"><div className="flex justify-center"><LogoLoader /></div></td>
                 </tr>
               ) : paginatedRatings.map((rating) => {
                 const dateObj = new Date(rating.createdAt);

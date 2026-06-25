@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiShield, FiFileText, FiRefreshCcw, FiX, FiClock, FiTrash2 } from 'react-icons/fi';
 import * as adminApis from '../../api/adminApis';
 import { toast } from 'react-hot-toast';
+import LogoLoader from '../../components/LogoLoader';
 
 const AdminAuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -80,7 +81,7 @@ const AdminAuditLogs = () => {
             <tbody className="divide-y divide-gray-50">
               {loading && logs.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-sm text-gray-500 font-medium">Loading audit logs...</td>
+                  <td colSpan="6" className="py-8"><div className="flex justify-center"><LogoLoader /></div></td>
                 </tr>
               )}
               {!loading && logs.length === 0 && (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiBarChart2, FiDownload, FiCalendar, FiArrowUp, FiArrowDown, FiTrendingUp } from 'react-icons/fi';
 import { getAdminReports } from '../../api/adminApis';
+import LogoLoader from '../../components/LogoLoader';
 
 const AdminReports = () => {
   const [reportData, setReportData] = useState(null);
@@ -61,9 +62,7 @@ const AdminReports = () => {
 
   const maxRevenue = reportData ? Math.max(...reportData.dailyRevenue.map(d => d.amount), 1) : 1;
 
-  if (loading) {
-    return <div className="p-10 text-center text-gray-500 font-medium">Loading reports...</div>;
-  }
+  if (loading) return <div className="flex justify-center p-10"><LogoLoader /></div>;
 
   return (
     <div className="space-y-8 animate-fade-in">

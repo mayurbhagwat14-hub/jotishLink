@@ -27,7 +27,7 @@ const storage = {
 const authPersistConfig = {
   key: 'auth_user',
   storage,
-  whitelist: ['user', 'token', 'isAuthenticated', 'settings'],
+  whitelist: ['user', 'token', 'isAuthenticated'],
 };
 
 const adminAuthPersistConfig = {
@@ -46,6 +46,12 @@ const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedAdminAuthReducer = persistReducer(adminAuthPersistConfig, adminAuthReducer);
 const persistedAstrologerAuthReducer = persistReducer(astrologerAuthPersistConfig, astrologerAuthReducer);
 
+const settingsPersistConfig = {
+  key: 'app_settings',
+  storage,
+};
+const persistedSettingsReducer = persistReducer(settingsPersistConfig, settingsReducer);
+
 const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
@@ -62,7 +68,7 @@ const store = configureStore({
     dashboard: dashboardReducer,
     cart: cartReducer,
     session: sessionReducer,
-    settings: settingsReducer,
+    settings: persistedSettingsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -9,6 +9,13 @@ import SplashScreen from './components/SplashScreen.jsx'
 
 injectStore(store);
 
+// Register Firebase Messaging Service Worker early for reliable push notifications
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' })
+    .then((reg) => console.log('Firebase messaging SW registered (main.jsx):', reg.scope))
+    .catch((err) => console.warn('Firebase messaging SW registration failed:', err));
+}
+
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
     <PersistGate loading={<SplashScreen />} persistor={persistor}>

@@ -47,6 +47,7 @@ export const startChatSession = asyncHandler(async (req, res) => {
       role: 'astrologer',
       title: 'Incoming Chat Request',
       body: `You have a new chat request from ${user.name || 'a user'}.`,
+      data: { type: 'incoming_chat', sessionId: session._id.toString(), roomId, url: '/astrologer/chats' }
     });
   } catch (err) {
     console.error('Push notification failed:', err);

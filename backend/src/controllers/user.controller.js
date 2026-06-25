@@ -342,6 +342,19 @@ export const bookPooja = asyncHandler(async (req, res) => {
     io.to('admin_room').emit('dashboard_updated');
   }
 
+  try {
+    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+    await sendPushNotification({
+      userId: astrologerId,
+      role: 'astrologer',
+      title: 'New Pooja Booking',
+      body: `You have received a new booking for ${poojaName}.`,
+      data: { type: 'pooja_booking', bookingId: booking._id.toString(), url: '/astrologer/pooja' }
+    });
+  } catch (err) {
+    console.error('Push notification failed:', err);
+  }
+
   return res.status(201).json(new ApiResponse(201, { booking, transaction }, 'Pooja booked successfully'));
 });
 
@@ -490,9 +503,32 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'FCM token is required');
   }
 
-  // Remove the exact token if it exists (to prevent duplicates) and push it with the platform
-  await User.findByIdAndUpdate(req.user._id, { $pull: { fcmTokens: { token } } });
-  await User.findByIdAndUpdate(req.user._id, { $push: { fcmTokens: { token, platform } } });
+  // Determine target field based on platform
+  const targetField = platform === 'web' ? 'fcmToken' : 'fcmTokenMobile';
+
+  // Extract the device prefix (part before ':') to identify same-device tokens
+  const devicePrefix = token.includes(':') ? token.split(':')[0] : null;
+
+  // Remove the exact token if it exists (to prevent duplicates)
+  await User.findByIdAndUpdate(req.user._id, { $pull: { [targetField]: token } });
+
+  // Also remove all old tokens from the SAME device (prevents dead token buildup)
+  if (devicePrefix) {
+    const user = await User.findById(req.user._id).select(targetField);
+    if (user && user[targetField]) {
+      const staleTokens = user[targetField]
+        .filter(t => t !== token && t.startsWith(devicePrefix + ':'));
+      if (staleTokens.length > 0) {
+        await User.findByIdAndUpdate(req.user._id, {
+          $pull: { [targetField]: { $in: staleTokens } }
+        });
+        console.log(`Removed ${staleTokens.length} stale ${platform} FCM tokens for user ${req.user._id}`);
+      }
+    }
+  }
+
+  // Push the new token
+  await User.findByIdAndUpdate(req.user._id, { $push: { [targetField]: token } });
   
   return res.status(200).json({
     success: true,

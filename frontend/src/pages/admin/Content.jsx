@@ -3,6 +3,7 @@ import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft,
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import * as adminApis from '../../api/adminApis';
 import { toast } from 'react-hot-toast';
+import LogoLoader from '../../components/LogoLoader';
 
 const AdminContent = () => {
   const [activeTab, setActiveTab] = useState('Banners');
@@ -205,9 +206,8 @@ const AdminContent = () => {
             </button>
           </div>
 
-          {loading ? (
-            <p className="text-sm text-gray-500 text-center py-10">Loading Banners...</p>
-          ) : (
+          {loading && <div className="flex justify-center py-10"><LogoLoader /></div>}
+          {!loading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {banners.map((banner) => (
                 <div key={banner._id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden group hover:border-gray-200 transition-all">
@@ -264,7 +264,7 @@ const AdminContent = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {loading && <tr><td colSpan="5" className="py-8 text-center text-sm text-gray-500">Loading...</td></tr>}
+                  {loading && <tr><td colSpan="5" className="py-8"><div className="flex justify-center"><LogoLoader /></div></td></tr>}
                   {!loading && coupons.length === 0 && <tr><td colSpan="5" className="py-8 text-center text-sm text-gray-500">No coupons found.</td></tr>}
                   {!loading && coupons.map((c) => (
                     <tr key={c._id} className="hover:bg-gray-50/50 transition-colors group">
@@ -305,6 +305,8 @@ const AdminContent = () => {
                 className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
               >
                 <option>All Users</option>
+                <option>All Astrologers</option>
+                <option>All Users & Astrologers</option>
                 <option>New Users</option>
               </select>
             </div>

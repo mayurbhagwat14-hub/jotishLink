@@ -16,16 +16,16 @@ export const sendPushNotification = async ({ userId, role, title, body, data = {
     let tokens = [];
 
     if (role === 'user') {
-      const user = await User.findById(userId).select('fcmTokens fcmToken');
+      const user = await User.findById(userId).select('fcmToken fcmTokenMobile');
       if (user) {
-        if (user.fcmTokens && user.fcmTokens.length > 0) tokens = user.fcmTokens.map(t => t.token);
-        else if (user.fcmToken) tokens = [user.fcmToken];
+        if (user.fcmToken && user.fcmToken.length > 0) tokens.push(...user.fcmToken);
+        if (user.fcmTokenMobile && user.fcmTokenMobile.length > 0) tokens.push(...user.fcmTokenMobile);
       }
     } else if (role === 'astrologer') {
-      const astrologer = await Astrologer.findById(userId).select('fcmTokens fcmToken');
+      const astrologer = await Astrologer.findById(userId).select('fcmToken fcmTokenMobile');
       if (astrologer) {
-        if (astrologer.fcmTokens && astrologer.fcmTokens.length > 0) tokens = astrologer.fcmTokens.map(t => t.token);
-        else if (astrologer.fcmToken) tokens = [astrologer.fcmToken];
+        if (astrologer.fcmToken && astrologer.fcmToken.length > 0) tokens.push(...astrologer.fcmToken);
+        if (astrologer.fcmTokenMobile && astrologer.fcmTokenMobile.length > 0) tokens.push(...astrologer.fcmTokenMobile);
       }
     }
 
@@ -35,7 +35,29 @@ export const sendPushNotification = async ({ userId, role, title, body, data = {
     }
 
     // Use multicast helper which handles array of tokens
-    return await sendMulticastPushNotification(tokens, title, body, data);
+    const result = await sendMulticastPushNotification(tokens, title, body, data);
+    
+    if (result && result.failedTokens && result.failedTokens.length > 0) {
+      const failedTokens = result.failedTokens;
+      if (role === 'user') {
+        await User.findByIdAndUpdate(userId, {
+          $pull: { 
+            fcmToken: { $in: failedTokens },
+            fcmTokenMobile: { $in: failedTokens }
+          }
+        });
+      } else if (role === 'astrologer') {
+        await Astrologer.findByIdAndUpdate(userId, {
+          $pull: { 
+            fcmToken: { $in: failedTokens },
+            fcmTokenMobile: { $in: failedTokens }
+          }
+        });
+      }
+      console.log(`Cleaned up ${failedTokens.length} dead FCM tokens for ${role} ${userId}`);
+    }
+    
+    return true;
   } catch (error) {
     console.error(`Error sending push notification to ${role} (${userId}):`, error.message);
     return false;
@@ -59,26 +81,81 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
       return false;
     }
 
-    const payload = {
-      notification: {
-        title: title,
-        body: body
-      },
-      tokens: tokens
-    };
-
+    const formattedData = {};
     if (Object.keys(data).length > 0) {
-      payload.data = {};
       for (const [key, value] of Object.entries(data)) {
-        payload.data[key] = String(value);
+        formattedData[key] = String(value);
       }
     }
 
+    const isUrgent = data.type === 'incoming_call' || data.type === 'incoming_chat';
+
+    // Send as data-only message (no top-level 'notification' field).
+    // This ensures the Service Worker's onBackgroundMessage ALWAYS fires,
+    // giving us full control over showNotification() on all platforms including Windows.
+    const dataWithNotifInfo = {
+      ...formattedData,
+      title: String(title),
+      body: String(body),
+    };
+
+    const payload = {
+      tokens: tokens,
+      data: dataWithNotifInfo,
+      webpush: {
+        fcmOptions: {
+          link: data.url ? `${process.env.CLIENT_URL || 'http://localhost:5173'}${data.url}` : (process.env.CLIENT_URL || 'http://localhost:5173')
+        },
+        notification: {
+          title: title,
+          body: body,
+          icon: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png',
+          badge: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png'
+        }
+      },
+      android: {
+        priority: isUrgent ? 'high' : 'normal',
+        notification: {
+          title: title,
+          body: body,
+          sound: 'default',
+          channelId: isUrgent ? 'high_importance_channel' : 'default_channel',
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+        }
+      },
+      apns: {
+        headers: {
+          'apns-priority': isUrgent ? '10' : '5'
+        },
+        payload: {
+          aps: {
+            alert: { title, body },
+            sound: 'default',
+            badge: 1
+          }
+        }
+      }
+    };
+
     const response = await adminSDK.messaging().sendEachForMulticast(payload);
     console.log(`Multicast push sent. Success: ${response.successCount}, Failed: ${response.failureCount}`);
-    return true;
+    
+    let failedTokens = [];
+    if (response.failureCount > 0) {
+      response.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+          const errorCode = resp.error?.code;
+          if (errorCode === 'messaging/invalid-registration-token' || 
+              errorCode === 'messaging/registration-token-not-registered') {
+            failedTokens.push(tokens[idx]);
+          }
+        }
+      });
+    }
+
+    return { success: true, failedTokens };
   } catch (error) {
     console.error('Error sending multicast push notification:', error.message);
-    return false;
+    return { success: false, failedTokens: [] };
   }
 };
