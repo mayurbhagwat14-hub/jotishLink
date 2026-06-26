@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('General');
-  const [isSavingGeneral, setIsSavingGeneral] = useState(false);
+  const [savingSection, setSavingSection] = useState(null);
   const [isSavingCommission, setIsSavingCommission] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
@@ -54,9 +54,9 @@ const AdminSettings = () => {
     }
   };
 
-  const handleSaveGeneral = async () => {
+  const handleSaveGeneral = async (section) => {
     try {
-      setIsSavingGeneral(true);
+      setSavingSection(section);
       const payload = { ...generalSettings, maintenanceMode };
       await adminApis.updateAdminSettings(payload);
       toast.success('Settings saved successfully');
@@ -69,7 +69,7 @@ const AdminSettings = () => {
       console.error(err);
       toast.error('Failed to save settings');
     } finally {
-      setIsSavingGeneral(false);
+      setSavingSection(null);
     }
   };
 
@@ -227,9 +227,9 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            <button onClick={handleSaveGeneral} disabled={isSavingGeneral} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isSavingGeneral ? 'opacity-70 cursor-not-allowed' : ''}`}>
-              {isSavingGeneral ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
-              {isSavingGeneral ? 'Saving...' : 'Save Changes'}
+            <button onClick={() => handleSaveGeneral('info')} disabled={savingSection !== null} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${savingSection === 'info' ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {savingSection === 'info' ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
+              {savingSection === 'info' ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
 
@@ -257,9 +257,9 @@ const AdminSettings = () => {
               </select>
             </div>
 
-            <button onClick={handleSaveGeneral} disabled={isSavingGeneral} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isSavingGeneral ? 'opacity-70 cursor-not-allowed' : ''}`}>
-              {isSavingGeneral ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
-              {isSavingGeneral ? 'Saving...' : 'Save Changes'}
+            <button onClick={() => handleSaveGeneral('controls')} disabled={savingSection !== null} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${savingSection === 'controls' ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {savingSection === 'controls' ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
+              {savingSection === 'controls' ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
