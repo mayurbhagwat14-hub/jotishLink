@@ -1,6 +1,4 @@
 import admin from 'firebase-admin';
-import fs from 'fs';
-import path from 'path';
 
 let firebaseApp = null;
 
@@ -8,31 +6,27 @@ export const initFirebase = () => {
   try {
     let credential;
 
-    // Try reading from individual environment variables first
-    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    // Read the complete JSON object string from the environment variable
+    const serviceAccountJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    
+    if (serviceAccountJsonStr) {
+      try {
+        const serviceAccount = JSON.parse(serviceAccountJsonStr);
+        credential = admin.credential.cert(serviceAccount);
+      } catch (parseError) {
+        console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT_PATH found in .env, but it is not valid JSON. Ensure the JSON string is properly formatted and enclosed in single quotes if multiline.');
+        return null;
+      }
+    } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      // Fallback to individual variables if present
       credential = admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
       });
     } else {
-      // Fallback to reading from file if variables are not set
-      const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
-      
-      if (!serviceAccountPath) {
-        console.warn('⚠️ Firebase credentials not set in .env (either via FIREBASE_PRIVATE_KEY or FIREBASE_SERVICE_ACCOUNT_PATH). Push notifications will not work.');
-        return null;
-      }
-
-      const absolutePath = path.resolve(process.cwd(), serviceAccountPath);
-      
-      if (!fs.existsSync(absolutePath)) {
-        console.warn(`⚠️ Firebase service account file not found at: ${absolutePath}. Push notifications disabled.`);
-        return null;
-      }
-
-      const serviceAccount = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
-      credential = admin.credential.cert(serviceAccount);
+      console.warn('⚠️ Firebase credentials not set in .env. Push notifications will not work.');
+      return null;
     }
 
     firebaseApp = admin.initializeApp({
