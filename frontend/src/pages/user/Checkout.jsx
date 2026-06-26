@@ -32,6 +32,7 @@ const Checkout = () => {
   });
   
   const [isLocating, setIsLocating] = useState(false);
+  const [showGpsModal, setShowGpsModal] = useState(false);
 
   const fetchLocation = () => {
     if (!navigator.geolocation) {
@@ -46,9 +47,25 @@ const Checkout = () => {
         const data = await res.json();
         if (data && data.address) {
           const addr = data.address;
+          
+          const areaParts = [
+            addr.house_number,
+            addr.building,
+            addr.road,
+            addr.neighbourhood,
+            addr.suburb,
+            addr.residential,
+            addr.village,
+            addr.city_district
+          ].filter(Boolean);
+          
+          const detailedAddress = areaParts.length > 0 
+            ? [...new Set(areaParts)].join(', ') 
+            : data.display_name?.split(',').slice(0, 3).join(', ') || '';
+
           setFormData(prev => ({
             ...prev,
-            addressLine: data.display_name?.split(',').slice(0, 2).join(', ') || '',
+            addressLine: detailedAddress,
             city: addr.city || addr.town || addr.village || addr.county || '',
             state: addr.state || '',
             pincode: addr.postcode || ''
@@ -62,8 +79,12 @@ const Checkout = () => {
       }
     }, (error) => {
       setIsLocating(false);
-      toast.error('Location access denied or unavailable');
-    });
+      if (error.code === error.POSITION_UNAVAILABLE || error.code === error.PERMISSION_DENIED) {
+        setShowGpsModal(true);
+      } else {
+        toast.error('Location request failed or timed out. Please try again.');
+      }
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
   };
   
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
@@ -352,6 +373,28 @@ const Checkout = () => {
         </div>
       )}
 
+      {/* GPS Warning Modal */}
+      {showGpsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiMapPin size={28} className="text-red-500" />
+              </div>
+              <h3 className="text-[20px] font-black text-gray-900 mb-2">Enable GPS / Location</h3>
+              <p className="text-[14px] text-gray-600 mb-6 leading-relaxed">
+                We couldn't fetch your location. Please ensure your device's <b>GPS / Location services</b> are turned on and you have granted permission to your browser.
+              </p>
+              <button
+                onClick={() => setShowGpsModal(false)}
+                className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl text-[14px] hover:bg-gray-200 transition-colors"
+              >
+                Okay, I'll turn it on
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
