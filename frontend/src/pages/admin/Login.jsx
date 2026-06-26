@@ -136,7 +136,7 @@ const AdminLogin = () => {
                 <img src={appLogo} alt={appName} className="h-[120px] w-auto object-contain drop-shadow-md mb-2" />
                 <div className="text-[32px] font-serif leading-none tracking-tight">
                   <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
-                  <span className="text-gray-800 font-semibold">link</span>
+                  <span className="text-white font-semibold">link</span>
                 </div>
               </div>
             ) : null}
