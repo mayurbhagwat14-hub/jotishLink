@@ -99,11 +99,14 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
       body: String(body),
     };
 
+    const defaultIcon = 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png';
+
     const payload = {
       tokens: validTokens,
       notification: {
         title: String(title),
         body: String(body),
+        imageUrl: data.image || defaultIcon
       },
       data: dataWithNotifInfo,
       webpush: {
@@ -113,8 +116,9 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
         notification: {
           title: title,
           body: body,
-          icon: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png',
-          badge: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png'
+          icon: defaultIcon,
+          badge: defaultIcon,
+          image: data.image || defaultIcon
         }
       },
       android: {
@@ -124,7 +128,8 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
           body: body,
           sound: 'default',
           channelId: isUrgent ? 'high_importance_channel' : 'default_channel',
-          clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+          imageUrl: data.image || defaultIcon
         }
       },
       apns: {
