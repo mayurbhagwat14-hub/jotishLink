@@ -1,4 +1,5 @@
 import { CallSession } from '../models/callSession.model.js';
+import ChatSession from '../models/chatSession.model.js';
 import Astrologer from '../models/astrologer.model.js';
 import User from '../models/user.model.js';
 import { ApiError } from '../utils/apiError.js';
@@ -127,7 +128,9 @@ export const rejectCall = asyncHandler(async (req, res) => {
 });
 
 export const getCallHistory = asyncHandler(async (req, res) => {
-  let query = {};
+  let query = {
+    type: { $in: ['video', 'audio', 'video_call', 'audio_call'] }
+  };
   
   if (req.user?.role === 'astrologer') {
     query.astrologerId = req.user._id;
@@ -137,7 +140,7 @@ export const getCallHistory = asyncHandler(async (req, res) => {
     query.deletedByUser = { $ne: true };
   }
 
-  const calls = await CallSession.find(query)
+  const calls = await ChatSession.find(query)
     .populate('userId', 'name avatar')
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })

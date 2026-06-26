@@ -228,6 +228,16 @@ io.on('connection', (socket) => {
       let session = await ChatSession.findOne({ roomId });
       let isNewSession = false;
 
+      // If astrologerId is missing (e.g. from VideoRoom notification link), fallback to CallSession
+      if ((!astrologerId || !astrologerId.match(/^[0-9a-fA-F]{24}$/)) && 
+          (sessionType === 'audio_call' || sessionType === 'video_call')) {
+        const { CallSession } = await import('./models/callSession.model.js');
+        const existingCall = await CallSession.findOne({ channelName: roomId });
+        if (existingCall && existingCall.astrologerId) {
+          astrologerId = existingCall.astrologerId.toString();
+        }
+      }
+
       if (!session) {
         let astroName = 'Astrologer';
         if (astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {

@@ -383,9 +383,11 @@ export const getUserPoojaById = asyncHandler(async (req, res) => {
 export const getUserSessions = asyncHandler(async (req, res) => {
   const qObj = { 
     userId: req.user._id,
+    type: 'chat',
     deletedByUser: { $ne: true }
   };
   const sessions = await ChatSession.find(qObj)
+    .populate('userId', 'name avatar')
     .populate('astrologerId', 'name avatar')
     .sort({ createdAt: -1 })
     .lean();
