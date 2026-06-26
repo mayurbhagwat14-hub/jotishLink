@@ -59,9 +59,7 @@ const Checkout = () => {
             addr.city_district
           ].filter(Boolean);
           
-          const detailedAddress = areaParts.length > 0 
-            ? [...new Set(areaParts)].join(', ') 
-            : data.display_name?.split(',').slice(0, 3).join(', ') || '';
+          const detailedAddress = data.display_name?.split(',').slice(0, -4).join(', ') || areaParts.join(', ') || '';
 
           setFormData(prev => ({
             ...prev,
@@ -229,17 +227,20 @@ const Checkout = () => {
 
       <div className="p-4 flex-1 overflow-y-auto">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-          <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-gray-50">
-            <div className="flex items-center gap-2 text-gray-800 font-bold">
-              <FiMapPin className="text-orange-500" /> Shipping Address
+          <div className="flex items-center justify-between gap-2 mb-5 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2 text-gray-800 font-black text-[15px]">
+              <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+                <FiMapPin className="text-orange-500" size={16} />
+              </div>
+              Shipping Address
             </div>
             <button 
               type="button" 
               onClick={fetchLocation} 
               disabled={isLocating}
-              className="flex items-center gap-1.5 text-[12px] font-bold text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-orange-600 bg-orange-50/80 px-3 py-1.5 rounded-lg border border-orange-200/50 hover:bg-orange-100 hover:border-orange-300 transition-all disabled:opacity-50 shadow-sm"
             >
-              {isLocating ? <span className="w-3.5 h-3.5 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></span> : <FiCrosshair />}
+              {isLocating ? <span className="w-3.5 h-3.5 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></span> : <FiCrosshair size={14} />}
               Use Current Location
             </button>
           </div>
@@ -248,46 +249,49 @@ const Checkout = () => {
             <input 
               type="text" name="fullName" placeholder="Full Name" 
               value={formData.fullName} onChange={handleChange} required
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
             />
             <input 
               type="email" name="email" placeholder="Email Address" 
               value={formData.email} onChange={handleChange} required
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
             />
             <input 
               type="tel" name="phone" placeholder="Phone Number" 
               value={formData.phone} onChange={handleChange} required
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
             />
             <textarea 
-              name="addressLine" placeholder="House No, Building, Street" rows="2"
+              name="addressLine" placeholder="House No, Building, Street, Area" rows="2"
               value={formData.addressLine} onChange={handleChange} required
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400 resize-none"
+              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all resize-none placeholder:text-gray-400 placeholder:font-medium"
             />
             <div className="grid grid-cols-2 gap-3">
               <input 
                 type="text" name="city" placeholder="City" 
                 value={formData.city} onChange={handleChange} required
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
               <input 
                 type="text" name="pincode" placeholder="Pincode" 
                 value={formData.pincode} onChange={handleChange} required
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
             <input 
               type="text" name="state" placeholder="State" 
               value={formData.state} onChange={handleChange} required
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
             />
           </form>
         </div>
 
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-50 text-gray-800 font-bold">
-            <FiCreditCard className="text-orange-500" /> Payment Method
+          <div className="flex items-center gap-2 mb-5 pb-3 border-b border-gray-100 text-gray-800 font-black text-[15px]">
+            <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+              <FiCreditCard className="text-orange-500" size={16} />
+            </div>
+            Payment Method
           </div>
           
           <div className="space-y-3">
@@ -301,7 +305,7 @@ const Checkout = () => {
                 </div>
                 <div>
                   <span className="font-bold text-[14px] text-gray-800 block">Pay Online (Wallet)</span>
-                  <span className="text-[11px] text-gray-500">Available Balance: ₹{user?.wallet || 0}</span>
+                  <span className="text-[11px] text-gray-500 font-medium">Available Balance: <b className="text-gray-700">₹{Number(user?.wallet || 0).toFixed(2)}</b></span>
                 </div>
               </div>
             </label>
@@ -332,9 +336,9 @@ const Checkout = () => {
         <button
           onClick={handlePlaceOrder}
           disabled={!isFormValid || loading}
-          className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm ${
+          className={`w-full py-4 rounded-xl font-black tracking-wide text-[15px] transition-all duration-300 shadow-sm ${
             isFormValid && !loading
-              ? 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+              ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >
