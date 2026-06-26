@@ -13,6 +13,7 @@ const Earnings = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { earnings: { earnings = [], total = 0, thisMonth = 0, percentageChange = 0, pendingWithdrawalAmount = 0, completedWithdrawalAmount = 0, withdrawals = [] }, profile, loading } = useSelector((state) => state.astrologer);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -82,7 +83,7 @@ const Earnings = () => {
       // Header
       doc.setFontSize(22);
       doc.setTextColor(249, 115, 22); // Orange
-      doc.text('JyotishLink Earnings Statement', pageWidth / 2, 20, { align: 'center' });
+      doc.text(`${appName} Earnings Statement`, pageWidth / 2, 20, { align: 'center' });
       
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
@@ -126,7 +127,7 @@ const Earnings = () => {
         styles: { fontSize: 10 }
       });
       
-      doc.save(`JyotishLink_Statement_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`${appName.replace(/\s+/g, '')}_Statement_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('Statement downloaded successfully');
     } catch (error) {
       console.error('Error generating PDF:', error);

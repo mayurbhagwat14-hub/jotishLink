@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { adminLogout } from '../store/slices/adminAuthSlice';
 import { clearAdminDashboard } from '../store/slices/dashboardSlice';
+import axios from '../api/axios';
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import {
@@ -30,7 +31,15 @@ const AdminLayout = () => {
   const [pendingCounts, setPendingCounts] = useState({ astrologers: 0, orders: 0, cancelRequests: 0 });
   const searchRef = useRef(null);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const fcmToken = localStorage.getItem('jl_last_fcm_token');
+      await axios.post('/auth/logout', { fcmToken, role: 'admin' });
+      localStorage.removeItem('jl_last_fcm_token');
+      localStorage.removeItem('jl_last_fcm_role');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     dispatch(adminLogout());
     dispatch(clearAdminDashboard());
     toast.success('Logged out successfully');

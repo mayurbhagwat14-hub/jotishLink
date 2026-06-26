@@ -135,8 +135,7 @@ const AdminLogin = () => {
               <div className="flex flex-col items-center lg:items-start mb-6 w-fit mx-auto lg:mx-0 mix-blend-multiply relative z-10">
                 <img src={appLogo} alt={appName} className="h-[120px] w-auto object-contain drop-shadow-md mb-2" />
                 <div className="text-[32px] font-serif leading-none tracking-tight">
-                  <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
-                  <span className="text-white font-semibold">link</span>
+                  <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">{appName || 'JyotishLink'}</span>
                 </div>
               </div>
             ) : null}
@@ -218,8 +217,7 @@ const AdminLogin = () => {
                     <div className="flex flex-col items-center mb-4 mix-blend-multiply relative z-10">
                       <img src={appLogo} alt={appName} className="h-[96px] w-auto object-contain drop-shadow-md mb-2" />
                       <div className="text-[28px] font-serif leading-none tracking-tight">
-                        <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
-                        <span className="text-gray-800 font-semibold">link</span>
+                        <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">{appName || 'JyotishLink'}</span>
                       </div>
                     </div>
                   ) : (

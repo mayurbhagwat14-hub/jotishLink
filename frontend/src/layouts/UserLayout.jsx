@@ -8,6 +8,7 @@ import CartBottomSheet from '../components/CartBottomSheet';
 import { useEffect } from 'react';
 import getSocket from '../socket/socketManager';
 import { setActiveSession, clearPendingRequest } from '../store/slices/sessionSlice';
+import axios from '../api/axios';
 
 const UserLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -30,7 +31,15 @@ const UserLayout = () => {
   const isFullWidth = location.pathname.includes('/user/store') || location.pathname.includes('/user/chat') || location.pathname.includes('/user/details') || location.pathname.includes('/user/video-room');
   const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/recharge') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search') || location.pathname.includes('/user/pooja-booking') || location.pathname.includes('/user/order');
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const fcmToken = localStorage.getItem('jl_last_fcm_token');
+      await axios.post('/auth/logout', { fcmToken, role: 'user' });
+      localStorage.removeItem('jl_last_fcm_token');
+      localStorage.removeItem('jl_last_fcm_role');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     dispatch(logout());
     setIsSidebarOpen(false);
     navigate('/');
@@ -133,7 +142,13 @@ const UserLayout = () => {
             <div className="pt-4 mt-2">
               {!user?.phone ? (
                 <button
-                  onClick={() => {
+                  onClick={async () => {
+                    try {
+                      const fcmToken = localStorage.getItem('jl_last_fcm_token');
+                      await axios.post('/auth/logout', { fcmToken, role: 'user' });
+                      localStorage.removeItem('jl_last_fcm_token');
+                      localStorage.removeItem('jl_last_fcm_role');
+                    } catch (e) {}
                     dispatch(logout());
                     setIsSidebarOpen(false);
                     navigate('/user/login');

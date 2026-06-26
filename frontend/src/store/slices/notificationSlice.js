@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   notifications: [
-    { id: '1', title: 'Welcome to JyotishLink', message: 'Get 5 minutes free chat with our top astrologers!', time: '1 hour ago', read: false },
+    { id: '1', title: 'Welcome to the App', message: 'Get 5 minutes free chat with our top astrologers!', time: '1 hour ago', read: false },
     { id: '2', title: 'Wallet Balance Low', message: 'Please recharge your wallet to avoid call interruptions.', time: '2 hours ago', read: true },
   ],
   loading: false,

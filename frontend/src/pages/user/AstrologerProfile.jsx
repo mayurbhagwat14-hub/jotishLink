@@ -9,6 +9,7 @@ const AstrologerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user, settings } = useSelector((state) => state.auth);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   
   const [astrologer, setAstrologer] = useState(null);
   const [ratings, setRatings] = useState([]);
@@ -134,7 +135,7 @@ const AstrologerProfile = () => {
         <div className="bg-white rounded-2xl m-4 p-5 shadow-sm border border-gray-100">
           <h3 className="font-bold text-gray-900 mb-3 text-lg">About Me</h3>
           <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
-            {astrologer.about || `Hello, I am ${astroName}, a verified and experienced astrologer on JyotishLink. I specialize in providing accurate predictions and guidance on various aspects of life including love, marriage, career, and health. With over ${astrologer.experience} years of experience, I am here to help you navigate your journey.`}
+            {astrologer.about || `Hello, I am ${astroName}, a verified and experienced astrologer on ${appName}. I specialize in providing accurate predictions and guidance on various aspects of life including love, marriage, career, and health. With over ${astrologer.experience} years of experience, I am here to help you navigate your journey.`}
           </p>
         </div>
 
@@ -150,7 +151,7 @@ const AstrologerProfile = () => {
               ratings.map((review, i) => (
                 <div key={review._id || i} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-gray-800 text-sm">{review.user?.name || 'JyotishLink User'}</span>
+                    <span className="font-bold text-gray-800 text-sm">{review.user?.name || `${appName} User`}</span>
                     <div className="flex gap-0.5">
                       {Array(5).fill(0).map((_, idx) => (
                         <FiStar key={idx} size={10} className={idx < review.rating ? "text-orange-400 fill-orange-400" : "text-gray-200 fill-gray-200"} />

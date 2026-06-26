@@ -14,7 +14,7 @@ const AstrologerLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.astrologerAuth);
-  const { appLogo } = useSelector((state) => state.settings) || {};
+  const { appLogo, appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
 
   useEffect(() => {
     // If the user is already authenticated but not approved, jump directly to step 3
@@ -155,8 +155,7 @@ const AstrologerLogin = () => {
                 <div className="flex flex-col items-center mb-4 mt-2 mx-auto mix-blend-multiply relative z-10">
                   <img src={appLogo} alt="App Logo" className="h-[140px] w-auto object-contain drop-shadow-md mb-2" />
                   <div className="text-[34px] font-serif leading-none tracking-tight">
-                    <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
-                    <span className="text-gray-800 font-semibold">link</span>
+                    <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">{appName || 'JyotishLink'}</span>
                   </div>
                 </div>
               ) : (

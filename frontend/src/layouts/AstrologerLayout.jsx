@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { astrologerLogout } from '../store/slices/astrologerAuthSlice';
 import { clearAstrologerDashboard } from '../store/slices/dashboardSlice';
+import axios from '../api/axios';
 import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiSettings, FiLogOut, FiLogIn, FiUserPlus, FiCreditCard, FiActivity, FiClock, FiMenu, FiCheckCircle } from 'react-icons/fi';
 import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
@@ -129,7 +130,15 @@ const AstrologerLayout = () => {
 
   // Requests are now handled in the Chats/Calls tabs directly
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      const fcmToken = localStorage.getItem('jl_last_fcm_token');
+      await axios.post('/auth/logout', { fcmToken, role: 'astrologer' });
+      localStorage.removeItem('jl_last_fcm_token');
+      localStorage.removeItem('jl_last_fcm_role');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     dispatch(astrologerLogout());
     dispatch(clearAstrologerDashboard());
     navigate('/astrologer/login');

@@ -32,7 +32,7 @@ const RechargeWallet = () => {
   
   const { balance } = useSelector((state) => state.wallet);
   const { user } = useSelector((state) => state.auth);
-
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   useEffect(() => {
     dispatch(fetchWalletThunk());
   }, [dispatch]);
@@ -101,7 +101,7 @@ const RechargeWallet = () => {
         key: order.key,
         amount: order.amount,
         currency: order.currency,
-        name: 'JyotishLink',
+        name: appName,
         description: 'Wallet Recharge with GST',
         order_id: order.orderId,
         handler: async function (response) {

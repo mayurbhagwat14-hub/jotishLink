@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX, FiCheck } from 'react-icons/fi';
+import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX, FiCheck, FiLoader } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import * as adminApis from '../../api/adminApis';
 import { toast } from 'react-hot-toast';
@@ -21,6 +21,7 @@ const AdminContent = () => {
   const [newBanner, setNewBanner] = useState({ imageUrl: '', pages: ['Home'] });
 
   const [showCouponModal, setShowCouponModal] = useState(false);
+  const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 });
 
   const [broadcastData, setBroadcastData] = useState({ title: '', message: '', audience: 'All Users' });
@@ -144,6 +145,7 @@ const AdminContent = () => {
   // --- Coupon Actions ---
   const handleCreateCoupon = async () => {
     try {
+      setIsCreatingCoupon(true);
       await adminApis.createAdminCoupon(newCoupon);
       setShowCouponModal(false);
       setNewCoupon({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 });
@@ -151,6 +153,8 @@ const AdminContent = () => {
     } catch (err) {
       console.error(err);
       toast.error('Failed to create coupon');
+    } finally {
+      setIsCreatingCoupon(false);
     }
   };
 
@@ -486,7 +490,10 @@ const AdminContent = () => {
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Usage Limit</label>
                 <input type="number" value={newCoupon.usageLimit} onChange={e=>setNewCoupon({...newCoupon, usageLimit: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="0 for unlimited"/>
               </div>
-              <button onClick={handleCreateCoupon} className="w-full py-3 mt-2 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-colors">Create Coupon</button>
+              <button onClick={handleCreateCoupon} disabled={isCreatingCoupon} className={`w-full py-3 mt-2 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${isCreatingCoupon ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}>
+                {isCreatingCoupon ? <FiLoader size={16} className="animate-spin" /> : null}
+                {isCreatingCoupon ? 'Creating...' : 'Create Coupon'}
+              </button>
             </div>
           </div>
         </div>

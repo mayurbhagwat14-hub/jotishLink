@@ -5,8 +5,10 @@ import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminPoojas, getAdminOrders } from '../../api/adminApis';
 import LogoLoader from '../../components/LogoLoader';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 const AdminServices = () => {
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const [activeTab, setActiveTab] = useState('Poojas');
   const [poojas, setPoojas] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -61,7 +63,7 @@ const AdminServices = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Services & Orders</h1>
-        <p className="text-sm text-gray-400 font-medium mt-1">Manage E-Pooja bookings from the Pandit Booking tab and physical product orders from JyotishLink Store</p>
+        <p className="text-sm text-gray-400 font-medium mt-1">Manage E-Pooja bookings from the Pandit Booking tab and physical product orders from {appName} Store</p>
       </div>
 
       {/* Summary */}
@@ -203,6 +205,7 @@ const AdminServices = () => {
                         {order.status === 'Pending' && <FiClock size={10} />}
                         {order.status}
                       </span>
+
                     </td>
                     <td className="py-4 px-6 text-right">
                       <Link to="/admin/orders" className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-[11px] font-bold whitespace-nowrap">

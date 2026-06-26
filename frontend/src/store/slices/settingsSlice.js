@@ -16,13 +16,21 @@ export const fetchPublicSettingsThunk = createAsyncThunk(
 const initialState = {
   appName: 'JyotishLink',
   appLogo: '',
+  tagline: 'Connect with the Stars',
   loading: false,
 };
 
 const settingsSlice = createSlice({
   name: 'settings',
   initialState,
-  reducers: {},
+  reducers: {
+    updateSettingsFromSave: (state, action) => {
+      const data = action.payload;
+      if (data.appName !== undefined) state.appName = data.appName;
+      if (data.appLogo !== undefined) state.appLogo = data.appLogo;
+      if (data.tagline !== undefined) state.tagline = data.tagline;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchPublicSettingsThunk.pending, (state) => {
@@ -33,6 +41,7 @@ const settingsSlice = createSlice({
         const data = action.payload?.data || action.payload;
         if (data.appName) state.appName = data.appName;
         if (data.appLogo) state.appLogo = data.appLogo;
+        if (data.tagline) state.tagline = data.tagline;
       })
       .addCase(fetchPublicSettingsThunk.rejected, (state) => {
         state.loading = false;
@@ -40,4 +49,5 @@ const settingsSlice = createSlice({
   }
 });
 
+export const { updateSettingsFromSave } = settingsSlice.actions;
 export default settingsSlice.reducer;

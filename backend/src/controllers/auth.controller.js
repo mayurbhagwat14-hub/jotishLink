@@ -204,6 +204,43 @@ export const refreshToken = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { accessToken, refreshToken: newRefresh }, 'Token refreshed'));
 });
 
+// POST /api/auth/logout
+export const logout = asyncHandler(async (req, res) => {
+  const { fcmToken, role } = req.body;
+
+  if (fcmToken) {
+    try {
+      if (role === 'astrologer') {
+        const { default: Astrologer } = await import('../models/astrologer.model.js');
+        await Astrologer.updateMany(
+          { $or: [{ fcmToken: fcmToken }, { fcmTokenMobile: fcmToken }] },
+          { $pull: { fcmToken: fcmToken, fcmTokenMobile: fcmToken } }
+        );
+      } else if (role === 'user' || !role) {
+        // Default to checking user
+        await User.updateMany(
+          { $or: [{ fcmToken: fcmToken }, { fcmTokenMobile: fcmToken }] },
+          { $pull: { fcmToken: fcmToken, fcmTokenMobile: fcmToken } }
+        );
+      }
+    } catch (err) {
+      console.error('Failed to clear FCM token on logout:', err);
+    }
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+  };
+  
+  res.clearCookie('userRefreshToken', options);
+  res.clearCookie('adminRefreshToken', options);
+  res.clearCookie('astrologerRefreshToken', options);
+  
+  return res.status(200).json(new ApiResponse(200, {}, 'Logged out successfully'));
+});
+
 // POST /api/user/auth/change-password
 export const changePassword = asyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;

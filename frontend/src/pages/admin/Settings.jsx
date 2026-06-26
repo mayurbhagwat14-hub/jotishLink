@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiLoader, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import * as adminApis from '../../api/adminApis';
 import { GiFlowerPot } from 'react-icons/gi';
@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('General');
+  const [isSavingGeneral, setIsSavingGeneral] = useState(false);
+  const [isSavingCommission, setIsSavingCommission] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [autoApprove, setAutoApprove] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -54,13 +56,20 @@ const AdminSettings = () => {
 
   const handleSaveGeneral = async () => {
     try {
-      await adminApis.updateAdminSettings({ ...generalSettings, maintenanceMode });
+      setIsSavingGeneral(true);
+      const payload = { ...generalSettings, maintenanceMode };
+      await adminApis.updateAdminSettings(payload);
       toast.success('Settings saved successfully');
-      // If the admin changes the settings, it might be a good idea to reload after 1 sec so Redux picks it up
-      setTimeout(() => window.location.reload(), 1500);
+      
+      // Instantly update Redux state
+      const { updateSettingsFromSave } = await import('../../store/slices/settingsSlice');
+      const store = (await import('../../store/store')).default;
+      store.dispatch(updateSettingsFromSave(payload));
     } catch (err) {
       console.error(err);
       toast.error('Failed to save settings');
+    } finally {
+      setIsSavingGeneral(false);
     }
   };
 
@@ -90,11 +99,14 @@ const AdminSettings = () => {
 
   const handleSaveCommission = async () => {
     try {
+      setIsSavingCommission(true);
       await adminApis.updateAdminSettings({ commissionRates: generalSettings.commissionRates });
       toast.success('Commission rates saved successfully!');
     } catch (err) {
       console.error(err);
       toast.error('Failed to save commission rates');
+    } finally {
+      setIsSavingCommission(false);
     }
   };
 
@@ -215,8 +227,9 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            <button onClick={handleSaveGeneral} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
-              <FiSave size={14} /> Save Changes
+            <button onClick={handleSaveGeneral} disabled={isSavingGeneral} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isSavingGeneral ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {isSavingGeneral ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
+              {isSavingGeneral ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
 
@@ -244,8 +257,9 @@ const AdminSettings = () => {
               </select>
             </div>
 
-            <button onClick={handleSaveGeneral} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
-              <FiSave size={14} /> Save Changes
+            <button onClick={handleSaveGeneral} disabled={isSavingGeneral} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isSavingGeneral ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {isSavingGeneral ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
+              {isSavingGeneral ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </div>
@@ -296,8 +310,9 @@ const AdminSettings = () => {
             ))}
           </div>
           <div className="px-6 py-5 border-t border-gray-100 flex justify-end">
-            <button onClick={handleSaveCommission} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
-              <FiSave size={14} /> Save Commission Rates
+            <button onClick={handleSaveCommission} disabled={isSavingCommission} className={`px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-orange-500/20 transition-all w-full sm:w-auto ${isSavingCommission ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {isSavingCommission ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
+              {isSavingCommission ? 'Saving Rates...' : 'Save Commission Rates'}
             </button>
           </div>
         </div>
@@ -324,7 +339,7 @@ const AdminSettings = () => {
               </div>
               <div className="space-y-1.5 md:col-span-3">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Review / Quote</label>
-                <textarea rows="3" value={newCeleb.quote} onChange={e => setNewCeleb({...newCeleb, quote: e.target.value})} placeholder="Write what the celebrity says about JyotishLink..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"></textarea>
+                <textarea rows="3" value={newCeleb.quote} onChange={e => setNewCeleb({...newCeleb, quote: e.target.value})} placeholder={`Write what the celebrity says about ${generalSettings.appName || 'the app'}...`} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"></textarea>
               </div>
             </div>
             

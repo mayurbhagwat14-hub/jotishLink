@@ -32,6 +32,7 @@ const formatTxnDate = (isoString) => {
 
 const OrderHistory = () => {
   const { user } = useSelector((state) => state.auth);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') === 'wallet' ? 'Wallet' : (searchParams.get('tab') || 'Chat');
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -576,7 +577,7 @@ const OrderHistory = () => {
                 <FiPackage size={40} className="text-orange-500" />
               </div>
               <h3 className="text-[18px] font-bold text-gray-800 mb-2">No Orders Yet</h3>
-              <p className="text-gray-400 text-[14px] text-center">Start shopping from JyotishLink Services to see your orders here.</p>
+              <p className="text-gray-400 text-[14px] text-center">Start shopping from {appName} Services to see your orders here.</p>
               <button 
                 onClick={() => navigate('/user/store')}
                 className="mt-6 bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 transition-colors"

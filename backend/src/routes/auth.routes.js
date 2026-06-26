@@ -6,6 +6,7 @@ import {
   login,
   register,
   refreshToken,
+  logout,
   changePassword,
   adminLogin,
 } from '../controllers/auth.controller.js';
@@ -34,6 +35,7 @@ router.post('/user/auth/change-password', verifyJWT, validate(changePasswordSche
 
 // Token refresh (cookie-based)
 router.post('/auth/refresh', refreshToken);
+router.post('/auth/logout', logout);
 
 // Admin login
 router.post('/admin/auth/login', validate(adminLoginSchema), adminLogin);

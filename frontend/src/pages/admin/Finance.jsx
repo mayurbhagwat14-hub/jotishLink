@@ -6,8 +6,10 @@ import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getSocket } from '../../socket/socketManager';
+import { useSelector } from 'react-redux';
 
 const AdminFinance = () => {
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const [typeFilter, setTypeFilter] = useState('All');
   const [searchFilter, setSearchFilter] = useState('');
   const [startDateFilter, setStartDateFilter] = useState('');
@@ -171,7 +173,7 @@ const AdminFinance = () => {
       // Header
       doc.setFontSize(22);
       doc.setTextColor(17, 24, 39); // Gray 900
-      doc.text('JyotishLink Finance Ledger', pageWidth / 2, 20, { align: 'center' });
+      doc.text(`${appName} Finance Ledger`, pageWidth / 2, 20, { align: 'center' });
       
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
@@ -240,7 +242,7 @@ const AdminFinance = () => {
         styles: { fontSize: 9 }
       });
       
-      doc.save(`JyotishLink_Ledger_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`${appName.replace(/\s+/g, '')}_Ledger_${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success('Report downloaded successfully');
       setIsExportModalOpen(false);
     } catch (error) {

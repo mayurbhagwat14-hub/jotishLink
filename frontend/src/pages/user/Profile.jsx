@@ -32,6 +32,12 @@ const Profile = () => {
     setIsDeleting(true);
     try {
       await axiosInstance.delete('/user/profile/delete');
+      try {
+        const fcmToken = localStorage.getItem('jl_last_fcm_token');
+        await axiosInstance.post('/auth/logout', { fcmToken, role: 'user' });
+        localStorage.removeItem('jl_last_fcm_token');
+        localStorage.removeItem('jl_last_fcm_role');
+      } catch (e) {}
       dispatch(logout());
       navigate('/user/login');
     } catch (error) {

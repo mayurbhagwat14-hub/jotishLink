@@ -12,6 +12,7 @@ const Wallet = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useSelector((state) => state.auth);
   const { balance, transactions, loading: walletLoading } = useSelector((state) => state.wallet);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -57,7 +58,7 @@ const Wallet = () => {
         key: order.key, // Dynamic from API response
         amount: order.amount,
         currency: order.currency,
-        name: 'JyotishLink',
+        name: appName,
         description: 'Wallet Recharge',
         order_id: order.orderId,
         handler: async function (response) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiX, FiShare } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 
 /**
  * Detects iOS Safari (not already running in standalone/installed mode)
@@ -7,6 +8,7 @@ import { FiX, FiShare } from 'react-icons/fi';
  */
 const IOSInstallPrompt = () => {
   const [show, setShow] = useState(false);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
 
   useEffect(() => {
     // Only show on iOS devices
@@ -140,7 +142,7 @@ const IOSInstallPrompt = () => {
             <li style={{ marginBottom: '6px' }}>
               Select <strong>"Add to Home Screen"</strong>
             </li>
-            <li>Open JyotishLink from your Home Screen</li>
+            <li>Open {appName} from your Home Screen</li>
           </ol>
         </div>
 

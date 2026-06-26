@@ -16,6 +16,7 @@ const Store = () => {
   const [panditSearchQuery, setPanditSearchQuery] = useState('');
   const { user } = useSelector((state) => state.auth);
   const { cart } = useSelector((state) => state.cart);
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { openSidebar } = useOutletContext() || {};
@@ -166,7 +167,7 @@ const Store = () => {
           >
             <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
           </div>
-          <span className="text-gray-800 font-semibold text-[18px]">JyotishLink Services</span>
+          <span className="text-gray-800 font-semibold text-[18px]">{appName} Services</span>
         </div>
         <div className="flex items-center gap-3">
           {/* Icons removed as per user request */}

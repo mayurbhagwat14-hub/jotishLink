@@ -101,8 +101,7 @@ const Onboarding = () => {
               <div className="flex flex-col items-center mb-4 mt-4 mix-blend-multiply relative z-10">
                 <img src={appLogo} alt={appName} className="h-[180px] w-auto object-contain drop-shadow-md mb-2" />
                 <div className="text-[44px] font-serif leading-none tracking-tight">
-                  <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">jyotish</span>
-                  <span className="text-gray-800 font-semibold">link</span>
+                  <span className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent font-semibold">{appName || 'JyotishLink'}</span>
                 </div>
               </div>
             ) : (

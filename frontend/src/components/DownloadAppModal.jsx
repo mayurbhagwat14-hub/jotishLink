@@ -1,7 +1,8 @@
 import { FiX, FiDownload } from 'react-icons/fi';
 import { FaGooglePlay, FaApple } from 'react-icons/fa';
-
+import { useSelector } from 'react-redux';
 const DownloadAppModal = ({ isOpen, onClose, title = "Download App to Continue" }) => {
+  const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   if (!isOpen) return null;
 
   return (
@@ -30,7 +31,7 @@ const DownloadAppModal = ({ isOpen, onClose, title = "Download App to Continue" 
         <div className="pt-10 pb-8 px-6 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-3">{title}</h2>
           <p className="text-gray-600 mb-8 px-2 text-[15px] leading-relaxed">
-            Get the full JyotishLink experience. Chat with astrologers, get free kundli, and much more on our mobile app.
+            Get the full {appName} experience. Chat with astrologers, get free kundli, and much more on our mobile app.
           </p>
 
           <div className="flex flex-col gap-3">
