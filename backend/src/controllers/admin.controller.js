@@ -1301,20 +1301,27 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
 
   if (totalWeight < 0.05) totalWeight = 0.05; // Minimum weight for Shiprocket
 
+  const cleanPhone = (order.shippingAddress?.phone || order.userId?.phone || "9999999999").replace(/\D/g, '').slice(-10);
+  const finalPhone = cleanPhone.length === 10 ? cleanPhone : '9999999999';
+  const cleanAddress = (order.shippingAddress?.addressLine || 'No address provided').padEnd(10, ' ');
+  const cleanCity = order.shippingAddress?.city || 'Delhi';
+  const cleanState = order.shippingAddress?.state || 'Delhi';
+  const cleanPincode = order.shippingAddress?.pincode || '110001';
+
   const orderData = {
     order_id: order._id.toString(),
     order_date: order.createdAt.toISOString(),
-    pickup_location: "warehouse", // Must match the pickup location added in Shiprocket dashboard
-    billing_customer_name: order.shippingAddress?.fullName || 'Customer',
-    billing_last_name: "",
-    billing_address: order.shippingAddress?.addressLine || 'N/A',
+    pickup_location: "Primary", // Usually 'Primary' is the default in Shiprocket
+    billing_customer_name: order.shippingAddress?.fullName || order.userId?.name || 'Customer',
+    billing_last_name: " ",
+    billing_address: cleanAddress,
     billing_address_2: "",
-    billing_city: order.shippingAddress?.city || 'N/A',
-    billing_pincode: order.shippingAddress?.pincode || '000000',
-    billing_state: order.shippingAddress?.state || 'N/A',
+    billing_city: cleanCity,
+    billing_pincode: cleanPincode,
+    billing_state: cleanState,
     billing_country: "India",
     billing_email: order.userId?.email || "customer@jyotishlink.com",
-    billing_phone: order.shippingAddress?.phone || order.userId?.phone || order.userId?.phoneNumber || "0000000000",
+    billing_phone: finalPhone,
     shipping_is_billing: true,
     order_items: orderItems,
     payment_method: order.paymentMethod === 'cod' ? 'COD' : 'Prepaid',

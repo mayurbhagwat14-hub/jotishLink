@@ -51,7 +51,13 @@ class ShiprocketService {
       return response.data;
     } catch (error) {
       console.error('Shiprocket Create Order Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to push order to Shiprocket');
+      let errMsg = error.response?.data?.message || 'Failed to push order to Shiprocket';
+      if (error.response?.data?.errors) {
+        if (typeof error.response.data.errors === 'object') {
+          errMsg += ' - ' + JSON.stringify(error.response.data.errors);
+        }
+      }
+      throw new Error(errMsg);
     }
   }
 
