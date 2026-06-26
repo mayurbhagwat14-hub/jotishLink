@@ -48,7 +48,7 @@ export const initFirebase = () => {
 };
 
 export const getFirebaseAdmin = () => {
-  return admin;
+  return firebaseApp ? admin : null;
 };
 
 export const isFirebaseReady = () => {

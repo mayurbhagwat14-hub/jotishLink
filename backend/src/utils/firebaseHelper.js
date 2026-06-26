@@ -57,7 +57,7 @@ export const sendPushNotification = async ({ userId, role, title, body, data = {
       console.log(`Cleaned up ${failedTokens.length} dead FCM tokens for ${role} ${userId}`);
     }
     
-    return true;
+    return result ? result.success : false;
   } catch (error) {
     console.error(`Error sending push notification to ${role} (${userId}):`, error.message);
     return false;
@@ -73,7 +73,8 @@ export const sendPushNotification = async ({ userId, role, title, body, data = {
  */
 export const sendMulticastPushNotification = async (tokens, title, body, data = {}) => {
   try {
-    if (!tokens || tokens.length === 0) return false;
+    const validTokens = tokens?.filter(t => typeof t === 'string' && t.trim().length > 0) || [];
+    if (validTokens.length === 0) return false;
     
     const adminSDK = getFirebaseAdmin();
     if (!adminSDK) {
@@ -99,7 +100,7 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
     };
 
     const payload = {
-      tokens: tokens,
+      tokens: validTokens,
       notification: {
         title: String(title),
         body: String(body),
@@ -150,7 +151,7 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
           const errorCode = resp.error?.code;
           if (errorCode === 'messaging/invalid-registration-token' || 
               errorCode === 'messaging/registration-token-not-registered') {
-            failedTokens.push(tokens[idx]);
+            failedTokens.push(validTokens[idx]);
           }
         }
       });
