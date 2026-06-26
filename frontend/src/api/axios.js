@@ -128,19 +128,40 @@ instance.interceptors.response.use(
         processQueue(refreshError, null);
         isRefreshing = false;
         
+        let wasAuthenticated = false;
         if (store) {
+          const state = store.getState();
           const currentPath = window.location.pathname;
+          
+          if (currentPath.startsWith('/admin')) wasAuthenticated = state.adminAuth?.isAuthenticated;
+          else if (currentPath.startsWith('/astrologer')) wasAuthenticated = state.astrologerAuth?.isAuthenticated;
+          else wasAuthenticated = state.auth?.isAuthenticated;
+
           if (currentPath.startsWith('/admin')) store.dispatch({ type: 'adminAuth/adminLogout' });
           else if (currentPath.startsWith('/astrologer')) store.dispatch({ type: 'astrologerAuth/astrologerLogout' });
           else store.dispatch({ type: 'auth/logout' });
         }
-        toast.error('Session expired. Please login again.');
+        
+        if (wasAuthenticated) {
+          toast.error('Session expired. Please login again.');
+        }
         return Promise.reject(refreshError);
       }
     }
 
     if (error.response?.status === 403) {
-      toast.error(error.response?.data?.message || 'You are not authorized to perform this action.');
+      // Only show 403 errors if the user is authenticated, to prevent random popups for guests
+      let isAuthenticated = false;
+      if (store) {
+        const state = store.getState();
+        const currentPath = window.location.pathname;
+        if (currentPath.startsWith('/admin')) isAuthenticated = state.adminAuth?.isAuthenticated;
+        else if (currentPath.startsWith('/astrologer')) isAuthenticated = state.astrologerAuth?.isAuthenticated;
+        else isAuthenticated = state.auth?.isAuthenticated;
+      }
+      if (isAuthenticated) {
+        toast.error(error.response?.data?.message || 'You are not authorized to perform this action.');
+      }
     } else if (error.response?.status >= 500) {
       toast.error('Internal Server Error. Please try again later.');
     } else if (error.message === 'Network Error') {
