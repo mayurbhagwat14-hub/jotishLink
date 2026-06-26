@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck, FiCrosshair } from 'react-icons/fi';
+import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck, FiCrosshair, FiUser, FiMail, FiPhone, FiHome, FiMap } from 'react-icons/fi';
 import { createOrderThunk } from '../../store/slices/cartSlice';
 import { fetchWalletThunk } from '../../store/slices/walletSlice';
 import toast from 'react-hot-toast';
@@ -59,7 +59,16 @@ const Checkout = () => {
             addr.city_district
           ].filter(Boolean);
           
-          const detailedAddress = data.display_name?.split(',').slice(0, -4).join(', ') || areaParts.join(', ') || '';
+          // Ensure we don't repeat the city name in the detailed address
+          const cityName = (addr.city || addr.town || addr.village || addr.county || '').toLowerCase();
+          
+          let detailedAddress = areaParts.filter(part => part && !part.toLowerCase().includes(cityName)).join(', ');
+          
+          if (!detailedAddress) {
+            // Fallback: Use display_name but manually remove city and redundant items
+            const parts = (data.display_name || '').split(',').map(s => s.trim());
+            detailedAddress = parts.filter(p => !p.toLowerCase().includes(cityName)).slice(0, 2).join(', ');
+          }
 
           setFormData(prev => ({
             ...prev,
@@ -246,43 +255,69 @@ const Checkout = () => {
           </div>
           
           <form className="space-y-3">
-            <input 
-              type="text" name="fullName" placeholder="Full Name" 
-              value={formData.fullName} onChange={handleChange} required
-              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
-            />
-            <input 
-              type="email" name="email" placeholder="Email Address" 
-              value={formData.email} onChange={handleChange} required
-              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
-            />
-            <input 
-              type="tel" name="phone" placeholder="Phone Number" 
-              value={formData.phone} onChange={handleChange} required
-              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
-            />
-            <textarea 
-              name="addressLine" placeholder="House No, Building, Street, Area" rows="2"
-              value={formData.addressLine} onChange={handleChange} required
-              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all resize-none placeholder:text-gray-400 placeholder:font-medium"
-            />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="relative">
+              <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
-                type="text" name="city" placeholder="City" 
-                value={formData.city} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
-              />
-              <input 
-                type="text" name="pincode" placeholder="Pincode" 
-                value={formData.pincode} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                type="text" name="fullName" placeholder="Full Name" 
+                value={formData.fullName} onChange={handleChange} required
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
-            <input 
-              type="text" name="state" placeholder="State" 
-              value={formData.state} onChange={handleChange} required
-              className="w-full bg-white border-2 border-gray-100 rounded-xl px-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
-            />
+            
+            <div className="relative">
+              <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="email" name="email" placeholder="Email Address" 
+                value={formData.email} onChange={handleChange} required
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+              />
+            </div>
+            
+            <div className="relative">
+              <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              <input 
+                type="tel" name="phone" placeholder="Phone Number" 
+                value={formData.phone} onChange={handleChange} required
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+              />
+            </div>
+            
+            <div className="relative">
+              <FiHome className="absolute left-4 top-4 text-gray-400" size={18} />
+              <textarea 
+                name="addressLine" placeholder="House No, Building, Street, Area" rows="2"
+                value={formData.addressLine} onChange={handleChange} required
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all resize-none placeholder:text-gray-400 placeholder:font-medium"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="relative">
+                <FiMap className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input 
+                  type="text" name="city" placeholder="City" 
+                  value={formData.city} onChange={handleChange} required
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                />
+              </div>
+              <div className="relative">
+                <FiMapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input 
+                  type="text" name="pincode" placeholder="Pincode" 
+                  value={formData.pincode} onChange={handleChange} required
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                />
+              </div>
+            </div>
+            
+            <div className="relative">
+              <FiMap className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                type="text" name="state" placeholder="State" 
+                value={formData.state} onChange={handleChange} required
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+              />
+            </div>
           </form>
         </div>
 
