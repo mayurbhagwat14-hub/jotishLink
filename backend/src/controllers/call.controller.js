@@ -140,7 +140,8 @@ export const getCallHistory = asyncHandler(async (req, res) => {
   const calls = await CallSession.find(query)
     .populate('userId', 'name avatar')
     .populate('astrologerId', 'name avatar')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   return res.status(200).json(new ApiResponse(200, { calls }, 'Call history fetched'));
 });

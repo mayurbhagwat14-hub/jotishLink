@@ -543,14 +543,15 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
 
 // POST /api/user/test-push
 export const testPushNotification = asyncHandler(async (req, res) => {
-  const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+  const { notify } = await import('../utils/notifyHelper.js');
   
-  const success = await sendPushNotification({
+  const success = await notify({
     userId: req.user._id,
     role: 'user',
     title: 'Test Notification',
-    body: 'This is a test notification from your User Profile.',
-    data: { type: 'test', url: '/user/profile' }
+    message: 'This is a test notification from your User Profile.',
+    type: 'test',
+    link: '/user/profile'
   });
 
   if (!success) {

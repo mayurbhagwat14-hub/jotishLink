@@ -379,7 +379,13 @@ const OrderHistory = () => {
 
       {/* ═══ CALLS TAB ═══ */}
       {activeTab === 'Calls' && (() => {
-        const callSessions = [...sessions.filter(s => s.type === 'audio_call' || s.type === 'video_call' || s.type === 'audio' || s.type === 'video'), ...calls].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        const callSessions = [
+          ...sessions.filter(s => 
+            (s.type === 'audio_call' || s.type === 'video_call' || s.type === 'audio' || s.type === 'video') && 
+            s.durationSeconds > 0
+          ), 
+          ...calls
+        ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         return (
         <div className="divide-y divide-gray-50">
           {isLoading ? (
