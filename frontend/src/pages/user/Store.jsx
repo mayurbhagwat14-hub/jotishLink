@@ -253,13 +253,17 @@ const Store = () => {
           ) : (
             <>
               {/* ═══ CATEGORIES ═══ */}
-              <div className="flex gap-5 px-4 py-3 overflow-x-auto no-scrollbar">
+              <div className="flex gap-3 px-4 py-4 overflow-x-auto no-scrollbar">
                 {storeCategories.map((cat, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group" onClick={() => setSearchQuery(cat.name)}>
-                    <div className="w-[60px] h-[60px] rounded-2xl overflow-hidden border-2 border-orange-100 bg-orange-50 shadow-card group-hover:shadow-card-hover group-hover:border-orange-300 transition-all">
-                      <img src={cat.img} alt={cat.name} className="w-full h-full object-cover p-1 group-hover:scale-110 transition-transform duration-500" />
+                  <div 
+                    key={i} 
+                    onClick={() => setSearchQuery(cat.name)}
+                    className="flex items-center gap-2 shrink-0 px-3 py-2 bg-white rounded-2xl border-2 border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:border-orange-400 hover:shadow-orange-500/10 cursor-pointer transition-all active:scale-95 group"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-orange-50 shrink-0">
+                      <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     </div>
-                    <span className="text-[11px] text-gray-700 font-semibold text-center">{cat.name}</span>
+                    <span className="text-[13px] text-gray-800 font-bold whitespace-nowrap pr-1">{cat.name}</span>
                   </div>
                 ))}
               </div>
@@ -309,21 +313,40 @@ const Store = () => {
                   <h2 className="text-[16px] font-bold text-gray-800">Top Selling</h2>
                   <span className="text-[12px] text-orange-500 font-semibold cursor-pointer">View All</span>
                 </div>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
                   {topSellingProducts.map((p, i) => (
                     <div 
                       key={i} 
                       onClick={() => navigate(`/user/product/${p._id || p.id}`)}
-                      className="shrink-0 flex flex-col items-center gap-1.5 w-[72px] cursor-pointer group"
+                      className="shrink-0 w-[135px] bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all group"
                     >
-                      <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors flex items-center justify-center text-orange-300">
+                      <div className="h-[110px] bg-orange-50 relative overflow-hidden flex items-center justify-center">
                         {p.image || p.img ? (
-                          <img src={p.image || p.img} alt={p.name} className={`w-full h-full object-cover ${(!p.inStock || p.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
+                          <img src={p.image || p.img} alt={p.name} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${(!p.inStock || p.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                         ) : (
-                          <span className="text-xs font-bold text-gray-400">No Img</span>
+                          <span className="text-[10px] font-bold text-orange-300">No Img</span>
+                        )}
+                        {p.discount && p.discount !== '0%' && (
+                          <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-orange-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">
+                            {p.discount} OFF
+                          </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-gray-600 font-semibold text-center leading-tight truncate w-full px-1">{p.name}</span>
+                      <div className="p-2.5">
+                        <h4 className="text-[12px] font-bold text-gray-800 line-clamp-1 mb-1">{p.name}</h4>
+                        <div className="flex items-center gap-1 mb-2">
+                          <span className="text-orange-400 text-[10px]">★ {p.rating || '4.8'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[14px] font-black text-gray-900">₹{p.price}</span>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); if(p.inStock !== false && p.stock > 0) handleAddToCart(p); }}
+                            className="w-6 h-6 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 font-bold hover:bg-orange-500 hover:text-white transition-colors text-[14px]"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -335,21 +358,38 @@ const Store = () => {
                   <h2 className="text-[16px] font-bold text-gray-800">Newly Launch</h2>
                   <span className="text-[12px] text-orange-500 font-semibold cursor-pointer">View All</span>
                 </div>
-                <div className="flex gap-3 overflow-x-auto no-scrollbar">
+                <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
                   {newLaunchProducts.map((p, i) => (
                     <div 
                       key={i} 
                       onClick={() => navigate(`/user/product/${p._id || p.id}`)}
-                      className="shrink-0 flex flex-col items-center gap-1.5 w-[72px] cursor-pointer group"
+                      className="shrink-0 w-[135px] bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all group"
                     >
-                      <div className="w-[64px] h-[64px] rounded-full overflow-hidden border-2 border-orange-100 bg-orange-50 group-hover:border-orange-300 transition-colors flex items-center justify-center text-orange-300">
+                      <div className="h-[110px] bg-orange-50 relative overflow-hidden flex items-center justify-center">
                         {p.image || p.img ? (
-                          <img src={p.image || p.img} alt={p.name} className={`w-full h-full object-cover ${(!p.inStock || p.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
+                          <img src={p.image || p.img} alt={p.name} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${(!p.inStock || p.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                         ) : (
-                          <span className="text-xs font-bold text-gray-400">No Img</span>
+                          <span className="text-[10px] font-bold text-orange-300">No Img</span>
                         )}
+                        <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md text-white text-[8px] font-black tracking-wider px-1.5 py-0.5 rounded shadow-sm uppercase">
+                          NEW
+                        </div>
                       </div>
-                      <span className="text-[10px] text-gray-600 font-semibold text-center leading-tight truncate w-full px-1">{p.name}</span>
+                      <div className="p-2.5">
+                        <h4 className="text-[12px] font-bold text-gray-800 line-clamp-1 mb-1">{p.name}</h4>
+                        <div className="flex items-center gap-1 mb-2">
+                          <span className="text-orange-400 text-[10px]">★ {p.rating || 'New'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[14px] font-black text-gray-900">₹{p.price}</span>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); if(p.inStock !== false && p.stock > 0) handleAddToCart(p); }}
+                            className="w-6 h-6 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 font-bold hover:bg-orange-500 hover:text-white transition-colors text-[14px]"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -366,36 +406,42 @@ const Store = () => {
                     <div 
                       key={product.id || product._id || i} 
                       onClick={() => navigate(`/user/product/${product._id || product.id}`)}
-                      className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden cursor-pointer hover:shadow-card-hover transition-shadow"
+                      className="bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden cursor-pointer hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all group flex flex-col"
                     >
-                      <div className="h-[100px] bg-orange-50 overflow-hidden flex items-center justify-center text-orange-300">
+                      <div className="h-[120px] bg-gray-50 relative overflow-hidden flex items-center justify-center text-gray-300">
                         {product.image || product.img ? (
-                          <img src={product.image || product.img} alt={product.name} className={`w-full h-full object-cover hover:scale-105 transition-transform duration-500 ${(!product.inStock || product.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
+                          <img src={product.image || product.img} alt={product.name} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${(!product.inStock || product.stock <= 0) ? 'grayscale opacity-70' : ''}`} />
                         ) : (
-                          <span className="text-sm font-bold text-gray-400">No Img</span>
+                          <span className="text-[10px] font-bold text-gray-400">No Img</span>
+                        )}
+                        {product.discount && product.discount !== '0%' && (
+                          <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-orange-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">
+                            {product.discount}
+                          </div>
                         )}
                       </div>
-                      <div className="p-3">
-                        <h4 className="text-[13px] font-semibold text-gray-800 line-clamp-1 mb-1">{product.name}</h4>
-                        <div className="flex items-center gap-1 mb-1.5">
-                          <span className="text-orange-400 text-[11px]">★ {product.rating}</span>
-                          <span className="text-gray-400 text-[10px]">({product.reviews})</span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[15px] font-bold text-gray-900">₹{product.price}</span>
-                          {product.originalPrice ? <span className="text-[12px] text-gray-400 line-through">₹{product.originalPrice}</span> : null}
-                          {product.discount && product.discount !== '0%' && <span className="text-[10px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded">{product.discount}</span>}
+                      <div className="p-3 flex flex-col flex-1 justify-between">
+                        <div>
+                          <h4 className="text-[13px] font-bold text-gray-800 line-clamp-1 mb-1">{product.name}</h4>
+                          <div className="flex items-center gap-1 mb-1.5">
+                            <span className="text-orange-400 text-[10px]">★ {product.rating || '4.5'}</span>
+                            <span className="text-gray-400 text-[9px]">({product.reviews || '120'})</span>
+                          </div>
+                          <div className="flex items-center gap-1 mb-3">
+                            <span className="text-[15px] font-black text-gray-900">₹{product.price}</span>
+                            {product.originalPrice ? <span className="text-[11px] text-gray-400 line-through font-medium">₹{product.originalPrice}</span> : null}
+                          </div>
                         </div>
                         <button 
                           onClick={(e) => { e.stopPropagation(); if(product.inStock !== false && product.stock > 0) handleAddToCart(product); }}
                           disabled={product.inStock === false || product.stock <= 0}
-                          className={`w-full border-2 font-bold text-[12px] py-1.5 rounded-xl transition-all ${
+                          className={`w-full font-bold text-[12px] py-2 rounded-lg transition-all shadow-sm ${
                             (!product.inStock || product.stock <= 0)
-                              ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
-                              : 'border-orange-500 text-orange-500 hover:bg-orange-50 active:scale-95'
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-orange-500/30 hover:-translate-y-0.5 active:scale-95'
                           }`}
                         >
-                          {(!product.inStock || product.stock <= 0) ? 'Out of Stock' : 'Add to cart'}
+                          {(!product.inStock || product.stock <= 0) ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                       </div>
                     </div>
