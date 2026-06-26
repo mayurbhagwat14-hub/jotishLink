@@ -90,9 +90,8 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
 
     const isUrgent = data.type === 'incoming_call' || data.type === 'incoming_chat';
 
-    // Send as data-only message (no top-level 'notification' field).
-    // This ensures the Service Worker's onBackgroundMessage ALWAYS fires,
-    // giving us full control over showNotification() on all platforms including Windows.
+    // Use a top-level notification object to ensure mobile devices automatically
+    // display system notifications in the background.
     const dataWithNotifInfo = {
       ...formattedData,
       title: String(title),
@@ -101,6 +100,10 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
 
     const payload = {
       tokens: tokens,
+      notification: {
+        title: String(title),
+        body: String(body),
+      },
       data: dataWithNotifInfo,
       webpush: {
         fcmOptions: {
