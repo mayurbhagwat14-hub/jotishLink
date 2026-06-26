@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronLeft, FiChevronRight, FiBox, FiImage, FiToggleLeft, FiToggleRight, FiX, FiFilter, FiMoreHorizontal } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminProducts, createAdminProduct, deleteAdminProduct, updateAdminProduct } from '../../api/adminApis';
 
@@ -17,7 +18,7 @@ const AdminProducts = () => {
   const [deleteConfirmProduct, setDeleteConfirmProduct] = useState(null);
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
-    name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: 0.5, length: 10, breadth: 10, height: 10
+    name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: '', length: '', breadth: '', height: ''
   });
   const itemsPerPage = 8;
 
@@ -67,7 +68,15 @@ const AdminProducts = () => {
   const handleSaveProduct = async () => {
     if (isSubmitting) return;
     try {
-      if (!formData.name || !formData.price || !formData.category) return;
+      if (!formData.name || !formData.price || !formData.category) {
+        toast.error('Product Name, Price, and Category are required.');
+        return;
+      }
+      if (!formData.weight || !formData.length || !formData.breadth || !formData.height) {
+        toast.error('Weight, Length, Breadth, and Height are required for shipping details.');
+        return;
+      }
+      
       setIsSubmitting(true);
       const payload = {
         ...formData,
@@ -76,10 +85,10 @@ const AdminProducts = () => {
         originalPrice: Number(formData.originalPrice),
         discount: formData.discount,
         stock: Number(formData.stock),
-        weight: Number(formData.weight || 0.5),
-        length: Number(formData.length || 10),
-        breadth: Number(formData.breadth || 10),
-        height: Number(formData.height || 10)
+        weight: Number(formData.weight),
+        length: Number(formData.length),
+        breadth: Number(formData.breadth),
+        height: Number(formData.height)
       };
 
       if (editingProductId) {
@@ -90,7 +99,7 @@ const AdminProducts = () => {
       
       setShowAddModal(false);
       setEditingProductId(null);
-      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: 0.5, length: 10, breadth: 10, height: 10 });
+      setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: '', length: '', breadth: '', height: '' });
       fetchProducts();
     } catch (err) {
       console.error('Failed to save product', err);
@@ -113,10 +122,10 @@ const AdminProducts = () => {
       stock: product.stock,
       image: product.img,
       featuredSection: product.featuredSection || 'none',
-      weight: product.weight || 0.5,
-      length: product.length || 10,
-      breadth: product.breadth || 10,
-      height: product.height || 10
+      weight: product.weight || '',
+      length: product.length || '',
+      breadth: product.breadth || '',
+      height: product.height || ''
     });
     setOpenActionDropdown(null);
     setShowAddModal(true);
@@ -183,7 +192,7 @@ const AdminProducts = () => {
         <button
           onClick={() => {
             setEditingProductId(null);
-            setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: 0.5, length: 10, breadth: 10, height: 10 });
+            setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: '', length: '', breadth: '', height: '' });
             setShowAddModal(true);
           }}
           className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all"

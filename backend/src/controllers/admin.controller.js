@@ -1268,7 +1268,7 @@ import { sendPushNotification } from '../utils/firebaseHelper.js';
 export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id)
     .populate('userId', 'name phone email')
-    .populate('items.productId', 'name sku price weight dimensions');
+    .populate('items.productId', 'name sku price weight length breadth height');
 
   if (!order) throw new ApiError(404, 'Order not found');
   if (order.shiprocketOrderId) throw new ApiError(400, 'Order already pushed to Shiprocket');
@@ -1312,7 +1312,7 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
   const orderData = {
     order_id: order._id.toString(),
     order_date: order.createdAt.toISOString(),
-    pickup_location: "Primary", // Usually 'Primary' is the default in Shiprocket
+    pickup_location: "warehouse", // Must match the pickup location added in Shiprocket dashboard
     billing_customer_name: order.shippingAddress?.fullName || order.userId?.name || 'Customer',
     billing_last_name: " ",
     billing_address: cleanAddress,
@@ -1334,6 +1334,10 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
   };
 
   const shiprocketResponse = await ShiprocketService.createOrder(orderData);
+
+  if (!shiprocketResponse || !shiprocketResponse.order_id) {
+    throw new ApiError(400, shiprocketResponse?.message || 'Shiprocket API rejected the order data');
+  }
 
   order.shiprocketOrderId = shiprocketResponse.order_id;
   order.shipmentId = shiprocketResponse.shipment_id;

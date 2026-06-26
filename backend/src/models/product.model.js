@@ -75,19 +75,19 @@ const productSchema = new mongoose.Schema(
     },
     weight: {
       type: Number,
-      default: 0.5,
+      required: true,
     },
     length: {
       type: Number,
-      default: 10,
+      required: true,
     },
     breadth: {
       type: Number,
-      default: 10,
+      required: true,
     },
     height: {
       type: Number,
-      default: 10,
+      required: true,
     },
   },
   {
