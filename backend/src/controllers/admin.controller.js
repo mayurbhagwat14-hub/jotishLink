@@ -1306,7 +1306,8 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
   const cleanAddress = (order.shippingAddress?.addressLine || 'No address provided').padEnd(10, ' ');
   const cleanCity = order.shippingAddress?.city || 'Delhi';
   const cleanState = order.shippingAddress?.state || 'Delhi';
-  const cleanPincode = order.shippingAddress?.pincode || '110001';
+  let cleanPincode = (order.shippingAddress?.pincode || '110001').toString().replace(/\D/g, '').substring(0, 6);
+  if (cleanPincode.length !== 6) cleanPincode = '110001';
 
   const orderData = {
     order_id: order._id.toString(),
