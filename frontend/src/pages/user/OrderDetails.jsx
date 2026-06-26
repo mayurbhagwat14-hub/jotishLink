@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Truck, Clock, CreditCard, X, AlertTriangle, MapPin, Check, FileText, ChevronRight, Map, Phone, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Package, Truck, Clock, CreditCard, X, AlertTriangle, MapPin, Check, FileText, ChevronRight, Map, Phone, CheckCircle2, Mail } from 'lucide-react';
 import { trackOrder, getOrderById, requestCancelOrder, getUserShiprocketOrderDetails } from '../../api/storeApis';
 import { toast } from 'react-hot-toast';
 import SplashScreen from '../../components/SplashScreen';
@@ -298,15 +298,24 @@ const OrderDetails = () => {
                <Map className="text-orange-500" size={18} /> Shipping Address
              </h3>
              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-[13px] font-bold text-gray-900 mb-1">{order.shippingAddress.name || 'Customer'}</p>
+                <p className="text-[13px] font-bold text-gray-900 mb-1">{order.shippingAddress.fullName || order.shippingAddress.name || 'Customer'}</p>
                 <p className="text-[12px] text-gray-600 leading-relaxed mb-2">
-                  {order.shippingAddress.street}<br/>
-                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.zipCode}
+                  {order.shippingAddress.addressLine || order.shippingAddress.street}<br/>
+                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode || order.shippingAddress.zipCode}
                 </p>
-                {order.shippingAddress.phone && (
-                  <p className="text-[12px] font-medium text-gray-700 flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-200">
-                    <Phone size={12} className="text-gray-400" /> {order.shippingAddress.phone}
-                  </p>
+                {(order.shippingAddress.phone || order.shippingAddress.email) && (
+                  <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-200">
+                    {order.shippingAddress.phone && (
+                      <p className="text-[12px] font-medium text-gray-700 flex items-center gap-1.5">
+                        <Phone size={12} className="text-gray-400" /> {order.shippingAddress.phone}
+                      </p>
+                    )}
+                    {order.shippingAddress.email && (
+                      <p className="text-[12px] font-medium text-gray-700 flex items-center gap-1.5">
+                        <Mail size={12} className="text-gray-400" /> {order.shippingAddress.email}
+                      </p>
+                    )}
+                  </div>
                 )}
              </div>
           </div>

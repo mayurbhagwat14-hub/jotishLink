@@ -1321,7 +1321,7 @@ export const pushOrderToShiprocket = asyncHandler(async (req, res) => {
     billing_pincode: cleanPincode,
     billing_state: cleanState,
     billing_country: "India",
-    billing_email: order.userId?.email || "customer@jyotishlink.com",
+    billing_email: order.shippingAddress?.email || order.userId?.email || "customer@jyotishlink.com",
     billing_phone: finalPhone,
     shipping_is_billing: true,
     order_items: orderItems,

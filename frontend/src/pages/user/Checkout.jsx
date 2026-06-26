@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck } from 'react-icons/fi';
+import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck, FiCrosshair } from 'react-icons/fi';
 import { createOrderThunk } from '../../store/slices/cartSlice';
 import { fetchWalletThunk } from '../../store/slices/walletSlice';
 import toast from 'react-hot-toast';
@@ -23,12 +23,48 @@ const Checkout = () => {
   
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
-    phone: user?.phoneNumber || '',
+    email: user?.email || '',
+    phone: user?.phoneNumber || user?.phone || '',
     addressLine: '',
     city: '',
     state: '',
     pincode: '',
   });
+  
+  const [isLocating, setIsLocating] = useState(false);
+
+  const fetchLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`);
+        const data = await res.json();
+        if (data && data.address) {
+          const addr = data.address;
+          setFormData(prev => ({
+            ...prev,
+            addressLine: data.display_name?.split(',').slice(0, 2).join(', ') || '',
+            city: addr.city || addr.town || addr.village || addr.county || '',
+            state: addr.state || '',
+            pincode: addr.postcode || ''
+          }));
+          toast.success('Location fetched successfully!');
+        }
+      } catch (err) {
+        toast.error('Failed to fetch address from coordinates');
+      } finally {
+        setIsLocating(false);
+      }
+    }, (error) => {
+      setIsLocating(false);
+      toast.error('Location access denied or unavailable');
+    });
+  };
   
   const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' or 'cod'
   const [loading, setLoading] = useState(false);
@@ -172,14 +208,30 @@ const Checkout = () => {
 
       <div className="p-4 flex-1 overflow-y-auto">
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-50 text-gray-800 font-bold">
-            <FiMapPin className="text-orange-500" /> Shipping Address
+          <div className="flex items-center justify-between gap-2 mb-4 pb-2 border-b border-gray-50">
+            <div className="flex items-center gap-2 text-gray-800 font-bold">
+              <FiMapPin className="text-orange-500" /> Shipping Address
+            </div>
+            <button 
+              type="button" 
+              onClick={fetchLocation} 
+              disabled={isLocating}
+              className="flex items-center gap-1.5 text-[12px] font-bold text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors disabled:opacity-50"
+            >
+              {isLocating ? <span className="w-3.5 h-3.5 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></span> : <FiCrosshair />}
+              Use Current Location
+            </button>
           </div>
           
           <form className="space-y-3">
             <input 
               type="text" name="fullName" placeholder="Full Name" 
               value={formData.fullName} onChange={handleChange} required
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
+            />
+            <input 
+              type="email" name="email" placeholder="Email Address" 
+              value={formData.email} onChange={handleChange} required
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-400"
             />
             <input 

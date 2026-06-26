@@ -68,6 +68,7 @@ const AdminOrders = () => {
           ? `${o.shippingAddress.fullName}, ${o.shippingAddress.addressLine}, ${o.shippingAddress.city}, ${o.shippingAddress.state} - ${o.shippingAddress.pincode}` 
           : 'N/A',
         addressPhone: o.shippingAddress?.phone || '',
+        addressEmail: o.shippingAddress?.email || '',
         products: o.items.map(item => ({ name: item.productId?.name || 'Product', qty: item.quantity, price: item.price })),
         total: o.totalAmount || 0,
         payment: o.paymentStatus || 'Paid',
@@ -647,7 +648,10 @@ const AdminOrders = () => {
                       <p className="text-sm font-bold text-gray-800">{order.customer}</p>
                       <p className="text-xs text-gray-500 mt-1">{order.phone} • {order.email}</p>
                       <p className="text-xs text-gray-500 mt-1 flex items-start gap-1"><FiMapPin size={12} className="shrink-0 mt-0.5" /> {order.address}</p>
-                      {order.addressPhone && <p className="text-[10px] text-gray-400 mt-0.5">📞 {order.addressPhone}</p>}
+                      <div className="flex flex-col gap-0.5 mt-1">
+                        {order.addressPhone && <p className="text-[10px] text-gray-400">📞 {order.addressPhone}</p>}
+                        {order.addressEmail && <p className="text-[10px] text-gray-400">✉️ {order.addressEmail}</p>}
+                      </div>
                     </div>
 
                     {/* Products */}
