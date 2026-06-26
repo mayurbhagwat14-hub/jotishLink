@@ -517,7 +517,7 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select(targetField);
     if (user && user[targetField]) {
       const staleTokens = user[targetField]
-        .filter(t => t !== token && t.startsWith(devicePrefix + ':'));
+        .filter(t => typeof t === 'string' && t !== token && t.startsWith(devicePrefix + ':'));
       if (staleTokens.length > 0) {
         await User.findByIdAndUpdate(req.user._id, {
           $pull: { [targetField]: { $in: staleTokens } }
@@ -539,4 +539,23 @@ export const updateFcmToken = asyncHandler(async (req, res) => {
       platform
     }
   });
+});
+
+// POST /api/user/test-push
+export const testPushNotification = asyncHandler(async (req, res) => {
+  const { sendPushNotification } = await import('../utils/firebaseHelper.js');
+  
+  const success = await sendPushNotification({
+    userId: req.user._id,
+    role: 'user',
+    title: 'Test Notification',
+    body: 'This is a test notification from your User Profile.',
+    data: { type: 'test', url: '/user/profile' }
+  });
+
+  if (!success) {
+    throw new ApiError(500, 'Failed to send push notification. Please check if your token is saved properly.');
+  }
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Test notification sent successfully'));
 });

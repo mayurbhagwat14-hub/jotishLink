@@ -19,6 +19,7 @@ import {
   rateAstrologer,
   updateFcmToken,
   getPublicSettings,
+  testPushNotification
 } from '../controllers/user.controller.js';
 import { verifyJWT, authorizeRoles, optionalAuth } from '../middlewares/auth.middleware.js';
 
@@ -52,7 +53,8 @@ router.get('/user/wallet', verifyJWT, getUserWallet);
 router.post('/user/history/delete', verifyJWT, deleteUserHistory);
 router.post('/user/rate-astrologer', verifyJWT, rateAstrologer);
 
-// FCM Token
+// FCM Token & Push Notifications
 router.put('/user/fcm-token', verifyJWT, updateFcmToken);
+router.post('/user/test-push', verifyJWT, testPushNotification);
 
 export default router;

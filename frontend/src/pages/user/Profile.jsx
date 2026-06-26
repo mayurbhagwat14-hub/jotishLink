@@ -43,6 +43,16 @@ const Profile = () => {
     }
   };
 
+  const handleTestNotification = async () => {
+    try {
+      await axiosInstance.post('/user/test-push');
+      toast.success('Test notification sent!');
+    } catch (err) {
+      console.error('Failed to send test notification:', err);
+      toast.error(err?.response?.data?.message || 'Failed to send test notification');
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchProfileThunk()).unwrap().then((data) => {
       if (data) {
@@ -222,6 +232,12 @@ const Profile = () => {
       <div className="p-4 bg-white mt-auto border-t border-gray-50 space-y-3">
         <button onClick={handleSubmit} className="w-full py-4 flex items-center justify-center gap-2 bg-orange-500 text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98] transition-all">
           <FiSave /> Save Changes
+        </button>
+        <button 
+          onClick={handleTestNotification} 
+          className="w-full py-3.5 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 font-bold text-[15px] rounded-xl hover:bg-blue-100 transition-colors"
+        >
+          Test Notification
         </button>
         <button 
           onClick={() => setShowDeleteModal(true)} 
