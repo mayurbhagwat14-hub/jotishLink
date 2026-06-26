@@ -1,4 +1,6 @@
 import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
 
 let firebaseApp = null;
 
@@ -7,8 +9,25 @@ export const initFirebase = () => {
     let credential;
 
     // Read the complete JSON object string from the environment variable
-    const serviceAccountJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    let serviceAccountJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
     
+    // Dotenv often truncates unquoted multiline strings at the first newline.
+    // If it's truncated (doesn't end with '}'), manually read it from the .env file for local development.
+    if (serviceAccountJsonStr && !serviceAccountJsonStr.trim().endsWith('}')) {
+      try {
+        const envPath = path.resolve(process.cwd(), '.env');
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf8');
+          const match = envContent.match(/FIREBASE_SERVICE_ACCOUNT_PATH=([\s\S]*?\n\})/);
+          if (match && match[1]) {
+            serviceAccountJsonStr = match[1];
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Could not manually read multiline Firebase JSON from .env:', e.message);
+      }
+    }
+
     if (serviceAccountJsonStr) {
       try {
         const serviceAccount = JSON.parse(serviceAccountJsonStr);
