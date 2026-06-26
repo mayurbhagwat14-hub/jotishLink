@@ -87,6 +87,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   delete userObj.otpHash;
   delete userObj.otpExpires;
 
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({ 
+      userId: user._id, 
+      role: 'user', 
+      title: 'Welcome back 👋', 
+      message: `Logged in successfully on ${new Date().toLocaleString()}`, 
+      type: 'info', 
+      link: '/user/home' 
+    });
+  }).catch(console.error);
+
   return res.status(200).json(
     new ApiResponse(200, {
       accessToken,

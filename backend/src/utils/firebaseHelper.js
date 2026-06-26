@@ -106,7 +106,7 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
       notification: {
         title: String(title),
         body: String(body),
-        imageUrl: data.image || defaultIcon
+        ...(data.image && { imageUrl: data.image })
       },
       data: dataWithNotifInfo,
       webpush: {
@@ -118,7 +118,7 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
           body: body,
           icon: defaultIcon,
           badge: defaultIcon,
-          image: data.image || defaultIcon
+          ...(data.image && { image: data.image })
         }
       },
       android: {
@@ -129,7 +129,7 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
           sound: 'default',
           channelId: isUrgent ? 'high_importance_channel' : 'default_channel',
           clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-          imageUrl: data.image || defaultIcon
+          ...(data.image && { imageUrl: data.image })
         }
       },
       apns: {

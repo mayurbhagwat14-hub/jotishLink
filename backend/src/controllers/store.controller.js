@@ -10,7 +10,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { createShiprocketOrder } from '../utils/shiprocketHelper.js';
-import { sendPushNotification } from '../utils/firebaseHelper.js';
+import { notify } from '../utils/notifyHelper.js';
 
 // GET /api/store/cart
 export const getCart = asyncHandler(async (req, res) => {
@@ -204,14 +204,16 @@ export const createOrder = asyncHandler(async (req, res) => {
     discountAmount,
   });
 
-  // Send FCM notification
-  await sendPushNotification({
+  // Send notification via notifyHelper
+  notify({
     userId: user._id.toString(),
     role: 'user',
     title: 'Order Confirmed! 🎉',
-    body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been placed successfully. ${paymentStatus === 'paid' ? '₹' + totalAmount + ' deducted.' : 'Payment pending (COD).'}`,
-    data: { type: 'order_confirmed', orderId: order._id.toString(), url: `/user/order/${order._id}` }
-  });
+    message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been placed successfully. ${paymentStatus === 'paid' ? '₹' + totalAmount + ' deducted.' : 'Payment pending (COD).'}`,
+    type: 'success',
+    link: `/user/order/${order._id}`,
+    data: { type: 'order_confirmed', orderId: order._id.toString() }
+  }).catch(err => console.error('Notify error:', err));
 
   if (appliedCoupon) {
     appliedCoupon.currentUsage += 1;

@@ -509,34 +509,23 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   const title = 'Order Status Updated';
   const message = `Your order #${order._id.toString().slice(-6).toUpperCase()} has been marked as ${status}.`;
   
-  const notification = await Notification.create({
-    userId: order.userId,
-    title,
-    message,
-    type: 'info',
-    link: '/user/history?tab=Orders'
-  });
-
-  // Emit to user
-  const io = req.app.get('io');
-  if (io) {
-    io.emit(`notification_${order.userId}`, notification);
-    io.to(`room_user_${order.userId}`).emit('order_updated', { order });
-    io.emit('order_updated', { order }); // Broadcast to admin too
-  }
-
-  // Send Push Notification
-  try {
-    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
-    await sendPushNotification({
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
       userId: order.userId,
       role: 'user',
       title,
-      body: message,
-      data: { type: 'order_update', orderId: order._id.toString(), url: `/user/order/${order._id}` }
+      message,
+      type: 'info',
+      link: `/user/order/${order._id}`,
+      data: { type: 'order_update', orderId: order._id.toString() }
     });
-  } catch (err) {
-    console.error('Push notification failed:', err);
+  }).catch(console.error);
+
+  // Emit to admin via socket (user bell handled by notify internally, but keeping broadcast for UI refresh if needed)
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`room_user_${order.userId}`).emit('order_updated', { order });
+    io.emit('order_updated', { order }); // Broadcast to admin too
   }
 
   return res.status(200).json(new ApiResponse(200, { order }, 'Order status updated'));
@@ -602,31 +591,19 @@ export const processCancelRequest = asyncHandler(async (req, res) => {
   await order.save();
 
   // Notify user
-  const notification = await Notification.create({
-    userId: order.userId,
-    title: action === 'approved' ? 'Order Cancelled & Refunded' : 'Cancel Request Rejected',
-    message: action === 'approved'
-      ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled. ₹${refundAmount} refunded to your wallet.`
-      : `Your cancel request for order #${order._id.toString().slice(-6).toUpperCase()} has been rejected by admin.`,
-    type: action === 'approved' ? 'info' : 'warning',
-    link: '/user/history?tab=Orders'
-  });
-
-  const io = req.app.get('io');
-  if (io) {
-    io.emit(`notification_${order.userId}`, notification);
-  }
-
-  // FCM Notification
-  await sendPushNotification({
-    userId: order.userId.toString(),
-    role: 'user',
-    title: action === 'approved' ? 'Order Cancelled' : 'Cancel Request Rejected',
-    body: action === 'approved'
-      ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled.`
-      : `Your cancel request for order #${order._id.toString().slice(-6).toUpperCase()} has been rejected.`,
-    data: { type: 'order_update', orderId: order._id.toString(), url: `/user/order/${order._id}` }
-  });
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
+      userId: order.userId.toString(),
+      role: 'user',
+      title: action === 'approved' ? 'Order Cancelled & Refunded' : 'Cancel Request Rejected',
+      message: action === 'approved'
+        ? `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled. ₹${refundAmount} refunded.`
+        : `Your cancel request for order #${order._id.toString().slice(-6).toUpperCase()} has been rejected.`,
+      type: action === 'approved' ? 'info' : 'warning',
+      link: `/user/order/${order._id}`,
+      data: { type: 'order_update', orderId: order._id.toString() }
+    });
+  }).catch(console.error);
 
   return res.status(200).json(new ApiResponse(200, { order }, `Cancel request ${action}`));
 });
@@ -1202,19 +1179,16 @@ export const processAstrologerPayout = asyncHandler(async (req, res) => {
     io.to(`room_astro_${astrologer._id}`).emit('withdrawal_processed', { withdrawal });
   }
 
-  // Send Push Notification
-  try {
-    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
-    await sendPushNotification({
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
       userId: astrologer._id,
       role: 'astrologer',
-      title: 'Withdrawal Approved',
-      body: `Your withdrawal request for ₹${withdrawal.amount} has been approved.`,
-      data: { type: 'withdrawal_processed', url: '/astrologer/earnings' }
+      title: 'Withdrawal Approved ✅',
+      message: `Your withdrawal of ₹${withdrawal.amount} has been processed.`,
+      type: 'success',
+      link: '/astrologer/earnings'
     });
-  } catch (err) {
-    console.error('Push notification failed:', err);
-  }
+  }).catch(console.error);
 
   return res.status(200).json(new ApiResponse(200, { withdrawal }, 'Payout processed successfully'));
 });
@@ -1384,14 +1358,17 @@ export const generateOrderAWB = asyncHandler(async (req, res) => {
       io.to(`room_user_${order.userId}`).emit('order_updated', { order });
     }
 
-    // FCM Notification
-    await sendPushNotification({
-      userId: order.userId.toString(),
-      role: 'user',
-      title: 'Order Shipped',
-      body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been shipped. AWB: ${order.awbCode}`,
-      data: { type: 'order_shipped', orderId: order._id.toString(), url: `/user/order/${order._id}` }
-    });
+    import('../utils/notifyHelper.js').then(({ notify }) => {
+      notify({
+        userId: order.userId.toString(),
+        role: 'user',
+        title: 'Order Shipped 🚚',
+        message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been shipped. AWB: ${order.awbCode}`,
+        type: 'info',
+        link: `/user/order/${order._id}`,
+        data: { type: 'order_shipped', orderId: order._id.toString() }
+      });
+    }).catch(console.error);
   } else {
      throw new ApiError(500, 'Failed to generate AWB: ' + JSON.stringify(awbResponse));
   }
@@ -1435,14 +1412,17 @@ export const shiprocketWebhook = asyncHandler(async (req, res) => {
             io.emit('order_updated', { order }); // Broadcast to admin too
           }
           
-          // FCM Notification
-          await sendPushNotification({
-            userId: order.userId.toString(),
-            role: 'user',
-            title: 'Order Delivered 🎉',
-            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been successfully delivered.`,
-            data: { type: 'order_delivered', orderId: order._id.toString(), url: `/user/order/${order._id}` }
-          });
+          import('../utils/notifyHelper.js').then(({ notify }) => {
+            notify({
+              userId: order.userId.toString(),
+              role: 'user',
+              title: 'Order Delivered 🎉',
+              message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been successfully delivered.`,
+              type: 'success',
+              link: `/user/order/${order._id}`,
+              data: { type: 'order_delivered', orderId: order._id.toString() }
+            });
+          }).catch(console.error);
           
           console.log(`Webhook: Order ${order._id} marked as DELIVERED via AWB ${awbCode}`);
         }
@@ -1490,14 +1470,17 @@ export const shiprocketWebhook = asyncHandler(async (req, res) => {
             io.emit('order_updated', { order }); // Broadcast to admin too
           }
           
-          // FCM Notification
-          await sendPushNotification({
-            userId: order.userId.toString(),
-            role: 'user',
-            title: 'Order Cancelled',
-            body: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled by the courier.`,
-            data: { type: 'order_cancelled', orderId: order._id.toString(), url: `/user/order/${order._id}` }
-          });
+          import('../utils/notifyHelper.js').then(({ notify }) => {
+            notify({
+              userId: order.userId.toString(),
+              role: 'user',
+              title: 'Order Cancelled',
+              message: `Your order #${order._id.toString().slice(-6).toUpperCase()} has been cancelled by the courier.`,
+              type: 'warning',
+              link: `/user/order/${order._id}`,
+              data: { type: 'order_cancelled', orderId: order._id.toString() }
+            });
+          }).catch(console.error);
           
           console.log(`Webhook: Order ${order._id} marked as CANCELED via AWB ${awbCode}`);
         }

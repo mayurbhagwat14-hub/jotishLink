@@ -296,6 +296,17 @@ export const astrologerLogin = asyncHandler(async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
 
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
+      userId: astrologer._id,
+      role: 'astrologer',
+      title: 'Login Successful',
+      message: 'Welcome back to your dashboard!',
+      type: 'success',
+      link: '/astrologer/dashboard'
+    });
+  }).catch(console.error);
+
   return res.status(200).json(
     new ApiResponse(200, {
       accessToken,
@@ -611,6 +622,17 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
     io.to('admin_room').emit('dashboard_updated');
   }
 
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
+      userId: astrologer._id,
+      role: 'astrologer',
+      title: 'Withdrawal Requested',
+      message: `Your request for ₹${amount} has been submitted.`,
+      type: 'info',
+      link: '/astrologer/earnings'
+    });
+  }).catch(console.error);
+
   return res.status(201).json(new ApiResponse(201, { withdrawal }, 'Withdrawal request sent successfully. Money will come to your account in 1-2 working days.'));
 });
 
@@ -703,6 +725,18 @@ export const updatePoojaStatus = asyncHandler(async (req, res) => {
     io.to(`room_user_${booking.userId}`).emit(`pooja_booking_${status.toLowerCase()}`, { booking });
     io.to('admin_room').emit('dashboard_updated');
   }
+
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
+      userId: booking.userId,
+      role: 'user',
+      title: 'Pooja Status Updated',
+      message: `Your pooja booking was marked as ${status}.`,
+      type: 'info',
+      link: '/user/poojas',
+      data: { type: 'pooja_status_update', bookingId: booking._id.toString() }
+    });
+  }).catch(console.error);
 
   return res.status(200).json(new ApiResponse(200, { booking }, `Pooja booking marked as ${status}`));
 });

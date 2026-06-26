@@ -40,6 +40,21 @@ class WalletService {
       io.to('admin_room').emit('dashboard_updated');
     }
 
+    // Only notify for non-session billing (like pooja booking) to avoid spamming the bell
+    const isSessionBilling = desc?.toLowerCase().includes('session') || desc?.toLowerCase().includes('call') || desc?.toLowerCase().includes('chat');
+    if (!isSessionBilling) {
+      import('../utils/notifyHelper.js').then(({ notify }) => {
+        notify({ 
+          userId, 
+          role: 'user', 
+          title: 'Wallet Debited', 
+          message: `₹${amount} deducted — ${desc}`, 
+          type: 'warning', 
+          link: '/user/wallet' 
+        });
+      }).catch(err => console.error('Notify failed in deduct:', err));
+    }
+
     return { user, transaction };
   }
 
@@ -76,18 +91,8 @@ class WalletService {
       io.to('admin_room').emit('dashboard_updated');
     }
 
-    try {
-      const { sendPushNotification } = await import('../utils/firebaseHelper.js');
-      await sendPushNotification({
-        userId,
-        role: 'user',
-        title: 'Wallet Recharged',
-        body: `₹${amount} has been successfully added to your wallet.`,
-      });
-    } catch (err) {
-      console.error('Push notification failed:', err);
-    }
-
+    // Push notification logic removed here — callers (like payment.controller.js) should call notify() themselves.
+    
     return { user, transaction };
   }
 
@@ -156,15 +161,17 @@ class WalletService {
       }
 
       try {
-        const { sendPushNotification } = await import('../utils/firebaseHelper.js');
-        await sendPushNotification({
+        const { notify } = await import('../utils/notifyHelper.js');
+        await notify({
           userId: astrologer._id,
           role: 'astrologer',
-          title: 'Earnings Added',
-          body: `₹${netAmount.toFixed(2)} added to your wallet for a ${sessionType} session.`,
+          title: 'Earnings Added 💰',
+          message: `₹${netAmount.toFixed(2)} credited for a ${sessionType} session.`,
+          type: 'success',
+          link: '/astrologer/earnings'
         });
       } catch (err) {
-        console.error('Push notification failed:', err);
+        console.error('Notify failed:', err);
       }
 
       return { astrologer, netAmount, commissionAmount };

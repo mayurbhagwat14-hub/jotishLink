@@ -79,12 +79,16 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       'success'
     );
 
-    await Notification.create({
-      userId: req.user._id,
-      title: 'Wallet Recharged ✅',
-      message: `₹${amount} added. New balance: ₹${user.wallet}`,
-      type: 'success',
-    });
+    import('../utils/notifyHelper.js').then(({ notify }) => {
+      notify({
+        userId: req.user._id,
+        role: 'user',
+        title: 'Wallet Recharged ✅',
+        message: `₹${amount} added. New balance: ₹${user.wallet}`,
+        type: 'success',
+        link: '/user/wallet'
+      });
+    }).catch(console.error);
 
     return res.status(200).json(new ApiResponse(200, {
       newBalance: user.wallet,
@@ -121,12 +125,16 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     'success'
   );
 
-  await Notification.create({
-    userId: req.user._id,
-    title: 'Wallet Recharged ✅',
-    message: `₹${amount} added. New balance: ₹${user.wallet}`,
-    type: 'success',
-  });
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    notify({
+      userId: req.user._id,
+      role: 'user',
+      title: 'Wallet Recharged ✅',
+      message: `₹${amount} added. New balance: ₹${user.wallet}`,
+      type: 'success',
+      link: '/user/wallet'
+    });
+  }).catch(console.error);
 
   return res.status(200).json(new ApiResponse(200, {
     newBalance: user.wallet,

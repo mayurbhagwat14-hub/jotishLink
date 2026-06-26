@@ -37,16 +37,18 @@ export const requestCall = asyncHandler(async (req, res) => {
   });
 
   try {
-    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
-    await sendPushNotification({
+    const { notify } = await import('../utils/notifyHelper.js');
+    await notify({
       userId: astrologerId,
       role: 'astrologer',
       title: 'Incoming Call Request',
-      body: `You have a new call request from ${user.name || 'a user'}.`,
-      data: { type: 'incoming_call', callId, channelName, url: '/astrologer/calls' }
+      message: `New request from ${user.name || 'a user'}`,
+      type: 'alert',
+      link: '/astrologer/calls',
+      data: { type: 'incoming_call', callId, channelName }
     });
   } catch (err) {
-    console.error('Push notification failed:', err);
+    console.error('Notify failed:', err);
   }
 
   return res.status(200).json(new ApiResponse(200, { callSession }, 'Call requested successfully'));
@@ -91,16 +93,18 @@ export const acceptCall = asyncHandler(async (req, res) => {
   );
 
   try {
-    const { sendPushNotification } = await import('../utils/firebaseHelper.js');
-    await sendPushNotification({
+    const { notify } = await import('../utils/notifyHelper.js');
+    await notify({
       userId: callSession.userId,
       role: 'user',
       title: 'Call Started',
-      body: 'The astrologer has accepted your call.',
-      data: { type: 'call_accepted', callId, channelName: callSession.channelName, url: `/user/video-room/${callSession.channelName}` }
+      message: 'The astrologer has accepted your call.',
+      type: 'success',
+      link: `/user/video-room/${callSession.channelName}`,
+      data: { type: 'call_accepted', callId, channelName: callSession.channelName }
     });
   } catch (err) {
-    console.error('Push notification failed:', err);
+    console.error('Notify failed:', err);
   }
 
   return res.status(200).json(new ApiResponse(200, {

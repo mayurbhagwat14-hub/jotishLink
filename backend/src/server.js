@@ -134,16 +134,18 @@ io.on('connection', (socket) => {
     console.log(`[Socket.IO] User ${userId} requested ${type} session with Astrologer ${astrologerId}`);
 
     try {
-      const { sendPushNotification } = await import('./utils/firebaseHelper.js');
-      await sendPushNotification({
+      const { notify } = await import('./utils/notifyHelper.js');
+      await notify({
         userId: astrologerId,
         role: 'astrologer',
         title: `Incoming ${type === 'chat' ? 'Chat' : 'Call'} Request`,
-        body: `You have a new ${type} request from ${userName || 'a user'}.`,
-        data: { type: `incoming_${type}`, roomId, url: type === 'chat' ? '/astrologer/chats' : '/astrologer/calls' }
+        message: `You have a new ${type} request from ${userName || 'a user'}.`,
+        type: 'alert',
+        link: type === 'chat' ? '/astrologer/chats' : '/astrologer/calls',
+        data: { type: `incoming_${type}`, roomId }
       });
     } catch (err) {
-      console.error('[Socket.IO] Push notification failed:', err);
+      console.error('[Socket.IO] Notify failed:', err);
     }
   });
 
@@ -169,6 +171,33 @@ io.on('connection', (socket) => {
     pendingRequests.delete(roomId);
     // Notify user
     io.to(userSocketId).emit('session_accepted', { roomId });
+    
+    // Notifications via notifyHelper
+    if (reqData) {
+      import('./utils/notifyHelper.js').then(({ notify }) => {
+        // Notify user
+        notify({ 
+          userId: reqData.userId, 
+          role: 'user', 
+          title: 'Session Started', 
+          message: 'Your astrologer has accepted the session.', 
+          type: 'success', 
+          link: reqData.type === 'chat' ? '/user/chats' : '/user/video-room' 
+        });
+        // Notify astrologer
+        if (reqData.astrologerId) {
+          notify({ 
+            userId: reqData.astrologerId, 
+            role: 'astrologer', 
+            title: 'Session Started', 
+            message: 'You accepted a session.', 
+            type: 'info', 
+            link: '/astrologer/history' 
+          });
+        }
+      }).catch(err => console.error('Failed to send session accepted notify:', err));
+    }
+
     // Notify astrologer's own socket too (confirmation)
     socket.emit('session_accept_confirmed', { roomId });
     console.log(`[Socket.IO] Session accepted. Room: ${roomId}`);
@@ -563,17 +592,19 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('session_ended', endPayload);
 
     try {
-      const { sendPushNotification } = await import('./utils/firebaseHelper.js');
       if (userId) {
-        await sendPushNotification({
+        const { notify } = await import('./utils/notifyHelper.js');
+        await notify({
           userId: userId,
           role: 'user',
           title: 'Session Ended',
-          body: `Your session has ended. Duration: ${duration}s.`,
+          message: `Your session has ended. Duration: ${duration}s.`,
+          type: 'info',
+          link: '/user/history'
         });
       }
     } catch (err) {
-      console.error('Push notification failed on end session:', err);
+      console.error('Notify failed on end session:', err);
     }
 
     let astroId = null;
@@ -588,13 +619,18 @@ io.on('connection', (socket) => {
       if (astroId) {
         io.to(`astro_${astroId}`).emit('session_ended', { ...endPayload, sessionId: finalSessionId });
 
-        const { sendPushNotification } = await import('./utils/firebaseHelper.js');
-        await sendPushNotification({
-          userId: astroId,
-          role: 'astrologer',
-          title: 'Session Ended',
-          body: `Session ended. Duration: ${duration}s.`,
-        });
+        // Only send "Session Ended" if no earnings will be credited (cost == 0)
+        if (currentCost <= 0) {
+          const { notify } = await import('./utils/notifyHelper.js');
+          await notify({
+            userId: astroId,
+            role: 'astrologer',
+            title: 'Session Ended',
+            message: `Session ended. Duration: ${duration}s.`,
+            type: 'info',
+            link: '/astrologer/history'
+          });
+        }
       }
     } catch (e) { /* ignore */ }
 
@@ -722,40 +758,50 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
 
     try {
-      const { sendPushNotification } = await import('./utils/firebaseHelper.js');
       if (userId) {
-        await sendPushNotification({
+        const { notify } = await import('./utils/notifyHelper.js');
+        await notify({
           userId: userId,
           role: 'user',
           title: 'Call Ended',
-          body: `Your call has ended. Duration: ${duration}s.`,
+          message: `Your call has ended. Duration: ${duration}s.`,
+          type: 'info',
+          link: '/user/history'
         });
       }
     } catch (err) {
-      console.error('Push notification failed on end call:', err);
+      console.error('Notify failed on end call:', err);
     }
     try {
       if (timerData && timerData.astrologerId) {
         io.to(`astro_${timerData.astrologerId}`).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
-        const { sendPushNotification } = await import('./utils/firebaseHelper.js');
-        await sendPushNotification({
-          userId: timerData.astrologerId,
-          role: 'astrologer',
-          title: 'Call Ended',
-          body: `Call ended. Duration: ${duration}s.`,
-        });
+        if (currentCost <= 0) {
+          const { notify } = await import('./utils/notifyHelper.js');
+          await notify({
+            userId: timerData.astrologerId,
+            role: 'astrologer',
+            title: 'Call Ended',
+            message: `Call ended. Duration: ${duration}s.`,
+            type: 'info',
+            link: '/astrologer/history'
+          });
+        }
       } else {
         const { CallSession } = await import('./models/callSession.model.js');
         const sess = await CallSession.findOne({ callId });
         if (sess) {
           io.to(`astro_${sess.astrologerId}`).emit('call_ended', { reason: `${endedBy}_ended`, roomId });
-          const { sendPushNotification } = await import('./utils/firebaseHelper.js');
-          await sendPushNotification({
-            userId: sess.astrologerId,
-            role: 'astrologer',
-            title: 'Call Ended',
-            body: `Call ended. Duration: ${duration}s.`,
-          });
+          if (currentCost <= 0) {
+            const { notify } = await import('./utils/notifyHelper.js');
+            await notify({
+              userId: sess.astrologerId,
+              role: 'astrologer',
+              title: 'Call Ended',
+              message: `Call ended. Duration: ${duration}s.`,
+              type: 'info',
+              link: '/astrologer/history'
+            });
+          }
         }
       }
     } catch (e) { /* ignore */ }
