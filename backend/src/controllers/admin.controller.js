@@ -1030,12 +1030,15 @@ export const getAdminReports = asyncHandler(async (req, res) => {
   const poojas = await PoojaBooking.find().lean();
 
   const revenueLogs = await RevenueLog.find().lean();
-  const platformCommission = revenueLogs.reduce((acc, log) => acc + (log.adminShare || 0), 0);
+  const basePlatformCommission = revenueLogs.reduce((acc, log) => acc + (log.adminShare || 0), 0);
   
   const totalDeductions = revenueLogs.reduce((acc, log) => acc + (log.totalCost || 0), 0);
 
   const storeRevenue = orders.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0);
   const totalRevenue = (totalDeductions + storeRevenue) || 0;
+  
+  // Admin gets 100% of store sales
+  const platformCommission = basePlatformCommission + storeRevenue;
 
   const validSessions = chatSessions.filter(s => s.amountDeducted > 0);
   const avgSessionValue = validSessions.length > 0 

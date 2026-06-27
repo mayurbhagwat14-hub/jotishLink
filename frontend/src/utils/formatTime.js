@@ -1,5 +1,5 @@
 export const formatTime12Hour = (timeStr) => {
-  if (!timeStr) return '';
+  if (!timeStr || typeof timeStr !== 'string') return '';
   const [hours, minutes] = timeStr.split(':');
   let h = parseInt(hours, 10);
   const ampm = h >= 12 ? 'PM' : 'AM';

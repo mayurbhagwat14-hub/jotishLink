@@ -77,12 +77,12 @@ const ProductCard = ({ product, onAddToCart, onNavigate, variant = 'grid', isWis
         onClick={() => onNavigate(product._id || product.id)}
         className="shrink-0 w-[145px] bg-white rounded-store overflow-hidden shadow-store-sm border border-store-border/60 store-card cursor-pointer group flex flex-col"
       >
-        <div className="h-[120px] bg-store-surface/50 relative overflow-hidden p-2.5 flex items-center justify-center">
+        <div className="h-[120px] bg-store-surface/50 relative overflow-hidden flex items-center justify-center">
           {(product.image || product.img) ? (
             <img
               src={product.image || product.img}
               alt={product.name}
-              className={`max-w-full max-h-full object-contain store-img-zoom rounded-lg ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
+              className={`w-full h-full object-cover store-img-zoom ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-store-surface rounded-lg">
@@ -153,12 +153,12 @@ const ProductCard = ({ product, onAddToCart, onNavigate, variant = 'grid', isWis
       onClick={() => onNavigate(product._id || product.id)}
       className="bg-white rounded-store overflow-hidden shadow-store-sm border border-store-border/50 store-card cursor-pointer group flex flex-col"
     >
-      <div className="h-[135px] bg-store-surface/50 relative overflow-hidden p-3 flex items-center justify-center">
+      <div className="h-[135px] bg-store-surface/50 relative overflow-hidden flex items-center justify-center">
         {(product.image || product.img) ? (
           <img
             src={product.image || product.img}
             alt={product.name}
-            className={`max-w-full max-h-full object-contain store-img-zoom rounded-xl ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
+            className={`w-full h-full object-cover store-img-zoom ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-store-surface rounded-xl">

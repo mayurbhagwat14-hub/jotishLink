@@ -115,6 +115,7 @@ const PoojaDetails = () => {
             {pooja.proofMedia && pooja.proofMedia.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {pooja.proofMedia.map((mediaUrl, idx) => {
+                  if (!mediaUrl || typeof mediaUrl !== 'string') return null;
                   const isVideo = mediaUrl.match(/\.(mp4|mov|avi|webm)/i) || mediaUrl.includes('/video/');
                   return isVideo ? (
                     <div 

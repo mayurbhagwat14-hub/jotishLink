@@ -5,6 +5,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import WalletService from '../services/wallet.service.js';
+import SystemSettings from '../models/systemSettings.model.js';
 
 // POST /api/chat/start  — initiate a chat session
 export const startChatSession = asyncHandler(async (req, res) => {
@@ -112,6 +113,21 @@ export const endChatSession = asyncHandler(async (req, res) => {
     } else {
       // Chat ended within 20 seconds, no charge
       totalAmount = 0;
+    }
+
+    if (totalAmount > 0) {
+      let sysComm = await SystemSettings.findOne();
+      let commissionRate = sysComm?.commissionRates?.chat || 20;
+      await WalletService.creditAstrologer(
+        session.astrologerId, 
+        req.user._id, 
+        session._id, 
+        'chat', 
+        totalAmount, 
+        `Chat Session Earning`, 
+        commissionRate, 
+        actualDuration
+      );
     }
   }
 

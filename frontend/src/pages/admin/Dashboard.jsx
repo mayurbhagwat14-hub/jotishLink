@@ -62,17 +62,17 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
         {/* Revenue */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-orange-200 hover:shadow-sm transition-all">
+        <Link to="/admin/finance" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-orange-200 hover:shadow-sm transition-all block cursor-pointer">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total Revenue</p>
             <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FaRupeeSign size={14} /></div>
           </div>
           <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.totalRevenue || 0}</h3>
           <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +14.5% vs last month</span>
-        </div>
+        </Link>
 
         {/* Users */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-blue-200 hover:shadow-sm transition-all">
+        <Link to="/admin/users" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-blue-200 hover:shadow-sm transition-all block cursor-pointer">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Registered Users</p>
             <div className="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiUsers size={16} /></div>
@@ -80,12 +80,12 @@ const AdminDashboard = () => {
           <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.registeredUsers || '0'}</h3>
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +850 today</span>
-            <Link to="/admin/users" className="text-gray-300 hover:text-gray-500 transition-colors"><FiArrowRight size={14} /></Link>
+            <span className="text-gray-300 group-hover:text-blue-500 transition-colors"><FiArrowRight size={14} /></span>
           </div>
-        </div>
+        </Link>
 
         {/* Astrologers */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-green-200 hover:shadow-sm transition-all">
+        <Link to="/admin/astrologers" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-green-200 hover:shadow-sm transition-all block cursor-pointer">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Online Astrologers</p>
             <div className="w-9 h-9 bg-green-50 text-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiActivity size={16} /></div>
@@ -93,12 +93,12 @@ const AdminDashboard = () => {
           <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.onlineAstrologers || '0'}</h3>
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-gray-400">12 in active sessions</span>
-            <Link to="/admin/astrologers" className="text-gray-300 hover:text-gray-500 transition-colors"><FiArrowRight size={14} /></Link>
+            <span className="text-gray-300 group-hover:text-green-500 transition-colors"><FiArrowRight size={14} /></span>
           </div>
-        </div>
+        </Link>
 
         {/* Pending Orders */}
-        <div className="bg-white rounded-2xl p-5 border border-orange-100 group hover:border-orange-200 hover:shadow-sm transition-all">
+        <Link to="/admin/orders" className="bg-white rounded-2xl p-5 border border-orange-100 group hover:border-orange-200 hover:shadow-sm transition-all block cursor-pointer">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Pending Orders</p>
             <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center relative group-hover:scale-110 transition-transform">
@@ -109,21 +109,21 @@ const AdminDashboard = () => {
             </div>
           </div>
           <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.pendingOrders || 0}</h3>
-          <Link to="/admin/orders" className="text-[11px] font-bold text-orange-500 flex items-center gap-0.5">Review now <FiArrowRight size={10} /></Link>
-        </div>
+          <span className="text-[11px] font-bold text-orange-500 flex items-center gap-0.5">Review now <FiArrowRight size={10} /></span>
+        </Link>
 
         {/* Store Revenue */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-purple-200 hover:shadow-sm transition-all">
+        <Link to="/admin/orders" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-purple-200 hover:shadow-sm transition-all block cursor-pointer">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Store Revenue</p>
             <div className="w-9 h-9 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiPackage size={16} /></div>
           </div>
           <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.storeRevenue || 0}</h3>
           <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +18% vs last month</span>
-        </div>
+        </Link>
 
         {/* Store Profit */}
-        <div className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-teal-200 hover:shadow-sm transition-all">
+        <Link to="/admin/orders" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-teal-200 hover:shadow-sm transition-all block cursor-pointer">
           <div className="flex justify-between items-start mb-3">
             <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Store Profit</p>
             <div className="w-9 h-9 bg-teal-50 text-teal-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiActivity size={16} /></div>
@@ -132,7 +132,7 @@ const AdminDashboard = () => {
             ₹{dbData.metrics?.storeProfit || 0}
           </h3>
           <span className="text-[11px] font-bold text-gray-400 flex items-center gap-0.5">Net Profit Margin</span>
-        </div>
+        </Link>
       </div>
 
       {/* ═══ LIVE SESSIONS + RECENT ORDERS ═══ */}

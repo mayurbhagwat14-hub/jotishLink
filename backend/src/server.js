@@ -570,7 +570,7 @@ io.on('connection', (socket) => {
     }, 1000);
 
     let sysComm = await SystemSettings.findOne();
-    let commissionRate = sysComm?.commissionRates?.chat || 20;
+    let commissionRate = sysComm?.commissionRates?.chat || 30;
     activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, lastDeducted: 0, sessionType: 'chat', commissionRate });
     console.log(`[Socket.IO] Timer started for room ${roomId}`);
   });
@@ -675,7 +675,7 @@ io.on('connection', (socket) => {
 
           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${sessionTypeLabel} with ${astroName} (${duration}s)` });
 
-          const comm = timerData?.commissionRate || 20;
+          const comm = timerData?.commissionRate || 30;
 
           const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm, duration);
           if (creditRes && creditRes.netAmount) {
@@ -746,7 +746,7 @@ io.on('connection', (socket) => {
     }, 1000);
 
     let sysComm = await SystemSettings.findOne();
-    let commissionRate = type === 'video' ? (sysComm?.commissionRates?.videoCall || 25) : (sysComm?.commissionRates?.audioCall || 15);
+    let commissionRate = type === 'video' ? (sysComm?.commissionRates?.videoCall || 30) : (sysComm?.commissionRates?.audioCall || 30);
     activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type, lastDeducted: 0, commissionRate });
     console.log(`[Socket.IO] ${type} Call Timer started for room ${roomId}`);
   });
@@ -843,7 +843,7 @@ io.on('connection', (socket) => {
           const typeLabel = type === 'video' ? 'Video Call' : 'Audio Call';
           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${typeLabel} with ${astroName} (${duration}s)` });
 
-          const comm = timerData?.commissionRate || (type === 'video' ? 25 : 15);
+          const comm = timerData?.commissionRate || 30;
           const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm, duration);
           if (creditRes && creditRes.netAmount) {
             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
