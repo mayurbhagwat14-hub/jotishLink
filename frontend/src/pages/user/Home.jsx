@@ -201,7 +201,7 @@ const Home = () => {
           className="w-full bg-white rounded-full py-2.5 px-4 flex items-center justify-between cursor-pointer shadow-sm"
           onClick={() => navigate('/user/search')}
         >
-          <span className="text-gray-400 text-[13px] font-medium">Searchhhh astrologers, products...</span>
+          <span className="text-gray-400 text-[13px] font-medium">Searchhhhh astrologers, products...</span>
           <Search size={18} className="text-[#fa6830]" />
         </div>
       </div>
