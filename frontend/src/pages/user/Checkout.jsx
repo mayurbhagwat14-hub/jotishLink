@@ -59,17 +59,18 @@ const Checkout = () => {
             addr.city_district
           ].filter(Boolean);
           
-          // Ensure we don't repeat the city name in the detailed address
+          // Filter out exact matches of the city name to avoid repetition
           const cityName = (addr.city || addr.town || addr.village || addr.county || '').toLowerCase();
           
-          let detailedAddress = areaParts.filter(part => part && !part.toLowerCase().includes(cityName)).join(', ');
+          let detailedAddress = [...new Set(areaParts)]
+            .filter(part => part && part.toLowerCase() !== cityName)
+            .join(', ');
           
           if (!detailedAddress) {
-            // Fallback: Use display_name but manually remove city and redundant items
+            // Fallback: Use the first two most specific parts from display_name
             const parts = (data.display_name || '').split(',').map(s => s.trim());
-            detailedAddress = parts.filter(p => !p.toLowerCase().includes(cityName)).slice(0, 2).join(', ');
+            detailedAddress = parts.slice(0, 2).join(', ');
           }
-
           setFormData(prev => ({
             ...prev,
             addressLine: detailedAddress,
