@@ -102,13 +102,15 @@ const Checkout = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const isFormValid = 
-    formData.fullName && 
-    formData.phone && 
-    formData.addressLine && 
-    formData.city && 
-    formData.state && 
-    formData.pincode;
+  const validateForm = () => {
+    if (!formData.fullName.trim()) return 'Full name is required';
+    if (!/^\d{10}$/.test(formData.phone)) return 'Please enter a valid 10-digit phone number';
+    if (!formData.addressLine || formData.addressLine.trim().length < 10) return 'Please enter a complete address (min 10 characters)';
+    if (!formData.city.trim()) return 'City is required';
+    if (!formData.state.trim()) return 'State is required';
+    if (!/^\d{6}$/.test(formData.pincode)) return 'Please enter a valid 6-digit pincode';
+    return null; // null means no errors
+  };
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -122,7 +124,11 @@ const Checkout = () => {
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    if (!isFormValid) return;
+    const errorMsg = validateForm();
+    if (errorMsg) {
+      toast.error(errorMsg);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -370,12 +376,12 @@ const Checkout = () => {
         </div>
         <button
           onClick={handlePlaceOrder}
-          disabled={!isFormValid || loading}
           className={`w-full py-4 rounded-xl font-black tracking-wide text-[15px] transition-all duration-300 shadow-sm ${
-            isFormValid && !loading
+            !loading
               ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
+          disabled={loading}
         >
           {loading ? 'PROCESSING...' : 'PLACE ORDER'}
         </button>

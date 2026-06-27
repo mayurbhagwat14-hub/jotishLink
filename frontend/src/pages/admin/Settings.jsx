@@ -22,6 +22,7 @@ const AdminSettings = () => {
   const [lowStockAlert, setLowStockAlert] = useState(true);
   const [celebrities, setCelebrities] = useState([]);
   const [newCeleb, setNewCeleb] = useState({ name: '', role: '', img: '', quote: '', isActive: true });
+  const [isAddingCeleb, setIsAddingCeleb] = useState(false);
   
   const [generalSettings, setGeneralSettings] = useState({
     appName: 'JyotishLink',
@@ -122,6 +123,7 @@ const AdminSettings = () => {
   const handleAddCeleb = async () => {
     if (!newCeleb.name || !newCeleb.role || !newCeleb.img) return toast.error("Fill all fields");
     try {
+      setIsAddingCeleb(true);
       await adminApis.createAdminCelebrity(newCeleb);
       setNewCeleb({ name: '', role: '', img: '', quote: '', isActive: true });
       fetchCelebrities();
@@ -129,6 +131,8 @@ const AdminSettings = () => {
     } catch (err) {
       console.error(err);
       toast.error("Failed to add celebrity");
+    } finally {
+      setIsAddingCeleb(false);
     }
   };
 
@@ -343,8 +347,9 @@ const AdminSettings = () => {
               </div>
             </div>
             
-            <button onClick={handleAddCeleb} className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all">
-              <FiPlus size={14} /> Add Celebrity
+            <button onClick={handleAddCeleb} disabled={isAddingCeleb} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isAddingCeleb ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {isAddingCeleb ? <FiLoader size={14} className="animate-spin" /> : <FiPlus size={14} />} 
+              {isAddingCeleb ? 'Adding...' : 'Add Celebrity'}
             </button>
           </div>
 

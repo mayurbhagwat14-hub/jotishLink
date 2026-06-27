@@ -49,6 +49,10 @@ const Login = () => {
 
   const requestOtp = async (e) => {
     if (e) e.preventDefault();
+    if (!/^[6-9]\d{9}$/.test(phoneNumber)) {
+      setError('Please enter a valid 10-digit mobile number starting with 6-9.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {

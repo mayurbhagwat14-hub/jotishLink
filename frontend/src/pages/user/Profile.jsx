@@ -99,6 +99,9 @@ const Profile = () => {
     if (!formData.name?.trim()) {
       return toast.error("Name cannot be empty");
     }
+    if (formData.name?.trim().length > 50) {
+      return toast.error("Name cannot exceed 50 characters.");
+    }
     if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
       return toast.error("Pincode must be exactly 6 digits.");
     }

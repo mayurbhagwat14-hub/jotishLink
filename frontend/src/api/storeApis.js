@@ -10,3 +10,6 @@ export const createRazorpayOrder = (amount) => axios.post('/store/razorpay-order
 export const requestCancelOrder = (orderId, reason) => axios.post(`/store/orders/${orderId}/cancel`, { reason });
 export const trackOrder = (orderId) => axios.get(`/store/orders/${orderId}/track`);
 export const getUserShiprocketOrderDetails = (orderId) => axios.get(`/store/orders/${orderId}/shiprocket/details`);
+
+export const getWishlist = () => axios.get('/store/wishlist');
+export const toggleWishlist = (productId) => axios.post('/store/wishlist/toggle', { productId });

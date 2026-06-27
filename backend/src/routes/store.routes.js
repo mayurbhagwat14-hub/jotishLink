@@ -9,7 +9,9 @@ import {
   createRazorpayOrder,
   requestCancelOrder,
   trackOrder,
-  getUserShiprocketOrderDetails
+  getUserShiprocketOrderDetails,
+  getWishlist,
+  toggleWishlist
 } from '../controllers/store.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 
@@ -25,5 +27,9 @@ router.get('/store/orders/:id', verifyJWT, getOrderById);
 router.post('/store/orders/:id/cancel', verifyJWT, requestCancelOrder);
 router.get('/store/orders/:id/track', verifyJWT, trackOrder);
 router.get('/store/orders/:id/shiprocket/details', verifyJWT, getUserShiprocketOrderDetails);
+
+// Wishlist
+router.get('/store/wishlist', verifyJWT, getWishlist);
+router.post('/store/wishlist/toggle', verifyJWT, toggleWishlist);
 
 export default router;

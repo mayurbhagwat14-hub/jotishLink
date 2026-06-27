@@ -40,12 +40,21 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user) throw new ApiError(404, 'User not found');
 
-  if (name !== undefined) user.name = name;
-  if (email !== undefined) user.email = email;
+  if (name !== undefined) {
+    if (typeof name !== 'string' || name.length > 50) throw new ApiError(400, 'Invalid name length');
+    user.name = name;
+  }
+  if (email !== undefined) {
+    if (typeof email !== 'string' || email.length > 100) throw new ApiError(400, 'Invalid email length');
+    user.email = email;
+  }
   if (gender !== undefined) user.gender = gender;
   if (dob !== undefined) user.dob = dob;
   if (timeOfBirth !== undefined) user.timeOfBirth = timeOfBirth;
-  if (placeOfBirth !== undefined) user.placeOfBirth = placeOfBirth;
+  if (placeOfBirth !== undefined) {
+    if (typeof placeOfBirth !== 'string' || placeOfBirth.length > 100) throw new ApiError(400, 'Invalid placeOfBirth length');
+    user.placeOfBirth = placeOfBirth;
+  }
   
   if (avatar !== undefined) {
     if (avatar.startsWith('data:image')) {
@@ -60,9 +69,18 @@ export const updateUserProfile = asyncHandler(async (req, res) => {
     }
   }
   
-  if (address !== undefined) user.address = address;
-  if (city !== undefined) user.city = city;
-  if (pincode !== undefined) user.pincode = pincode;
+  if (address !== undefined) {
+    if (typeof address !== 'string' || address.length > 300) throw new ApiError(400, 'Invalid address length');
+    user.address = address;
+  }
+  if (city !== undefined) {
+    if (typeof city !== 'string' || city.length > 100) throw new ApiError(400, 'Invalid city length');
+    user.city = city;
+  }
+  if (pincode !== undefined) {
+    if (typeof pincode !== 'string' || !/^\d{6}$/.test(pincode)) throw new ApiError(400, 'Invalid pincode format');
+    user.pincode = pincode;
+  }
   user.isNewUser = false;
 
   await user.save();
@@ -309,7 +327,18 @@ export const getStorePandits = asyncHandler(async (req, res) => {
 // POST /api/pooja/book
 export const bookPooja = asyncHandler(async (req, res) => {
   const { poojaName, astrologerId, date, time, address, mode, notes, price } = req.body;
-  if (!poojaName || !astrologerId) throw new ApiError(400, 'poojaName and astrologerId required');
+  
+  if (!poojaName || typeof poojaName !== 'string' || !astrologerId) {
+    throw new ApiError(400, 'Valid poojaName and astrologerId required');
+  }
+  
+  if (poojaName.length > 100) {
+    throw new ApiError(400, 'poojaName cannot exceed 100 characters');
+  }
+
+  if (notes && (typeof notes !== 'string' || notes.length > 1000)) {
+    throw new ApiError(400, 'notes cannot exceed 1000 characters');
+  }
 
   const poojaPrice = price || 500;
 

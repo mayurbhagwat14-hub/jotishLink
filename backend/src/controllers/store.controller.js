@@ -6,6 +6,7 @@ import Order from '../models/order.model.js';
 import Product from '../models/product.model.js';
 import User from '../models/user.model.js';
 import Transaction from '../models/transaction.model.js';
+import Wishlist from '../models/wishlist.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -30,6 +31,10 @@ export const getCart = asyncHandler(async (req, res) => {
 // POST /api/store/cart
 export const updateCart = asyncHandler(async (req, res) => {
   const { productId, quantity } = req.body; // quantity can be absolute value or delta
+  
+  if (typeof quantity !== 'number' || !Number.isInteger(quantity) || isNaN(quantity)) {
+    throw new ApiError(400, 'Quantity must be a valid integer');
+  }
 
   let cart = await Cart.findOne({ userId: req.user._id });
   if (!cart) {
@@ -363,4 +368,42 @@ export const getUserShiprocketOrderDetails = asyncHandler(async (req, res) => {
 
   const details = await ShiprocketService.getOrderDetails(order.shiprocketOrderId);
   return res.status(200).json(new ApiResponse(200, { shiprocketDetails: details }, 'Shiprocket order details fetched successfully'));
+});
+
+// GET /api/store/wishlist
+export const getWishlist = asyncHandler(async (req, res) => {
+  let wishlist = await Wishlist.findOne({ userId: req.user._id }).populate('products');
+  if (!wishlist) {
+    wishlist = await Wishlist.create({ userId: req.user._id, products: [] });
+  }
+  return res.status(200).json(new ApiResponse(200, { wishlist }, 'Wishlist fetched successfully'));
+});
+
+// POST /api/store/wishlist/toggle
+export const toggleWishlist = asyncHandler(async (req, res) => {
+  const { productId } = req.body;
+  if (!productId) throw new ApiError(400, 'Product ID is required');
+
+  const product = await Product.findById(productId);
+  if (!product) throw new ApiError(404, 'Product not found');
+
+  let wishlist = await Wishlist.findOne({ userId: req.user._id });
+  if (!wishlist) {
+    wishlist = new Wishlist({ userId: req.user._id, products: [] });
+  }
+
+  const index = wishlist.products.findIndex(id => id.toString() === productId);
+  let isAdded = false;
+
+  if (index > -1) {
+    wishlist.products.splice(index, 1);
+  } else {
+    wishlist.products.push(productId);
+    isAdded = true;
+  }
+
+  await wishlist.save();
+  await wishlist.populate('products');
+
+  return res.status(200).json(new ApiResponse(200, { wishlist, isAdded }, `Product ${isAdded ? 'added to' : 'removed from'} wishlist`));
 });
