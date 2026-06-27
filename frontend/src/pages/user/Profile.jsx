@@ -132,7 +132,7 @@ const Profile = () => {
           {user?.avatar ? (
             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-orange-500 font-bold text-xs">{(user?.name || 'G')[0]}</span>
+            <span className="text-[#fa6830] font-bold text-xs">{(user?.name || 'G')[0]}</span>
           )}
         </div>
       </div>
@@ -152,7 +152,7 @@ const Profile = () => {
                 </div>
               )}
             </div>
-            <label className="absolute bottom-1 right-1 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-orange-600 transition-colors">
+            <label className="absolute bottom-1 right-1 w-8 h-8 bg-[#fa6830] rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-[#e55923] transition-colors">
               <FiUploadCloud size={16} className="text-white" />
               <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
             </label>
@@ -170,7 +170,7 @@ const Profile = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-orange-500 transition-colors"
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors"
               placeholder="Enter Name"
             />
           </div>
@@ -181,11 +181,11 @@ const Profile = () => {
             <div className="flex items-center gap-6">
               {['Male', 'Female'].map((g) => (
                 <label key={g} className="flex items-center gap-2 cursor-pointer">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${formData.gender === g ? 'border-orange-500' : 'border-gray-300'}`}>
-                    {formData.gender === g && <div className="w-2.5 h-2.5 bg-orange-500 rounded-full" />}
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${formData.gender === g ? 'border-[#fa6830]' : 'border-gray-300'}`}>
+                    {formData.gender === g && <div className="w-2.5 h-2.5 bg-[#fa6830] rounded-full" />}
                   </div>
                   <input type="radio" name="gender" value={g} checked={formData.gender === g} onChange={handleChange} className="hidden" />
-                  <span className={`text-[15px] ${formData.gender === g ? 'text-orange-600 font-semibold' : 'text-gray-600'}`}>{g}</span>
+                  <span className={`text-[15px] ${formData.gender === g ? 'text-[#e55923] font-semibold' : 'text-gray-600'}`}>{g}</span>
                 </label>
               ))}
             </div>
@@ -195,21 +195,21 @@ const Profile = () => {
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Date of Birth</label>
             <input type="text" name="dob" value={formData.dob} onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-orange-500 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
           </div>
 
           {/* Time of Birth */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Time of Birth</label>
             <input type="text" name="timeOfBirth" value={formData.timeOfBirth} onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-orange-500 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
           </div>
 
           {/* Place of Birth */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Place of Birth</label>
             <input type="text" name="placeOfBirth" value={formData.placeOfBirth} onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-orange-500 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
           </div>
 
           {/* Current Address */}
@@ -217,7 +217,7 @@ const Profile = () => {
             <label className="text-gray-500 text-[13px] font-semibold">Current Address</label>
             <input type="text" name="address" value={formData.address} onChange={handleChange}
               placeholder="Enter Flat, House no, Building, Apartment"
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-400 font-medium text-[15px] outline-none focus:border-orange-500 focus:text-gray-800 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-400 font-medium text-[15px] outline-none focus:border-[#fa6830] focus:text-gray-800 transition-colors" />
           </div>
 
           {/* City */}
@@ -225,21 +225,21 @@ const Profile = () => {
             <label className="text-gray-500 text-[13px] font-semibold">City, State, Country</label>
             <input type="text" name="city" value={formData.city} onChange={handleChange}
               placeholder="Enter Town/City, State, Country"
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-400 font-medium text-[15px] outline-none focus:border-orange-500 focus:text-gray-800 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-400 font-medium text-[15px] outline-none focus:border-[#fa6830] focus:text-gray-800 transition-colors" />
           </div>
 
           {/* Pincode */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Pincode</label>
             <input type="text" name="pincode" value={formData.pincode} onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-orange-500 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
           </div>
         </div>
       </div>
 
       {/* Submit Button & Delete Account */}
       <div className="p-4 bg-white mt-auto border-t border-gray-50 space-y-3">
-        <button onClick={handleSubmit} className="w-full py-4 flex items-center justify-center gap-2 bg-orange-500 text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98] transition-all">
+        <button onClick={handleSubmit} className="w-full py-4 flex items-center justify-center gap-2 bg-[#fa6830] text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98] transition-all">
           <FiSave /> Save Changes
         </button>
         <button 

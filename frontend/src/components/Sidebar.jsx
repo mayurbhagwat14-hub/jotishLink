@@ -21,7 +21,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-start justify-between p-4 border-b border-gray-100">
           <div className="flex gap-3 items-center">
-            <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center shadow-sm">
+            <div className="w-12 h-12 bg-[#fa6830] rounded-full flex items-center justify-center shadow-sm">
                <div className="w-8 h-8 rounded-full border border-black/80 flex items-center justify-center relative">
                   <div className="w-5 h-5 rounded-full border border-black/80 flex items-center justify-center relative">
                      <div className="w-2 h-2 bg-black rounded-full" style={{ clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'}}></div>
@@ -88,9 +88,9 @@ const MenuLink = ({ icon, text, to, onClick, tag }) => (
   <Link 
     to={to} 
     onClick={onClick}
-    className="flex items-center gap-4 px-6 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition group"
+    className="flex items-center gap-4 px-6 py-3.5 text-gray-700 hover:bg-orange-50 hover:text-[#e55923] transition group"
   >
-    <div className="text-gray-500 group-hover:text-orange-500">
+    <div className="text-gray-500 group-hover:text-[#fa6830]">
       {icon}
     </div>
     <span className="text-[15px] font-medium">{text}</span>

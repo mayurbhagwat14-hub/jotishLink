@@ -183,7 +183,7 @@ const AstrologerLayout = () => {
         <div className="flex items-center gap-0 sm:gap-1 overflow-hidden">
           <button 
             onClick={() => setIsDrawerOpen(true)}
-            className="p-1.5 sm:p-2 text-gray-500 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors flex-shrink-0"
+            className="p-1.5 sm:p-2 text-gray-500 hover:text-[#fa6830] hover:bg-orange-50 rounded-lg transition-colors flex-shrink-0"
           >
             <FiMenu size={20} />
           </button>
@@ -215,7 +215,7 @@ const AstrologerLayout = () => {
           </div>
           
           <div className="relative flex-shrink-0">
-            <NotificationDropdown iconClassName="text-gray-400 hover:text-orange-500" iconSize={20} />
+            <NotificationDropdown iconClassName="text-gray-400 hover:text-[#fa6830]" iconSize={20} />
           </div>
         </div>
       </header>
@@ -245,7 +245,7 @@ const AstrologerLayout = () => {
                  </div>
                  <div>
                    <h3 className="font-bold text-gray-900 leading-tight">{user?.name === 'Temp Astrologer' ? 'Astrologer' : (user?.name || 'Astrologer')}</h3>
-                   <p className="text-xs font-bold text-orange-500">Astrologer Panel</p>
+                   <p className="text-xs font-bold text-[#fa6830]">Astrologer Panel</p>
                  </div>
               </div>
               <button 
@@ -260,16 +260,16 @@ const AstrologerLayout = () => {
               <div className="px-4 space-y-1">
                 <p className="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Manage Profile</p>
                 
-                <Link to="/astrologer/profile" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
+                <Link to="/astrologer/profile" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
                   <FiSettings size={18} /> Profile Settings
                 </Link>
-                <Link to="/astrologer/earnings" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
+                <Link to="/astrologer/earnings" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
                   <FiCreditCard size={18} /> Earnings & Wallet
                 </Link>
-                <Link to="/astrologer/session-earnings" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
+                <Link to="/astrologer/session-earnings" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
                   <FiClock size={18} /> Session Earnings
                 </Link>
-                <Link to="/astrologer/analytics" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-bold transition-colors">
+                <Link to="/astrologer/analytics" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
                   <FiActivity size={18} /> Analytics
                 </Link>
               </div>
@@ -317,7 +317,7 @@ const AstrologerLayout = () => {
                 <div className={`relative transition-all duration-300 ${isActive ? 'text-orange-400' : 'text-gray-500 group-hover:text-gray-300'}`}>
                   {link.icon}
                   {link.badge && (
-                    <span className={`absolute -top-1 -right-2 w-4 h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white ${isActive ? 'bg-orange-500 text-white' : 'bg-red-500 text-white animate-pulse-slow'}`}>
+                    <span className={`absolute -top-1 -right-2 w-4 h-4 text-[9px] font-black flex items-center justify-center rounded-full border-2 border-white ${isActive ? 'bg-[#fa6830] text-white' : 'bg-red-500 text-white animate-pulse-slow'}`}>
                       {link.badge}
                     </span>
                   )}

@@ -15,7 +15,7 @@ const SessionEarnings = () => {
     <div className="p-4 md:p-8 space-y-6 animate-fade-in max-w-4xl mx-auto">
       <div className="flex flex-col gap-1 mb-8">
         <h1 className="text-3xl font-black text-gray-800 flex items-center gap-3">
-          <div className="w-12 h-12 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center">
+          <div className="w-12 h-12 bg-orange-100 text-[#fa6830] rounded-full flex items-center justify-center">
             <FiActivity size={24} />
           </div>
           Session Earnings
@@ -26,7 +26,7 @@ const SessionEarnings = () => {
       <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-800">Recent Sessions</h2>
-          <span className="text-sm font-bold text-orange-500 bg-orange-50 px-3 py-1 rounded-lg">
+          <span className="text-sm font-bold text-[#fa6830] bg-orange-50 px-3 py-1 rounded-lg">
             {earnings.length} Sessions
           </span>
         </div>
@@ -40,7 +40,7 @@ const SessionEarnings = () => {
         <div className="space-y-4">
           {loading ? (
             <div className="py-10 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500 mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#fa6830] mx-auto"></div>
             </div>
           ) : earnings.length > 0 ? (
             earnings.map((earn, idx) => (
@@ -50,7 +50,7 @@ const SessionEarnings = () => {
                     earn.type === 'video_call' ? 'bg-purple-100 text-purple-600' :
                     earn.type === 'audio_call' ? 'bg-blue-100 text-blue-600' :
                     earn.type === 'chat' ? 'bg-green-100 text-green-600' :
-                    'bg-orange-100 text-orange-600'
+                    'bg-orange-100 text-[#e55923]'
                   }`}>
                     {/* Just using basic icons or text for simplicity, matching the style */}
                     <span className="text-xl font-bold uppercase">{earn.type?.charAt(0) || 'S'}</span>

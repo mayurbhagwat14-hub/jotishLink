@@ -59,7 +59,7 @@ const Muhurat = () => {
           {user?.avatar ? (
             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+            <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
           )}
         </div>
       </div>

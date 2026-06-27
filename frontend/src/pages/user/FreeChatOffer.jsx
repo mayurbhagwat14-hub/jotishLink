@@ -30,7 +30,7 @@ const FreeChatOffer = () => {
       <div className="absolute bottom-[20%] right-[20%] w-4 h-4 bg-orange-200 rounded-full animate-float opacity-50" style={{ animationDelay: '0.5s' }} />
 
       {/* Graphic */}
-      <div className="w-[120px] h-[120px] bg-orange-500 rounded-full flex items-center justify-center mb-8 shadow-lg shadow-orange-200 relative z-10 animate-bounce-slow">
+      <div className="w-[120px] h-[120px] bg-[#fa6830] rounded-full flex items-center justify-center mb-8 shadow-lg shadow-orange-200 relative z-10 animate-bounce-slow">
         <FiMessageCircle size={50} className="text-white" />
         <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full animate-pulse">
           FREE
@@ -47,7 +47,7 @@ const FreeChatOffer = () => {
 
       <button
         onClick={handleStart}
-        className="w-full max-w-xs py-4 rounded-xl font-bold text-[15px] tracking-wide transition-all duration-300 bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]"
+        className="w-full max-w-xs py-4 rounded-xl font-bold text-[15px] tracking-wide transition-all duration-300 bg-[#fa6830] text-white shadow-lg shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]"
       >
         START FREE CHAT
       </button>

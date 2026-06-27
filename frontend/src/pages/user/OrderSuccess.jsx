@@ -95,7 +95,7 @@ const OrderSuccess = () => {
             <div>
               <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Payment</p>
               <p className="text-sm font-bold text-gray-800 capitalize flex items-center gap-1">
-                <FiCreditCard size={12} className="text-orange-500" />
+                <FiCreditCard size={12} className="text-[#fa6830]" />
                 {order?.paymentMethod}
               </p>
             </div>
@@ -112,7 +112,7 @@ const OrderSuccess = () => {
                 const Icon = step.icon;
                 return (
                   <div key={idx} className="relative flex items-start gap-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 relative z-10 ${step.active ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'bg-gray-100 text-gray-400'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 relative z-10 ${step.active ? 'bg-[#fa6830] text-white shadow-md shadow-orange-500/20' : 'bg-gray-100 text-gray-400'}`}>
                       <Icon size={14} />
                     </div>
                     <div className="pt-1 flex-1">
@@ -132,7 +132,7 @@ const OrderSuccess = () => {
         <div className="space-y-3">
           <button 
             onClick={() => navigate('/user/history?tab=Orders')} 
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl text-[14px] shadow-sm transition-colors"
+            className="w-full bg-[#fa6830] hover:bg-[#e55923] text-white font-bold py-4 rounded-xl text-[14px] shadow-sm transition-colors"
           >
             Track in Order History
           </button>

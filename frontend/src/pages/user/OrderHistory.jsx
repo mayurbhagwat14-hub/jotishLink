@@ -240,7 +240,7 @@ const OrderHistory = () => {
                 setIsSelectionMode(!isSelectionMode);
                 setSelectedIds([]);
               }} 
-              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${isSelectionMode ? 'bg-gray-200 text-gray-700' : 'bg-orange-50 text-orange-600 border border-orange-200'}`}
+              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${isSelectionMode ? 'bg-gray-200 text-gray-700' : 'bg-orange-50 text-[#e55923] border border-orange-200'}`}
             >
               {isSelectionMode ? 'Cancel' : 'Select'}
             </button>
@@ -252,7 +252,7 @@ const OrderHistory = () => {
             {user?.avatar ? (
               <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-orange-500 font-bold text-xs">{(user?.name || 'G')[0]}</span>
+              <span className="text-[#fa6830] font-bold text-xs">{(user?.name || 'G')[0]}</span>
             )}
           </div>
         </div>
@@ -268,11 +268,11 @@ const OrderHistory = () => {
               setSearchParams({ tab });
             }}
             className={`flex-1 min-w-[70px] py-3 text-[12px] font-bold transition-all relative whitespace-nowrap px-2 ${
-              activeTab === tab ? 'text-orange-500' : 'text-gray-400'
+              activeTab === tab ? 'text-[#fa6830]' : 'text-gray-400'
             }`}
           >
             {tab}
-            {activeTab === tab && <div className="absolute bottom-0 left-2 right-2 h-[3px] bg-orange-500 rounded-full" />}
+            {activeTab === tab && <div className="absolute bottom-0 left-2 right-2 h-[3px] bg-[#fa6830] rounded-full" />}
           </button>
         ))}
       </div>
@@ -294,7 +294,7 @@ const OrderHistory = () => {
               <p className="text-gray-400 text-[14px] text-center">Start chatting with an astrologer to see your history here.</p>
               <button 
                 onClick={() => navigate('/user/astrologers')}
-                className="mt-6 bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 transition-colors"
+                className="mt-6 bg-[#fa6830] text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-[#e55923] transition-colors"
               >
                 Find Astrologer
               </button>
@@ -311,7 +311,7 @@ const OrderHistory = () => {
                   {isSelectionMode && (
                     <div 
                       onClick={() => handleSelect(item._id)}
-                      className={`mt-2 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(item._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                      className={`mt-2 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(item._id) ? 'bg-[#fa6830] border-[#fa6830] text-white' : 'border-gray-300'}`}
                     >
                       {selectedIds.includes(item._id) && <FiCheckSquare size={14} />}
                     </div>
@@ -364,7 +364,7 @@ const OrderHistory = () => {
                     </button>
                     <button 
                       onClick={() => navigate('/user/astrologers?type=chat', { state: { autoConnectAstro: item.astrologerId } })}
-                      className="flex-1 py-2 bg-orange-500 text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-orange-600 transition-colors"
+                      className="flex-1 py-2 bg-[#fa6830] text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-[#e55923] transition-colors"
                     >
                       Chat Again
                     </button>
@@ -400,7 +400,7 @@ const OrderHistory = () => {
               <p className="text-gray-400 text-[14px] text-center">Start a call with an astrologer to see your history here.</p>
               <button 
                 onClick={() => navigate('/user/astrologers')}
-                className="mt-6 bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 transition-colors"
+                className="mt-6 bg-[#fa6830] text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-[#e55923] transition-colors"
               >
                 Find Astrologer
               </button>
@@ -418,7 +418,7 @@ const OrderHistory = () => {
                   {isSelectionMode && (
                     <div 
                       onClick={() => handleSelect(item._id)}
-                      className={`mt-2 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(item._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                      className={`mt-2 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(item._id) ? 'bg-[#fa6830] border-[#fa6830] text-white' : 'border-gray-300'}`}
                     >
                       {selectedIds.includes(item._id) && <FiCheckSquare size={14} />}
                     </div>
@@ -464,7 +464,7 @@ const OrderHistory = () => {
                   <div className="flex gap-2 pl-[60px]">
                     <button 
                       onClick={() => navigate('/user/astrologers?type=call', { state: { autoConnectAstro: item.astrologerId } })}
-                      className="flex-1 py-2 bg-orange-500 text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-orange-600 transition-colors"
+                      className="flex-1 py-2 bg-[#fa6830] text-white font-bold rounded-xl text-[12px] shadow-sm shadow-orange-200 hover:bg-[#e55923] transition-colors"
                     >
                       Call Again
                     </button>
@@ -485,7 +485,7 @@ const OrderHistory = () => {
           <div className="px-4 pt-4 pb-2">
             <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-3xl p-6 text-white shadow-xl overflow-hidden border border-gray-700">
               {/* Decorative elements */}
-              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-orange-500/20 blur-2xl"></div>
+              <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-[#fa6830]/20 blur-2xl"></div>
               <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-blue-500/20 blur-xl"></div>
               
               <div className="relative z-10 flex justify-between items-start">
@@ -510,7 +510,7 @@ const OrderHistory = () => {
                 </div>
                 <button 
                   onClick={() => navigate('/user/wallet')} 
-                  className="bg-orange-500 hover:bg-orange-400 text-white text-[12px] font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95"
+                  className="bg-[#fa6830] hover:bg-orange-400 text-white text-[12px] font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95"
                 >
                   Recharge
                 </button>
@@ -574,13 +574,13 @@ const OrderHistory = () => {
           ) : storeOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 px-8">
               <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-4">
-                <FiPackage size={40} className="text-orange-500" />
+                <FiPackage size={40} className="text-[#fa6830]" />
               </div>
               <h3 className="text-[18px] font-bold text-gray-800 mb-2">No Orders Yet</h3>
               <p className="text-gray-400 text-[14px] text-center">Start shopping from {appName} Services to see your orders here.</p>
               <button 
                 onClick={() => navigate('/user/store')}
-                className="mt-6 bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-orange-600 transition-colors"
+                className="mt-6 bg-[#fa6830] text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-[#e55923] transition-colors"
               >
                 Go to Store
               </button>
@@ -591,7 +591,7 @@ const OrderHistory = () => {
                 {isSelectionMode && (
                   <div 
                     onClick={() => handleSelect(order._id)}
-                    className={`mt-6 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(order._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                    className={`mt-6 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(order._id) ? 'bg-[#fa6830] border-[#fa6830] text-white' : 'border-gray-300'}`}
                   >
                     {selectedIds.includes(order._id) && <FiCheckSquare size={14} />}
                   </div>
@@ -602,11 +602,11 @@ const OrderHistory = () => {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex gap-2 items-center">
-                      <FiPackage className="text-orange-500" />
+                      <FiPackage className="text-[#fa6830]" />
                       <span className="text-[13px] font-bold text-gray-800">Order ID: {order._id.slice(-6).toUpperCase()}</span>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
-                      order.orderStatus === 'pending' ? 'bg-orange-50 text-orange-500' :
+                      order.orderStatus === 'pending' ? 'bg-orange-50 text-[#fa6830]' :
                       order.orderStatus === 'delivered' ? 'bg-green-50 text-green-600' :
                       order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
                     }`}>
@@ -644,7 +644,7 @@ const OrderHistory = () => {
                       <p className={`text-[12px] font-bold capitalize ${
                         (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-500' : 
                         (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 
-                        'text-orange-500'
+                        'text-[#fa6830]'
                       }`}>
                         {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? 'Success' : 
                          (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? 'Cancelled' : 
@@ -659,7 +659,7 @@ const OrderHistory = () => {
                         href={`https://shiprocket.co/tracking/${order.awbCode}`} 
                         target="_blank" 
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[12px] font-bold text-orange-500 bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#fa6830] bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <FiTruck size={14} /> Track Order
@@ -698,12 +698,12 @@ const OrderHistory = () => {
                 {isSelectionMode && (
                   <div 
                     onClick={() => handleSelect(pooja._id)}
-                    className={`mt-6 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(pooja._id) ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'}`}
+                    className={`mt-6 w-5 h-5 rounded flex items-center justify-center cursor-pointer shrink-0 border transition-colors ${selectedIds.includes(pooja._id) ? 'bg-[#fa6830] border-[#fa6830] text-white' : 'border-gray-300'}`}
                   >
                     {selectedIds.includes(pooja._id) && <FiCheckSquare size={14} />}
                   </div>
                 )}
-                <div className={`flex-1 min-w-0 bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow ${isSelectionMode && selectedIds.includes(pooja._id) ? 'border-orange-500 bg-orange-50/10' : ''}`} onClick={() => isSelectionMode ? handleSelect(pooja._id) : navigate(`/user/pooja/${pooja._id}`)}>
+                <div className={`flex-1 min-w-0 bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex flex-col gap-3 cursor-pointer hover:shadow-md transition-shadow ${isSelectionMode && selectedIds.includes(pooja._id) ? 'border-[#fa6830] bg-orange-50/10' : ''}`} onClick={() => isSelectionMode ? handleSelect(pooja._id) : navigate(`/user/pooja/${pooja._id}`)}>
                   <div className="flex justify-between items-start">
                     <div 
                       className="flex gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -723,7 +723,7 @@ const OrderHistory = () => {
                       </div>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
-                      pooja.status === 'Pending' ? 'bg-orange-50 text-orange-500' :
+                      pooja.status === 'Pending' ? 'bg-orange-50 text-[#fa6830]' :
                       pooja.status === 'Accepted' || pooja.status === 'In Progress' ? 'bg-blue-50 text-blue-600' :
                       pooja.status === 'Completed' ? 'bg-green-50 text-green-600' :
                       pooja.status === 'Rejected' || pooja.status === 'Expired' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500'

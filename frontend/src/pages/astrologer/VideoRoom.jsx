@@ -267,7 +267,7 @@ const AstrologerVideoRoom = () => {
     return (
       <div className="h-[100dvh] flex items-center justify-center bg-gray-900 text-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+          <div className="w-12 h-12 rounded-full border-4 border-[#fa6830] border-t-transparent animate-spin"></div>
           <p>Connecting...</p>
         </div>
       </div>

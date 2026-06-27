@@ -72,7 +72,7 @@ const Horoscope = () => {
           {user?.avatar ? (
             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+            <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
           )}
         </div>
       </div>
@@ -90,7 +90,7 @@ const Horoscope = () => {
                 {sign.icon}
               </div>
             </div>
-            <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${selectedSign === sign.name ? 'text-orange-600 scale-105' : 'text-gray-500'}`}>
+            <span className={`text-[11px] font-bold tracking-tight transition-colors duration-300 ${selectedSign === sign.name ? 'text-[#e55923] scale-105' : 'text-gray-500'}`}>
               {sign.name}
             </span>
           </div>
@@ -104,7 +104,7 @@ const Horoscope = () => {
             <button 
               key={day}
               onClick={() => setSelectedDay(day)}
-              className={`flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all duration-300 ${selectedDay === day ? 'bg-white shadow-md text-orange-600 scale-[1.02]' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all duration-300 ${selectedDay === day ? 'bg-white shadow-md text-[#e55923] scale-[1.02]' : 'text-gray-500 hover:text-gray-800'}`}
             >
               {day}
             </button>
@@ -118,7 +118,7 @@ const Horoscope = () => {
             <p className="text-gray-400 font-bold text-xs tracking-wider uppercase">Aligning constellations...</p>
           </div>
         ) : !horoscopeData ? (
-          <div className="bg-orange-50 text-orange-600 text-center py-10 rounded-3xl font-bold border border-orange-100 mb-8 shadow-sm">
+          <div className="bg-orange-50 text-[#e55923] text-center py-10 rounded-3xl font-bold border border-orange-100 mb-8 shadow-sm">
             Horoscope data is currently unavailable. Please try again later.
           </div>
         ) : (
@@ -160,7 +160,7 @@ const Horoscope = () => {
 
               <div className="absolute right-[-24px] top-1/2 -translate-y-1/2 w-44 h-44 pointer-events-none">
                 <div className="absolute inset-0 rounded-full border-2 border-white/10 border-t-white/40 transform rotate-45" />
-                <div className="w-32 h-32 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/95 rounded-full shadow-xl border-4 border-orange-200/50 flex items-center justify-center text-7xl text-orange-500 font-bold z-10">
+                <div className="w-32 h-32 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/95 rounded-full shadow-xl border-4 border-orange-200/50 flex items-center justify-center text-7xl text-[#fa6830] font-bold z-10">
                   {signs.find(s => s.name === selectedSign)?.icon || '♈'}
                 </div>
               </div>
@@ -168,7 +168,7 @@ const Horoscope = () => {
 
             {/* ═══ CATEGORIES ═══ */}
             <h2 className="text-[17px] font-extrabold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
-              <span className="w-2.5 h-4.5 bg-orange-500 rounded-sm inline-block" /> Daily Prediction Insights
+              <span className="w-2.5 h-4.5 bg-[#fa6830] rounded-sm inline-block" /> Daily Prediction Insights
             </h2>
 
             <div className="space-y-4 mb-8">
@@ -187,7 +187,7 @@ const Horoscope = () => {
                       </div>
                       <span className="text-[14px] font-extrabold text-gray-800">{cat.label}</span>
                     </div>
-                    <span className="text-orange-500 font-extrabold text-[12px] bg-orange-50 px-3 py-1 rounded-full border border-orange-100/50 shadow-sm">
+                    <span className="text-[#fa6830] font-extrabold text-[12px] bg-orange-50 px-3 py-1 rounded-full border border-orange-100/50 shadow-sm">
                       {horoscopeData?.[cat.id]?.score || '100%'}
                     </span>
                   </div>
@@ -220,14 +220,14 @@ const Horoscope = () => {
 
         {/* ═══ WEEKLY/MONTHLY/YEARLY TABS ═══ */}
         <h2 className="text-[17px] font-extrabold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
-          <span className="w-2.5 h-4.5 bg-orange-500 rounded-sm inline-block" /> Explore Other Timeframes
+          <span className="w-2.5 h-4.5 bg-[#fa6830] rounded-sm inline-block" /> Explore Other Timeframes
         </h2>
         <div className="flex rounded-2xl bg-orange-50/50 p-1.5 border border-orange-100/50 mb-6 shadow-inner">
           {['Weekly', 'Monthly', 'Yearly'].map((p) => (
             <button 
               key={p}
               onClick={() => setSelectedPeriod(`${p} Horoscope`)}
-              className={`flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all duration-300 ${selectedPeriod === `${p} Horoscope` ? 'bg-white shadow-md text-orange-600 scale-[1.02]' : 'text-gray-500 hover:text-gray-800'}`}
+              className={`flex-1 py-2.5 text-[13px] font-bold rounded-xl transition-all duration-300 ${selectedPeriod === `${p} Horoscope` ? 'bg-white shadow-md text-[#e55923] scale-[1.02]' : 'text-gray-500 hover:text-gray-800'}`}
             >
               {p}
             </button>
@@ -238,7 +238,7 @@ const Horoscope = () => {
           <h3 className="text-center text-[17px] font-extrabold text-gray-900 mb-2 tracking-tight">{selectedSign} {selectedPeriod}</h3>
           <div className="flex items-center justify-center gap-3 mb-6">
             <div className="h-[1.5px] w-6 bg-orange-200" />
-            <span className="text-[11px] font-extrabold text-orange-500 uppercase tracking-widest">
+            <span className="text-[11px] font-extrabold text-[#fa6830] uppercase tracking-widest">
               {selectedPeriod.includes('Weekly') ? horoscopeData?.alsoCheck?.weekly?.date : selectedPeriod.includes('Monthly') ? horoscopeData?.alsoCheck?.monthly?.date : horoscopeData?.alsoCheck?.yearly?.date}
             </span>
             <div className="h-[1.5px] w-6 bg-orange-200" />

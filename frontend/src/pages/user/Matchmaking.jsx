@@ -68,7 +68,7 @@ const Matchmaking = () => {
           {user?.avatar ? (
             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+            <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
           )}
         </div>
       </div>
@@ -184,7 +184,7 @@ const Matchmaking = () => {
               <div className="mt-4">
                 <button 
                   type="submit" disabled={loading}
-                  className={`w-full py-4 rounded-2xl font-extrabold text-[15px] tracking-wide transition-all shadow-lg ${loading ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'}`}
+                  className={`w-full py-4 rounded-2xl font-extrabold text-[15px] tracking-wide transition-all shadow-lg ${loading ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-[#fa6830] text-white shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'}`}
                 >
                   {loading ? 'COMPUTING GUNA MILAN...' : 'COMPARE COMPATIBILITY'}
                 </button>

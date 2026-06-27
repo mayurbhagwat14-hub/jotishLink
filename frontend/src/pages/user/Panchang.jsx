@@ -61,7 +61,7 @@ const Panchang = () => {
           {user?.avatar ? (
             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+            <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
           )}
         </div>
       </div>
@@ -108,7 +108,7 @@ const Panchang = () => {
               </div>
 
               <div className="flex flex-col items-center px-2">
-                <span className="text-[12px] font-extrabold text-orange-500 bg-orange-50 px-3 py-1 rounded-full border border-orange-100/50 shadow-sm">
+                <span className="text-[12px] font-extrabold text-[#fa6830] bg-orange-50 px-3 py-1 rounded-full border border-orange-100/50 shadow-sm">
                   {getFormattedDate()}
                 </span>
               </div>

@@ -354,7 +354,7 @@ Please analyze my chart based on this information.`;
       {/* Messages */}
       <main className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50/80">
         <div className="text-center my-4">
-          <span className="bg-orange-100/80 text-orange-600 text-[11px] font-bold px-3 py-1 rounded-full">
+          <span className="bg-orange-100/80 text-[#e55923] text-[11px] font-bold px-3 py-1 rounded-full">
             {isBotActive ? 'Free Chat Started' : 'Chat Started'}
           </span>
         </div>
@@ -377,7 +377,7 @@ Please analyze my chart based on this information.`;
                 </div>
               )}
               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
-                <div className={`${isMe ? 'bg-orange-500 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit`}>
+                <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit`}>
                   {msg.text && msg.text.startsWith('data:image/') ? (
                     <img src={msg.text} alt="attachment" className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" onClick={() => window.open(msg.text)} />
                   ) : (
@@ -431,7 +431,7 @@ Please analyze my chart based on this information.`;
           <button
             onClick={handleSend}
             disabled={!inputText.trim() || showLowBalance || sessionEnded || viewOnly}
-            className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 disabled:bg-gray-300 disabled:shadow-none transition-colors shadow-md shadow-orange-500/30 shrink-0"
+            className="w-11 h-11 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] disabled:bg-gray-300 disabled:shadow-none transition-colors shadow-md shadow-orange-500/30 shrink-0"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
           </button>
@@ -454,7 +454,7 @@ Please analyze my chart based on this information.`;
           <div className="bg-white rounded-3xl p-8 flex flex-col items-center max-w-sm w-full text-center shadow-2xl">
             <div className="relative w-20 h-20 mb-4">
               <div className="absolute inset-0 rounded-full border-4 border-orange-100"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-[#fa6830] border-t-transparent animate-spin"></div>
               <div className="absolute inset-0 flex items-center justify-center text-2xl">⏳</div>
             </div>
             <h3 className="font-bold text-gray-900 text-lg mb-2">Request Sent!</h3>
@@ -491,7 +491,7 @@ Please analyze my chart based on this information.`;
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 font-medium">Amount Deducted</span>
-                <span className="font-bold text-orange-500">
+                <span className="font-bold text-[#fa6830]">
                   {isBotSession ? '₹0 (Free)' : `₹${finalAmount > 0 ? finalAmount.toFixed(2) : (((finalDuration || timer) / 60) * (astrologer.pricing?.chat || astrologer.rate || 5)).toFixed(2)}`}
                 </span>
               </div>
@@ -505,7 +505,7 @@ Please analyze my chart based on this information.`;
                   navigate('/user/home', { replace: true });
                 }
               }}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/20"
+              className="w-full py-3 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/20"
             >
               Rate your experience
             </button>

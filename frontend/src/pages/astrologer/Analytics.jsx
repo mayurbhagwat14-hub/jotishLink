@@ -26,9 +26,9 @@ const Analytics = () => {
         <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-gray-500 font-medium mb-1">Average Rating</p>
-            <h2 className="text-3xl font-black text-gray-800">{(data.averageRating || 5.0).toFixed(1)}<span className="text-lg text-orange-500 ml-1">★</span></h2>
+            <h2 className="text-3xl font-black text-gray-800">{(data.averageRating || 5.0).toFixed(1)}<span className="text-lg text-[#fa6830] ml-1">★</span></h2>
           </div>
-          <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center">
+          <div className="w-16 h-16 bg-orange-50 text-[#fa6830] rounded-full flex items-center justify-center">
             <FiStar size={28} />
           </div>
         </div>
@@ -61,7 +61,7 @@ const Analytics = () => {
             {trends.map((h, i) => (
               <div key={i} className="w-full bg-orange-100 rounded-t-lg relative group h-full flex items-end">
                 <div 
-                  className="w-full bg-orange-500 rounded-t-lg transition-all duration-500 group-hover:bg-orange-600" 
+                  className="w-full bg-[#fa6830] rounded-t-lg transition-all duration-500 group-hover:bg-[#e55923]" 
                   style={{ height: `${h}%` }}
                 ></div>
               </div>

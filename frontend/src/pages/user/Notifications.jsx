@@ -118,7 +118,7 @@ const Notifications = () => {
                 <Trash2 size={18} />
               </button>
             ) : notifications.some(n => !n.isRead) && (
-              <button onClick={markAllAsRead} className="text-[12px] font-bold text-orange-500 bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors">
+              <button onClick={markAllAsRead} className="text-[12px] font-bold text-[#fa6830] bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors">
                 Mark all read
               </button>
             )}
@@ -149,7 +149,7 @@ const Notifications = () => {
                 onClick={() => handleNotificationClick(notification)}
                 className={`group relative bg-white rounded-2xl p-4 transition-all duration-300 cursor-pointer overflow-hidden ${
                   isSelected 
-                    ? 'border-2 border-orange-500 bg-orange-50/30 shadow-md ring-4 ring-orange-50' 
+                    ? 'border-2 border-[#fa6830] bg-orange-50/30 shadow-md ring-4 ring-orange-50' 
                     : !notification.isRead 
                       ? 'border border-orange-100 shadow-[0_4px_16px_rgba(255,106,26,0.06)] hover:shadow-md hover:-translate-y-0.5' 
                       : 'border border-gray-100 shadow-sm opacity-90 hover:opacity-100 hover:shadow-md'
@@ -160,7 +160,7 @@ const Notifications = () => {
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 ${isSelected ? 'scale-95' : 'group-hover:scale-105'} ${
                     notification.type === 'offer' ? 'bg-green-50 text-green-500' :
                     notification.type === 'warning' ? 'bg-red-50 text-red-500' :
-                    'bg-orange-50 text-orange-500'
+                    'bg-orange-50 text-[#fa6830]'
                   }`}>
                     <Bell size={20} fill={!notification.isRead ? "currentColor" : "none"} />
                   </div>
@@ -183,13 +183,13 @@ const Notifications = () => {
 
                 {/* Unread Dot (Only when not selected) */}
                 {!notification.isRead && !isSelected && (
-                  <div className="absolute top-5 right-4 w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-sm" />
+                  <div className="absolute top-5 right-4 w-2 h-2 bg-[#fa6830] rounded-full animate-pulse shadow-sm" />
                 )}
 
                 {/* Professional Circular Checkbox */}
                 <div className={`absolute top-1/2 -translate-y-1/2 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
                   isSelected 
-                    ? 'border-orange-500 bg-orange-500 scale-100 opacity-100' 
+                    ? 'border-[#fa6830] bg-[#fa6830] scale-100 opacity-100' 
                     : 'border-gray-200 bg-white scale-90 opacity-0 group-hover:opacity-50'
                 }`}>
                   <Check size={14} className={`text-white transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0'}`} strokeWidth={3} />

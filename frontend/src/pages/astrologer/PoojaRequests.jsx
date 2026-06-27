@@ -44,7 +44,7 @@ const PoojaRequests = () => {
       
       {pendingRequests.map(req => (
         <div key={req._id} className="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-orange-100 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full blur-xl"></div>
+           <div className="absolute top-0 right-0 w-24 h-24 bg-[#fa6830]/10 rounded-full blur-xl"></div>
            
            <div className="flex items-start gap-4 mb-4 relative z-10">
              <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center shrink-0">
@@ -79,7 +79,7 @@ const PoojaRequests = () => {
              </button>
              <button 
                onClick={() => handleStatusChange(req._id, 'Accepted')}
-               className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-md shadow-orange-500/30 flex items-center justify-center gap-2 transition-colors text-sm"
+               className="flex-1 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold py-3 rounded-xl shadow-md shadow-orange-500/30 flex items-center justify-center gap-2 transition-colors text-sm"
              >
                <FiCheck /> Accept Booking
              </button>
@@ -144,7 +144,7 @@ const PoojaRequests = () => {
                       </button>
                     </div>
                   ))}
-                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-orange-50 hover:text-orange-500 text-gray-400 transition-all bg-gray-50">
+                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
                     <span className="text-2xl font-light mb-1">+</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider">Add</span>
                     <input 
@@ -180,7 +180,7 @@ const PoojaRequests = () => {
                     </button>
                   </div>
                 ) : (
-                  <label className="w-full h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-orange-500 hover:bg-orange-50 hover:text-orange-500 text-gray-400 transition-all bg-gray-50">
+                  <label className="w-full h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
                     <FiVideo size={24} className="mb-2" />
                     <span className="text-[11px] font-bold uppercase tracking-wider">Click to upload video</span>
                     <input 
@@ -207,7 +207,7 @@ const PoojaRequests = () => {
                   value={proofData.notes}
                   onChange={e => setProofData({...proofData, notes: e.target.value})}
                   placeholder="Any final words or blessings..."
-                  className="w-full text-sm border-2 border-gray-100 rounded-lg p-2 outline-none focus:border-orange-500"
+                  className="w-full text-sm border-2 border-gray-100 rounded-lg p-2 outline-none focus:border-[#fa6830]"
                 ></textarea>
               </div>
 
@@ -230,7 +230,7 @@ const PoojaRequests = () => {
                   }
                 }}
                 className={`w-full py-3 rounded-xl font-bold text-white transition-colors ${
-                  proofData.photos.length >= 2 && proofData.video && !uploading ? 'bg-orange-500 hover:bg-orange-600' : 'bg-gray-300 cursor-not-allowed'
+                  proofData.photos.length >= 2 && proofData.video && !uploading ? 'bg-[#fa6830] hover:bg-[#e55923]' : 'bg-gray-300 cursor-not-allowed'
                 }`}
               >
                 {uploading ? 'Uploading...' : 'Submit Proof & Complete'}

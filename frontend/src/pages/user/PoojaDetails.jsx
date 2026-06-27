@@ -5,7 +5,7 @@ import { getUserPoojaById } from '../../api/userApis';
 import { toast } from 'react-hot-toast';
 import { useGlobalSocket } from '../../hooks/useGlobalSocket';
 import { formatTime12Hour } from '../../utils/formatTime';
-
+import SplashScreen from '../../components/SplashScreen';
 const PoojaDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ const PoojaDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <p className="text-gray-500 mb-4">Pooja not found</p>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-orange-500 text-white rounded-lg">Go Back</button>
+        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-[#fa6830] text-white rounded-lg">Go Back</button>
       </div>
     );
   }
@@ -83,7 +83,7 @@ const PoojaDetails = () => {
               </div>
             </div>
             <span className={`text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide ${
-              pooja.status === 'Pending' ? 'bg-orange-50 text-orange-600' :
+              pooja.status === 'Pending' ? 'bg-orange-50 text-[#e55923]' :
               pooja.status === 'Accepted' || pooja.status === 'In Progress' ? 'bg-blue-50 text-blue-600' :
               pooja.status === 'Completed' ? 'bg-green-50 text-green-600' :
               pooja.status === 'Rejected' || pooja.status === 'Expired' ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-500'

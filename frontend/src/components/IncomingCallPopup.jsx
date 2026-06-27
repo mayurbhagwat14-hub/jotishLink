@@ -67,8 +67,8 @@ const IncomingCallPopup = ({ request, token }) => {
         
         {/* Ringing Animation Background */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-40 h-40 bg-orange-500/20 rounded-full animate-ping"></div>
-          <div className="absolute w-56 h-56 bg-orange-500/10 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-40 h-40 bg-[#fa6830]/20 rounded-full animate-ping"></div>
+          <div className="absolute w-56 h-56 bg-[#fa6830]/10 rounded-full animate-ping" style={{ animationDelay: '0.2s' }}></div>
         </div>
 
         <div className="relative z-10 flex flex-col items-center">
@@ -77,7 +77,7 @@ const IncomingCallPopup = ({ request, token }) => {
           </div>
 
           <h2 className="text-2xl font-black text-gray-800 mb-1">{request.userName}</h2>
-          <p className="text-orange-500 font-bold mb-8 uppercase tracking-widest text-sm flex items-center gap-2">
+          <p className="text-[#fa6830] font-bold mb-8 uppercase tracking-widest text-sm flex items-center gap-2">
             {request.type === 'video' ? <><FiVideo /> Video Call</> : request.type === 'chat' ? <><FiMessageSquare /> Chat Request</> : <><FiPhone /> Audio Call</>}
           </p>
 

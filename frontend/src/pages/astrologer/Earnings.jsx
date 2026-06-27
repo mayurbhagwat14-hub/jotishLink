@@ -172,7 +172,7 @@ const Earnings = () => {
             <button 
               onClick={handleWithdraw}
               disabled={isWithdrawing}
-              className="bg-white text-orange-600 px-5 py-2.5 rounded-lg font-black text-sm hover:bg-orange-50 transition-colors shrink-0 shadow-md disabled:opacity-50"
+              className="bg-white text-[#e55923] px-5 py-2.5 rounded-lg font-black text-sm hover:bg-orange-50 transition-colors shrink-0 shadow-md disabled:opacity-50"
             >
               {isWithdrawing ? 'Processing...' : 'Withdraw'}
             </button>
@@ -191,7 +191,7 @@ const Earnings = () => {
             </div>
             <button 
               onClick={() => navigate('/astrologer/session-earnings')}
-              className="text-orange-500 text-sm font-bold hover:underline flex items-center gap-1"
+              className="text-[#fa6830] text-sm font-bold hover:underline flex items-center gap-1"
             >
               Details <FiArrowRight size={14} />
             </button>
@@ -217,7 +217,7 @@ const Earnings = () => {
             <h2 className="text-xl font-black text-gray-800">
               {profile?.astrologer?.bankDetails?.accountNumber ? `**** **** **** ${profile.astrologer.bankDetails.accountNumber.slice(-4)}` : '**** **** **** ****'}
             </h2>
-            <button onClick={() => navigate('/astrologer/bank-details')} className="text-orange-500 text-sm font-bold mt-3 hover:underline cursor-pointer">Manage Accounts</button>
+            <button onClick={() => navigate('/astrologer/bank-details')} className="text-[#fa6830] text-sm font-bold mt-3 hover:underline cursor-pointer">Manage Accounts</button>
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@ const Earnings = () => {
                 </div>
                 
                 <p className="text-sm text-gray-600 mb-5 flex items-center gap-2">
-                  <FiClock className={withdrawal.status === 'completed' ? 'text-green-500' : 'text-orange-500'} /> 
+                  <FiClock className={withdrawal.status === 'completed' ? 'text-green-500' : 'text-[#fa6830]'} /> 
                   Requested: {new Date(withdrawal.createdAt).toLocaleDateString()}
                 </p>
 
@@ -281,8 +281,8 @@ const Earnings = () => {
                   </div>
                 ) : withdrawal.status === 'pending' ? (
                   <div className="mt-auto border-t border-orange-100/50 pt-4">
-                    <div className="flex items-center gap-2 text-orange-600 bg-orange-100/50 p-3 rounded-xl">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-ping"></div>
+                    <div className="flex items-center gap-2 text-[#e55923] bg-orange-100/50 p-3 rounded-xl">
+                      <div className="w-2 h-2 bg-[#fa6830] rounded-full animate-ping"></div>
                       <p className="text-sm font-medium">Waiting for admin approval</p>
                     </div>
                   </div>

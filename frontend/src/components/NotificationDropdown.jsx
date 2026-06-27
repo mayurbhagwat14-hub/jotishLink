@@ -5,7 +5,7 @@ import { getNotifications, markAllNotificationsAsRead, markNotificationAsRead } 
 import { useSelector } from 'react-redux';
 import getSocket from '../socket/socketManager';
 
-const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 hover:text-orange-500" }) => {
+const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 hover:text-[#fa6830]" }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -97,7 +97,7 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
   const getIcon = (type) => {
     switch(type) {
       case 'success': return <FiCheckCircle size={16} className="text-green-500" />;
-      case 'warning': return <FiAlertCircle size={16} className="text-orange-500" />;
+      case 'warning': return <FiAlertCircle size={16} className="text-[#fa6830]" />;
       case 'alert': return <FiAlertCircle size={16} className="text-red-500" />;
       default: return <FiInfo size={16} className="text-blue-500" />;
     }
@@ -150,14 +150,14 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
           <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
             <div>
               <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
-                <FiBell className="text-orange-500" /> Notifications
+                <FiBell className="text-[#fa6830]" /> Notifications
               </h3>
               <p className="text-[11px] text-gray-500 mt-0.5">{unreadCount} unread messages</p>
             </div>
             {unreadCount > 0 && (
               <button 
                 onClick={handleMarkAllRead}
-                className="text-[11px] font-bold text-orange-600 hover:bg-orange-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
+                className="text-[11px] font-bold text-[#e55923] hover:bg-orange-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1"
               >
                 <FiCheck size={12} /> Mark all read
               </button>
@@ -167,7 +167,7 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
               <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-orange-500"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#fa6830]"></div>
               </div>
             ) : allNotifications.length === 0 ? (
               <div className="p-8 text-center">
@@ -202,7 +202,7 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
                       </p>
                     </div>
                     {!notification.isRead && (
-                      <div className="w-2 h-2 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                      <div className="w-2 h-2 rounded-full bg-[#fa6830] mt-1.5 shrink-0" />
                     )}
                   </div>
                 ))}

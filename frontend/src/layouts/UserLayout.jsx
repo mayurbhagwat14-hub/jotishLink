@@ -104,7 +104,7 @@ const UserLayout = () => {
             {user?.avatar ? (
               <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-orange-50 text-orange-500 text-xl font-bold">
+              <div className="w-full h-full flex items-center justify-center bg-orange-50 text-[#fa6830] text-xl font-bold">
                 {(user?.name || 'G')[0]}
               </div>
             )}
@@ -131,7 +131,7 @@ const UserLayout = () => {
                     setIsSidebarOpen(false); navigate(item.path); 
                   }
                 }}
-                className="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 hover:bg-orange-50 hover:text-orange-600 rounded-lg transition-colors group"
+                className="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 hover:bg-orange-50 hover:text-[#e55923] rounded-lg transition-colors group"
               >
                 <div className="flex items-center gap-3 font-semibold text-[14px]">
                   <span className="text-lg">{item.emoji}</span> {item.label}
@@ -153,7 +153,7 @@ const UserLayout = () => {
                     setIsSidebarOpen(false);
                     navigate('/user/login');
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-orange-50 text-orange-600 font-bold py-2.5 rounded-lg hover:bg-orange-100 transition-colors text-[14px]"
+                  className="w-full flex items-center justify-center gap-2 bg-orange-50 text-[#e55923] font-bold py-2.5 rounded-lg hover:bg-orange-100 transition-colors text-[14px]"
                 >
                   Login / Sign Up
                 </button>
@@ -188,7 +188,7 @@ const UserLayout = () => {
             {appLogo ? (
               <img src={appLogo} alt={appName} className="w-10 h-10 object-contain mb-0.5" />
             ) : (
-              <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center mb-0.5 border border-orange-100 shadow-sm">
+              <div className="w-10 h-10 bg-[#fa6830] rounded-full flex items-center justify-center mb-0.5 border border-orange-100 shadow-sm">
                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" className="w-6 h-6">
                     <circle cx="12" cy="12" r="3"/>
                     <circle cx="12" cy="12" r="7" strokeDasharray="2 2"/>
@@ -196,16 +196,16 @@ const UserLayout = () => {
                  </svg>
               </div>
             )}
-            <span className="text-[9px] text-orange-500 font-bold leading-none">{appName}</span>
+            <span className="text-[9px] text-[#fa6830] font-bold leading-none">{appName}</span>
           </div>
 
           <div className="flex-1 pr-2">
             <p className="text-[12px] text-gray-800 font-medium leading-snug mb-1.5">
-              <span className="text-orange-600 font-bold">Congratulations!</span> Free chat with Astrologer
+              <span className="text-[#e55923] font-bold">Congratulations!</span> Free chat with Astrologer
             </p>
             <button 
               onClick={() => navigate('/user/astrologers')} 
-              className="w-full bg-orange-500 text-white font-bold py-2 rounded-md text-[11px] uppercase tracking-wide hover:bg-orange-600 transition-colors shadow-sm"
+              className="w-full bg-[#fa6830] text-white font-bold py-2 rounded-md text-[11px] uppercase tracking-wide hover:bg-[#e55923] transition-colors shadow-sm"
             >
               CHAT NOW
             </button>
@@ -231,7 +231,7 @@ const UserLayout = () => {
             
             <div className="p-6 space-y-4">
               <a href={`mailto:${settings?.supportEmail || 'support@jyotishlink.com'}`} className="flex items-center gap-4 bg-orange-50 p-4 rounded-xl hover:bg-orange-100 transition-colors group">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-orange-500 group-hover:scale-110 transition-transform">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-[#fa6830] group-hover:scale-110 transition-transform">
                   ✉️
                 </div>
                 <div>
@@ -241,7 +241,7 @@ const UserLayout = () => {
               </a>
               
               <a href={`tel:${settings?.supportPhone || '+91 9999999999'}`} className="flex items-center gap-4 bg-orange-50 p-4 rounded-xl hover:bg-orange-100 transition-colors group">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-orange-500 group-hover:scale-110 transition-transform">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-[#fa6830] group-hover:scale-110 transition-transform">
                   📞
                 </div>
                 <div>

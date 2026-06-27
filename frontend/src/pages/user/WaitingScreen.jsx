@@ -127,7 +127,7 @@ const WaitingScreen = () => {
             ? `${astrologer?.name} did not respond. Please try again.`
             : rejectReason}
         </p>
-        <button onClick={() => navigate(-1)} className="bg-orange-500 text-white font-bold px-10 py-3 rounded-2xl shadow-lg shadow-orange-200">
+        <button onClick={() => navigate(-1)} className="bg-[#fa6830] text-white font-bold px-10 py-3 rounded-2xl shadow-lg shadow-orange-200">
           Go Back
         </button>
       </div>
@@ -154,7 +154,7 @@ const WaitingScreen = () => {
       </div>
 
       <div className="bg-orange-50 border border-orange-100 px-4 py-1.5 rounded-full mb-4">
-        <span className="text-orange-600 font-bold text-sm">{typeEmoji} {typeLabel} Request Sent</span>
+        <span className="text-[#e55923] font-bold text-sm">{typeEmoji} {typeLabel} Request Sent</span>
       </div>
 
       <h2 className="text-gray-800 text-[20px] font-bold mb-2 text-center">

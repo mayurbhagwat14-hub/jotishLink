@@ -160,7 +160,7 @@ const Home = () => {
     <div className={`w-full min-h-screen font-sans pb-24 relative bg-white transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* ═══ ORANGE HEADER ═══ */}
-      <div className="bg-gradient-to-b from-[#ff8c00] to-[#ea580c] rounded-b-[24px] pt-3 pb-4 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="bg-gradient-to-b from-[#fa6830] to-[#fa6830] rounded-b-[24px] pt-3 pb-4 px-5 sticky top-0 z-50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         {/* Top Navbar */}
         <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-2.5">
@@ -168,7 +168,7 @@ const Home = () => {
               <div className="w-[40px] h-[40px] rounded-full flex items-center justify-center border-[1.5px] border-white text-white font-bold text-lg shadow-sm">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'N'}
               </div>
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#ea580c] rounded-full"></div>
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#fa6830] rounded-full"></div>
             </div>
             <div className="flex flex-col">
               <span className="text-white font-bold text-[16px] tracking-wide leading-tight drop-shadow-sm">Hi, {user?.name ? user.name.split(' ')[0] : 'User'}</span>
@@ -186,7 +186,7 @@ const Home = () => {
               </div>
               <span className="text-white text-[13px] font-bold">₹{Math.floor(user?.wallet || 0)}</span>
               <div className="w-5 h-5 rounded-full bg-[#fcd34d] flex items-center justify-center shadow-sm">
-                <Plus size={14} className="text-[#ea580c] font-bold" strokeWidth={3} />
+                <Plus size={14} className="text-[#fa6830] font-bold" strokeWidth={3} />
               </div>
             </button>
             
@@ -202,7 +202,7 @@ const Home = () => {
           onClick={() => navigate('/user/search')}
         >
           <span className="text-gray-400 text-[13px] font-medium">Search astrologers, products...</span>
-          <Search size={18} className="text-[#ea580c]" />
+          <Search size={18} className="text-[#fa6830]" />
         </div>
       </div>
 
@@ -216,7 +216,7 @@ const Home = () => {
           { name: 'Shubh\nMuhurat', icon: <Clock size={24} strokeWidth={2.5} className="text-white" />, path: '/user/muhurat' },
         ].map((service, idx) => (
           <div key={idx} onClick={() => service.path && navigate(service.path)} className="flex flex-col items-center text-center cursor-pointer gap-2 group w-[60px] sm:w-[68px] shrink-0">
-            <div className="w-[52px] h-[52px] sm:w-[62px] sm:h-[62px] bg-[#ff8c00] rounded-[18px] sm:rounded-[22px] flex items-center justify-center shadow-[0_8px_15px_rgba(255,140,0,0.3)] group-hover:scale-105 transition-transform active:scale-95 border border-orange-100/20">
+            <div className="w-[52px] h-[52px] sm:w-[62px] sm:h-[62px] bg-[#fa6830] rounded-[18px] sm:rounded-[22px] flex items-center justify-center shadow-[0_8px_15px_rgba(255,140,0,0.3)] group-hover:scale-105 transition-transform active:scale-95 border border-orange-100/20">
               {service.icon}
             </div>
             <span className="text-[10px] sm:text-[11px] text-gray-700 font-bold whitespace-pre-line leading-[1.2]">{service.name}</span>
@@ -294,7 +294,7 @@ const Home = () => {
                 </div>
                 <span 
                   onClick={() => navigate('/user/history')} 
-                  className="text-[13px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors"
+                  className="text-[13px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors"
                 >
                   View All
                 </span>
@@ -302,13 +302,13 @@ const Home = () => {
               <div className="flex items-center gap-3">
                 <button 
                   onClick={() => handleViewChat(userHome.activeSession)} 
-                  className="flex-1 py-2 rounded-full border border-[#ff8c00] text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors"
+                  className="flex-1 py-2 rounded-full border border-[#fa6830] text-[#fa6830] text-[13px] font-bold hover:bg-orange-50 transition-colors"
                 >
                   View Chat
                 </button>
                 <button 
                   onClick={() => handleChatAgain(userHome.activeSession)} 
-                  className="flex-1 py-2 rounded-full bg-[#ff8c00] text-white text-[13px] font-bold hover:bg-orange-600 transition-colors shadow-sm"
+                  className="flex-1 py-2 rounded-full bg-[#fa6830] text-white text-[13px] font-bold hover:bg-orange-600 transition-colors shadow-sm"
                 >
                   Chat Again
                 </button>
@@ -317,7 +317,7 @@ const Home = () => {
           ) : (
             <div className="bg-white rounded-[24px] p-5 shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-[52px] h-[52px] bg-[#ff8c00] rounded-full flex items-center justify-center relative shadow-md">
+                <div className="w-[52px] h-[52px] bg-[#fa6830] rounded-full flex items-center justify-center relative shadow-md">
                   <span className="text-2xl">🎁</span>
                   <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase scale-90 border border-white animate-pulse">
                     Free
@@ -325,7 +325,7 @@ const Home = () => {
                 </div>
                 <div className="text-left">
                   <h3 className="font-bold text-gray-900 text-[16px] flex items-center gap-1.5 leading-snug">
-                    First Chat FREE! <span className="text-[#ff8c00]">✨</span>
+                    First Chat FREE! <span className="text-[#fa6830]">✨</span>
                   </h3>
                   <p className="text-[12px] text-gray-500 font-medium mt-0.5">
                     Consult our top astrologers at zero cost.
@@ -334,7 +334,7 @@ const Home = () => {
               </div>
               <button
                 onClick={() => handleChatCallAction('/user/free-chat-offer')}
-                className="w-full sm:w-auto px-5 py-2.5 bg-[#ff8c00] hover:bg-orange-600 text-white font-bold rounded-full text-[13px] shadow-md transition-colors whitespace-nowrap"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#fa6830] hover:bg-orange-600 text-white font-bold rounded-full text-[13px] shadow-md transition-colors whitespace-nowrap"
               >
                 START FREE CHAT
               </button>
@@ -349,17 +349,17 @@ const Home = () => {
           <h2 className="text-[18px] font-bold text-gray-900">Our Services</h2>
           <span 
             onClick={() => navigate('/user/astrologers')}
-            className="text-[13px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors"
+            className="text-[13px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors"
           >
             View All
           </span>
         </div>
         <div className="grid grid-cols-4 gap-3">
           {[
-            { name: 'Chat', icon: <MessageCircle size={20} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/astrologers?type=chat', bg: 'bg-orange-50' },
+            { name: 'Chat', icon: <MessageCircle size={20} className="text-[#fa6830]" strokeWidth={2} />, path: '/user/astrologers?type=chat', bg: 'bg-orange-50' },
             { name: 'Call', icon: <Phone size={20} className="text-green-500" strokeWidth={2} />, path: '/user/astrologers?type=call', bg: 'bg-green-50' },
             { name: 'Video Call', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-500"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/video-call', bg: 'bg-purple-50' },
-            { name: 'Pooja', icon: <Star size={20} className="text-[#ff8c00]" strokeWidth={2} />, path: '/user/pooja', bg: 'bg-orange-50' },
+            { name: 'Pooja', icon: <Star size={20} className="text-[#fa6830]" strokeWidth={2} />, path: '/user/pooja', bg: 'bg-orange-50' },
             { name: 'Store', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-pink-500"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store', bg: 'bg-pink-50' },
             { name: 'Kundli', icon: <Grid size={20} className="text-blue-500" strokeWidth={2} />, path: '/user/kundli', bg: 'bg-blue-50' },
             { name: 'Reports', icon: <FileText size={20} className="text-teal-500" strokeWidth={2} />, path: '/user/history', bg: 'bg-teal-50' },
@@ -382,7 +382,7 @@ const Home = () => {
             <h2 className="text-[18px] font-bold text-gray-900">Top Astrologers</h2>
             <span 
               onClick={() => navigate('/user/astrologers')} 
-              className="text-[13px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors"
+              className="text-[13px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors"
             >
               View All
             </span>
@@ -424,7 +424,7 @@ const Home = () => {
                 </div>
                 
                 <div className="flex items-center justify-between mt-2 w-full pt-1">
-                  <span className="text-[#ff8c00] font-bold text-[14px]">₹{astro.rate || 5}/min</span>
+                  <span className="text-[#fa6830] font-bold text-[14px]">₹{astro.rate || 5}/min</span>
                   {isOffline ? (
                     <button disabled className="px-5 py-1.5 rounded-full bg-gray-100 text-gray-400 text-[12px] font-bold cursor-not-allowed">
                       Offline
@@ -436,7 +436,7 @@ const Home = () => {
                   ) : (
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleSessionRequest(astro, 'chat'); }}
-                      className="px-5 py-1.5 rounded-full border border-[#ff8c00] text-[#ff8c00] text-[13px] font-bold hover:bg-orange-50 transition-colors text-center"
+                      className="px-5 py-1.5 rounded-full border border-[#fa6830] text-[#fa6830] text-[13px] font-bold hover:bg-orange-50 transition-colors text-center"
                     >
                       Chat Now
                     </button>
@@ -456,7 +456,7 @@ const Home = () => {
           <h2 className="text-[18px] font-bold text-gray-900">{appName} Store</h2>
           <span
             onClick={() => navigate('/user/store')}
-            className="text-[13px] text-[#ff8c00] font-bold cursor-pointer flex items-center gap-1 hover:text-orange-600"
+            className="text-[13px] text-[#fa6830] font-bold cursor-pointer flex items-center gap-1 hover:text-orange-600"
           >
             Visit Store <span className="text-lg leading-none">&rarr;</span>
           </span>
@@ -487,7 +487,7 @@ const Home = () => {
       {/* ═══ UNLOCK COSMIC BANNER ═══ */}
       <div className="px-5 mb-3">
         <div 
-          className="rounded-[24px] p-6 relative overflow-hidden shadow-[0_8px_20px_rgba(255,140,0,0.2)] flex flex-col justify-center items-start bg-gradient-to-r from-[#ff8c00] to-[#f97316]"
+          className="rounded-[24px] p-6 relative overflow-hidden shadow-[0_8px_20px_rgba(255,140,0,0.2)] flex flex-col justify-center items-start bg-gradient-to-r from-[#fa6830] to-[#f97316]"
         >
           <div className="absolute right-0 top-0 w-32 h-32 bg-white/20 rounded-full blur-2xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
           
@@ -496,7 +496,7 @@ const Home = () => {
             <p className="text-orange-50 text-[13px] mb-5 font-medium">Chat with verified astrologers at ₹5/min</p>
             <button 
               onClick={() => handleChatCallAction('/user/astrologers')} 
-              className="bg-white text-[#ff8c00] font-bold text-[14px] px-6 py-2.5 rounded-full shadow-sm hover:shadow-md transition-shadow active:scale-95"
+              className="bg-white text-[#fa6830] font-bold text-[14px] px-6 py-2.5 rounded-full shadow-sm hover:shadow-md transition-shadow active:scale-95"
             >
               Chat Now
             </button>
@@ -508,9 +508,9 @@ const Home = () => {
       <div className="px-5 py-4 bg-orange-50/50 mb-6">
         <div className="flex justify-between items-start px-2">
           {[
-            { name: 'Private &\nConfidential', icon: <Lock size={18} className="text-[#ff8c00]" /> },
-            { name: 'Verified\nAstrologers', icon: <BadgeCheck size={18} className="text-[#ff8c00]" /> },
-            { name: 'Secure\nPayments', icon: <ShieldCheck size={18} className="text-[#ff8c00]" /> },
+            { name: 'Private &\nConfidential', icon: <Lock size={18} className="text-[#fa6830]" /> },
+            { name: 'Verified\nAstrologers', icon: <BadgeCheck size={18} className="text-[#fa6830]" /> },
+            { name: 'Secure\nPayments', icon: <ShieldCheck size={18} className="text-[#fa6830]" /> },
           ].map((item, idx) => (
             <div key={idx} className="flex flex-col items-center text-center gap-2 w-1/3">
               <div className="flex items-center justify-center">
@@ -527,7 +527,7 @@ const Home = () => {
         <div className="px-5 pt-3 pb-3 relative z-10 bg-white">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-[19px] font-bold text-gray-900">Live Astrologers</h2>
-            <span className="text-[14px] text-[#ff8c00] font-bold cursor-pointer hover:text-orange-600 transition-colors">View All</span>
+            <span className="text-[14px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors">View All</span>
           </div>
           <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
             {userHome.liveAstrologers.map((astro, i) => (
@@ -537,7 +537,7 @@ const Home = () => {
                 onClick={() => navigate(`/user/search?q=${encodeURIComponent(astro.name)}`)}
               >
                 <div className="relative">
-                  <div className="w-[72px] h-[72px] rounded-full p-[2px] border-2 border-[#ff8c00]">
+                  <div className="w-[72px] h-[72px] rounded-full p-[2px] border-2 border-[#fa6830]">
                     <img src={astro.img} alt={astro.name} className="w-full h-full rounded-full object-cover" />
                   </div>
                   <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />

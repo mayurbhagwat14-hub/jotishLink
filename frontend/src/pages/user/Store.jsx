@@ -243,7 +243,7 @@ const SectionHeader = ({ title, subtitle, onViewAll, icon }) => (
     {onViewAll && (
       <button
         onClick={onViewAll}
-        className="flex items-center gap-0.5 text-[11.5px] text-orange-500 font-bold hover:text-orange-600 transition-colors"
+        className="flex items-center gap-0.5 text-[11.5px] text-[#fa6830] font-bold hover:text-[#e55923] transition-colors"
       >
         View All
         <FiChevronRight size={14} strokeWidth={2.5} />
@@ -461,7 +461,7 @@ const Store = () => {
           >
             <FiShoppingBag size={17} className="text-store-text" />
             {cartItemCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white badge-bounce">
+              <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-[#fa6830] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white badge-bounce">
                 {cartItemCount > 9 ? '9+' : cartItemCount}
               </span>
             )}
@@ -480,7 +480,7 @@ const Store = () => {
             }`}
           >
             {tab}
-            {activeTab === tab && <div className="absolute bottom-0 left-4 right-4 h-[2.5px] bg-orange-500 rounded-full" />}
+            {activeTab === tab && <div className="absolute bottom-0 left-4 right-4 h-[2.5px] bg-[#fa6830] rounded-full" />}
           </button>
         ))}
       </div>
@@ -557,7 +557,7 @@ const Store = () => {
                   Results for "{searchQuery}"
                   <span className="text-store-muted font-medium text-[13px] ml-2">({filteredProducts.length})</span>
                 </h2>
-                <button onClick={() => setSearchQuery('')} className="text-[12px] text-orange-500 font-semibold">Clear</button>
+                <button onClick={() => setSearchQuery('')} className="text-[12px] text-[#fa6830] font-semibold">Clear</button>
               </div>
               {filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 store-stagger">
@@ -598,7 +598,7 @@ const Store = () => {
                       <div className="w-14 h-14 rounded-2xl overflow-hidden bg-white border-2 border-store-border shadow-store-sm group-hover:border-orange-300 group-hover:shadow-store transition-all group-active:scale-90">
                         <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
                       </div>
-                      <span className="text-[10px] text-store-subtitle font-semibold whitespace-nowrap max-w-[60px] truncate text-center group-hover:text-orange-500 transition-colors">{cat.name}</span>
+                      <span className="text-[10px] text-store-subtitle font-semibold whitespace-nowrap max-w-[60px] truncate text-center group-hover:text-[#fa6830] transition-colors">{cat.name}</span>
                     </div>
                   ))}
                 </div>
@@ -639,7 +639,7 @@ const Store = () => {
                       {banners.map((_, idx) => (
                         <div 
                           key={idx} 
-                          className={`h-[4px] rounded-full transition-all duration-300 ${currentBannerIndex === idx ? 'w-5 bg-orange-500' : 'w-1.5 bg-orange-500/25'}`}
+                          className={`h-[4px] rounded-full transition-all duration-300 ${currentBannerIndex === idx ? 'w-5 bg-[#fa6830]' : 'w-1.5 bg-[#fa6830]/25'}`}
                         />
                       ))}
                     </div>

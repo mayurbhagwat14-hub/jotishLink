@@ -397,11 +397,11 @@ const ApplyAstrologer = () => {
               {/* Profile Photo Upload */}
               <div className="flex flex-col items-center justify-center mb-4">
                 <label className="relative cursor-pointer group">
-                  <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden transition-all group-hover:border-orange-500">
+                  <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden transition-all group-hover:border-[#fa6830]">
                     {profilePic ? (
                       <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <FiCamera size={28} className="text-gray-400 group-hover:text-orange-500 transition-colors" />
+                      <FiCamera size={28} className="text-gray-400 group-hover:text-[#fa6830] transition-colors" />
                     )}
                   </div>
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -424,14 +424,14 @@ const ApplyAstrologer = () => {
                     value={formData.fullName}
                     onChange={handleChange}
                     placeholder="Enter your full name" 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
 
                 {/* Mobile Number */}
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Mobile Number <span className="text-red-500">*</span></label>
-                  <div className="flex rounded-xl bg-gray-50 border border-gray-200 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-500 transition-all overflow-hidden">
+                  <div className="flex rounded-xl bg-gray-50 border border-gray-200 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-[#fa6830] transition-all overflow-hidden">
                     <span className="px-4 py-3 border-r border-gray-200 font-bold text-sm bg-gray-100 text-gray-500">+91</span>
                     <input 
                       type="tel" 
@@ -458,7 +458,7 @@ const ApplyAstrologer = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="name@example.com" 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
 
@@ -472,7 +472,7 @@ const ApplyAstrologer = () => {
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Create a password" 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
 
@@ -485,7 +485,7 @@ const ApplyAstrologer = () => {
                     required
                     value={formData.dob}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
 
@@ -497,7 +497,7 @@ const ApplyAstrologer = () => {
                     required
                     value={formData.gender}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   >
                     <option value="" disabled>Select Gender</option>
                     <option value="Male">Male</option>
@@ -510,20 +510,20 @@ const ApplyAstrologer = () => {
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Address <span className="text-red-500">*</span></label>
-                    <input type="text" name="address" required value={formData.address} onChange={handleChange} placeholder="Street Address" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800" />
+                    <input type="text" name="address" required value={formData.address} onChange={handleChange} placeholder="Street Address" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
                   </div>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">City <span className="text-red-500">*</span></label>
-                      <input type="text" name="city" required value={formData.city} onChange={handleChange} placeholder="City" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800" />
+                      <input type="text" name="city" required value={formData.city} onChange={handleChange} placeholder="City" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">State <span className="text-red-500">*</span></label>
-                      <input type="text" name="state" required value={formData.state} onChange={handleChange} placeholder="State" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800" />
+                      <input type="text" name="state" required value={formData.state} onChange={handleChange} placeholder="State" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pincode <span className="text-red-500">*</span></label>
-                      <input type="text" name="pincode" required value={formData.pincode} onChange={handleChange} placeholder="ZIP" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800" />
+                      <input type="text" name="pincode" required value={formData.pincode} onChange={handleChange} placeholder="ZIP" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
                     </div>
                   </div>
                 </div>
@@ -587,7 +587,7 @@ const ApplyAstrologer = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-bold text-orange-800 text-sm mb-1">Are you a Pandit?</h3>
-                      <p className="text-xs text-orange-600">Do you perform poojas for users?</p>
+                      <p className="text-xs text-[#e55923]">Do you perform poojas for users?</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input 
@@ -596,7 +596,7 @@ const ApplyAstrologer = () => {
                         checked={formData.isPandit}
                         onChange={(e) => setFormData({...formData, isPandit: e.target.checked})}
                       />
-                      <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                      <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#fa6830]"></div>
                     </label>
                   </div>
                   
@@ -611,7 +611,7 @@ const ApplyAstrologer = () => {
                             <div 
                               key={pooja} 
                               className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer bg-white ${
-                                isSelected ? 'border-orange-500' : 'border-gray-100 hover:border-orange-200'
+                                isSelected ? 'border-[#fa6830]' : 'border-gray-100 hover:border-orange-200'
                               }`}
                               onClick={(e) => {
                                 if(e.target.tagName !== 'INPUT') togglePooja(pooja);
@@ -619,7 +619,7 @@ const ApplyAstrologer = () => {
                             >
                               <div className="flex items-center gap-2">
                                 <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 ${
-                                  isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'
+                                  isSelected ? 'bg-[#fa6830] border-[#fa6830] text-white' : 'border-gray-300'
                                 }`}>
                                   {isSelected && <FiCheckCircle size={12} />}
                                 </div>
@@ -634,7 +634,7 @@ const ApplyAstrologer = () => {
                                     min="0"
                                     value={selectedPooja.price}
                                     onChange={(e) => updatePoojaPrice(pooja, e.target.value)}
-                                    className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-orange-500"
+                                    className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-[#fa6830]"
                                   />
                                 </div>
                               )}
@@ -657,7 +657,7 @@ const ApplyAstrologer = () => {
                     value={formData.experience}
                     onChange={handleChange}
                     placeholder="e.g. 5" 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
 
@@ -735,7 +735,7 @@ const ApplyAstrologer = () => {
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Tell us about your background, expertise, and how you help people..." 
-                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium text-gray-800 resize-none"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800 resize-none"
                 ></textarea>
               </div>
 
@@ -762,7 +762,7 @@ const ApplyAstrologer = () => {
                         <div className="text-green-500 flex flex-col items-center justify-center h-24">
                           <FiCheckCircle size={24} className="mx-auto mb-2" />
                           <p className="text-xs font-bold truncate px-2">{doc.label} Uploaded</p>
-                          <span className="text-[10px] text-gray-500 mt-1 hover:text-orange-500">Click to change</span>
+                          <span className="text-[10px] text-gray-500 mt-1 hover:text-[#fa6830]">Click to change</span>
                         </div>
                       )
                     ) : (
@@ -779,7 +779,7 @@ const ApplyAstrologer = () => {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-[#fa6830] hover:bg-[#e55923] text-white font-black rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
               >
                 {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Submit Application & Get OTP'}
               </button>
@@ -789,7 +789,7 @@ const ApplyAstrologer = () => {
           {/* STEP 2: OTP Verification */}
           {step === 2 && (
             <div className="text-center py-8 animate-fade-in max-w-sm mx-auto">
-              <div className="w-16 h-16 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-orange-50 text-[#fa6830] rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <FiCheckCircle size={32} />
               </div>
               <h2 className="text-2xl font-black text-gray-900 mb-2">Verify Mobile Number</h2>
@@ -806,7 +806,7 @@ const ApplyAstrologer = () => {
                       inputMode="numeric"
                       value={otp[index]}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
-                      className="w-14 h-14 rounded-xl border-2 border-gray-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-center text-xl font-black text-gray-900 outline-none transition-all"
+                      className="w-14 h-14 rounded-xl border-2 border-gray-200 focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 text-center text-xl font-black text-gray-900 outline-none transition-all"
                     />
                   ))}
                 </div>
@@ -814,13 +814,13 @@ const ApplyAstrologer = () => {
                 <button 
                   type="submit"
                   disabled={loading || otp.join('').length < 4}
-                  className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-[#fa6830] hover:bg-[#e55923] text-white font-black rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Verify & Complete Application'}
                 </button>
               </form>
               
-              <p className="text-xs font-bold text-gray-400 mt-6">Didn't receive code? <button type="button" onClick={handleSendOtp} className="text-orange-500 hover:underline">Resend OTP</button></p>
+              <p className="text-xs font-bold text-gray-400 mt-6">Didn't receive code? <button type="button" onClick={handleSendOtp} className="text-[#fa6830] hover:underline">Resend OTP</button></p>
             </div>
           )}
 

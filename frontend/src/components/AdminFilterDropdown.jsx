@@ -35,7 +35,7 @@ const AdminFilterDropdown = ({ tabs, activeTab, onTabChange, tabCounts = {} }) =
                 key={tabId}
                 onClick={() => onTabChange(tabId)}
                 className={`w-full flex items-center justify-between px-3 py-2 text-sm font-bold rounded-xl transition-colors ${
-                  activeTab === tabId ? 'bg-orange-50 text-orange-600' : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === tabId ? 'bg-orange-50 text-[#e55923]' : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -48,7 +48,7 @@ const AdminFilterDropdown = ({ tabs, activeTab, onTabChange, tabCounts = {} }) =
                 
                 {tabCounts[tabId] > 0 && (
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center justify-center ${
-                    activeTab === tabId ? 'bg-orange-100 text-orange-600' : 
+                    activeTab === tabId ? 'bg-orange-100 text-[#e55923]' : 
                     tabId === 'Pending Approval' || tabId === 'Pending' ? 'bg-red-500 text-white animate-pulse' :
                     'bg-gray-100 text-gray-500'
                   }`}>

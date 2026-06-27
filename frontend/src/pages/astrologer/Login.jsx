@@ -159,7 +159,7 @@ const AstrologerLogin = () => {
                   </div>
                 </div>
               ) : (
-                <div className="w-[80px] h-[80px] bg-orange-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative mx-auto">
+                <div className="w-[80px] h-[80px] bg-[#fa6830] rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-200 relative mx-auto">
                   <FiMoon size={36} className="text-white" />
                 </div>
               )}
@@ -190,7 +190,7 @@ const AstrologerLogin = () => {
                     if (val.length <= 10) setPhone(val);
                   }}
                   placeholder="Enter 10-digit number" 
-                  className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-3.5 bg-gray-50 text-[15px] text-gray-900 outline-none focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
+                  className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-3.5 bg-gray-50 text-[15px] text-gray-900 outline-none focus:border-[#fa6830] focus:bg-white focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
                 />
               </div>
               <button 
@@ -199,7 +199,7 @@ const AstrologerLogin = () => {
                 className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 flex justify-center items-center ${
                   loading || phone.length !== 10
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+                    : 'bg-[#fa6830] text-white shadow-lg shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'
                 }`}
               >
                 {loading ? <span className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" /> : 'GET OTP'}
@@ -223,7 +223,7 @@ const AstrologerLogin = () => {
                       maxLength={1}
                       value={otp[index]}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
-                      className="w-14 h-14 bg-white border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all duration-200"
+                      className="w-14 h-14 bg-white border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 shadow-sm transition-all duration-200"
                     />
                   ))}
                 </div>
@@ -234,7 +234,7 @@ const AstrologerLogin = () => {
                   className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 flex justify-center items-center ${
                     loading || otp.join('').length < 4
                       ? 'bg-orange-200 text-orange-400 cursor-not-allowed'
-                      : 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+                      : 'bg-[#fa6830] text-white shadow-lg shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'
                   }`}
                 >
                   {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'VERIFY & LOGIN'}
@@ -242,7 +242,7 @@ const AstrologerLogin = () => {
               </form>
               <div className="flex flex-col items-center mt-8 gap-2">
                 <p className="text-gray-400 text-xs font-medium">
-                  Didn't receive code? <button type="button" onClick={resendOtp} className="text-orange-500 hover:underline">Resend OTP</button>
+                  Didn't receive code? <button type="button" onClick={resendOtp} className="text-[#fa6830] hover:underline">Resend OTP</button>
                 </p>
               </div>
             </div>
@@ -273,13 +273,13 @@ const AstrologerLogin = () => {
           <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-3 w-full">
             <p className="text-[13px] font-medium text-gray-500">
               Not an astrologer yet?{' '}
-              <Link to="/astrologer/apply" className="text-orange-500 font-bold hover:underline transition-colors">
+              <Link to="/astrologer/apply" className="text-[#fa6830] font-bold hover:underline transition-colors">
                 Apply Here
               </Link>
             </p>
             <p className="text-[13px] font-medium text-gray-500">
               Are you a user?{' '}
-              <Link to="/user/login" className="text-orange-500 font-bold hover:underline transition-colors">
+              <Link to="/user/login" className="text-[#fa6830] font-bold hover:underline transition-colors">
                 Login Here
               </Link>
             </p>

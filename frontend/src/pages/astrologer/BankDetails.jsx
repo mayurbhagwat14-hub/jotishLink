@@ -52,7 +52,7 @@ const BankDetails = () => {
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <button onClick={() => navigate('/astrologer/earnings')} className="flex items-center gap-2 text-gray-500 font-bold mb-2 hover:text-orange-500 transition-colors">
+          <button onClick={() => navigate('/astrologer/earnings')} className="flex items-center gap-2 text-gray-500 font-bold mb-2 hover:text-[#fa6830] transition-colors">
             <FiArrowLeft /> Back to Earnings
           </button>
           <h1 className="text-3xl font-bold text-gray-800 mb-1">Manage Bank Account</h1>

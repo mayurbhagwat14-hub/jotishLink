@@ -35,7 +35,7 @@ const VideoCallBookingForm = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <p className="text-gray-500 mb-4">Invalid Booking Session</p>
-        <button onClick={() => navigate('/user/video-call')} className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold">
+        <button onClick={() => navigate('/user/video-call')} className="bg-[#fa6830] text-white px-6 py-2 rounded-xl font-bold">
           Go Back
         </button>
       </div>
@@ -80,7 +80,7 @@ const VideoCallBookingForm = () => {
 
       {/* Booking Summary */}
       <div className="px-4 py-5 bg-gradient-to-br from-orange-50 to-white border-b border-orange-100">
-        <p className="text-orange-500 font-bold text-[13px] uppercase tracking-wide mb-1">Video Consultation</p>
+        <p className="text-[#fa6830] font-bold text-[13px] uppercase tracking-wide mb-1">Video Consultation</p>
         <div className="flex items-center gap-3 mt-3">
           <div className="w-14 h-14 rounded-full border-2 border-orange-200 overflow-hidden shrink-0 shadow-sm">
             <img src={astrologer.avatar} alt={astrologer.name} className="w-full h-full object-cover" />
@@ -104,7 +104,7 @@ const VideoCallBookingForm = () => {
             <input
               type="date"
               required
-              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               onClick={(e) => e.target.showPicker && e.target.showPicker()}
@@ -117,7 +117,7 @@ const VideoCallBookingForm = () => {
             <input
               type="time"
               required
-              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
               value={formData.time}
               onChange={(e) => setFormData({ ...formData, time: e.target.value })}
               onClick={(e) => e.target.showPicker && e.target.showPicker()}
@@ -134,7 +134,7 @@ const VideoCallBookingForm = () => {
           disabled={!isFormValid}
           className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm flex items-center justify-center gap-2 ${
             isFormValid
-              ? 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+              ? 'bg-[#fa6830] text-white shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >

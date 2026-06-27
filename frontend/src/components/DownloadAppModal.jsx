@@ -23,7 +23,7 @@ const DownloadAppModal = ({ isOpen, onClose, title = "Download App to Continue" 
           </button>
           
           <div className="bg-white p-3 rounded-2xl shadow-lg transform translate-y-4">
-            <span className="text-4xl text-orange-500 font-bold">✨</span>
+            <span className="text-4xl text-[#fa6830] font-bold">✨</span>
           </div>
         </div>
 

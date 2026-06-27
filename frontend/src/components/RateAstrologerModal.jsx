@@ -81,7 +81,7 @@ const RateAstrologerModal = ({ isOpen, onClose, astrologer, onSubmit }) => {
           value={review}
           onChange={(e) => setReview(e.target.value)}
           placeholder="Describe your experience (optional)"
-          className="w-full h-24 border border-gray-200 rounded-2xl p-4 text-[13px] text-gray-800 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 resize-none transition-all mb-6 bg-gray-50/50"
+          className="w-full h-24 border border-gray-200 rounded-2xl p-4 text-[13px] text-gray-800 outline-none focus:border-[#fa6830] focus:ring-1 focus:ring-orange-500 resize-none transition-all mb-6 bg-gray-50/50"
         ></textarea>
 
         {/* Submit Button */}
@@ -90,7 +90,7 @@ const RateAstrologerModal = ({ isOpen, onClose, astrologer, onSubmit }) => {
           disabled={rating === 0}
           className={`w-full py-3.5 rounded-xl font-bold text-[14px] transition-all shadow-sm ${
             rating > 0
-              ? 'bg-orange-500 text-white hover:bg-orange-600 active:scale-[0.98] shadow-orange-200'
+              ? 'bg-[#fa6830] text-white hover:bg-[#e55923] active:scale-[0.98] shadow-orange-200'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >

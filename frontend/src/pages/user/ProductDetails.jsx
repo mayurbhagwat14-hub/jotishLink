@@ -142,7 +142,7 @@ const ProductDetails = () => {
         >
           <FiShoppingCart size={17} />
           {cartCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-orange-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+            <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-[#fa6830] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
               {cartCount > 9 ? '9+' : cartCount}
             </span>
           )}
@@ -211,7 +211,7 @@ const ProductDetails = () => {
                 key={idx}
                 onClick={() => { setActiveImageIndex(idx); setImageLoaded(false); }}
                 className={`h-[5px] rounded-full transition-all duration-300 ${
-                  activeImageIndex === idx ? 'w-5 bg-orange-500' : 'w-2 bg-store-border hover:bg-store-muted'
+                  activeImageIndex === idx ? 'w-5 bg-[#fa6830]' : 'w-2 bg-store-border hover:bg-store-muted'
                 }`}
               />
             ))}
@@ -342,7 +342,7 @@ const ProductDetails = () => {
             <button
               onClick={() => { handleUpdateQuantity(1); setTimeout(() => navigate('/user/cart'), 300); }}
               disabled={addingToCart}
-              className="flex-1 py-4 rounded-store font-bold text-[15px] flex items-center justify-center gap-2 bg-orange-500 text-white shadow-lg shadow-orange-500/25 hover:bg-orange-600 active:scale-[0.98] transition-all disabled:opacity-60"
+              className="flex-1 py-4 rounded-store font-bold text-[15px] flex items-center justify-center gap-2 bg-[#fa6830] text-white shadow-lg shadow-orange-500/25 hover:bg-[#e55923] active:scale-[0.98] transition-all disabled:opacity-60"
             >
               Buy Now
             </button>

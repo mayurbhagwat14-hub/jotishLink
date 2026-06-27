@@ -149,7 +149,7 @@ const Astrologers = () => {
               {isAuthenticated && user?.avatar ? (
                 <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+                <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
               )}
             </div>
             <span className="text-gray-800 font-semibold text-[15px]">Find the Astrologer</span>
@@ -157,7 +157,7 @@ const Astrologers = () => {
 
           <div className="flex items-center gap-3">
             <button onClick={() => setShowSearch(!showSearch)} className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
-              <FiSearch size={18} className="text-orange-500" />
+              <FiSearch size={18} className="text-[#fa6830]" />
             </button>
           </div>
         </div>
@@ -170,7 +170,7 @@ const Astrologers = () => {
               placeholder="Search by name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full border-2 border-orange-200 rounded-xl py-2 px-4 text-[14px] outline-none focus:border-orange-500 bg-orange-50/50 transition-all"
+              className="w-full border-2 border-orange-200 rounded-xl py-2 px-4 text-[14px] outline-none focus:border-[#fa6830] bg-orange-50/50 transition-all"
               autoFocus
             />
           </div>
@@ -181,7 +181,6 @@ const Astrologers = () => {
           <span className="text-[13px] text-gray-600 font-medium">{bannerMessage}</span>
         </div>
 
-        {/* Tab Bar: Chat / Call */}
         <div className="flex border-b border-gray-100">
           {['chat', 'call'].map((tab) => (
             <button
@@ -189,13 +188,13 @@ const Astrologers = () => {
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-3 text-[14px] font-bold capitalize transition-all duration-200 relative ${
                 activeTab === tab
-                  ? 'text-orange-500'
+                  ? 'text-[#fa6830]'
                   : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               {tab === 'call' ? 'Audio Call' : tab}
               {activeTab === tab && (
-                <div className="absolute bottom-0 left-1/4 right-1/4 h-[3px] bg-orange-500 rounded-full" />
+                <div className="absolute bottom-0 left-1/4 right-1/4 h-[3px] bg-[#fa6830] rounded-full" />
               )}
             </button>
           ))}
@@ -209,7 +208,7 @@ const Astrologers = () => {
               onClick={() => setActiveCategory(cat.name)}
               className={`flex items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-semibold shrink-0 transition-all duration-200 ${
                 activeCategory === cat.name
-                  ? 'bg-orange-500 text-white shadow-sm'
+                  ? 'bg-[#fa6830] text-white shadow-sm'
                   : 'bg-orange-50 text-gray-600 border border-orange-100 hover:bg-orange-100'
               }`}
             >
@@ -248,7 +247,7 @@ const Astrologers = () => {
                 {/* Details */}
                 <div className="flex-1 flex flex-col pt-0.5 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
-                    <h3 className="font-bold text-gray-900 text-[16px] truncate max-w-[120px] sm:max-w-[140px]">{astroName}</h3>
+                    <h3 className="font-bold text-gray-900 text-[15px] leading-tight capitalize truncate max-w-[120px] sm:max-w-[140px]">{astroName}</h3>
                     {astro.isVerified !== false && (
                       <span className="w-[14px] h-[14px] bg-green-500 rounded-full flex items-center justify-center text-white text-[9px] shrink-0">✓</span>
                     )}
@@ -284,7 +283,7 @@ const Astrologers = () => {
                         if (activeTab === 'video call') emitType = 'video';
                         handleSessionRequest(astro, emitType);
                       }}
-                      className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
+                      className="bg-[#fa6830] text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm hover:bg-[#e55923] active:scale-95 transition-all capitalize"
                     >
                       {activeTab === 'call' ? 'Audio Call' : activeTab}
                     </button>

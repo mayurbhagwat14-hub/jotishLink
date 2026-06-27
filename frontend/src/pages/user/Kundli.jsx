@@ -99,7 +99,7 @@ const Kundli = () => {
           {user?.avatar ? (
             <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+            <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
           )}
         </div>
       </div>
@@ -134,7 +134,7 @@ const Kundli = () => {
                   required type="text" 
                   placeholder="Enter your full name"
                   value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full border border-gray-200 focus:border-orange-500 rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
+                  className="w-full border border-gray-200 focus:border-[#fa6830] rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
                 />
               </div>
               <div>
@@ -143,7 +143,7 @@ const Kundli = () => {
                   required 
                   type="date"
                   value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})}
-                  className="w-full border border-gray-200 focus:border-orange-500 rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
+                  className="w-full border border-gray-200 focus:border-[#fa6830] rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
                 />
               </div>
               <div>
@@ -152,7 +152,7 @@ const Kundli = () => {
                   required 
                   type="time" 
                   value={formData.timeOfBirth} onChange={e => setFormData({...formData, timeOfBirth: e.target.value})}
-                  className="w-full border border-gray-200 focus:border-orange-500 rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
+                  className="w-full border border-gray-200 focus:border-[#fa6830] rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
                 />
               </div>
               <div className="col-span-1 md:col-span-2">
@@ -161,14 +161,14 @@ const Kundli = () => {
                   required type="text" 
                   placeholder="Enter city"
                   value={formData.placeOfBirth} onChange={e => setFormData({...formData, placeOfBirth: e.target.value})}
-                  className="w-full border border-gray-200 focus:border-orange-500 rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
+                  className="w-full border border-gray-200 focus:border-[#fa6830] rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
                 />
               </div>
               
               <div className="col-span-1 md:col-span-2 mt-4">
                 <button 
                   type="submit" disabled={loading}
-                  className={`w-full py-4 rounded-2xl font-extrabold text-[15px] tracking-wide transition-all shadow-lg ${loading ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'}`}
+                  className={`w-full py-4 rounded-2xl font-extrabold text-[15px] tracking-wide transition-all shadow-lg ${loading ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-[#fa6830] text-white shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'}`}
                 >
                   {loading ? 'GENERATING COSMIC BLUEPRINT...' : 'GENERATE KUNDLI'}
                 </button>
@@ -188,7 +188,7 @@ const Kundli = () => {
             <div className="flex justify-end mb-4">
               <button 
                 onClick={handleDownload}
-                className="flex items-center gap-2 bg-orange-50 border border-orange-100 text-orange-600 px-4.5 py-2.5 rounded-2xl font-extrabold text-[13px] hover:bg-orange-100/70 transition-colors shadow-sm active:scale-95"
+                className="flex items-center gap-2 bg-orange-50 border border-orange-100 text-[#e55923] px-4.5 py-2.5 rounded-2xl font-extrabold text-[13px] hover:bg-orange-100/70 transition-colors shadow-sm active:scale-95"
               >
                 <FiDownload size={16} strokeWidth={2.5} /> Download Report
               </button>
@@ -236,7 +236,7 @@ const Kundli = () => {
               {result.chartSvg && (
                 <div className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-[0_8px_20px_rgba(0,0,0,0.02)] mb-8 flex flex-col items-center justify-center overflow-hidden">
                   <h3 className="font-extrabold text-gray-900 text-[16px] mb-5 w-full text-center flex items-center justify-center gap-2">
-                    <span className="w-2.5 h-4.5 bg-orange-500 rounded-sm inline-block" /> Lagna Chart (D1)
+                    <span className="w-2.5 h-4.5 bg-[#fa6830] rounded-sm inline-block" /> Lagna Chart (D1)
                   </h3>
                   <div 
                     dangerouslySetInnerHTML={{ __html: makeSvgResponsive(result.chartSvg) }} 
@@ -247,7 +247,7 @@ const Kundli = () => {
 
               <div className="bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-[0_8px_20px_rgba(0,0,0,0.02)]">
                 <h3 className="font-extrabold text-gray-900 text-[16px] mb-3.5 flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center text-[12px] shadow-inner">✨</span>
+                  <span className="w-7 h-7 rounded-xl bg-orange-50 text-[#fa6830] flex items-center justify-center text-[12px] shadow-inner">✨</span>
                   Astrological Summary
                 </h3>
                 <p className="text-gray-600 text-[13.5px] leading-relaxed pl-1">{result.summary}</p>

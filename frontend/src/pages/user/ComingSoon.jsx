@@ -29,7 +29,7 @@ const ComingSoon = () => {
 
         <button
           onClick={() => navigate('/user/home')}
-          className="mt-8 bg-orange-500 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98] transition-all"
+          className="mt-8 bg-[#fa6830] text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98] transition-all"
         >
           Go to Home
         </button>

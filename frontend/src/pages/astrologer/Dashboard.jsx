@@ -26,7 +26,7 @@ const Dashboard = () => {
       <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-3xl p-6 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden flex items-center justify-between">
          <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full blur-3xl"></div>
          <div className="flex items-center gap-4 relative z-10">
-           <div className="w-14 h-14 rounded-2xl bg-orange-600/50 border border-orange-300 flex items-center justify-center overflow-hidden shrink-0">
+           <div className="w-14 h-14 rounded-2xl bg-[#e55923]/50 border border-orange-300 flex items-center justify-center overflow-hidden shrink-0">
              {user?.avatar ? (
                 <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
              ) : (
@@ -89,7 +89,7 @@ const Dashboard = () => {
       <div className="mb-24 mt-6">
          <div className="flex justify-between items-center mb-4 px-1">
             <h2 className="font-extrabold text-gray-800 text-lg">Recent Sessions</h2>
-            <Link to="/astrologer/history" className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-orange-200 transition-colors">
+            <Link to="/astrologer/history" className="bg-orange-100 text-[#e55923] px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider hover:bg-orange-200 transition-colors">
               View All
             </Link>
          </div>
@@ -100,7 +100,7 @@ const Dashboard = () => {
                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-green-400"></div>
                  <div className="flex items-start justify-between pl-3">
                     <div className="flex items-center gap-3">
-                       <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center font-bold text-lg border border-orange-100">
+                       <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#fa6830] flex items-center justify-center font-bold text-lg border border-orange-100">
                           {session.userId?.name ? session.userId.name.charAt(0).toUpperCase() : 'U'}
                        </div>
                        <div>
@@ -120,7 +120,7 @@ const Dashboard = () => {
                     <Link 
                       to={session.type === 'chat' ? `/astrologer/chat/${session._id}` : '/astrologer/history'} 
                       state={session.type === 'chat' ? { viewOnly: true, userName: session.userId?.name } : undefined}
-                      className="w-8 h-8 rounded-full bg-gray-50 hover:bg-orange-50 text-gray-400 hover:text-orange-500 flex items-center justify-center transition-colors"
+                      className="w-8 h-8 rounded-full bg-gray-50 hover:bg-orange-50 text-gray-400 hover:text-[#fa6830] flex items-center justify-center transition-colors"
                     >
                        <FiArrowRight size={16} />
                     </Link>

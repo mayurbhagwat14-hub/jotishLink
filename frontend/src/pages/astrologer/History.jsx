@@ -113,25 +113,25 @@ const History = () => {
       <div className="flex gap-2 mb-4 shrink-0 overflow-x-auto no-scrollbar">
         <button 
           onClick={() => { setActiveTab('all'); setSelectedIds([]); }} 
-          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'all' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'all' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           All History
         </button>
         <button 
           onClick={() => { setActiveTab('consultations'); setSelectedIds([]); }} 
-          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'consultations' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'consultations' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           Consultations
         </button>
         <button 
           onClick={() => { setActiveTab('freeChats'); setSelectedIds([]); }} 
-          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'freeChats' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'freeChats' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           Free Chats
         </button>
         <button 
           onClick={() => { setActiveTab('pooja'); setSelectedIds([]); }} 
-          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'pooja' ? 'bg-orange-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'pooja' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           Poojas
         </button>
@@ -141,7 +141,7 @@ const History = () => {
       <div className="flex-1 overflow-y-auto space-y-4 pb-4">
         {loading ? (
           <div className="flex justify-center p-8">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-[#fa6830] border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : filteredHistory.length === 0 ? (
           <div className="text-center p-8 text-gray-500">
@@ -169,7 +169,7 @@ const History = () => {
                           checked={selectedIds.includes(item._id)}
                           onChange={() => toggleSelection(item._id)}
                         />
-                        <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center border border-orange-200">
+                        <div className="w-10 h-10 rounded-full bg-orange-100 text-[#fa6830] flex items-center justify-center border border-orange-200">
                           {getIconForType(item.type)}
                         </div>
                         <div>

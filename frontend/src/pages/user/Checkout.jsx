@@ -245,7 +245,7 @@ const Checkout = () => {
           <div className="flex items-center justify-between gap-2 mb-5 pb-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-gray-800 font-black text-[15px]">
               <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
-                <FiMapPin className="text-orange-500" size={16} />
+                <FiMapPin className="text-[#fa6830]" size={16} />
               </div>
               Shipping Address
             </div>
@@ -253,9 +253,9 @@ const Checkout = () => {
               type="button" 
               onClick={fetchLocation} 
               disabled={isLocating}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-orange-600 bg-orange-50/80 px-3 py-1.5 rounded-lg border border-orange-200/50 hover:bg-orange-100 hover:border-orange-300 transition-all disabled:opacity-50 shadow-sm"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-[#e55923] bg-orange-50/80 px-3 py-1.5 rounded-lg border border-orange-200/50 hover:bg-orange-100 hover:border-orange-300 transition-all disabled:opacity-50 shadow-sm"
             >
-              {isLocating ? <span className="w-3.5 h-3.5 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin"></span> : <FiCrosshair size={14} />}
+              {isLocating ? <span className="w-3.5 h-3.5 border-2 border-[#fa6830]/30 border-t-orange-500 rounded-full animate-spin"></span> : <FiCrosshair size={14} />}
               Use Current Location
             </button>
           </div>
@@ -266,7 +266,7 @@ const Checkout = () => {
               <input 
                 type="text" name="fullName" placeholder="Full Name" 
                 value={formData.fullName} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
             
@@ -275,7 +275,7 @@ const Checkout = () => {
               <input 
                 type="email" name="email" placeholder="Email Address" 
                 value={formData.email} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
             
@@ -284,7 +284,7 @@ const Checkout = () => {
               <input 
                 type="tel" name="phone" placeholder="Phone Number" 
                 value={formData.phone} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
             
@@ -293,7 +293,7 @@ const Checkout = () => {
               <textarea 
                 name="addressLine" placeholder="House No, Building, Street, Area" rows="2"
                 value={formData.addressLine} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all resize-none placeholder:text-gray-400 placeholder:font-medium"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all resize-none placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
             
@@ -303,7 +303,7 @@ const Checkout = () => {
                 <input 
                   type="text" name="city" placeholder="City" 
                   value={formData.city} onChange={handleChange} required
-                  className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
                 />
               </div>
               <div className="relative">
@@ -311,7 +311,7 @@ const Checkout = () => {
                 <input 
                   type="text" name="pincode" placeholder="Pincode" 
                   value={formData.pincode} onChange={handleChange} required
-                  className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
                 />
               </div>
             </div>
@@ -321,7 +321,7 @@ const Checkout = () => {
               <input 
                 type="text" name="state" placeholder="State" 
                 value={formData.state} onChange={handleChange} required
-                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
+                className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
           </form>
@@ -330,7 +330,7 @@ const Checkout = () => {
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
           <div className="flex items-center gap-2 mb-5 pb-3 border-b border-gray-100 text-gray-800 font-black text-[15px]">
             <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
-              <FiCreditCard className="text-orange-500" size={16} />
+              <FiCreditCard className="text-[#fa6830]" size={16} />
             </div>
             Payment Method
           </div>
@@ -338,11 +338,11 @@ const Checkout = () => {
           <div className="space-y-3">
             <label 
               onClick={() => setPaymentMethod('online')}
-              className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'online' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}
+              className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'online' ? 'border-[#fa6830] bg-orange-50' : 'border-gray-100 bg-white'}`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'online' ? 'border-orange-500' : 'border-gray-300'}`}>
-                  {paymentMethod === 'online' && <div className="w-2.5 h-2.5 bg-orange-500 rounded-full" />}
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'online' ? 'border-[#fa6830]' : 'border-gray-300'}`}>
+                  {paymentMethod === 'online' && <div className="w-2.5 h-2.5 bg-[#fa6830] rounded-full" />}
                 </div>
                 <div>
                   <span className="font-bold text-[14px] text-gray-800 block">Pay Online (Wallet)</span>
@@ -353,11 +353,11 @@ const Checkout = () => {
 
             <label 
               onClick={() => setPaymentMethod('cod')}
-              className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}
+              className={`flex items-center justify-between p-3 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-[#fa6830] bg-orange-50' : 'border-gray-100 bg-white'}`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'cod' ? 'border-orange-500' : 'border-gray-300'}`}>
-                  {paymentMethod === 'cod' && <div className="w-2.5 h-2.5 bg-orange-500 rounded-full" />}
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'cod' ? 'border-[#fa6830]' : 'border-gray-300'}`}>
+                  {paymentMethod === 'cod' && <div className="w-2.5 h-2.5 bg-[#fa6830] rounded-full" />}
                 </div>
                 <div>
                   <span className="font-bold text-[14px] text-gray-800 block flex items-center gap-1">Cash on Delivery <FiTruck className="text-gray-400"/></span>
@@ -393,7 +393,7 @@ const Checkout = () => {
           <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiCreditCard size={28} className="text-orange-500" />
+                <FiCreditCard size={28} className="text-[#fa6830]" />
               </div>
               <h3 className="text-[20px] font-black text-gray-900 mb-2">Confirm Payment</h3>
               <p className="text-[14px] text-gray-600 mb-6 leading-relaxed">
@@ -408,7 +408,7 @@ const Checkout = () => {
                 </button>
                 <button
                   onClick={handleConfirmWalletPayment}
-                  className="flex-1 py-3 bg-orange-500 text-white font-bold rounded-xl text-[14px] hover:bg-orange-600 transition-colors shadow-sm"
+                  className="flex-1 py-3 bg-[#fa6830] text-white font-bold rounded-xl text-[14px] hover:bg-[#e55923] transition-colors shadow-sm"
                 >
                   Confirm
                 </button>

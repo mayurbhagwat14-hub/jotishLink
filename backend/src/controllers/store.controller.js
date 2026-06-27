@@ -113,17 +113,19 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
   }
 
-  const orderItems = cart.items.map((item) => {
+  const orderItems = [];
+  for (const item of cart.items) {
+    if (!item.productId) continue;
     const price = item.productId.price;
     const costPrice = item.productId.costPrice || 0;
     totalAmount += price * item.quantity;
-    return {
+    orderItems.push({
       productId: item.productId._id,
       quantity: item.quantity,
       price: price,
       costPrice: costPrice
-    };
-  });
+    });
+  }
 
   let discountAmount = 0;
   let appliedCoupon = null;
@@ -243,7 +245,77 @@ export const createOrder = asyncHandler(async (req, res) => {
   cart.items = [];
   await cart.save();
 
-  // Removed automatic Shiprocket Integration as admin wants manual control
+  // Automatic Shiprocket Integration
+  try {
+    let totalWeight = 0;
+    let maxLength = 10;
+    let maxBreadth = 10;
+    let maxHeight = 10;
+
+    const shiprocketItems = cart.items.map(item => {
+      if (!item.productId) return null;
+      const qty = item.quantity || 1;
+      const pWeight = item.productId.weight || 0.5;
+      totalWeight += (pWeight * qty);
+
+      if ((item.productId.length || 10) > maxLength) maxLength = item.productId.length;
+      if ((item.productId.breadth || 10) > maxBreadth) maxBreadth = item.productId.breadth;
+      if ((item.productId.height || 10) > maxHeight) maxHeight = item.productId.height;
+
+      return {
+        name: item.productId.name || 'Unknown Product',
+        sku: item.productId.sku || item.productId._id.toString() || item._id.toString(),
+        units: item.quantity,
+        selling_price: item.productId.price,
+        discount: 0,
+        tax: 0,
+        hsn: ''
+      };
+    }).filter(Boolean);
+
+    if (totalWeight < 0.05) totalWeight = 0.05;
+
+    const cleanPhone = (shippingAddress?.phone || user?.phone || "9999999999").replace(/\D/g, '').slice(-10);
+    const finalPhone = cleanPhone.length === 10 ? cleanPhone : '9999999999';
+    const cleanAddress = (shippingAddress?.addressLine || 'No address provided').padEnd(10, ' ');
+    const cleanCity = shippingAddress?.city || 'Delhi';
+    const cleanState = shippingAddress?.state || 'Delhi';
+    let cleanPincode = (shippingAddress?.pincode || '110001').toString().replace(/\D/g, '').substring(0, 6);
+    if (cleanPincode.length !== 6) cleanPincode = '110001';
+
+    const orderData = {
+      order_id: order._id.toString(),
+      order_date: order.createdAt.toISOString(),
+      pickup_location: "warehouse",
+      billing_customer_name: shippingAddress?.fullName || user?.name || 'Customer',
+      billing_last_name: " ",
+      billing_address: cleanAddress,
+      billing_address_2: "",
+      billing_city: cleanCity,
+      billing_pincode: cleanPincode,
+      billing_state: cleanState,
+      billing_country: "India",
+      billing_email: shippingAddress?.email || user?.email || "customer@jyotishlink.com",
+      billing_phone: finalPhone,
+      shipping_is_billing: true,
+      order_items: shiprocketItems,
+      payment_method: paymentMethod === 'cod' ? 'COD' : 'Prepaid',
+      sub_total: order.totalAmount,
+      length: maxLength,
+      breadth: maxBreadth,
+      height: maxHeight,
+      weight: totalWeight
+    };
+
+    const shiprocketResponse = await createShiprocketOrder(orderData);
+    if (shiprocketResponse && shiprocketResponse.order_id) {
+      order.shiprocketOrderId = shiprocketResponse.order_id;
+      order.shipmentId = shiprocketResponse.shipment_id;
+      await order.save();
+    }
+  } catch (err) {
+    console.error('Shiprocket auto-creation failed during checkout:', err);
+  }
 
   // Emit event to admins
   const io = req.app.get('io');

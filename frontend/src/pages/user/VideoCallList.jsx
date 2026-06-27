@@ -103,7 +103,7 @@ const VideoCallList = () => {
       {/* Header */}
       <div className="px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100 flex items-center justify-between">
         <h1 className="text-gray-900 font-bold text-[18px]">Video Call with Astrologer</h1>
-        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
+        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-[#fa6830]">
           <FiVideo size={16} />
         </div>
       </div>
@@ -130,7 +130,7 @@ const VideoCallList = () => {
             onClick={() => setActiveCategory(cat.name)}
             className={`flex items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-semibold shrink-0 transition-all duration-200 ${
               activeCategory === cat.name
-                ? 'bg-orange-500 text-white shadow-sm'
+                ? 'bg-[#fa6830] text-white shadow-sm'
                 : 'bg-orange-50 text-gray-600 border border-orange-100 hover:bg-orange-100'
             }`}
           >
@@ -201,7 +201,7 @@ const VideoCallList = () => {
                         e.stopPropagation();
                         handleSessionRequest(astro, 'video');
                       }}
-                      className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all capitalize"
+                      className="bg-[#fa6830] text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-[#e55923] active:scale-95 transition-all capitalize"
                     >
                       Video Call
                     </button>

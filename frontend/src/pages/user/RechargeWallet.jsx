@@ -214,12 +214,12 @@ const RechargeWallet = () => {
                 onClick={() => setAmount(opt.amount.toString())}
                 className={`relative rounded-xl border-2 flex flex-col items-center overflow-hidden cursor-pointer transition-all ${
                   isSelected 
-                    ? 'border-orange-500 bg-orange-50 shadow-sm' 
+                    ? 'border-[#fa6830] bg-orange-50 shadow-sm' 
                     : 'border-gray-100 bg-white hover:border-gray-200'
                 }`}
               >
                 {opt.popular && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-b-md z-10 whitespace-nowrap">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#fa6830] text-white text-[9px] font-bold px-2 py-0.5 rounded-b-md z-10 whitespace-nowrap">
                     Most Popular
                   </div>
                 )}
@@ -238,7 +238,7 @@ const RechargeWallet = () => {
           onClick={handlePayment}
           disabled={!amount || parseInt(amount) < 10 || isProcessing}
           className={`w-full py-3.5 rounded-xl font-bold text-[15px] shadow-sm transition-all disabled:opacity-50 active:scale-[0.98] ${
-            !amount || parseInt(amount) < 10 || isProcessing ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600 shadow-orange-200 text-white'
+            !amount || parseInt(amount) < 10 || isProcessing ? 'bg-orange-300 text-white cursor-not-allowed' : 'bg-[#fa6830] hover:bg-[#e55923] shadow-orange-200 text-white'
           }`}
         >
           {isProcessing ? (

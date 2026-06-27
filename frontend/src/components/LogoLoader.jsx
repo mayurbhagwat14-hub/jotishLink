@@ -18,7 +18,7 @@ const LogoLoader = () => {
         )}
       </div>
       <div className="flex items-center gap-1.5 mt-3">
-          <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-sm shadow-orange-200" />
+          <span className="w-2 h-2 bg-[#fa6830] rounded-full animate-pulse shadow-sm shadow-orange-200" />
           <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse shadow-sm shadow-orange-200" style={{ animationDelay: '0.2s' }} />
           <span className="w-2 h-2 bg-orange-300 rounded-full animate-pulse shadow-sm shadow-orange-200" style={{ animationDelay: '0.4s' }} />
       </div>

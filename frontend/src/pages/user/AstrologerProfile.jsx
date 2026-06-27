@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiStar, FiClock, FiMessageSquare, FiPhoneCall, FiVideo, FiCheckCircle } from 'react-icons/fi';
 import * as userApis from '../../api/userApis';
 import LowBalanceModal from '../../components/LowBalanceModal';
+import SplashScreen from '../../components/SplashScreen';
 
 const AstrologerProfile = () => {
   const { id } = useParams();
@@ -73,7 +74,7 @@ const AstrologerProfile = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
         <p className="text-gray-500 mb-4">{error || 'Astrologer not found'}</p>
-        <button onClick={() => navigate(-1)} className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold">Go Back</button>
+        <button onClick={() => navigate(-1)} className="bg-[#fa6830] text-white px-6 py-2 rounded-xl font-bold">Go Back</button>
       </div>
     );
   }
@@ -106,7 +107,7 @@ const AstrologerProfile = () => {
               <p className="text-gray-500 text-sm mb-1 line-clamp-1">{(astrologer.skills || []).join(', ')}</p>
               <p className="text-gray-500 text-sm mb-2 line-clamp-1">{(astrologer.languages || []).join(', ')}</p>
               <div className="flex items-center gap-1 text-sm font-semibold text-gray-800">
-                <FiClock className="text-orange-500" />
+                <FiClock className="text-[#fa6830]" />
                 <span>Exp: {astrologer.experience} Years</span>
               </div>
             </div>
@@ -116,7 +117,7 @@ const AstrologerProfile = () => {
             <div className="flex flex-col items-center flex-1 border-r border-orange-200/50">
               <span className="text-gray-500 text-xs font-medium mb-1">Rating</span>
               <div className="flex items-center gap-1">
-                <FiStar className="text-orange-500 fill-orange-500" size={14} />
+                <FiStar className="text-[#fa6830] fill-orange-500" size={14} />
                 <span className="font-bold text-gray-900">{astrologer.rating || '5.0'}</span>
               </div>
             </div>
@@ -143,7 +144,7 @@ const AstrologerProfile = () => {
         <div className="bg-white rounded-2xl m-4 p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900 text-lg">Reviews</h3>
-            <span className="text-sm font-bold text-orange-500">View All</span>
+            <span className="text-sm font-bold text-[#fa6830]">View All</span>
           </div>
           
           <div className="space-y-4">
@@ -171,10 +172,10 @@ const AstrologerProfile = () => {
       {/* Floating Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40 pb-safe">
         <div className="max-w-md mx-auto flex gap-2">
-          <button onClick={() => handleActionClick('chat')} className="flex-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-600 font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-[13px] sm:text-[14px]">
+          <button onClick={() => handleActionClick('chat')} className="flex-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#e55923] font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-[13px] sm:text-[14px]">
             <FiMessageSquare /> Chat
           </button>
-          <button onClick={() => handleActionClick('call')} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/30 transition-colors text-[13px] sm:text-[14px]">
+          <button onClick={() => handleActionClick('call')} className="flex-1 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/30 transition-colors text-[13px] sm:text-[14px]">
             <FiPhoneCall /> Call
           </button>
           <button onClick={() => handleActionClick('video')} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/30 transition-colors text-[13px] sm:text-[14px]">

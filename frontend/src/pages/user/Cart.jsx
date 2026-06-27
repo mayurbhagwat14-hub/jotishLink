@@ -233,7 +233,7 @@ const Cart = () => {
                       <button 
                         onClick={() => handleUpdateQuantity(item.productId?._id, item.quantity, -1, item.productId?.stock)}
                         disabled={updatingId === item.productId?._id}
-                        className="w-8 h-8 flex items-center justify-center text-store-text hover:text-orange-500 transition-colors active:scale-90 disabled:opacity-40"
+                        className="w-8 h-8 flex items-center justify-center text-store-text hover:text-[#fa6830] transition-colors active:scale-90 disabled:opacity-40"
                       >
                         <FiMinus size={12} strokeWidth={2.5} />
                       </button>
@@ -241,7 +241,7 @@ const Cart = () => {
                       <button 
                         onClick={() => handleUpdateQuantity(item.productId?._id, item.quantity, 1, item.productId?.stock)}
                         disabled={updatingId === item.productId?._id || item.quantity >= (item.productId?.stock || 999)}
-                        className="w-8 h-8 flex items-center justify-center text-store-text hover:text-orange-500 transition-colors active:scale-90 disabled:opacity-40"
+                        className="w-8 h-8 flex items-center justify-center text-store-text hover:text-[#fa6830] transition-colors active:scale-90 disabled:opacity-40"
                       >
                         <FiPlus size={12} strokeWidth={2.5} />
                       </button>

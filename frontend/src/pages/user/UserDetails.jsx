@@ -650,7 +650,7 @@ const UserDetails = () => {
               </div>
               {isSearching && (
                 <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-orange-500 border-t-transparent" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#fa6830] border-t-transparent" />
                 </div>
               )}
             </div>

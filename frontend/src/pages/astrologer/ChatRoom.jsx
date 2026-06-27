@@ -209,9 +209,9 @@ const ChatRoom = () => {
           </div>
           <div>
             <h3 className="font-bold text-gray-800 leading-tight">{userName}</h3>
-            <p className="text-xs text-orange-500 font-bold flex items-center gap-1.5 uppercase tracking-wider mt-0.5">
+            <p className="text-xs text-[#fa6830] font-bold flex items-center gap-1.5 uppercase tracking-wider mt-0.5">
               {isTyping ? (
-                <span className="text-orange-500 lowercase animate-pulse tracking-normal text-[13px]">typing...</span>
+                <span className="text-[#fa6830] lowercase animate-pulse tracking-normal text-[13px]">typing...</span>
               ) : (
                 isViewOnly ? 'View Only' : `Session Active • ${formatTime(timer)}`
               )}
@@ -267,7 +267,7 @@ const ChatRoom = () => {
       {!isViewOnly && (
       <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
         <div className="flex items-end gap-2">
-          <button className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-orange-500 transition-colors shrink-0 bg-gray-50 rounded-full">
+          <button className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#fa6830] transition-colors shrink-0 bg-gray-50 rounded-full">
             <FiPaperclip size={20} />
           </button>
           
@@ -286,7 +286,7 @@ const ChatRoom = () => {
           <button 
             onClick={handleSend}
             disabled={!inputText.trim() || endSessionInfo || sessionEnded}
-            className="w-11 h-11 bg-orange-500 text-white rounded-full flex items-center justify-center hover:bg-orange-600 transition-colors shadow-md shadow-orange-500/30 shrink-0 disabled:opacity-50 disabled:shadow-none"
+            className="w-11 h-11 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] transition-colors shadow-md shadow-orange-500/30 shrink-0 disabled:opacity-50 disabled:shadow-none"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
           </button>
@@ -307,7 +307,7 @@ const ChatRoom = () => {
             </p>
             <button 
               onClick={() => navigate('/astrologer/chats')}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/30"
+              className="w-full py-3 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/30"
             >
               Go Back to Chats
             </button>

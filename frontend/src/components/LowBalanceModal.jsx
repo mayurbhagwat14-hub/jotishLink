@@ -62,7 +62,7 @@ const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targ
                 onClick={() => setSelectedAmount(opt.amount)}
                 className={`flex flex-col items-center justify-center rounded-xl border-2 cursor-pointer transition-all overflow-hidden ${
                   selectedAmount === opt.amount 
-                    ? 'border-orange-500 bg-orange-50/50 scale-[1.02] shadow-sm' 
+                    ? 'border-[#fa6830] bg-orange-50/50 scale-[1.02] shadow-sm' 
                     : 'border-gray-200 hover:border-orange-300'
                 }`}
               >
@@ -75,7 +75,7 @@ const LowBalanceModal = ({ isOpen, onClose, requiredAmount, currentBalance, targ
 
           <button
             onClick={handleProceed}
-            className="w-full mt-4 bg-orange-500 text-white font-bold text-[15px] py-3.5 rounded-xl hover:bg-orange-600 active:scale-[0.98] transition-all shadow-md shadow-orange-200"
+            className="w-full mt-4 bg-[#fa6830] text-white font-bold text-[15px] py-3.5 rounded-xl hover:bg-[#e55923] active:scale-[0.98] transition-all shadow-md shadow-orange-200"
           >
             Proceed
           </button>

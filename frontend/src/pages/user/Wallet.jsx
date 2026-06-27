@@ -106,7 +106,7 @@ const Wallet = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 pb-24">
       <div className="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="bg-orange-500 p-6 text-center text-white">
+        <div className="bg-[#fa6830] p-6 text-center text-white">
           <h2 className="text-2xl font-bold">Wallet Balance</h2>
           <p className="text-4xl font-black mt-2">₹{balance !== null ? balance : (user?.wallet || 0)}</p>
         </div>
@@ -117,7 +117,7 @@ const Wallet = () => {
               <button
                 key={amt}
                 onClick={() => setAmount(amt.toString())}
-                className={`py-2 rounded-xl border ${amount === amt.toString() ? 'border-orange-500 bg-orange-50 text-orange-600 font-bold' : 'border-gray-200 text-gray-600 hover:border-orange-300'} transition-colors`}
+                className={`py-2 rounded-xl border ${amount === amt.toString() ? 'border-[#fa6830] bg-orange-50 text-[#e55923] font-bold' : 'border-gray-200 text-gray-600 hover:border-orange-300'} transition-colors`}
               >
                 ₹{amt}
               </button>
@@ -129,7 +129,7 @@ const Wallet = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#fa6830] focus:ring-1 focus:ring-orange-500"
               placeholder="Enter amount"
               min="10"
             />
@@ -137,7 +137,7 @@ const Wallet = () => {
           <button
             onClick={handlePayment}
             disabled={loading || !amount || amount < 10}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-50"
+            className="w-full bg-[#fa6830] hover:bg-[#e55923] text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? 'Processing...' : `Proceed to Pay ₹${amount || 0}`}
           </button>
@@ -151,7 +151,7 @@ const Wallet = () => {
         <div className="p-4">
           {walletLoading ? (
             <div className="flex justify-center p-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fa6830]"></div>
             </div>
           ) : transactions && transactions.length > 0 ? (
             <div className="space-y-4">

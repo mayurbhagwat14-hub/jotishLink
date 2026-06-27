@@ -92,7 +92,7 @@ const OrderDetails = () => {
       <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
         <Package size={48} strokeWidth={1.5} className="text-gray-300 mb-4" />
         <p className="text-gray-500 font-medium">Order not found.</p>
-        <button onClick={() => navigate(-1)} className="mt-4 text-orange-500 font-bold hover:underline">Go Back</button>
+        <button onClick={() => navigate(-1)} className="mt-4 text-[#fa6830] font-bold hover:underline">Go Back</button>
       </div>
     );
   }
@@ -139,7 +139,7 @@ const OrderDetails = () => {
              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
                order.orderStatus === 'cancelled' ? 'bg-red-500 text-white' :
                order.orderStatus === 'delivered' ? 'bg-green-500 text-white' :
-               'bg-orange-500 text-white'
+               'bg-[#fa6830] text-white'
              }`}>
                {order.orderStatus === 'delivered' ? <CheckCircle2 size={24} /> :
                 order.orderStatus === 'cancelled' ? <X size={24} /> :
@@ -172,7 +172,7 @@ const OrderDetails = () => {
         {order.orderStatus !== 'cancelled' && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
              <h3 className="text-[14px] font-bold text-gray-800 mb-6 flex items-center gap-2">
-               <MapPin className="text-orange-500" size={18} /> Delivery Status
+               <MapPin className="text-[#fa6830]" size={18} /> Delivery Status
              </h3>
              <div className="relative flex items-center justify-between z-0 px-2">
                 {/* Background Track */}
@@ -207,7 +207,7 @@ const OrderDetails = () => {
         {order.orderStatus !== 'cancelled' && (trackingData?.shipment_track_activities?.length > 0 || trackingData?.shipment_track?.[0] || shiprocketDetails) && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
              <h3 className="text-[14px] font-bold text-gray-800 mb-5 flex items-center gap-2">
-               <Truck className="text-orange-500" size={18} /> Shipping Details
+               <Truck className="text-[#fa6830]" size={18} /> Shipping Details
              </h3>
              
              {/* Courier Highlights */}
@@ -219,7 +219,7 @@ const OrderDetails = () => {
                  </div>
                  <div className="text-right">
                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Tracking AWB</p>
-                   <p className="text-[13px] font-bold text-orange-600 font-mono">{trackingData?.shipment_track?.[0]?.awb_code || order.awbCode || 'Pending'}</p>
+                   <p className="text-[13px] font-bold text-[#e55923] font-mono">{trackingData?.shipment_track?.[0]?.awb_code || order.awbCode || 'Pending'}</p>
                  </div>
                </div>
              )}
@@ -235,7 +235,7 @@ const OrderDetails = () => {
                    return (
                      <div key={idx} className="relative flex items-start gap-4">
                        <div className={`w-3.5 h-3.5 rounded-full z-10 shrink-0 mt-1.5 ring-4 ring-white ${
-                         isFirst && order.orderStatus !== 'delivered' ? 'bg-orange-500' :
+                         isFirst && order.orderStatus !== 'delivered' ? 'bg-[#fa6830]' :
                          isFirst && order.orderStatus === 'delivered' ? 'bg-green-500' : 'bg-gray-400'
                        }`} />
                        <div className="flex-1 min-w-0">
@@ -270,7 +270,7 @@ const OrderDetails = () => {
         {/* ORDER ITEMS */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h3 className="text-[14px] font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <Package size={18} className="text-orange-500" /> Products Ordered
+            <Package size={18} className="text-[#fa6830]" /> Products Ordered
           </h3>
           <div className="space-y-4">
             {order.items.map((item, idx) => (
@@ -282,7 +282,7 @@ const OrderDetails = () => {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 pt-1">
-                  <h4 className="text-[14px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-orange-600 transition-colors">{item.productId?.name}</h4>
+                  <h4 className="text-[14px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-[#e55923] transition-colors">{item.productId?.name}</h4>
                   <p className="text-[11px] text-gray-500 mt-1 font-medium">{item.productId?.category || 'Store Item'}</p>
                   <p className="text-[15px] font-black text-gray-900 mt-2">₹{item.price}</p>
                 </div>
@@ -295,7 +295,7 @@ const OrderDetails = () => {
         {order.shippingAddress && (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
              <h3 className="text-[14px] font-bold text-gray-800 mb-4 flex items-center gap-2">
-               <Map className="text-orange-500" size={18} /> Shipping Address
+               <Map className="text-[#fa6830]" size={18} /> Shipping Address
              </h3>
              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <p className="text-[13px] font-bold text-gray-900 mb-1">{order.shippingAddress.fullName || order.shippingAddress.name || 'Customer'}</p>
@@ -324,7 +324,7 @@ const OrderDetails = () => {
         {/* PRICE SUMMARY */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
            <h3 className="text-[14px] font-bold text-gray-800 mb-4 flex items-center gap-2">
-             <CreditCard size={18} className="text-orange-500" /> Payment Summary
+             <CreditCard size={18} className="text-[#fa6830]" /> Payment Summary
            </h3>
            <div className="space-y-3 mb-4">
               <div className="flex justify-between text-[13px] font-medium text-gray-600">
@@ -350,7 +350,7 @@ const OrderDetails = () => {
                </span>
                <span className={`text-[12px] font-black flex items-center gap-1 ${
                   (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-600' : 
-                  (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 'text-orange-500'
+                  (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 'text-[#fa6830]'
                }`}>
                   {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? <><CheckCircle size={14}/> Payment Successful</> : 
                    (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? <><X size={14}/> Cancelled</> : <><Clock size={14}/> Pending Payment</>}
@@ -433,7 +433,7 @@ const OrderDetails = () => {
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Tell us why you're cancelling (optional)"
               rows={3}
-              className="w-full bg-white rounded-2xl p-4 text-[13px] font-medium outline-none border border-gray-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-50 resize-none mb-5 transition-all placeholder:text-gray-400"
+              className="w-full bg-white rounded-2xl p-4 text-[13px] font-medium outline-none border border-gray-200 focus:border-[#fa6830] focus:ring-4 focus:ring-orange-50 resize-none mb-5 transition-all placeholder:text-gray-400"
             />
 
             <div className="flex gap-3">

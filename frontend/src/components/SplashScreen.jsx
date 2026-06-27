@@ -34,7 +34,7 @@ const SplashScreen = () => {
         )}
         
         <div className="flex items-center gap-2 mt-8">
-            <span className="w-2.5 h-2.5 bg-orange-500 rounded-full animate-pulse shadow-sm shadow-orange-200" />
+            <span className="w-2.5 h-2.5 bg-[#fa6830] rounded-full animate-pulse shadow-sm shadow-orange-200" />
             <span className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-pulse shadow-sm shadow-orange-200" style={{ animationDelay: '0.2s' }} />
             <span className="w-2.5 h-2.5 bg-orange-300 rounded-full animate-pulse shadow-sm shadow-orange-200" style={{ animationDelay: '0.4s' }} />
         </div>

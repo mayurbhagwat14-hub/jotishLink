@@ -245,7 +245,7 @@ const Profile = () => {
           </button>
           <button 
             onClick={handleSave}
-            className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 shadow-md shadow-orange-500/20 transition-all"
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#fa6830] text-white rounded-xl font-bold hover:bg-[#e55923] shadow-md shadow-orange-500/20 transition-all"
           >
             <FiSave /> Save Changes
           </button>
@@ -265,7 +265,7 @@ const Profile = () => {
                   profile?.astrologer?.name?.[0] || 'A'
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-orange-600 transition-colors">
+              <label className="absolute bottom-0 right-0 w-8 h-8 bg-[#fa6830] text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-[#e55923] transition-colors">
                 <FiPlus />
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </label>
@@ -379,7 +379,7 @@ const Profile = () => {
             <h2 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-100 pb-3">Languages Spoken</h2>
             <div className="flex flex-wrap gap-2 mb-4">
               {languages.map((lang, i) => (
-                <div key={i} className="flex items-center gap-2 bg-orange-50 text-orange-600 font-bold px-3 py-1.5 rounded-lg border border-orange-100">
+                <div key={i} className="flex items-center gap-2 bg-orange-50 text-[#e55923] font-bold px-3 py-1.5 rounded-lg border border-orange-100">
                   {lang}
                   <button onClick={() => removeLanguage(lang)} className="hover:text-red-500 transition-colors"><FiX size={14}/></button>
                 </div>
@@ -430,7 +430,7 @@ const Profile = () => {
                 <p className="text-[13px] text-gray-500 font-medium mt-0.5">Do you perform poojas for users?</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer gap-3">
-                <span className={`text-sm font-bold ${formData.isPandit ? 'text-orange-500' : 'text-gray-400'}`}>
+                <span className={`text-sm font-bold ${formData.isPandit ? 'text-[#fa6830]' : 'text-gray-400'}`}>
                   {formData.isPandit ? 'Yes' : 'No'}
                 </span>
                 <div className="relative">
@@ -440,7 +440,7 @@ const Profile = () => {
                     checked={formData.isPandit}
                     onChange={(e) => setFormData({...formData, isPandit: e.target.checked})}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#fa6830]"></div>
                 </div>
               </label>
             </div>
@@ -459,7 +459,7 @@ const Profile = () => {
                         <div 
                           key={pooja} 
                           className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                            isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200'
+                            isSelected ? 'border-[#fa6830] bg-orange-50' : 'border-gray-100 bg-white hover:border-orange-200'
                           }`}
                           onClick={(e) => {
                             if(e.target.tagName !== 'INPUT') togglePooja(pooja);
@@ -467,7 +467,7 @@ const Profile = () => {
                         >
                           <div className="flex items-center gap-2">
                             <div className={`w-5 h-5 rounded-md flex items-center justify-center border-2 ${
-                              isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300'
+                              isSelected ? 'bg-[#fa6830] border-[#fa6830] text-white' : 'border-gray-300'
                             }`}>
                               {isSelected && <FiCheck size={12} />}
                             </div>
@@ -482,7 +482,7 @@ const Profile = () => {
                                 min="0"
                                 value={selectedPooja.price}
                                 onChange={(e) => updatePoojaPrice(pooja, e.target.value)}
-                                className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-orange-500"
+                                className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-[#fa6830]"
                               />
                             </div>
                           )}

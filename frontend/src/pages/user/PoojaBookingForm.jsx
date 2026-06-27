@@ -24,7 +24,7 @@ const PoojaBookingForm = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <p className="text-gray-500 mb-4">Invalid Booking Session</p>
-        <button onClick={() => navigate('/user/store')} className="bg-orange-500 text-white px-6 py-2 rounded-xl font-bold">
+        <button onClick={() => navigate('/user/store')} className="bg-[#fa6830] text-white px-6 py-2 rounded-xl font-bold">
           Go Back
         </button>
       </div>
@@ -74,7 +74,7 @@ const PoojaBookingForm = () => {
       {/* Booking Summary */}
       <div className="px-5 py-6 bg-gradient-to-br from-orange-50 to-white border-b border-orange-100 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-orange-100 rounded-full blur-3xl opacity-50 -mr-10 -mt-10"></div>
-        <p className="text-orange-500 font-bold text-[12px] uppercase tracking-widest mb-1.5">{pooja}</p>
+        <p className="text-[#fa6830] font-bold text-[12px] uppercase tracking-widest mb-1.5">{pooja}</p>
         <div className="flex items-center gap-4 mt-3 relative z-10">
           <div className="w-16 h-16 rounded-full border-[3px] border-white shadow-md overflow-hidden shrink-0 bg-orange-100">
             <img src={pandit.avatar || pandit.image || pandit.img} alt={pandit.name} className="w-full h-full object-cover" />
@@ -83,7 +83,7 @@ const PoojaBookingForm = () => {
             <h2 className="text-[18px] font-bold text-gray-900 leading-tight mb-1">{pandit.name}</h2>
             <div className="flex items-center gap-1.5">
               <span className="text-[13px] text-gray-500 font-medium">Price:</span>
-              <span className="text-[15px] font-bold text-orange-600">₹{location.state?.price || 500}</span>
+              <span className="text-[15px] font-bold text-[#e55923]">₹{location.state?.price || 500}</span>
             </div>
           </div>
         </div>
@@ -102,7 +102,7 @@ const PoojaBookingForm = () => {
             <input
               type="date"
               required
-              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
+              className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               onClick={(e) => e.target.showPicker && e.target.showPicker()}
@@ -115,7 +115,7 @@ const PoojaBookingForm = () => {
             <div className="relative">
               <select
                 required
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer appearance-none"
+                className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white cursor-pointer appearance-none"
                 value={formData.time}
                 onChange={(e) => setFormData({ ...formData, time: e.target.value })}
               >
@@ -143,7 +143,7 @@ const PoojaBookingForm = () => {
               <textarea
                 rows="2"
                 placeholder="Any special requests or details..."
-                className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white resize-none"
+                className="w-full border-2 border-gray-200 rounded-xl py-3.5 px-4 text-[15px] font-medium text-gray-800 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 transition-all bg-gray-50 focus:bg-white resize-none"
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
@@ -160,7 +160,7 @@ const PoojaBookingForm = () => {
           disabled={!isFormValid || loading}
           className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm flex justify-center items-center gap-2 ${
             isFormValid && !loading
-              ? 'bg-orange-500 text-white shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
+              ? 'bg-[#fa6830] text-white shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
         >
@@ -184,7 +184,7 @@ const PoojaBookingForm = () => {
             
             <div className="p-5 space-y-4">
               <p className="text-[14px] text-gray-700 font-medium leading-relaxed">
-                The booking amount of <span className="font-bold text-orange-600">₹{location.state?.price || 500}</span> will be reserved from your wallet. 
+                The booking amount of <span className="font-bold text-[#e55923]">₹{location.state?.price || 500}</span> will be reserved from your wallet. 
                 The amount will only be transferred after the Pooja is successfully completed and verified. 
               </p>
               <p className="text-[13px] text-gray-500 font-bold">Do you want to continue?</p>
@@ -199,7 +199,7 @@ const PoojaBookingForm = () => {
               </button>
               <button 
                 onClick={handleConfirmSubmit}
-                className="flex-1 px-4 py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                className="flex-1 px-4 py-3 rounded-xl font-bold bg-[#fa6830] text-white hover:bg-[#e55923] transition-colors flex items-center justify-center gap-2 shadow-sm"
               >
                 Yes, Book Now
               </button>
@@ -233,7 +233,7 @@ const PoojaBookingForm = () => {
               {errorModalMessage.toLowerCase().includes('wallet') && (
                 <button 
                   onClick={() => navigate('/user/wallet')}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm"
+                  className="flex-1 px-4 py-3 rounded-xl font-bold bg-[#fa6830] text-white hover:bg-[#e55923] transition-colors shadow-sm"
                 >
                   Recharge Now
                 </button>

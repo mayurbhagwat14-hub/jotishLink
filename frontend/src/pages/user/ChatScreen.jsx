@@ -73,16 +73,16 @@ const ChatScreen = () => {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden border-2 border-orange-200">
-              <span className="text-orange-500 font-bold text-sm">{(user?.name || 'G')[0]}</span>
+              <span className="text-[#fa6830] font-bold text-sm">{(user?.name || 'G')[0]}</span>
             </div>
             <span className="text-gray-800 font-semibold text-[15px]">Find the Astrologer</span>
           </div>
           <div className="flex items-center gap-3">
             <button className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
-              <FiSearch size={18} className="text-orange-500" />
+              <FiSearch size={18} className="text-[#fa6830]" />
             </button>
             <button className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center hover:bg-orange-100 transition-colors">
-              <FiFilter size={16} className="text-orange-500" />
+              <FiFilter size={16} className="text-[#fa6830]" />
             </button>
           </div>
         </div>
@@ -95,9 +95,9 @@ const ChatScreen = () => {
         {/* Tab Bar */}
         <div className="flex border-b border-gray-100">
           {['Chat', 'Call'].map((tab) => (
-            <button key={tab} className={`flex-1 py-3 text-[14px] font-bold relative ${tab === 'Chat' ? 'text-orange-500' : 'text-gray-400'}`}>
+            <button key={tab} className={`flex-1 py-3 text-[14px] font-bold relative ${tab === 'Chat' ? 'text-[#fa6830]' : 'text-gray-400'}`}>
               {tab}
-              {tab === 'Chat' && <div className="absolute bottom-0 left-1/4 right-1/4 h-[3px] bg-orange-500 rounded-full" />}
+              {tab === 'Chat' && <div className="absolute bottom-0 left-1/4 right-1/4 h-[3px] bg-[#fa6830] rounded-full" />}
             </button>
           ))}
         </div>
@@ -110,7 +110,7 @@ const ChatScreen = () => {
               onClick={() => setActiveCategory(cat.name)}
               className={`flex items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 rounded-full text-[12px] font-semibold shrink-0 transition-all duration-200 ${
                 activeCategory === cat.name
-                  ? 'bg-orange-500 text-white shadow-sm'
+                  ? 'bg-[#fa6830] text-white shadow-sm'
                   : 'bg-orange-50 text-gray-600 border border-orange-100 hover:bg-orange-100'
               }`}
             >
@@ -152,7 +152,7 @@ const ChatScreen = () => {
                     {astro.discountedPrice ? (
                       <>
                         <span className="text-[14px] text-gray-400 line-through">₹{astro.price}</span>
-                        <span className="text-[14px] font-bold text-orange-500">₹{astro.discountedPrice}/min</span>
+                        <span className="text-[14px] font-bold text-[#fa6830]">₹{astro.discountedPrice}/min</span>
                       </>
                     ) : (
                       <span className="text-[14px] font-bold text-gray-800">₹{astro.price}<span className="text-[12px] text-gray-400 font-normal">/min</span></span>
@@ -163,7 +163,7 @@ const ChatScreen = () => {
                 <div className="flex flex-col items-end justify-center">
                   <button
                     onClick={() => handleSessionRequest(astro, 'chat')}
-                    className="bg-orange-500 text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
+                    className="bg-[#fa6830] text-white font-bold text-[12px] px-5 py-2 rounded-xl shadow-sm shadow-orange-200 hover:bg-[#e55923] active:scale-95 transition-all"
                   >
                     Chat
                   </button>

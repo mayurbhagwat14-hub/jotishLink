@@ -16,7 +16,7 @@ const CartBottomSheet = () => {
   const totalPrice = cart.items.reduce((sum, item) => sum + (item.productId?.price || 0) * item.quantity, 0);
 
   return (
-    <div className="fixed bottom-[72px] lg:bottom-4 left-4 right-4 lg:left-auto lg:w-[400px] z-40 bg-orange-500 rounded-2xl shadow-xl p-4 flex items-center justify-between cursor-pointer hover:bg-orange-600 transition-colors animate-slide-up" onClick={() => navigate('/user/cart')}>
+    <div className="fixed bottom-[72px] lg:bottom-4 left-4 right-4 lg:left-auto lg:w-[400px] z-40 bg-[#fa6830] rounded-2xl shadow-xl p-4 flex items-center justify-between cursor-pointer hover:bg-[#e55923] transition-colors animate-slide-up" onClick={() => navigate('/user/cart')}>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
           <FiShoppingCart className="text-white" size={20} />
