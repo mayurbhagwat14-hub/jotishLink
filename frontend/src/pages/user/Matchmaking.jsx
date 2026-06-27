@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { FiArrowLeft } from 'react-icons/fi';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 import { checkMatchmaking } from '../../api/userApis';
 
 const Matchmaking = () => {
@@ -131,8 +132,9 @@ const Matchmaking = () => {
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Place of Birth</label>
-                    <input 
-                      required type="text" placeholder="Enter city"
+                    <LocationAutocomplete 
+                      required placeholder="Enter city"
+                      name="boyPob"
                       value={formData.boyPob} onChange={e => setFormData({...formData, boyPob: e.target.value})}
                       className="w-full border border-gray-200 focus:border-blue-500 bg-white rounded-2xl py-3 px-4 outline-none transition-all text-[14px] shadow-sm" 
                     />
@@ -172,8 +174,9 @@ const Matchmaking = () => {
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Place of Birth</label>
-                    <input 
-                      required type="text" placeholder="Enter city"
+                    <LocationAutocomplete 
+                      required placeholder="Enter city"
+                      name="girlPob"
                       value={formData.girlPob} onChange={e => setFormData({...formData, girlPob: e.target.value})}
                       className="w-full border border-gray-200 focus:border-rose-500 bg-white rounded-2xl py-3 px-4 outline-none transition-all text-[14px] shadow-sm" 
                     />

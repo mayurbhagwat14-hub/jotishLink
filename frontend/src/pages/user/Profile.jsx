@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiUploadCloud, FiSave, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import { updateUser, fetchProfileThunk, updateProfileThunk, logout } from '../../store/slices/authSlice';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 import axiosInstance from '../../api/axios';
 import { toast } from 'react-hot-toast';
 
@@ -208,8 +209,13 @@ const Profile = () => {
           {/* Place of Birth */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Place of Birth</label>
-            <input type="text" name="placeOfBirth" value={formData.placeOfBirth} onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
+            <LocationAutocomplete 
+              name="placeOfBirth" 
+              value={formData.placeOfBirth} 
+              onChange={handleChange}
+              placeholder=""
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" 
+            />
           </div>
 
           {/* Current Address */}
@@ -223,9 +229,13 @@ const Profile = () => {
           {/* City */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">City, State, Country</label>
-            <input type="text" name="city" value={formData.city} onChange={handleChange}
+            <LocationAutocomplete 
+              name="city" 
+              value={formData.city} 
+              onChange={handleChange}
               placeholder="Enter Town/City, State, Country"
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-400 font-medium text-[15px] outline-none focus:border-[#fa6830] focus:text-gray-800 transition-colors" />
+              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-400 font-medium text-[15px] outline-none focus:border-[#fa6830] focus:text-gray-800 transition-colors" 
+            />
           </div>
 
           {/* Pincode */}

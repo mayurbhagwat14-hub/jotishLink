@@ -201,7 +201,7 @@ const ApplyAstrologer = () => {
     if (!aadhaarFront || !aadhaarBack || !panCard || !certificate || !selfieVerification) { toast.error('All Document uploads are required.'); return setLoading(false); }
     
     if (formData.fullName.trim().length < 3) { toast.error('Full Name must be at least 3 characters.'); return setLoading(false); }
-    if (!/^\d{10}$/.test(formData.mobile)) { toast.error('Mobile Number must be exactly 10 digits.'); return setLoading(false); }
+    if (!/^[6-9]\d{9}$/.test(formData.mobile)) { toast.error('Mobile Number must be a valid 10-digit Indian number.'); return setLoading(false); }
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(formData.email)) { 
       toast.error('Please enter a valid email format (e.g. name@domain.com).'); 
@@ -421,6 +421,7 @@ const ApplyAstrologer = () => {
                     type="text" 
                     name="fullName"
                     required
+                    minLength={3}
                     value={formData.fullName}
                     onChange={handleChange}
                     placeholder="Enter your full name" 
@@ -440,8 +441,11 @@ const ApplyAstrologer = () => {
                       value={formData.mobile}
                       onChange={(e) => {
                         const val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 0 && !/^[6-9]/.test(val)) return;
                         if (val.length <= 10) handleChange({ target: { name: 'mobile', value: val } });
                       }}
+                      pattern="^[6-9]\d{9}$"
+                      title="10-digit mobile number starting with 6-9"
                       placeholder="10-digit mobile number" 
                       className="w-full px-4 py-3 border-0 focus:outline-none font-medium text-gray-800 bg-transparent"
                     />
@@ -455,6 +459,8 @@ const ApplyAstrologer = () => {
                     type="email" 
                     name="email"
                     required
+                    pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
+                    title="Enter a valid email address"
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="name@example.com" 
@@ -469,9 +475,10 @@ const ApplyAstrologer = () => {
                     type="password" 
                     name="password"
                     required
+                    minLength={6}
                     value={formData.password}
                     onChange={handleChange}
-                    placeholder="Create a password" 
+                    placeholder="Minimum 6 characters" 
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
@@ -523,7 +530,7 @@ const ApplyAstrologer = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pincode <span className="text-red-500">*</span></label>
-                      <input type="text" name="pincode" required value={formData.pincode} onChange={handleChange} placeholder="ZIP" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
+                      <input type="text" name="pincode" required pattern="^\d{6}$" title="6-digit pincode" value={formData.pincode} onChange={handleChange} placeholder="e.g. 400001" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
                     </div>
                   </div>
                 </div>
@@ -711,11 +718,11 @@ const ApplyAstrologer = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Account Number <span className="text-red-500">*</span></label>
-                      <input type="password" name="accountNumber" required value={formData.accountNumber} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
+                      <input type="password" name="accountNumber" required pattern="^\d{9,18}$" title="Account number between 9 and 18 digits" value={formData.accountNumber} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">IFSC Code <span className="text-red-500">*</span></label>
-                      <input type="text" name="ifscCode" required value={formData.ifscCode} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
+                      <input type="text" name="ifscCode" required pattern="^[A-Za-z]{4}0[A-Za-z0-9]{6}$" title="Valid IFSC Code (e.g. SBIN0123456)" value={formData.ifscCode} onChange={(e) => handleChange({ target: { name: 'ifscCode', value: e.target.value.toUpperCase() } })} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">UPI ID (Optional)</label>
@@ -731,6 +738,7 @@ const ApplyAstrologer = () => {
                 <textarea 
                   name="description"
                   required
+                  minLength={20}
                   rows="4"
                   value={formData.description}
                   onChange={handleChange}
@@ -779,7 +787,11 @@ const ApplyAstrologer = () => {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-[#fa6830] hover:bg-[#e55923] text-white font-black rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+                className={`w-full py-4 font-black rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  loading
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed opacity-70'
+                    : 'bg-[#fa6830] hover:bg-[#e55923] text-white shadow-lg shadow-orange-500/30 active:scale-[0.98]'
+                }`}
               >
                 {loading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Submit Application & Get OTP'}
               </button>

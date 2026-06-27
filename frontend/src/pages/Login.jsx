@@ -268,6 +268,7 @@ const Login = () => {
               value={phoneNumber}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '');
+                if (val.length > 0 && !/^[6-9]/.test(val)) return;
                 if (val.length <= 10) setPhoneNumber(val);
               }}
             />
@@ -275,9 +276,9 @@ const Login = () => {
 
           <button
             type="submit"
-            disabled={loading || phoneNumber.length < 10}
+            disabled={loading || !/^[6-9]\d{9}$/.test(phoneNumber)}
             className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 ${
-              loading || phoneNumber.length < 10
+              loading || !/^[6-9]\d{9}$/.test(phoneNumber)
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-orange-500 text-white shadow-lg shadow-orange-200 hover:bg-orange-600 active:scale-[0.98]'
             }`}

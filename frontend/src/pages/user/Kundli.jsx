@@ -9,6 +9,7 @@ import {
   FiAlertTriangle
 } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 import { updateUser } from '../../store/slices/authSlice';
 import { getKundli } from '../../api/userApis';
 import html2canvas from 'html2canvas';
@@ -157,10 +158,11 @@ const Kundli = () => {
               </div>
               <div className="col-span-1 md:col-span-2">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Place of Birth</label>
-                <input 
-                  required type="text" 
+                <LocationAutocomplete 
+                  required 
                   placeholder="Enter city"
-                  value={formData.placeOfBirth} onChange={e => setFormData({...formData, placeOfBirth: e.target.value})}
+                  value={formData.placeOfBirth} 
+                  onChange={e => setFormData({...formData, placeOfBirth: e.target.value})}
                   className="w-full border border-gray-200 focus:border-[#fa6830] rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
                 />
               </div>

@@ -284,7 +284,13 @@ const Checkout = () => {
               <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input 
                 type="tel" name="phone" placeholder="Phone Number" 
-                value={formData.phone} onChange={handleChange} required
+                value={formData.phone} 
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (val.length > 0 && !/^[6-9]/.test(val)) return;
+                  if (val.length <= 10) handleChange({ target: { name: 'phone', value: val } });
+                }} 
+                required
                 className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3.5 text-[14px] text-gray-800 font-medium outline-none focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400 placeholder:font-medium"
               />
             </div>
@@ -378,11 +384,11 @@ const Checkout = () => {
         <button
           onClick={handlePlaceOrder}
           className={`w-full py-4 rounded-xl font-black tracking-wide text-[15px] transition-all duration-300 shadow-sm ${
-            !loading
+            (!loading && /^[6-9]\d{9}$/.test(formData.phone))
               ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-orange-500/25 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:scale-[0.98]'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
-          disabled={loading}
+          disabled={loading || !/^[6-9]\d{9}$/.test(formData.phone)}
         >
           {loading ? 'PROCESSING...' : 'PLACE ORDER'}
         </button>
