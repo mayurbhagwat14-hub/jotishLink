@@ -112,7 +112,7 @@ const PoojaDetails = () => {
               </div>
             )}
 
-            {pooja.proofMedia && pooja.proofMedia.length > 0 ? (
+            {Array.isArray(pooja.proofMedia) && pooja.proofMedia.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {pooja.proofMedia.map((mediaUrl, idx) => {
                   if (!mediaUrl || typeof mediaUrl !== 'string') return null;
