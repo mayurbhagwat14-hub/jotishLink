@@ -6,6 +6,8 @@ import { getSocket } from '../../socket/socketManager';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
 import { updateUser } from '../../store/slices/authSlice';
+import UserLayout from '../../layouts/UserLayout';
+import { compressImage } from '../../utils/imageCompressor';
 import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
 
@@ -288,7 +290,7 @@ Please analyze my chart based on this information.`;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -311,11 +313,13 @@ Please analyze my chart based on this information.`;
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedBase64 = await compressImage(file);
+      setPreviewImage(compressedBase64);
+    } catch (error) {
+      console.error('Image compression failed:', error);
+      toast.error('Failed to process image');
+    }
     e.target.value = null; // Reset input
   };
 

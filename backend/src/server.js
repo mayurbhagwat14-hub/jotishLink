@@ -1153,7 +1153,7 @@ io.on('connection', (socket) => {
         }
       }
 
-      socketRoomMap.delete(socket.id);
+          socketRoomMap.delete(socket.id);
     }
   });
 });
@@ -1161,6 +1161,7 @@ io.on('connection', (socket) => {
 // ──────────────────────────────────────────────
 //  Express Middleware
 // ──────────────────────────────────────────────
+app.set('trust proxy', 1); // Trust first proxy for rate limiting
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));

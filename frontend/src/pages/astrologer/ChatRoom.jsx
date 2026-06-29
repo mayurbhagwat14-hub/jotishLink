@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeActiveSession } from '../../store/slices/astrologerSlice';
 import LogoLoader from '../../components/LogoLoader';
+import { compressImage } from '../../utils/imageCompressor';
 
 const ChatRoom = () => {
   const navigate = useNavigate();
@@ -200,7 +201,7 @@ const ChatRoom = () => {
     setInputText('');
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file || !sessionData) return;
 
@@ -223,11 +224,13 @@ const ChatRoom = () => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressedBase64 = await compressImage(file);
+      setPreviewImage(compressedBase64);
+    } catch (error) {
+      console.error('Image compression failed:', error);
+      toast.error('Failed to process image');
+    }
     e.target.value = null; // Reset input
   };
 
