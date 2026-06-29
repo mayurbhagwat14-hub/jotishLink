@@ -201,21 +201,8 @@ export const usePushNotifications = () => {
         duration: (type === 'incoming_call' || type === 'incoming_chat') ? 6000 : 5000,
       });
 
-      // ALWAYS show an OS notification if permitted
-      if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(title, {
-            body,
-            icon: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png',
-            badge: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png',
-            tag: payload.messageId || `jl-${Date.now()}`,
-            data: payload.data,
-            vibrate: (type === 'incoming_call' || type === 'incoming_chat') ? [200, 100, 200, 100, 200] : [100, 50, 100],
-          }).catch((err) => {
-            console.warn('Failed to show foreground notification via service worker:', err);
-          });
-        });
-      }
+      // Skipping native OS notification in foreground to prevent duplicates.
+      // The toast above is sufficient when the app is active.
     });
 
     return () => {

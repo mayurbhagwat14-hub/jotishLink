@@ -73,8 +73,9 @@ app.set('io', io);
 const activeTimers = new Map();
 // ── Track socket associations for strict disconnect handling (socket.id -> roomId)
 const socketRoomMap = new Map();
-// ── Track pending session requests (roomId -> { userSocketId, userId, astrologerId, type })
+// ── Track pending session requests (roomId -> { userSocketId, userId, astrologerId, type, timeoutId })
 const pendingRequests = new Map();
+const REQUEST_TIMEOUT_MS = 60 * 1000; // 60s timeout matching WaitingScreen.jsx
 // ── Grace-period timers for chat disconnect auto-end (roomId -> timerId)
 // When a chat user disconnects, we wait this long before auto-ending the session.
 // If the user reconnects (join_room) within this window, the timer is cancelled.
@@ -125,7 +126,17 @@ io.on('connection', (socket) => {
     }
 
     const roomId = `room_${Date.now()}_${userId}`;
-    pendingRequests.set(roomId, { userSocketId: socket.id, userId, astrologerId, type });
+    
+    const timeoutId = setTimeout(() => {
+      if (pendingRequests.has(roomId)) {
+        pendingRequests.delete(roomId);
+        io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
+        io.to(socket.id).emit('request_expired', { roomId });
+        console.log(`[Socket.IO] Request ${roomId} expired after ${REQUEST_TIMEOUT_MS}ms`);
+      }
+    }, REQUEST_TIMEOUT_MS);
+
+    pendingRequests.set(roomId, { userSocketId: socket.id, userId, astrologerId, type, timeoutId });
 
     io.to(`astro_${astrologerId}`).emit('incoming_session_request', {
       roomId,
@@ -158,7 +169,11 @@ io.on('connection', (socket) => {
   // ── User cancels their session request
   socket.on('cancel_session_request', async ({ astrologerId, userId, roomId }) => {
     io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
-    if (roomId) pendingRequests.delete(roomId);
+    if (roomId && pendingRequests.has(roomId)) {
+      const reqData = pendingRequests.get(roomId);
+      if (reqData.timeoutId) clearTimeout(reqData.timeoutId);
+      pendingRequests.delete(roomId);
+    }
     console.log(`[Socket.IO] User ${userId} cancelled request to Astrologer ${astrologerId}`);
   });
 
@@ -166,10 +181,14 @@ io.on('connection', (socket) => {
   socket.on('accept_session', async ({ roomId, userSocketId }) => {
     const reqData = pendingRequests.get(roomId);
 
-    // Guard: if this request was already removed (e.g. user cancelled, or another accept cleared it)
+    // Guard: if this request was already removed (e.g. user cancelled, expired, or another accept cleared it)
     if (!reqData) {
-      socket.emit('accept_failed', { reason: 'This request is no longer available.' });
+      socket.emit('accept_failed', { reason: 'This request has expired or is no longer available.' });
       return;
+    }
+
+    if (reqData.timeoutId) {
+      clearTimeout(reqData.timeoutId);
     }
 
     if (reqData.astrologerId) {
@@ -216,8 +235,10 @@ io.on('connection', (socket) => {
           rejectedRoomIds.push(pendingRoomId);
         }
       }
-      // Clean up rejected entries from the map
+      // Clean up rejected entries from the map and clear timeouts
       for (const rid of rejectedRoomIds) {
+        const pd = pendingRequests.get(rid);
+        if (pd && pd.timeoutId) clearTimeout(pd.timeoutId);
         pendingRequests.delete(rid);
       }
 
@@ -271,7 +292,11 @@ io.on('connection', (socket) => {
 
   // ── Astrologer rejects session
   socket.on('reject_session', ({ roomId, userSocketId, reason }) => {
-    if (roomId) pendingRequests.delete(roomId);
+    if (roomId && pendingRequests.has(roomId)) {
+      const reqData = pendingRequests.get(roomId);
+      if (reqData.timeoutId) clearTimeout(reqData.timeoutId);
+      pendingRequests.delete(roomId);
+    }
     io.to(userSocketId).emit('session_rejected', { reason: reason || 'Astrologer is busy right now.' });
     console.log(`[Socket.IO] Astrologer rejected session. Reason: ${reason}`);
   });
@@ -512,13 +537,23 @@ io.on('connection', (socket) => {
           // Check if user has enough balance for at least 5 minutes
           if (user && user.wallet >= (rate * 5) && astrologerId) {
             // Add to pending requests map so astrologer's accept_session works correctly
+            const timeoutId = setTimeout(() => {
+              if (pendingRequests.has(roomId)) {
+                pendingRequests.delete(roomId);
+                io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
+                io.to(socket.id).emit('request_expired', { roomId });
+                console.log(`[Socket.IO] Handoff request ${roomId} expired after ${REQUEST_TIMEOUT_MS}ms`);
+              }
+            }, REQUEST_TIMEOUT_MS);
+
             pendingRequests.set(roomId, {
               roomId,
               userId,
               astrologerId,
               userName: user.name,
               type: 'chat',
-              userSocketId: socket.id
+              userSocketId: socket.id,
+              timeoutId
             });
 
             // Silently request real astrologer

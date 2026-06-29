@@ -660,16 +660,12 @@ Please analyze my chart based on this information.`;
             <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-lg font-bold shrink-0">⚠️</div>
               <div>
-                <h3 className="font-bold text-gray-900 text-[16px]">Chat se baahar jaayein?</h3>
-                <p className="text-[12px] text-gray-500 font-medium">Leave this chat?</p>
+                <h3 className="font-bold text-gray-900 text-[16px]">Leave this chat?</h3>
               </div>
             </div>
 
             <div className="p-5">
               <p className="text-[14px] text-gray-700 font-medium leading-relaxed">
-                Chat se baahar jaane par session end ho jayega aur charges lagna band ho jayenge.
-              </p>
-              <p className="text-[12px] text-gray-400 font-medium mt-2">
                 Leaving will end the session and stop all charges.
               </p>
             </div>

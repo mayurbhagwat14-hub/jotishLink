@@ -91,8 +91,8 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
 
     const isUrgent = data.type === 'incoming_call' || data.type === 'incoming_chat';
 
-    // Use a top-level notification object to ensure mobile devices automatically
-    // display system notifications in the background.
+    // Use a purely DATA-ONLY payload to prevent automatic OS-level notifications.
+    // This allows the frontend to explicitly handle foreground vs background display.
     const dataWithNotifInfo = {
       ...formattedData,
       title: String(title),
@@ -103,34 +103,14 @@ export const sendMulticastPushNotification = async (tokens, title, body, data = 
 
     const payload = {
       tokens: validTokens,
-      notification: {
-        title: String(title),
-        body: String(body),
-        ...(data.image && { imageUrl: data.image })
-      },
       data: dataWithNotifInfo,
       webpush: {
         fcmOptions: {
           link: data.url ? `${process.env.CLIENT_URL || 'http://localhost:5173'}${data.url}` : (process.env.CLIENT_URL || 'http://localhost:5173')
-        },
-        notification: {
-          title: title,
-          body: body,
-          icon: defaultIcon,
-          badge: defaultIcon,
-          ...(data.image && { image: data.image })
         }
       },
       android: {
-        priority: isUrgent ? 'high' : 'normal',
-        notification: {
-          title: title,
-          body: body,
-          sound: 'default',
-          channelId: isUrgent ? 'high_importance_channel' : 'default_channel',
-          clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-          ...(data.image && { imageUrl: data.image })
-        }
+        priority: isUrgent ? 'high' : 'normal'
       },
       apns: {
         headers: {

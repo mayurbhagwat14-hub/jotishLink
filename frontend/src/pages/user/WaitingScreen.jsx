@@ -77,11 +77,19 @@ const WaitingScreen = () => {
     socket.on('session_accepted', onAccepted);
     socket.on('session_rejected', onRejected);
 
+    const onExpired = () => {
+      console.log('[WaitingScreen] request_expired received');
+      clearInterval(timerRef.current);
+      setStatus('timeout');
+    };
+    socket.on('request_expired', onExpired);
+
     timerRef.current = setInterval(() => {
       setElapsed((prev) => {
         if (prev + 1 >= TIMEOUT) {
           clearInterval(timerRef.current);
           setStatus('timeout');
+          socket.emit('cancel_session_request', { astrologerId, userId: user._id });
         }
         return prev + 1;
       });
@@ -90,6 +98,7 @@ const WaitingScreen = () => {
     return () => {
       socket.off('session_accepted', onAccepted);
       socket.off('session_rejected', onRejected);
+      socket.off('request_expired', onExpired);
       clearInterval(timerRef.current);
     };
   }, []);

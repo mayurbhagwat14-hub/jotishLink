@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiMapPin, FiCreditCard, FiTruck, FiCrosshair, FiUser, FiMail, FiPhone, FiHome, FiMap } from 'react-icons/fi';
-import { createOrderThunk } from '../../store/slices/cartSlice';
+import { createOrderThunk, fetchCartThunk } from '../../store/slices/cartSlice';
 import { fetchWalletThunk } from '../../store/slices/walletSlice';
 import toast from 'react-hot-toast';
 
@@ -146,6 +146,26 @@ const Checkout = () => {
           setLoading(false);
           return;
         } else {
+          // Pre-flight stock validation before opening Razorpay
+          const freshCartRes = await dispatch(fetchCartThunk()).unwrap();
+          const freshCartItems = freshCartRes?.data?.cart?.items || freshCartRes?.cart?.items || [];
+          
+          let stockError = null;
+          for (const item of freshCartItems) {
+            if (!item.productId) continue;
+            if (item.quantity > item.productId.stock) {
+              stockError = `"${item.productId.name}" is out of stock or insufficient quantity (Available: ${item.productId.stock}).`;
+              break;
+            }
+          }
+
+          if (stockError) {
+            toast.error(stockError);
+            setLoading(false);
+            navigate('/user/cart', { replace: true });
+            return;
+          }
+
           // Wallet insufficient, use Razorpay
           const res = await loadRazorpayScript();
           if (!res) {
