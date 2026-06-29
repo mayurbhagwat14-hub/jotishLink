@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
     const timeoutId = setTimeout(() => {
       if (pendingRequests.has(roomId)) {
         pendingRequests.delete(roomId);
-        io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
+        io.to(`astro_${astrologerId}`).to(`room_astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
         io.to(socket.id).emit('request_expired', { roomId });
         console.log(`[Socket.IO] Request ${roomId} expired after ${REQUEST_TIMEOUT_MS}ms`);
       }
@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
 
     pendingRequests.set(roomId, { userSocketId: socket.id, userId, astrologerId, type, timeoutId });
 
-    io.to(`astro_${astrologerId}`).emit('incoming_session_request', {
+    const incomingPayload = {
       roomId,
       userId,
       astrologerId,
@@ -147,7 +147,8 @@ io.on('connection', (socket) => {
       durationLimit,
       callId,
       userSocketId: socket.id
-    });
+    };
+    io.to(`astro_${astrologerId}`).to(`room_astro_${astrologerId}`).emit('incoming_session_request', incomingPayload);
     console.log(`[Socket.IO] User ${userId} requested ${type} session with Astrologer ${astrologerId}`);
 
     try {
@@ -168,11 +169,19 @@ io.on('connection', (socket) => {
 
   // ── User cancels their session request
   socket.on('cancel_session_request', async ({ astrologerId, userId, roomId }) => {
-    io.to(`astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
+    io.to(`astro_${astrologerId}`).to(`room_astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId });
     if (roomId && pendingRequests.has(roomId)) {
       const reqData = pendingRequests.get(roomId);
       if (reqData.timeoutId) clearTimeout(reqData.timeoutId);
       pendingRequests.delete(roomId);
+    } else if (userId && astrologerId) {
+      for (const [pendingRoomId, reqData] of pendingRequests.entries()) {
+        if (reqData.userId === userId && reqData.astrologerId === astrologerId) {
+          if (reqData.timeoutId) clearTimeout(reqData.timeoutId);
+          pendingRequests.delete(pendingRoomId);
+          io.to(`astro_${astrologerId}`).to(`room_astro_${astrologerId}`).emit('session_request_cancelled', { userId, roomId: pendingRoomId });
+        }
+      }
     }
     console.log(`[Socket.IO] User ${userId} cancelled request to Astrologer ${astrologerId}`);
   });
@@ -265,11 +274,13 @@ io.on('connection', (socket) => {
       if (rejectedRequests.length > 0) {
         io.to(`astro_${reqData.astrologerId}`).emit('pending_requests_cleared', {
           acceptedRoomId: roomId,
-          clearedCount: rejectedRequests.length
+          clearedCount: rejectedRequests.length,
+          clearedRoomIds: rejectedRequests.map((request) => request.roomId)
         });
         io.to(`room_astro_${reqData.astrologerId}`).emit('pending_requests_cleared', {
           acceptedRoomId: roomId,
-          clearedCount: rejectedRequests.length
+          clearedCount: rejectedRequests.length,
+          clearedRoomIds: rejectedRequests.map((request) => request.roomId)
         });
         console.log(`[Socket.IO] Auto-rejected ${rejectedRequests.length} other pending request(s) for astrologer ${reqData.astrologerId}`);
       }

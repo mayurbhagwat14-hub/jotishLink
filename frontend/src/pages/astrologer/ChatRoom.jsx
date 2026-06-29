@@ -356,18 +356,7 @@ const ChatRoom = () => {
       {/* Chat Input */}
       {!isViewOnly && (
       <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] flex flex-col">
-        {previewImage && (
-          <div className="mb-3 relative w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-gray-200">
-            <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
-            <button 
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
-              aria-label="Remove selected image"
-            >
-              <FiX size={12} strokeWidth={3} />
-            </button>
-          </div>
-        )}
+        {/* Professional Image Preview Modal is now rendered separately below */}
         <div className="flex items-end gap-2">
           <input 
             type="file" 
@@ -406,6 +395,53 @@ const ChatRoom = () => {
           </button>
         </div>
       </footer>
+      )}
+
+      {/* Professional Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center touch-none animate-fade-in">
+          
+          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent z-50">
+            <button 
+              onClick={() => {
+                setPreviewImage(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+              className="text-white hover:text-gray-300 transition-colors flex items-center gap-2 font-bold px-2 py-2"
+            >
+              <FiX size={24} /> Cancel
+            </button>
+          </div>
+
+          <div className="flex-1 w-full flex items-center justify-center overflow-hidden py-20 px-4">
+            <img 
+              src={previewImage} 
+              alt="Preview" 
+              className="max-w-full max-h-full object-contain shadow-2xl" 
+            />
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 p-4 pb-8 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center gap-3 w-full max-w-3xl mx-auto z-50">
+            <div className="flex-1 bg-gray-800/90 backdrop-blur border border-gray-700 rounded-full overflow-hidden flex items-center shadow-lg">
+              <input 
+                type="text"
+                value={inputText}
+                onChange={handleInputChange}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
+                placeholder="Add a caption..."
+                className="w-full bg-transparent px-6 py-4 outline-none text-white placeholder-gray-400 text-[15px]"
+              />
+            </div>
+            
+            <button 
+              onClick={handleSend}
+              disabled={isUploading}
+              className="w-14 h-14 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] transition-colors shadow-lg shadow-orange-500/30 shrink-0 disabled:opacity-50"
+            >
+              {isUploading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <FiSend className="-ml-1 mt-0.5" size={24} />}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Image Viewer overlay */}

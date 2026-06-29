@@ -10,7 +10,7 @@ const Chats = () => {
   const [processingId, setProcessingId] = useState(null);
 
   const { incomingRequests, activeSessions } = useSelector((state) => state.astrologer);
-  const { token } = useSelector((state) => state.astrologerAuth);
+  const { user } = useSelector((state) => state.astrologerAuth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -42,7 +42,11 @@ const Chats = () => {
   const handleAccept = (req) => {
     setProcessingId(req.roomId);
     const socket = getSocket();
-    socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
+    socket.emit('accept_session', { 
+      roomId: req.roomId, 
+      userSocketId: req.userSocketId,
+      astrologerId: user._id 
+    });
     dispatch(clearAllIncomingRequests());
     dispatch(addActiveSession({ ...req, status: 'active' }));
     
@@ -54,7 +58,13 @@ const Chats = () => {
 
   const handleReject = (req) => {
     const socket = getSocket();
-    socket.emit('reject_session', { userSocketId: req.userSocketId, reason: 'Astrologer is busy' });
+    socket.emit('reject_session', {
+      roomId: req.roomId,
+      userSocketId: req.userSocketId,
+      astrologerId: req.astrologerId || astrologer?._id,
+      userId: req.userId,
+      reason: 'Astrologer is busy'
+    });
     dispatch(removeIncomingRequest(req.roomId));
   };
 

@@ -134,6 +134,10 @@ const astrologerSlice = createSlice({
     removeIncomingRequest: (state, action) => {
       state.incomingRequests = state.incomingRequests.filter(r => r.roomId !== action.payload);
     },
+    removeIncomingRequestsByRoomIds: (state, action) => {
+      const roomIds = new Set(action.payload || []);
+      state.incomingRequests = state.incomingRequests.filter(r => !roomIds.has(r.roomId));
+    },
     removeIncomingRequestByUserId: (state, action) => {
       state.incomingRequests = state.incomingRequests.filter(r => r.userId !== action.payload);
     },
@@ -222,6 +226,14 @@ const astrologerSlice = createSlice({
   }
 });
 
-export const { addIncomingRequest, removeIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, addActiveSession, removeActiveSession } = astrologerSlice.actions;
+export const {
+  addIncomingRequest,
+  removeIncomingRequest,
+  removeIncomingRequestsByRoomIds,
+  removeIncomingRequestByUserId,
+  clearAllIncomingRequests,
+  addActiveSession,
+  removeActiveSession
+} = astrologerSlice.actions;
 
 export default astrologerSlice.reducer;

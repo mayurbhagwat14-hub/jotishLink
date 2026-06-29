@@ -3,7 +3,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getSocket } from '../socket/socketManager';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchAdminDashboardThunk } from '../store/slices/dashboardSlice';
-import { addIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, removeActiveSession, removeIncomingRequest } from '../store/slices/astrologerSlice';
+import {
+  addIncomingRequest,
+  removeIncomingRequestByUserId,
+  removeIncomingRequestsByRoomIds,
+  clearAllIncomingRequests,
+  removeActiveSession,
+  removeIncomingRequest
+} from '../store/slices/astrologerSlice';
 import { fetchAstrologerDashboardThunk } from '../store/slices/dashboardSlice';
 import toast from 'react-hot-toast';
 
@@ -95,6 +102,15 @@ export const useGlobalSocket = () => {
       });
     };
 
+    const handlePendingClearedByRoom = (data = {}) => {
+      if (!astrologerAuth.isAuthenticated) return;
+      if (Array.isArray(data.clearedRoomIds) && data.clearedRoomIds.length > 0) {
+        dispatch(removeIncomingRequestsByRoomIds(data.clearedRoomIds));
+      } else {
+        handlePendingCleared();
+      }
+    };
+
     const handleAcceptFailed = (data) => {
       if (!astrologerAuth.isAuthenticated) return;
       toast.error(data.reason || 'Accept failed due to active session.', {
@@ -113,7 +129,15 @@ export const useGlobalSocket = () => {
 
     const handleAcceptConfirmed = () => {
       if (!astrologerAuth.isAuthenticated) return;
+      dispatch(clearAllIncomingRequests());
       dispatch(fetchAstrologerDashboardThunk());
+    };
+
+    const handleAstroStatusChanged = ({ astrologerId, status }) => {
+      if (!astrologerAuth.isAuthenticated) return;
+      if (astrologerId === astrologerAuth.user?._id && status === 'busy') {
+        dispatch(clearAllIncomingRequests());
+      }
     };
 
     socket.on('wallet_updated', handleWalletUpdate);
@@ -126,11 +150,12 @@ export const useGlobalSocket = () => {
     // Attach astrologer listeners globally
     socket.on('incoming_session_request', handleIncomingRequest);
     socket.on('session_request_cancelled', handleRequestCancelled);
-    socket.on('pending_requests_cleared', handlePendingCleared);
+    socket.on('pending_requests_cleared', handlePendingClearedByRoom);
     socket.on('accept_failed', handleAcceptFailed);
     socket.on('session_ended', handleSessionEnded);
     socket.on('call_ended', handleSessionEnded);
     socket.on('session_accept_confirmed', handleAcceptConfirmed);
+    socket.on('astro_status_changed', handleAstroStatusChanged);
 
     // Cleanup to prevent memory leaks and duplicate toasts
     return () => {
@@ -144,11 +169,12 @@ export const useGlobalSocket = () => {
 
       socket.off('incoming_session_request', handleIncomingRequest);
       socket.off('session_request_cancelled', handleRequestCancelled);
-      socket.off('pending_requests_cleared', handlePendingCleared);
+      socket.off('pending_requests_cleared', handlePendingClearedByRoom);
       socket.off('accept_failed', handleAcceptFailed);
       socket.off('session_ended', handleSessionEnded);
       socket.off('call_ended', handleSessionEnded);
       socket.off('session_accept_confirmed', handleAcceptConfirmed);
+      socket.off('astro_status_changed', handleAstroStatusChanged);
     };
   }, [userAuth.isAuthenticated, adminAuth.isAuthenticated, astrologerAuth.isAuthenticated, dispatch]);
 };
