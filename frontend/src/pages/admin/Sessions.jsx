@@ -80,33 +80,34 @@ const AdminSessions = () => {
         source: 'CallSession'
       }));
 
-      const recentChats = allSessions.filter(s => s.status === 'completed' || s.status === 'missed').map(s => ({
+      const recentChats = allSessions.filter(s => s.status === 'completed' && (s.durationSeconds || 0) > 0).map(s => ({
         id: s._id,
         user: s.userId?.name || 'Unknown User',
         userAvatar: s.userId?.avatar || '',
         astrologer: s.astrologerId?.name || 'Unknown Astrologer',
         astrologerAvatar: s.astrologerId?.avatar || '',
         type: s.isBotSession ? 'Chat (Bot)' : 
+               s.isFreeChat ? 'Chat (Free)' :
                s.type === 'video_call' || s.type === 'video' ? 'Video Call' :
                s.type === 'audio_call' || s.type === 'audio' ? 'Audio Call' : 'Chat',
         duration: `${Math.floor((s.durationSeconds || 0) / 60)}m ${(s.durationSeconds || 0) % 60}s`,
         total: s.amountDeducted || 0,
-        status: s.status === 'completed' ? 'Completed' : 'Missed',
+        status: 'Completed',
         time: new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date(s.createdAt).getTime(),
         source: 'ChatSession'
       }));
 
-      const recentCallsData = allCalls.filter(c => ['completed', 'missed', 'rejected', 'cancelled'].includes(c.status)).map(c => ({
+      const recentCallsData = allCalls.filter(c => c.status === 'completed' && (c.duration || 0) > 0).map(c => ({
         id: c._id,
         user: c.userId?.name || 'Unknown User',
         userAvatar: c.userId?.avatar || '',
         astrologer: c.astrologerId?.name || 'Unknown Astrologer',
         astrologerAvatar: c.astrologerId?.avatar || '',
-        type: 'Audio Call',
+        type: c.isFreeCall ? 'Audio Call (Free)' : 'Audio Call',
         duration: `${Math.floor((c.duration || 0) / 60)}m ${(c.duration || 0) % 60}s`,
         total: c.totalAmount || 0,
-        status: c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : 'Unknown',
+        status: 'Completed',
         time: new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date(c.createdAt).getTime(),
         source: 'CallSession'
