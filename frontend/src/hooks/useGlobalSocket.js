@@ -22,6 +22,9 @@ export const useGlobalSocket = () => {
     const joinRoom = () => {
       activeUsers.forEach(u => {
         socket.emit('join_global_room', { userId: u._id, role: u.role });
+        if (u.role === 'astrologer') {
+          socket.emit('join_astrologer_room', { astrologerId: u._id });
+        }
       });
     };
 
