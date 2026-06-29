@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import getSocket from '../../socket/socketManager';
-import { removeIncomingRequest, addActiveSession, removeActiveSession } from '../../store/slices/astrologerSlice';
+import { removeIncomingRequest, addActiveSession, removeActiveSession, clearAllIncomingRequests } from '../../store/slices/astrologerSlice';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 
@@ -47,9 +47,7 @@ const Calls = () => {
       roomId: req.roomId,
       userSocketId: req.userSocketId,
     });
-    import('../../store/slices/astrologerSlice').then(({ clearAllIncomingRequests }) => {
-      dispatch(clearAllIncomingRequests());
-    });
+    dispatch(clearAllIncomingRequests());
     dispatch(addActiveSession({ ...req, status: 'active' }));
 
     if (req.type === 'video') {

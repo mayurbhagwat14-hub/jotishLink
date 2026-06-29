@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getSocket } from '../socket/socketManager';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchAdminDashboardThunk } from '../store/slices/dashboardSlice';
+import { addIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, removeActiveSession } from '../store/slices/astrologerSlice';
+import { fetchAstrologerDashboardThunk } from '../store/slices/dashboardSlice';
 import toast from 'react-hot-toast';
 
 export const useGlobalSocket = () => {
@@ -62,25 +64,19 @@ export const useGlobalSocket = () => {
     // --- Astrologer Global Listeners ---
     const handleIncomingRequest = (data) => {
       if (!astrologerAuth.isAuthenticated) return;
-      import('../store/slices/astrologerSlice').then(({ addIncomingRequest }) => {
-        dispatch(addIncomingRequest(data));
-      });
+      dispatch(addIncomingRequest(data));
       toast.success(`Incoming ${data.type} request from ${data.userName}!`, {
         duration: 10000,
         position: 'top-center',
         icon: data.type === 'call' || data.type === 'video' ? '📞' : '💬',
         style: { background: '#fa6830', color: '#fff', fontWeight: 'bold' }
       });
-      import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
-        dispatch(fetchAstrologerDashboardThunk());
-      });
+      dispatch(fetchAstrologerDashboardThunk());
     };
 
     const handleRequestCancelled = (data) => {
       if (!astrologerAuth.isAuthenticated) return;
-      import('../store/slices/astrologerSlice').then(({ removeIncomingRequestByUserId }) => {
-        dispatch(removeIncomingRequestByUserId(data.userId));
-      });
+      dispatch(removeIncomingRequestByUserId(data.userId));
       toast('Session request cancelled by user or expired.', {
         icon: '⏳',
         style: { background: '#f3f4f6', color: '#374151' }
@@ -89,9 +85,7 @@ export const useGlobalSocket = () => {
 
     const handlePendingCleared = () => {
       if (!astrologerAuth.isAuthenticated) return;
-      import('../store/slices/astrologerSlice').then(({ clearAllIncomingRequests }) => {
-        dispatch(clearAllIncomingRequests());
-      });
+      dispatch(clearAllIncomingRequests());
       toast('Aapne ek session accept kar liya hai — baaki pending requests clear ho gayi hain.', {
         duration: 4000,
         position: 'top-center',
@@ -112,17 +106,13 @@ export const useGlobalSocket = () => {
     const handleSessionEnded = (data) => {
       if (!astrologerAuth.isAuthenticated) return;
       if (data.roomId) {
-        import('../store/slices/astrologerSlice').then(({ removeActiveSession }) => {
-          dispatch(removeActiveSession(data.roomId));
-        });
+        dispatch(removeActiveSession(data.roomId));
       }
     };
 
     const handleAcceptConfirmed = () => {
       if (!astrologerAuth.isAuthenticated) return;
-      import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
-        dispatch(fetchAstrologerDashboardThunk());
-      });
+      dispatch(fetchAstrologerDashboardThunk());
     };
 
     socket.on('wallet_updated', handleWalletUpdate);

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { FiMessageSquare, FiCheck, FiX, FiLoader } from 'react-icons/fi';
 import getSocket from '../../socket/socketManager';
-import { removeIncomingRequest, addActiveSession, removeActiveSession } from '../../store/slices/astrologerSlice';
+import { removeIncomingRequest, addActiveSession, removeActiveSession, clearAllIncomingRequests } from '../../store/slices/astrologerSlice';
 
 const Chats = () => {
   const [activeTab, setActiveTab] = useState('Requests');
@@ -43,9 +43,7 @@ const Chats = () => {
     setProcessingId(req.roomId);
     const socket = getSocket();
     socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
-    import('../../store/slices/astrologerSlice').then(({ clearAllIncomingRequests }) => {
-      dispatch(clearAllIncomingRequests());
-    });
+    dispatch(clearAllIncomingRequests());
     dispatch(addActiveSession({ ...req, status: 'active' }));
     
     // Navigate immediately
