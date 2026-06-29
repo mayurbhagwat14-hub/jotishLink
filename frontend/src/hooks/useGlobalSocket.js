@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getSocket } from '../socket/socketManager';
 import { updateUser } from '../store/slices/authSlice';
 import { fetchAdminDashboardThunk } from '../store/slices/dashboardSlice';
-import { addIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, removeActiveSession } from '../store/slices/astrologerSlice';
+import { addIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, removeActiveSession, removeIncomingRequest } from '../store/slices/astrologerSlice';
 import { fetchAstrologerDashboardThunk } from '../store/slices/dashboardSlice';
 import toast from 'react-hot-toast';
 
@@ -76,7 +76,8 @@ export const useGlobalSocket = () => {
 
     const handleRequestCancelled = (data) => {
       if (!astrologerAuth.isAuthenticated) return;
-      dispatch(removeIncomingRequestByUserId(data.userId));
+      if (data.userId) dispatch(removeIncomingRequestByUserId(data.userId));
+      if (data.roomId) dispatch(removeIncomingRequest(data.roomId));
       toast('Session request cancelled by user or expired.', {
         icon: '⏳',
         style: { background: '#f3f4f6', color: '#374151' }
