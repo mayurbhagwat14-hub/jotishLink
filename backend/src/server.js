@@ -230,48 +230,48 @@ io.on('connection', (socket) => {
     // Notify those waiting users immediately instead of leaving them hanging.
     if (reqData.astrologerId) {
       const astroName = typeof acceptedAstrologerName === 'string' ? acceptedAstrologerName : 'Astrologer';
-      const rejectedRoomIds = [];
+      const rejectedRequests = [];
       for (const [pendingRoomId, pendingData] of pendingRequests.entries()) {
         if (pendingData.astrologerId === reqData.astrologerId) {
-          // Legacy event for backward compat
-          io.to(pendingData.userSocketId).emit('session_rejected', {
-            reason: `${astroName} is now busy with another consultation.`
-          });
-          // New dedicated event for the WaitingScreen "busy" popup
-          io.to(pendingData.userSocketId).emit('session_request_declined', {
-            reason: `${astroName} just accepted another consultation and is now busy. Please try again shortly or browse other astrologers.`,
-            astrologerName: astroName
-          });
-          // Tell astrologer frontend to remove THIS specific request card
-          io.to(`astro_${reqData.astrologerId}`).emit('session_request_cancelled', {
-            userId: pendingData.userId,
-            roomId: pendingRoomId
-          });
-          io.to(`room_astro_${reqData.astrologerId}`).emit('session_request_cancelled', {
-            userId: pendingData.userId,
-            roomId: pendingRoomId
-          });
-          rejectedRoomIds.push(pendingRoomId);
+          rejectedRequests.push({ roomId: pendingRoomId, ...pendingData });
         }
       }
-      // Clean up rejected entries from the map and clear timeouts
-      for (const rid of rejectedRoomIds) {
-        const pd = pendingRequests.get(rid);
-        if (pd && pd.timeoutId) clearTimeout(pd.timeoutId);
-        pendingRequests.delete(rid);
+
+      for (const rejectedRequest of rejectedRequests) {
+        if (rejectedRequest.timeoutId) clearTimeout(rejectedRequest.timeoutId);
+        pendingRequests.delete(rejectedRequest.roomId);
+
+        // Tell astrologer frontend to remove this specific request card.
+        io.to(`astro_${reqData.astrologerId}`).emit('session_request_cancelled', {
+          userId: rejectedRequest.userId,
+          roomId: rejectedRequest.roomId
+        });
+        io.to(`room_astro_${reqData.astrologerId}`).emit('session_request_cancelled', {
+          userId: rejectedRequest.userId,
+          roomId: rejectedRequest.roomId
+        });
+
+        // Dedicated event for WaitingScreen's busy modal. Avoid also sending
+        // session_rejected here because its generic busy handler navigates away.
+        io.to(rejectedRequest.userSocketId).emit('session_request_declined', {
+          reason: `${astroName} just accepted another consultation and is now busy. Please try again shortly or browse other astrologers.`,
+          astrologerName: astroName,
+          astrologerId: reqData.astrologerId,
+          roomId: rejectedRequest.roomId
+        });
       }
 
       // Notify astrologer frontend to clear all remaining pending request cards
-      if (rejectedRoomIds.length > 0) {
+      if (rejectedRequests.length > 0) {
         io.to(`astro_${reqData.astrologerId}`).emit('pending_requests_cleared', {
           acceptedRoomId: roomId,
-          clearedCount: rejectedRoomIds.length
+          clearedCount: rejectedRequests.length
         });
         io.to(`room_astro_${reqData.astrologerId}`).emit('pending_requests_cleared', {
           acceptedRoomId: roomId,
-          clearedCount: rejectedRoomIds.length
+          clearedCount: rejectedRequests.length
         });
-        console.log(`[Socket.IO] Auto-rejected ${rejectedRoomIds.length} other pending request(s) for astrologer ${reqData.astrologerId}`);
+        console.log(`[Socket.IO] Auto-rejected ${rejectedRequests.length} other pending request(s) for astrologer ${reqData.astrologerId}`);
       }
     }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiPaperclip, FiSend, FiArrowLeft } from 'react-icons/fi';
+import { FiPaperclip, FiSend, FiArrowLeft, FiX } from 'react-icons/fi';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import getSocket from '../../socket/socketManager';
 import api from '../../api/axios';
@@ -85,7 +85,11 @@ const ChatRoom = () => {
         const onReceiveMessage = (msg) => {
           setMessages(prev => [...prev, msg]);
           setIsTyping(false);
-          setIsUploading(false);
+          const isOwnImage = msg.sender === 'astrologer' && (msg.type === 'image' || msg.messageType === 'image');
+          if (isOwnImage) {
+            setIsUploading(false);
+            setPreviewImage(null);
+          }
         };
 
         const onMessageError = (data) => {
@@ -100,7 +104,7 @@ const ChatRoom = () => {
         const onUserTyping = () => setIsTyping(true);
         const onUserStoppedTyping = () => setIsTyping(false);
 
-        const onSessionEnded = ({ reason, durationSeconds }) => {
+        const onSessionEnded = ({ durationSeconds }) => {
           if (sessionEnded) return;
           setSessionEnded(true);
           const mins = Math.floor((durationSeconds || 0) / 60);
@@ -111,7 +115,7 @@ const ChatRoom = () => {
           dispatch(removeActiveSession(roomIdToJoin));
         };
 
-        const onEarningCredited = ({ netAmount, sessionId: earnedSessionId }) => {
+        const onEarningCredited = ({ netAmount }) => {
           setEndSessionInfo(prev => {
             if (prev && prev.message.includes('Processing earning...')) {
               return { ...prev, message: prev.message.replace('Processing earning...', `Estimated earning: ₹${Number(netAmount).toFixed(2)}`) };
@@ -180,7 +184,6 @@ const ChatRoom = () => {
         text: previewImage,
         type: 'image'
       });
-      setPreviewImage(null);
     }
     
     if (inputText.trim()) {
@@ -245,6 +248,16 @@ const ChatRoom = () => {
     return `${m}:${s}`;
   };
 
+  const getImageSrc = (msg) => {
+    if (!msg) return '';
+    if (msg.imageUrl) return msg.imageUrl;
+    if (typeof msg.text === 'string' && msg.text.startsWith('data:image/')) return msg.text;
+    if ((msg.type === 'image' || msg.messageType === 'image') && typeof msg.text === 'string' && /^https?:\/\//.test(msg.text)) {
+      return msg.text;
+    }
+    return '';
+  };
+
   if (!sessionData && !endSessionInfo) return <div className="flex h-screen items-center justify-center"><LogoLoader /></div>;
 
   const userName = location.state?.userName || sessionData?.userId?.name || 'User';
@@ -291,6 +304,7 @@ const ChatRoom = () => {
         {messages.map((msg, index) => {
           const isMe = msg.sender === 'astrologer';
           const isSystem = msg.sender === 'system' || msg.sender === 'bot';
+          const imageSrc = getImageSrc(msg);
 
           if (isSystem) {
             return (
@@ -311,12 +325,12 @@ const ChatRoom = () => {
                )}
                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
                  <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit whitespace-pre-wrap break-words relative`}>
-                  {msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? (
+                  {imageSrc ? (
                     <img 
-                      src={msg.type === 'image' ? msg.imageUrl : msg.text} 
+                      src={imageSrc} 
                       alt="attachment" 
                       className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" 
-                      onClick={() => setViewingImage(msg.type === 'image' ? msg.imageUrl : msg.text)} 
+                      onClick={() => setViewingImage(imageSrc)} 
                     />
                   ) : (
                     msg.text
@@ -348,8 +362,9 @@ const ChatRoom = () => {
             <button 
               onClick={() => setPreviewImage(null)}
               className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
+              aria-label="Remove selected image"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <FiX size={12} strokeWidth={3} />
             </button>
           </div>
         )}
@@ -402,8 +417,9 @@ const ChatRoom = () => {
           <button 
             className="absolute top-4 right-4 text-white p-2 hover:bg-white/10 rounded-full transition-colors z-50"
             onClick={(e) => { e.stopPropagation(); setViewingImage(null); }}
+            aria-label="Close image viewer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <FiX size={24} />
           </button>
           <img 
             src={viewingImage} 

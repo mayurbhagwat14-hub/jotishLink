@@ -1,20 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { getSocket } from '../../socket/socketManager';
-import { updateUser } from '../../store/slices/authSlice';
 import { FiX } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 
 const WaitingScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
   const { astrologer, type } = location.state || {};
   const { user } = useSelector((state) => state.auth);
 
   const [status, setStatus] = useState('waiting');
   const [rejectReason, setRejectReason] = useState('');
+  const [declinedReason, setDeclinedReason] = useState('');
   const [declinedAstrologerName, setDeclinedAstrologerName] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef(null);
@@ -90,6 +89,7 @@ const WaitingScreen = () => {
       console.log('[WaitingScreen] session_request_declined received:', reason);
       clearInterval(timerRef.current);
       setDeclinedAstrologerName(astrologerName || astrologer?.name || 'Astrologer');
+      setDeclinedReason(reason || 'The astrologer just accepted another request and is now busy.');
       setStatus('busy_declined');
     };
     socket.on('session_request_declined', onDeclined);
@@ -139,17 +139,17 @@ const WaitingScreen = () => {
     return (
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] px-6 animate-fade-in">
         <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center text-primary">
             <span className="text-4xl">🔒</span>
           </div>
-          <h2 className="text-gray-900 text-xl font-extrabold mb-2">Astrologer is Busy</h2>
+          <h2 className="text-gray-900 text-xl font-extrabold mb-2">Astrologer is now busy</h2>
           <p className="text-gray-500 text-sm leading-relaxed mb-6">
-            <span className="font-bold text-gray-700">{declinedAstrologerName}</span> just started another consultation and is no longer available. Please try again later or connect with a different astrologer.
+            <span className="font-bold text-gray-700">{declinedAstrologerName}</span> is now busy with another consultation. {declinedReason}
           </p>
           <div className="flex flex-col gap-3">
             <button
               onClick={() => navigate('/user/astrologers')}
-              className="w-full py-3.5 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/30"
+              className="w-full py-3.5 bg-primary hover:bg-orange-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/30"
             >
               Browse Other Astrologers
             </button>
