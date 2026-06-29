@@ -43,7 +43,9 @@ const Chats = () => {
     setProcessingId(req.roomId);
     const socket = getSocket();
     socket.emit('accept_session', { roomId: req.roomId, userSocketId: req.userSocketId });
-    dispatch(removeIncomingRequest(req.roomId));
+    import('../../store/slices/astrologerSlice').then(({ clearAllIncomingRequests }) => {
+      dispatch(clearAllIncomingRequests());
+    });
     dispatch(addActiveSession({ ...req, status: 'active' }));
     
     // Navigate immediately

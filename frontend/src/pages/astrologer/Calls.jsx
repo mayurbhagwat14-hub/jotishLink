@@ -47,7 +47,9 @@ const Calls = () => {
       roomId: req.roomId,
       userSocketId: req.userSocketId,
     });
-    dispatch(removeIncomingRequest(req.roomId));
+    import('../../store/slices/astrologerSlice').then(({ clearAllIncomingRequests }) => {
+      dispatch(clearAllIncomingRequests());
+    });
     dispatch(addActiveSession({ ...req, status: 'active' }));
 
     if (req.type === 'video') {
