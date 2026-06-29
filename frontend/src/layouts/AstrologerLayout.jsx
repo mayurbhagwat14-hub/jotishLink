@@ -8,7 +8,7 @@ import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiS
 import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
 import { login } from '../store/slices/authSlice';
-import { addIncomingRequest, removeIncomingRequestByUserId, removeActiveSession } from '../store/slices/astrologerSlice';
+import { addIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, removeActiveSession } from '../store/slices/astrologerSlice';
 import getSocket from '../socket/socketManager';
 import NotificationDropdown from '../components/NotificationDropdown';
 import toast from 'react-hot-toast';
@@ -98,10 +98,30 @@ const AstrologerLayout = () => {
         });
       };
 
+      const onPendingRequestsCleared = (data) => {
+        dispatch(clearAllIncomingRequests());
+        toast('Aapne ek session accept kar liya hai — baaki pending requests clear ho gayi hain.', {
+          duration: 4000,
+          position: 'top-center',
+          icon: '🧹',
+          style: { background: '#fa6830', color: '#fff', fontWeight: 'bold' }
+        });
+      };
+
+      const onAcceptFailed = (data) => {
+        toast.error(data.reason || 'Accept failed due to active session.', {
+          duration: 5000,
+          position: 'top-center',
+          style: { fontWeight: 'bold' }
+        });
+      };
+
       socket.on('incoming_session_request', onIncoming);
       socket.on('session_request_cancelled', onCancelled);
       socket.on('session_ended', onSessionEnded);
       socket.on('call_ended', onSessionEnded);
+      socket.on('pending_requests_cleared', onPendingRequestsCleared);
+      socket.on('accept_failed', onAcceptFailed);
       socket.on('session_accept_confirmed', () => {
          import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
           dispatch(fetchAstrologerDashboardThunk());
@@ -114,6 +134,8 @@ const AstrologerLayout = () => {
         socket.off('session_request_cancelled', onCancelled);
         socket.off('session_ended', onSessionEnded);
         socket.off('call_ended', onSessionEnded);
+        socket.off('pending_requests_cleared', onPendingRequestsCleared);
+        socket.off('accept_failed', onAcceptFailed);
         socket.off('session_accept_confirmed', onSessionEnded);
       };
     }

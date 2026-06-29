@@ -64,6 +64,7 @@ const io = new SocketIOServer(httpServer, {
     credentials: true,
     methods: ['GET', 'POST'],
   },
+  maxHttpBufferSize: 5e6, // 5MB limit for image uploads
 });
 
 app.set('io', io);
@@ -74,6 +75,11 @@ const activeTimers = new Map();
 const socketRoomMap = new Map();
 // ── Track pending session requests (roomId -> { userSocketId, userId, astrologerId, type })
 const pendingRequests = new Map();
+// ── Grace-period timers for chat disconnect auto-end (roomId -> timerId)
+// When a chat user disconnects, we wait this long before auto-ending the session.
+// If the user reconnects (join_room) within this window, the timer is cancelled.
+const DISCONNECT_GRACE_PERIOD_MS = 90_000; // 90 seconds
+const disconnectGraceTimers = new Map();
 
 io.on('connection', (socket) => {
   console.log(`[Socket.IO] Client connected: ${socket.id}`);
@@ -159,17 +165,77 @@ io.on('connection', (socket) => {
   // ── Astrologer accepts session
   socket.on('accept_session', async ({ roomId, userSocketId }) => {
     const reqData = pendingRequests.get(roomId);
-    if (reqData && reqData.astrologerId) {
+
+    // Guard: if this request was already removed (e.g. user cancelled, or another accept cleared it)
+    if (!reqData) {
+      socket.emit('accept_failed', { reason: 'This request is no longer available.' });
+      return;
+    }
+
+    if (reqData.astrologerId) {
       try {
         const Astrologer = (await import('./models/astrologer.model.js')).default;
-        await Astrologer.findByIdAndUpdate(reqData.astrologerId, { onlineStatus: 'busy' });
+
+        // Atomic conditional update: only set busy if NOT already busy.
+        // This is the core race-condition guard — if two accepts fire simultaneously,
+        // only the first one to reach the DB wins; the second gets null back.
+        const updated = await Astrologer.findOneAndUpdate(
+          { _id: reqData.astrologerId, onlineStatus: { $ne: 'busy' } },
+          { onlineStatus: 'busy' },
+          { new: true }
+        );
+
+        if (!updated) {
+          // Astrologer was already busy (another accept won the race, or status changed).
+          // Reject this accept attempt gracefully.
+          console.log(`[Socket.IO] Accept race lost for room ${roomId} — astrologer ${reqData.astrologerId} already busy`);
+          pendingRequests.delete(roomId);
+          socket.emit('accept_failed', { reason: 'Aap pehle se ek session mein hain. You are already in an active session.' });
+          io.to(userSocketId).emit('session_rejected', { reason: 'Astrologer just became unavailable. Please try another astrologer or wait.' });
+          return;
+        }
+
         io.emit('astro_status_changed', { astrologerId: reqData.astrologerId, status: 'busy' });
       } catch (err) {
         console.error('Failed to set busy status:', err);
       }
     }
+
     pendingRequests.delete(roomId);
-    // Notify user
+
+    // ── Auto-reject all OTHER pending requests for the same astrologer.
+    // Now that this astrologer is busy, no other request can be accepted.
+    // Notify those waiting users immediately instead of leaving them hanging.
+    if (reqData.astrologerId) {
+      const rejectedRoomIds = [];
+      for (const [pendingRoomId, pendingData] of pendingRequests.entries()) {
+        if (pendingData.astrologerId === reqData.astrologerId) {
+          io.to(pendingData.userSocketId).emit('session_rejected', {
+            reason: 'Astrologer just accepted another request. Please try again shortly.'
+          });
+          rejectedRoomIds.push(pendingRoomId);
+        }
+      }
+      // Clean up rejected entries from the map
+      for (const rid of rejectedRoomIds) {
+        pendingRequests.delete(rid);
+      }
+
+      // Notify astrologer frontend to clear all remaining pending request cards
+      if (rejectedRoomIds.length > 0) {
+        io.to(`astro_${reqData.astrologerId}`).emit('pending_requests_cleared', {
+          acceptedRoomId: roomId,
+          clearedCount: rejectedRoomIds.length
+        });
+        io.to(`room_astro_${reqData.astrologerId}`).emit('pending_requests_cleared', {
+          acceptedRoomId: roomId,
+          clearedCount: rejectedRoomIds.length
+        });
+        console.log(`[Socket.IO] Auto-rejected ${rejectedRoomIds.length} other pending request(s) for astrologer ${reqData.astrologerId}`);
+      }
+    }
+
+    // Notify user that their session was accepted
     io.to(userSocketId).emit('session_accepted', { roomId });
     
     // Notifications via notifyHelper
@@ -222,6 +288,16 @@ io.on('connection', (socket) => {
     try {
       socket.join(roomId);
       socketRoomMap.set(socket.id, { roomId, type: 'chat_session', astrologerId });
+
+      // ── Cancel any pending disconnect grace timer for this room.
+      // This means the user reconnected (e.g. page refresh) before the grace
+      // period expired — chat resumes normally, no auto-end.
+      if (disconnectGraceTimers.has(roomId)) {
+        clearTimeout(disconnectGraceTimers.get(roomId));
+        disconnectGraceTimers.delete(roomId);
+        console.log(`[Socket.IO] Grace timer cancelled for room ${roomId} — user reconnected`);
+      }
+
       socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
       console.log(`[Socket.IO] ${userId} joined room ${roomId} (Type: ${sessionType || 'chat'})`);
 
@@ -307,20 +383,55 @@ io.on('connection', (socket) => {
   });
 
   // ── Send a message
-  socket.on('send_message', async ({ roomId, sessionId, sender, text }) => {
+  socket.on('send_message', async ({ roomId, sessionId, sender, text, type = 'text' }) => {
     const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-    const message = { sender, text, time };
+    let message = { sender, type, text, time };
 
-    // Persist message to DB
     try {
+      if (type === 'image') {
+        // Validate base64 image
+        if (!text || !text.startsWith('data:image/')) {
+          socket.emit('message_error', { error: 'Invalid image format. Must be base64.' });
+          return;
+        }
+
+        const allowedMimes = ['data:image/jpeg', 'data:image/jpg', 'data:image/png'];
+        const mime = text.substring(0, text.indexOf(';'));
+        if (!allowedMimes.includes(mime)) {
+          socket.emit('message_error', { error: 'Only JPEG, JPG, and PNG images are allowed.' });
+          return;
+        }
+
+        // Validate size (~5MB)
+        const base64Length = text.length - (text.indexOf(',') + 1);
+        const sizeInBytes = Math.ceil((base64Length * 3) / 4);
+        if (sizeInBytes > 5 * 1024 * 1024) {
+          socket.emit('message_error', { error: 'Image size exceeds 5MB limit.' });
+          return;
+        }
+
+        // Upload to Cloudinary
+        const { uploadMedia } = await import('./config/cloudinary.js');
+        const { url } = await uploadMedia(text, 'chat_images');
+        
+        if (!url) {
+          socket.emit('message_error', { error: 'Failed to upload image. Please try again.' });
+          return;
+        }
+
+        message.imageUrl = url;
+        message.text = '📷 Image'; // Optional placeholder text for legacy/push notifications
+      }
+
+      // Persist message to DB
       const session = await ChatSession.findByIdAndUpdate(sessionId, {
         $push: { messages: message },
-      });
+      }, { new: true });
 
       io.to(roomId).emit('receive_message', message);
 
-      // Trigger AI Bot if this session exists in DB and sender is user (keep demo responsive)
-      if (session && session.isBotSession && sender === 'user') {
+      // Trigger AI Bot ONLY if session is bot session, sender is user, and message is text
+      if (session && session.isBotSession && sender === 'user' && message.type !== 'image') {
         const AiService = (await import('./services/ai.service.js')).default;
         
         // Indicate bot is typing right away
@@ -328,7 +439,7 @@ io.on('connection', (socket) => {
         
         setTimeout(async () => {
           try {
-            const botReply = await AiService.getChatResponse(text, session.userId, session);
+            const botReply = await AiService.getChatResponse(message.text, session.userId, session);
             const rawSentences = botReply.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 0);
             
             const sentences = [];
@@ -351,7 +462,7 @@ io.on('connection', (socket) => {
               }
               
               const botTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-              const botMsg = { sender: 'bot', text: sentence, time: botTime };
+              const botMsg = { sender: 'bot', text: sentence, time: botTime, type: 'text' };
               await ChatSession.findByIdAndUpdate(sessionId, { $push: { messages: botMsg } });
               
               io.to(roomId).emit('user_stopped_typing', { sender: 'bot' });
@@ -365,6 +476,7 @@ io.on('connection', (socket) => {
       }
     } catch (err) {
       console.error('[Socket.IO] Failed to persist message:', err);
+      socket.emit('message_error', { error: 'Server error processing message' });
     }
   });
 
@@ -577,6 +689,14 @@ io.on('connection', (socket) => {
 
   // ── End session manually
   const handleEndSession = async ({ roomId, sessionId, userId, endedBy = 'user', finalSeconds, sessionType = 'chat' }) => {
+    // Clear any pending disconnect grace timer for this room to prevent double-end
+    // (e.g. user clicks "End Chat" explicitly, then disconnects — the grace timer
+    // shouldn't fire a redundant second end after the session is already completed).
+    if (disconnectGraceTimers.has(roomId)) {
+      clearTimeout(disconnectGraceTimers.get(roomId));
+      disconnectGraceTimers.delete(roomId);
+    }
+
     const timerData = activeTimers.get(roomId);
     let finalSessionId = sessionId;
     if (timerData) {
@@ -914,9 +1034,58 @@ io.on('connection', (socket) => {
           await handleEndCall({ roomId, callId: timerData.callId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds });
         }
       } else {
-        // For CHAT sessions, DO NOT end the chat on disconnect!
+        // For CHAT sessions, DO NOT immediately end the chat on disconnect.
         // This allows users to refresh the page without losing the chat.
+        // However, start a grace-period timer: if the user doesn't reconnect
+        // within DISCONNECT_GRACE_PERIOD_MS, auto-end the session so billing
+        // doesn't run indefinitely and the astrologer isn't stuck on 'busy'.
         io.to(roomId).emit('peer_disconnected_temp', { sender: socket.id });
+
+        // Only start a grace timer if there's an active billing timer for this room
+        // (i.e. the session is actually live and being billed).
+        if (timerData && !disconnectGraceTimers.has(roomId)) {
+          const graceSessionId = timerData.sessionId;
+          const graceUserId = timerData.userId;
+
+          const graceTimerId = setTimeout(async () => {
+            disconnectGraceTimers.delete(roomId);
+
+            // Double-check: is the billing timer still running for this room?
+            // If it was already ended by another path (e.g. insufficient balance),
+            // don't try to end it again.
+            const currentTimer = activeTimers.get(roomId);
+            if (!currentTimer) {
+              console.log(`[Socket.IO] Grace timer expired for room ${roomId} but timer already cleared — skipping`);
+              return;
+            }
+
+            console.log(`[Socket.IO] Grace period expired for room ${roomId} — auto-ending chat session`);
+            try {
+              await handleEndSession({
+                roomId,
+                sessionId: graceSessionId,
+                userId: graceUserId,
+                endedBy: 'system',
+                finalSeconds: currentTimer.seconds,
+                sessionType: 'chat'
+              });
+
+              // Also emit to the room/astrologer with a specific reason so any
+              // still-open frontend tabs update their UI correctly.
+              io.to(roomId).emit('session_ended', {
+                reason: 'inactive_timeout',
+                durationSeconds: currentTimer.seconds,
+                sessionId: graceSessionId,
+                roomId,
+              });
+            } catch (err) {
+              console.error(`[Socket.IO] Grace timer auto-end failed for room ${roomId}:`, err);
+            }
+          }, DISCONNECT_GRACE_PERIOD_MS);
+
+          disconnectGraceTimers.set(roomId, graceTimerId);
+          console.log(`[Socket.IO] Started ${DISCONNECT_GRACE_PERIOD_MS / 1000}s grace timer for chat room ${roomId}`);
+        }
       }
 
       socketRoomMap.delete(socket.id);

@@ -49,7 +49,6 @@ const Calls = () => {
     });
     dispatch(removeIncomingRequest(req.roomId));
     dispatch(addActiveSession({ ...req, status: 'active' }));
-    setProcessingId(null);
 
     if (req.type === 'video') {
       navigate(`/astrologer/video-room/${req.roomId}`, {

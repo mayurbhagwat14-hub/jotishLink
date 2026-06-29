@@ -39,9 +39,18 @@ const chatSessionSchema = new mongoose.Schema(
           enum: ['user', 'astrologer', 'system', 'bot'],
           required: true,
         },
+        type: {
+          type: String,
+          enum: ['text', 'image'],
+          default: 'text',
+        },
         text: {
           type: String,
-          required: true,
+          required: false,
+        },
+        imageUrl: {
+          type: String,
+          required: false,
         },
         time: {
           type: String, // format: HH:MM AM/PM

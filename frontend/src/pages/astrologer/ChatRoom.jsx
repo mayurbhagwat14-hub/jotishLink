@@ -22,8 +22,11 @@ const ChatRoom = () => {
   const [endSessionInfo, setEndSessionInfo] = useState(null);
   const [sessionEnded, setSessionEnded] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const { user: astrologer } = useSelector((state) => state.astrologerAuth);
 
@@ -81,6 +84,12 @@ const ChatRoom = () => {
         const onReceiveMessage = (msg) => {
           setMessages(prev => [...prev, msg]);
           setIsTyping(false);
+          setIsUploading(false);
+        };
+
+        const onMessageError = (data) => {
+          toast.error(data.error || 'Failed to send message');
+          setIsUploading(false);
         };
 
         const onTimerTick = ({ seconds }) => {
@@ -117,6 +126,7 @@ const ChatRoom = () => {
         socket.on('earning_credited', onEarningCredited);
         socket.on('user_typing', onUserTyping);
         socket.on('user_stopped_typing', onUserStoppedTyping);
+        socket.on('message_error', onMessageError);
 
         return () => {
           socket.off('session_created', onSessionCreated);
@@ -126,6 +136,7 @@ const ChatRoom = () => {
           socket.off('earning_credited', onEarningCredited);
           socket.off('user_typing', onUserTyping);
           socket.off('user_stopped_typing', onUserStoppedTyping);
+          socket.off('message_error', onMessageError);
         };
       } catch (err) {
         console.error('Failed to load session:', err);
@@ -168,6 +179,39 @@ const ChatRoom = () => {
     socket.emit('stop_typing', { roomId: sessionData.roomId, sender: 'astrologer' });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setInputText('');
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file || !sessionData) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPEG, JPG, and PNG images are allowed');
+      return;
+    }
+
+    setIsUploading(true);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      const socket = getSocket();
+      socket.emit('send_message', {
+        roomId: sessionData.roomId,
+        sessionId: sessionData._id,
+        sender: 'astrologer',
+        text: base64String,
+        type: 'image',
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = null; // Reset input
   };
 
   const handleEndChat = () => {
@@ -252,14 +296,32 @@ const ChatRoom = () => {
                  </div>
                )}
                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
-                 <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit whitespace-pre-wrap break-words`}>
-                   {msg.text}
+                 <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit whitespace-pre-wrap break-words relative`}>
+                  {msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? (
+                    <img 
+                      src={msg.type === 'image' ? msg.imageUrl : msg.text} 
+                      alt="attachment" 
+                      className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" 
+                      onClick={() => setViewingImage(msg.type === 'image' ? msg.imageUrl : msg.text)} 
+                    />
+                  ) : (
+                    msg.text
+                  )}
                  </div>
                  <span className={`text-[10px] text-gray-400 mt-1 font-bold block ${isMe ? 'text-right mr-1' : 'ml-1'}`}>{msg.time}</span>
                </div>
             </div>
           );
         })}
+        {isUploading && (
+          <div className="flex items-end gap-2 flex-row-reverse opacity-70">
+            <div className="flex flex-col items-end max-w-[85%] sm:max-w-[75%]">
+              <div className="bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm px-4 py-3 rounded-2xl shadow-sm text-[15px] flex items-center justify-center min-w-[100px] min-h-[50px]">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </main>
 
@@ -267,7 +329,19 @@ const ChatRoom = () => {
       {!isViewOnly && (
       <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
         <div className="flex items-end gap-2">
-          <button className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#fa6830] transition-colors shrink-0 bg-gray-50 rounded-full">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload} 
+            accept="image/jpeg, image/png, image/jpg" 
+            className="hidden" 
+          />
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sessionEnded || isUploading}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#fa6830] transition-colors shrink-0 bg-gray-50 rounded-full disabled:opacity-50"
+          >
             <FiPaperclip size={20} />
           </button>
           
@@ -278,20 +352,42 @@ const ChatRoom = () => {
               onChange={handleInputChange}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               placeholder={sessionEnded ? 'Session ended' : 'Type your guidance...'}
-              disabled={sessionEnded}
+              disabled={sessionEnded || isUploading}
               className="w-full bg-transparent px-4 py-3 outline-none text-sm resize-none max-h-32 min-h-[44px] disabled:opacity-50"
             ></textarea>
           </div>
           
           <button 
             onClick={handleSend}
-            disabled={!inputText.trim() || endSessionInfo || sessionEnded}
+            disabled={!inputText.trim() || endSessionInfo || sessionEnded || isUploading}
             className="w-11 h-11 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] transition-colors shadow-md shadow-orange-500/30 shrink-0 disabled:opacity-50 disabled:shadow-none"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
           </button>
         </div>
       </footer>
+      )}
+
+      {/* Image Viewer overlay */}
+      {viewingImage && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 touch-none"
+          onClick={() => setViewingImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white p-2 hover:bg-white/10 rounded-full transition-colors z-50"
+            onClick={(e) => { e.stopPropagation(); setViewingImage(null); }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <img 
+            src={viewingImage} 
+            alt="Fullscreen view" 
+            className="max-w-full max-h-full object-contain select-none cursor-default"
+            onClick={(e) => e.stopPropagation()}
+            onDragStart={(e) => e.preventDefault()}
+          />
+        </div>
       )}
 
       {/* ═══ END SESSION MODAL ═══ */}

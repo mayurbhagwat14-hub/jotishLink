@@ -37,9 +37,16 @@ const UserChatRoom = () => {
   const [finalAmount, setFinalAmount] = useState(0);
   const [viewOnly, setViewOnly] = useState(location.state?.viewOnly || false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [viewingImage, setViewingImage] = useState(null);
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  // Refs to mirror state for use inside event listener closures (popstate/beforeunload)
+  const sessionEndedRef = useRef(false);
+  const viewOnlyRef = useRef(viewOnly);
+  const historyGuardPushedRef = useRef(false);
 
   // Use roomId from WaitingScreen navigation state or generate a stable one
   const initialRoomId = useMemo(() => {
@@ -104,6 +111,12 @@ Please analyze my chart based on this information.`;
     const onMessage = (msg) => {
       setMessages((prev) => [...prev, msg]);
       setIsTyping(false);
+      setIsUploading(false);
+    };
+
+    const onMessageError = (data) => {
+      toast.error(data.error || 'Failed to send message');
+      setIsUploading(false);
     };
 
     const onTimerTick = (data) => setTimer(data.seconds);
@@ -173,6 +186,7 @@ Please analyze my chart based on this information.`;
     socket.on('session_ended', onSessionEnded);
     socket.on('user_typing', onUserTyping);
     socket.on('user_stopped_typing', onUserStoppedTyping);
+    socket.on('message_error', onMessageError);
 
     return () => {
       socket.off('session_created', onSessionCreated);
@@ -187,10 +201,87 @@ Please analyze my chart based on this information.`;
       socket.off('user_joined', onMessage);
       socket.off('user_typing', onUserTyping);
       socket.off('user_stopped_typing', onUserStoppedTyping);
+      socket.off('message_error', onMessageError);
     };
   }, [roomId, user?._id]);
 
   const fileInputRef = useRef(null);
+
+  // Keep refs in sync with state so popstate/beforeunload closures have current values
+  useEffect(() => {
+    sessionEndedRef.current = sessionEnded;
+  }, [sessionEnded]);
+
+  useEffect(() => {
+    viewOnlyRef.current = viewOnly;
+  }, [viewOnly]);
+
+  // ── Phase 1: Navigation guard (back button / in-app navigation)
+  // ── Phase 2: beforeunload guard (tab close / refresh / app kill)
+  useEffect(() => {
+    const isSessionLive = () => !sessionEndedRef.current && !viewOnlyRef.current;
+
+    // Only activate guard if session is currently live
+    if (!isSessionLive()) return;
+
+    // Push a dummy history entry so the first back-press is intercepted
+    // instead of immediately navigating away from the chat
+    window.history.pushState({ chatGuard: true }, '');
+    historyGuardPushedRef.current = true;
+
+    const handlePopState = (e) => {
+      if (!isSessionLive()) {
+        // Session already ended — allow normal navigation, clean up
+        historyGuardPushedRef.current = false;
+        return;
+      }
+      // Re-push the dummy state to cancel the back navigation
+      window.history.pushState({ chatGuard: true }, '');
+      // Show the confirmation modal
+      setShowLeaveConfirm(true);
+    };
+
+    // Phase 2: beforeunload — native browser "Leave site?" prompt
+    // NOTE: Modern browsers ignore custom text and show a generic message.
+    // This is NOT 100% reliable on mobile Safari, PWAs, or force-killed apps.
+    // Phase 3 (backend grace-period) is the real safety net for those cases.
+    const handleBeforeUnload = (e) => {
+      if (!isSessionLive()) return;
+      e.preventDefault();
+      e.returnValue = '';
+
+      // Best-effort: try to emit end_session so backend can start cleanup.
+      // Socket.IO may or may not flush this before the page unloads.
+      try {
+        const socket = getSocket();
+        socket.emit('end_session', {
+          roomId,
+          sessionId: sessionIdRef.current,
+          userId: user?._id,
+          endedBy: 'user',
+        });
+      } catch (err) {
+        // Silently fail — backend grace-period will handle it
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+
+      // Pop the dummy history entry if it's still there, so we don't
+      // leave the user's back-navigation stack polluted after cleanup.
+      // Only do this if the session ended normally (not if component unmounts
+      // because the user navigated away via "End & Leave").
+      if (historyGuardPushedRef.current && sessionEndedRef.current) {
+        historyGuardPushedRef.current = false;
+        window.history.back();
+      }
+    };
+  }, [roomId, user?._id, viewOnly, sessionEnded]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -199,6 +290,19 @@ Please analyze my chart based on this information.`;
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPEG, JPG, and PNG images are allowed');
+      return;
+    }
+
+    setIsUploading(true);
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -209,6 +313,7 @@ Please analyze my chart based on this information.`;
         sessionId: sessionIdRef.current || sessionId,
         sender: 'user',
         text: base64String,
+        type: 'image',
       });
     };
     reader.readAsDataURL(file);
@@ -377,9 +482,14 @@ Please analyze my chart based on this information.`;
                 </div>
               )}
               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
-                <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit`}>
-                  {msg.text && msg.text.startsWith('data:image/') ? (
-                    <img src={msg.text} alt="attachment" className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" onClick={() => window.open(msg.text)} />
+                <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit relative`}>
+                  {msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? (
+                    <img 
+                      src={msg.type === 'image' ? msg.imageUrl : msg.text} 
+                      alt="attachment" 
+                      className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" 
+                      onClick={() => setViewingImage(msg.type === 'image' ? msg.imageUrl : msg.text)} 
+                    />
                   ) : (
                     (msg.text || '').split(/(\*\*.*?\*\*)/g).map((part, i) => {
                       if (part.startsWith('**') && part.endsWith('**')) {
@@ -396,6 +506,15 @@ Please analyze my chart based on this information.`;
             </div>
           );
         })}
+        {isUploading && (
+          <div className="flex items-end gap-2 flex-row-reverse opacity-70">
+            <div className="flex flex-col items-end max-w-[85%] sm:max-w-[75%]">
+              <div className="bg-[#fa6830] text-white rounded-br-sm px-4 py-3 rounded-2xl shadow-sm text-[15px] flex items-center justify-center min-w-[100px] min-h-[50px]">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              </div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </main>
 
@@ -406,14 +525,14 @@ Please analyze my chart based on this information.`;
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileUpload} 
-            accept="image/*" 
+            accept="image/jpeg, image/png, image/jpg" 
             className="hidden" 
           />
           <button 
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            disabled={showLowBalance || sessionEnded || viewOnly}
-            className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+            disabled={showLowBalance || sessionEnded || viewOnly || isUploading}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
           >
             <FiPaperclip size={20} />
           </button>
@@ -424,19 +543,40 @@ Please analyze my chart based on this information.`;
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               rows="1"
               placeholder={sessionEnded || viewOnly ? 'Session ended' : showLowBalance ? 'Recharge to continue...' : 'Type your message...'}
-              disabled={showLowBalance || sessionEnded || viewOnly}
+              disabled={showLowBalance || sessionEnded || viewOnly || isUploading}
               className="w-full bg-transparent px-4 py-3 outline-none text-sm resize-none max-h-32 min-h-[44px] disabled:opacity-50"
             />
           </div>
           <button
             onClick={handleSend}
-            disabled={!inputText.trim() || showLowBalance || sessionEnded || viewOnly}
+            disabled={!inputText.trim() || showLowBalance || sessionEnded || viewOnly || isUploading}
             className="w-11 h-11 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] disabled:bg-gray-300 disabled:shadow-none transition-colors shadow-md shadow-orange-500/30 shrink-0"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
           </button>
         </div>
       </footer>
+
+      {viewingImage && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 touch-none"
+          onClick={() => setViewingImage(null)}
+        >
+          <button 
+            className="absolute top-4 right-4 text-white p-2 hover:bg-white/10 rounded-full transition-colors z-50"
+            onClick={(e) => { e.stopPropagation(); setViewingImage(null); }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <img 
+            src={viewingImage} 
+            alt="Fullscreen view" 
+            className="max-w-full max-h-full object-contain select-none cursor-default"
+            onClick={(e) => e.stopPropagation()}
+            onDragStart={(e) => e.preventDefault()}
+          />
+        </div>
+      )}
 
       <LowBalanceModal
         isOpen={showLowBalance}
@@ -509,6 +649,51 @@ Please analyze my chart based on this information.`;
             >
               Rate your experience
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Chat Confirmation Modal — Phase 1 navigation guard */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden animate-scale-in pb-[env(safe-area-inset-bottom)]">
+            <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-lg font-bold shrink-0">⚠️</div>
+              <div>
+                <h3 className="font-bold text-gray-900 text-[16px]">Chat se baahar jaayein?</h3>
+                <p className="text-[12px] text-gray-500 font-medium">Leave this chat?</p>
+              </div>
+            </div>
+
+            <div className="p-5">
+              <p className="text-[14px] text-gray-700 font-medium leading-relaxed">
+                Chat se baahar jaane par session end ho jayega aur charges lagna band ho jayenge.
+              </p>
+              <p className="text-[12px] text-gray-400 font-medium mt-2">
+                Leaving will end the session and stop all charges.
+              </p>
+            </div>
+
+            <div className="p-5 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200"
+              >
+                Stay
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveConfirm(false);
+                  // Reuse existing handleEndChat which emits 'end_session'.
+                  // The 'session_ended' event handler will then navigate away
+                  // via the summary/rating flow.
+                  handleEndChat();
+                }}
+                className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
+              >
+                End & Leave
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -153,27 +153,14 @@ export const createOrder = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   let paymentStatus = 'pending';
+  const paymentData = req.body.paymentData;
 
+  // 1. Pre-check Payment Constraints (Fail fast without rollback)
   if (paymentMethod === 'wallet') {
     if (user.wallet < totalAmount) {
       throw new ApiError(400, 'Insufficient wallet balance');
     }
-    // Deduct wallet
-    user.wallet -= totalAmount;
-    await user.save();
-    
-    // Create transaction record
-    await Transaction.create({
-      userId: user._id,
-      amount: totalAmount,
-      type: 'deduction',
-      desc: 'E-commerce Order Payment',
-      status: 'success'
-    });
-    
-    paymentStatus = 'paid';
   } else if (paymentMethod === 'online') {
-    const { paymentData } = req.body;
     if (!paymentData || !paymentData.razorpay_payment_id || !paymentData.razorpay_signature) {
       throw new ApiError(400, 'Invalid payment details');
     }
@@ -186,8 +173,63 @@ export const createOrder = asyncHandler(async (req, res) => {
     if (expectedSignature !== paymentData.razorpay_signature) {
       throw new ApiError(400, 'Invalid payment signature');
     }
+  }
 
-    // Create transaction record
+  // 2. Atomic Stock Reservation (Read & Write Lock)
+  const reservedProducts = [];
+  try {
+    for (const item of orderItems) {
+      const updatedProduct = await Product.findOneAndUpdate(
+        { 
+          _id: item.productId, 
+          stock: { $gte: item.quantity } 
+        },
+        { 
+          $inc: { stock: -item.quantity, sold: item.quantity } 
+        },
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        const prod = await Product.findById(item.productId);
+        throw new Error(`Product ${prod ? prod.name : 'Unknown'} is out of stock or requested quantity is not available.`);
+      }
+
+      reservedProducts.push({
+        productId: item.productId,
+        quantity: item.quantity
+      });
+      
+      if (updatedProduct.stock <= 0) {
+        await Product.findByIdAndUpdate(updatedProduct._id, { inStock: false });
+      }
+    }
+  } catch (error) {
+    // Rollback reserved stock safely
+    for (const resItem of reservedProducts) {
+      await Product.findByIdAndUpdate(resItem.productId, {
+        $inc: { stock: resItem.quantity, sold: -resItem.quantity },
+        $set: { inStock: true }
+      });
+    }
+    throw new ApiError(400, error.message);
+  }
+
+  // 3. Execute Payment & Transactions
+  if (paymentMethod === 'wallet') {
+    user.wallet -= totalAmount;
+    await user.save();
+    
+    await Transaction.create({
+      userId: user._id,
+      amount: totalAmount,
+      type: 'deduction',
+      desc: 'E-commerce Order Payment',
+      status: 'success'
+    });
+    
+    paymentStatus = 'paid';
+  } else if (paymentMethod === 'online') {
     await Transaction.create({
       userId: user._id,
       amount: totalAmount,
@@ -200,6 +242,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     paymentStatus = 'paid';
   }
 
+  // 4. Create Order
   const order = await Order.create({
     userId: req.user._id,
     items: orderItems,
@@ -211,7 +254,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     discountAmount,
   });
 
-  // Send notification via notifyHelper
+  // 5. Send Notification
   notify({
     userId: user._id.toString(),
     role: 'user',
@@ -222,23 +265,10 @@ export const createOrder = asyncHandler(async (req, res) => {
     data: { type: 'order_confirmed', orderId: order._id.toString() }
   }).catch(err => console.error('Notify error:', err));
 
+  // 6. Update Coupon
   if (appliedCoupon) {
     appliedCoupon.currentUsage += 1;
     await appliedCoupon.save();
-  }
-
-  // Increment sold count in Products and update stock
-  for (const item of orderItems) {
-    const product = await Product.findById(item.productId);
-    if (product) {
-      product.sold += item.quantity;
-      product.stock -= item.quantity;
-      if (product.stock <= 0) {
-        product.stock = 0;
-        product.inStock = false;
-      }
-      await product.save();
-    }
   }
 
   // Clear cart

@@ -34,6 +34,19 @@ const PoojaBookingForm = () => {
   const handleSubmitClick = (e) => {
     e.preventDefault();
     if (!isFormValid) return;
+
+    // Validate that date/time is not in the past
+    const [timeVal, modifier] = formData.time.split(' ');
+    let [hours, minutes] = timeVal.split(':');
+    if (hours === '12') hours = '00';
+    if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+    
+    const selectedDateTime = new Date(`${formData.date}T${String(hours).padStart(2, '0')}:${minutes}:00`);
+    if (selectedDateTime < new Date()) {
+      toast.error('Cannot select a past date and time for booking');
+      return;
+    }
+
     setShowConfirmModal(true);
   };
 

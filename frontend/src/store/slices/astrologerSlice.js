@@ -137,6 +137,9 @@ const astrologerSlice = createSlice({
     removeIncomingRequestByUserId: (state, action) => {
       state.incomingRequests = state.incomingRequests.filter(r => r.userId !== action.payload);
     },
+    clearAllIncomingRequests: (state) => {
+      state.incomingRequests = [];
+    },
     addActiveSession: (state, action) => {
       // Add or update active session
       const index = state.activeSessions.findIndex(s => s.roomId === action.payload.roomId);
@@ -219,6 +222,6 @@ const astrologerSlice = createSlice({
   }
 });
 
-export const { addIncomingRequest, removeIncomingRequest, removeIncomingRequestByUserId, addActiveSession, removeActiveSession } = astrologerSlice.actions;
+export const { addIncomingRequest, removeIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, addActiveSession, removeActiveSession } = astrologerSlice.actions;
 
 export default astrologerSlice.reducer;

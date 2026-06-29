@@ -340,6 +340,20 @@ export const bookPooja = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'notes cannot exceed 1000 characters');
   }
 
+  if (!date || !time) {
+    throw new ApiError(400, 'Valid date and time are required');
+  }
+
+  const [timeVal, modifier] = time.split(' ');
+  let [hours, minutes] = timeVal.split(':');
+  if (hours === '12') hours = '00';
+  if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
+  
+  const selectedDateTime = new Date(`${date}T${String(hours).padStart(2, '0')}:${minutes}:00`);
+  if (selectedDateTime < new Date()) {
+    throw new ApiError(400, 'Cannot book a pooja in the past');
+  }
+
   const poojaPrice = price || 500;
 
   const { transaction } = await WalletService.deduct(
