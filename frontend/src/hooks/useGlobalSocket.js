@@ -56,12 +56,87 @@ export const useGlobalSocket = () => {
       toast.success(`Your Pooja booking was marked as ${status}!`, { icon: '🙏' });
     };
 
+    // --- Astrologer Global Listeners ---
+    const handleIncomingRequest = (data) => {
+      if (!astrologerAuth.isAuthenticated) return;
+      import('../store/slices/astrologerSlice').then(({ addIncomingRequest }) => {
+        dispatch(addIncomingRequest(data));
+      });
+      toast.success(`Incoming ${data.type} request from ${data.userName}!`, {
+        duration: 10000,
+        position: 'top-center',
+        icon: data.type === 'call' || data.type === 'video' ? '📞' : '💬',
+        style: { background: '#fa6830', color: '#fff', fontWeight: 'bold' }
+      });
+      import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
+        dispatch(fetchAstrologerDashboardThunk());
+      });
+    };
+
+    const handleRequestCancelled = (data) => {
+      if (!astrologerAuth.isAuthenticated) return;
+      import('../store/slices/astrologerSlice').then(({ removeIncomingRequestByUserId }) => {
+        dispatch(removeIncomingRequestByUserId(data.userId));
+      });
+      toast('Session request cancelled by user or expired.', {
+        icon: '⏳',
+        style: { background: '#f3f4f6', color: '#374151' }
+      });
+    };
+
+    const handlePendingCleared = () => {
+      if (!astrologerAuth.isAuthenticated) return;
+      import('../store/slices/astrologerSlice').then(({ clearAllIncomingRequests }) => {
+        dispatch(clearAllIncomingRequests());
+      });
+      toast('Aapne ek session accept kar liya hai — baaki pending requests clear ho gayi hain.', {
+        duration: 4000,
+        position: 'top-center',
+        icon: '🧹',
+        style: { background: '#fa6830', color: '#fff', fontWeight: 'bold' }
+      });
+    };
+
+    const handleAcceptFailed = (data) => {
+      if (!astrologerAuth.isAuthenticated) return;
+      toast.error(data.reason || 'Accept failed due to active session.', {
+        duration: 5000,
+        position: 'top-center',
+        style: { fontWeight: 'bold' }
+      });
+    };
+
+    const handleSessionEnded = (data) => {
+      if (!astrologerAuth.isAuthenticated) return;
+      if (data.roomId) {
+        import('../store/slices/astrologerSlice').then(({ removeActiveSession }) => {
+          dispatch(removeActiveSession(data.roomId));
+        });
+      }
+    };
+
+    const handleAcceptConfirmed = () => {
+      if (!astrologerAuth.isAuthenticated) return;
+      import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
+        dispatch(fetchAstrologerDashboardThunk());
+      });
+    };
+
     socket.on('wallet_updated', handleWalletUpdate);
     socket.on('new_notification', handleNewNotification);
     socket.on('dashboard_updated', handleDashboardUpdate);
     socket.on('pooja_booking_accepted', handlePoojaStatus);
     socket.on('pooja_booking_rejected', handlePoojaStatus);
     socket.on('pooja_booking_completed', handlePoojaStatus);
+
+    // Attach astrologer listeners globally
+    socket.on('incoming_session_request', handleIncomingRequest);
+    socket.on('session_request_cancelled', handleRequestCancelled);
+    socket.on('pending_requests_cleared', handlePendingCleared);
+    socket.on('accept_failed', handleAcceptFailed);
+    socket.on('session_ended', handleSessionEnded);
+    socket.on('call_ended', handleSessionEnded);
+    socket.on('session_accept_confirmed', handleAcceptConfirmed);
 
     // Cleanup to prevent memory leaks and duplicate toasts
     return () => {
@@ -72,6 +147,14 @@ export const useGlobalSocket = () => {
       socket.off('pooja_booking_accepted', handlePoojaStatus);
       socket.off('pooja_booking_rejected', handlePoojaStatus);
       socket.off('pooja_booking_completed', handlePoojaStatus);
+
+      socket.off('incoming_session_request', handleIncomingRequest);
+      socket.off('session_request_cancelled', handleRequestCancelled);
+      socket.off('pending_requests_cleared', handlePendingCleared);
+      socket.off('accept_failed', handleAcceptFailed);
+      socket.off('session_ended', handleSessionEnded);
+      socket.off('call_ended', handleSessionEnded);
+      socket.off('session_accept_confirmed', handleAcceptConfirmed);
     };
   }, [userAuth.isAuthenticated, adminAuth.isAuthenticated, astrologerAuth.isAuthenticated, dispatch]);
 };

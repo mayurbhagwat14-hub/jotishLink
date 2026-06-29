@@ -39,6 +39,7 @@ const UserChatRoom = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
@@ -291,30 +292,28 @@ Please analyze my chart based on this information.`;
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.type.startsWith('video/')) {
+      toast.error('Video upload is not supported, only images are allowed');
+      e.target.value = null;
+      return;
+    }
+
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
+      e.target.value = null;
       return;
     }
 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       toast.error('Only JPEG, JPG, and PNG images are allowed');
+      e.target.value = null;
       return;
     }
 
-    setIsUploading(true);
-
     const reader = new FileReader();
     reader.onloadend = () => {
-      const base64String = reader.result;
-      const socket = getSocket();
-      socket.emit('send_message', {
-        roomId,
-        sessionId: sessionIdRef.current || sessionId,
-        sender: 'user',
-        text: base64String,
-        type: 'image',
-      });
+      setPreviewImage(reader.result);
     };
     reader.readAsDataURL(file);
     e.target.value = null; // Reset input
@@ -334,9 +333,30 @@ Please analyze my chart based on this information.`;
   };
 
   const handleSend = () => {
-    if (!inputText.trim() || showLowBalance || sessionEnded || viewOnly) return;
+    if ((!inputText.trim() && !previewImage) || showLowBalance || sessionEnded || viewOnly) return;
     const socket = getSocket();
-    socket.emit('send_message', { roomId, sessionId, sender: 'user', text: inputText });
+    
+    if (previewImage) {
+      setIsUploading(true);
+      socket.emit('send_message', { 
+        roomId, 
+        sessionId: sessionIdRef.current || sessionId, 
+        sender: 'user', 
+        text: previewImage, 
+        type: 'image' 
+      });
+      setPreviewImage(null);
+    }
+    
+    if (inputText.trim()) {
+      socket.emit('send_message', { 
+        roomId, 
+        sessionId: sessionIdRef.current || sessionId, 
+        sender: 'user', 
+        text: inputText 
+      });
+    }
+
     socket.emit('stop_typing', { roomId, sender: 'user' });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setInputText('');
@@ -519,7 +539,18 @@ Please analyze my chart based on this information.`;
       </main>
 
       {/* Input */}
-      <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+      <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] flex flex-col">
+        {previewImage && (
+          <div className="mb-3 relative w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-gray-200">
+            <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
+            <button 
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        )}
         <div className="flex items-end gap-2">
           <input 
             type="file" 
@@ -549,7 +580,7 @@ Please analyze my chart based on this information.`;
           </div>
           <button
             onClick={handleSend}
-            disabled={!inputText.trim() || showLowBalance || sessionEnded || viewOnly || isUploading}
+            disabled={(!inputText.trim() && !previewImage) || showLowBalance || sessionEnded || viewOnly || isUploading}
             className="w-11 h-11 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] disabled:bg-gray-300 disabled:shadow-none transition-colors shadow-md shadow-orange-500/30 shrink-0"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />

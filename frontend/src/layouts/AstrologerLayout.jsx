@@ -61,82 +61,12 @@ const AstrologerLayout = () => {
       }
       socket.on('connect', joinRoom);
 
-      const onIncoming = (data) => {
-        dispatch(addIncomingRequest(data));
-        toast.success(`Incoming ${data.type} request from ${data.userName}!`, {
-          duration: 5000,
-          position: 'top-center',
-          icon: '🔔',
-        });
-        
-        // Play notification sound (Commented out because notification.mp3 is missing from public folder)
-        // try {
-        //   const audio = new Audio('/notification.mp3');
-        //   audio.play().catch(e => console.log('Audio play failed:', e));
-        // } catch (err) {}
-
-        import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
-          dispatch(fetchAstrologerDashboardThunk());
-        });
-      };
-      const onCancelled = (data) => {
-        dispatch(removeIncomingRequestByUserId(data.userId));
-        import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
-          dispatch(fetchAstrologerDashboardThunk());
-        });
-      };
-      const onSessionEnded = (data) => {
-        if (data.roomId) {
-          dispatch(removeActiveSession(data.roomId));
-        }
-        // Force refresh dashboard data and history data so UI updates instantly
-        import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
-          dispatch(fetchAstrologerDashboardThunk());
-        });
-        import('../store/slices/astrologerSlice').then(({ fetchAstrologerHistoryThunk }) => {
-          dispatch(fetchAstrologerHistoryThunk());
-        });
-      };
-
-      const onPendingRequestsCleared = (data) => {
-        dispatch(clearAllIncomingRequests());
-        toast('Aapne ek session accept kar liya hai — baaki pending requests clear ho gayi hain.', {
-          duration: 4000,
-          position: 'top-center',
-          icon: '🧹',
-          style: { background: '#fa6830', color: '#fff', fontWeight: 'bold' }
-        });
-      };
-
-      const onAcceptFailed = (data) => {
-        toast.error(data.reason || 'Accept failed due to active session.', {
-          duration: 5000,
-          position: 'top-center',
-          style: { fontWeight: 'bold' }
-        });
-      };
-
-      socket.on('incoming_session_request', onIncoming);
-      socket.on('session_request_cancelled', onCancelled);
-      socket.on('session_ended', onSessionEnded);
-      socket.on('call_ended', onSessionEnded);
-      socket.on('pending_requests_cleared', onPendingRequestsCleared);
-      socket.on('accept_failed', onAcceptFailed);
-      socket.on('session_accept_confirmed', () => {
-         import('../store/slices/dashboardSlice').then(({ fetchAstrologerDashboardThunk }) => {
-          dispatch(fetchAstrologerDashboardThunk());
-         });
-      });
+      // Note: All astrologer request/session socket listeners (incoming_session_request, 
+      // pending_requests_cleared, etc.) have been moved to useGlobalSocket.js so they 
+      // do not unmount when navigating to the full-screen ChatRoom.
 
       return () => {
         socket.off('connect', joinRoom);
-        socket.off('incoming_session_request', onIncoming);
-        socket.off('session_request_cancelled', onCancelled);
-        socket.off('session_ended', onSessionEnded);
-        socket.off('call_ended', onSessionEnded);
-        socket.off('pending_requests_cleared', onPendingRequestsCleared);
-        socket.off('accept_failed', onAcceptFailed);
-        socket.off('session_accept_confirmed', onSessionEnded);
       };
     }
   }, [user, token, dispatch]);
