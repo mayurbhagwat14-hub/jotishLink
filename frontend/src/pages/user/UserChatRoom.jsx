@@ -490,10 +490,11 @@ Please analyze my chart based on this information.`;
         {messages.map((msg, idx) => {
           if (msg.sender === 'system') {
             return (
-              <div key={idx} className="text-center my-3">
-                <span className="bg-gray-100 text-gray-500 text-[11px] font-bold px-3 py-1.5 rounded-full border border-gray-200/50">
+              <div key={idx} className="flex justify-center my-4 px-2">
+                <div className="bg-orange-50 border border-orange-100 text-orange-800 text-[13px] font-medium px-4 py-3 rounded-2xl shadow-sm text-center max-w-[90%] whitespace-pre-wrap leading-relaxed relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
                   {msg.text}
-                </span>
+                </div>
               </div>
             );
           }
@@ -506,12 +507,12 @@ Please analyze my chart based on this information.`;
                 </div>
               )}
               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
-                <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit relative`}>
+                <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} ${msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? 'p-1.5' : 'px-4 py-3'} rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit relative`}>
                   {msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? (
                     <img 
                       src={msg.type === 'image' ? msg.imageUrl : msg.text} 
                       alt="attachment" 
-                      className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" 
+                      className="max-w-full rounded-xl max-h-64 sm:max-h-80 object-cover cursor-pointer" 
                       onClick={() => setViewingImage(msg.type === 'image' ? msg.imageUrl : msg.text)} 
                     />
                   ) : (

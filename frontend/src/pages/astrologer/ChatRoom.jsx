@@ -311,10 +311,11 @@ const ChatRoom = () => {
 
           if (isSystem) {
             return (
-              <div key={index} className="text-center my-4">
-                <span className="bg-gray-100 text-gray-600 text-[11px] font-bold px-3 py-1 rounded-full backdrop-blur-sm shadow-sm">
+              <div key={index} className="flex justify-center my-4 px-2">
+                <div className="bg-orange-50 border border-orange-100 text-orange-800 text-[13px] font-medium px-4 py-3 rounded-2xl shadow-sm text-center max-w-[90%] whitespace-pre-wrap leading-relaxed relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
                   {msg.text}
-                </span>
+                </div>
               </div>
             );
           }
@@ -327,12 +328,12 @@ const ChatRoom = () => {
                  </div>
                )}
                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
-                 <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} px-4 py-3 rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit whitespace-pre-wrap break-words relative`}>
+                 <div className={`${isMe ? 'bg-gradient-to-r from-orange-500 to-orange-400 text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} ${imageSrc ? 'p-1.5' : 'px-4 py-3'} rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit whitespace-pre-wrap break-words relative`}>
                   {imageSrc ? (
                     <img 
                       src={imageSrc} 
                       alt="attachment" 
-                      className="max-w-full rounded-md mt-1 mb-1 max-h-48 object-cover cursor-pointer" 
+                      className="max-w-full rounded-xl max-h-64 sm:max-h-80 object-cover cursor-pointer" 
                       onClick={() => setViewingImage(imageSrc)} 
                     />
                   ) : (
