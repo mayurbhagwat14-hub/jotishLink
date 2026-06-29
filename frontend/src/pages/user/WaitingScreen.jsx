@@ -15,6 +15,7 @@ const WaitingScreen = () => {
 
   const [status, setStatus] = useState('waiting');
   const [rejectReason, setRejectReason] = useState('');
+  const [declinedAstrologerName, setDeclinedAstrologerName] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef(null);
   const TIMEOUT = 60;
@@ -84,6 +85,15 @@ const WaitingScreen = () => {
     };
     socket.on('request_expired', onExpired);
 
+    // Dedicated event: astrologer accepted ANOTHER user's request
+    const onDeclined = ({ reason, astrologerName }) => {
+      console.log('[WaitingScreen] session_request_declined received:', reason);
+      clearInterval(timerRef.current);
+      setDeclinedAstrologerName(astrologerName || astrologer?.name || 'Astrologer');
+      setStatus('busy_declined');
+    };
+    socket.on('session_request_declined', onDeclined);
+
     timerRef.current = setInterval(() => {
       setElapsed((prev) => {
         if (prev + 1 >= TIMEOUT) {
@@ -99,6 +109,7 @@ const WaitingScreen = () => {
       socket.off('session_accepted', onAccepted);
       socket.off('session_rejected', onRejected);
       socket.off('request_expired', onExpired);
+      socket.off('session_request_declined', onDeclined);
       clearInterval(timerRef.current);
     };
   }, []);
@@ -120,6 +131,36 @@ const WaitingScreen = () => {
         <div className="text-6xl mb-4 animate-bounce">✅</div>
         <h2 className="text-white text-2xl font-bold">Connected!</h2>
         <p className="text-green-100 mt-2 text-sm">Starting session...</p>
+      </div>
+    );
+  }
+
+  if (status === 'busy_declined') {
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] px-6 animate-fade-in">
+        <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center">
+            <span className="text-4xl">🔒</span>
+          </div>
+          <h2 className="text-gray-900 text-xl font-extrabold mb-2">Astrologer is Busy</h2>
+          <p className="text-gray-500 text-sm leading-relaxed mb-6">
+            <span className="font-bold text-gray-700">{declinedAstrologerName}</span> just started another consultation and is no longer available. Please try again later or connect with a different astrologer.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => navigate('/user/astrologers')}
+              className="w-full py-3.5 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold rounded-xl text-sm transition-colors shadow-md shadow-orange-500/30"
+            >
+              Browse Other Astrologers
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-full py-3 border-2 border-gray-200 text-gray-600 font-bold rounded-xl text-sm hover:bg-gray-50 transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

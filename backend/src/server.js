@@ -215,6 +215,9 @@ io.on('connection', (socket) => {
         }
 
         io.emit('astro_status_changed', { astrologerId: reqData.astrologerId, status: 'busy' });
+
+        // Capture name for user-facing decline messages
+        var acceptedAstrologerName = updated.name || 'Astrologer';
       } catch (err) {
         console.error('Failed to set busy status:', err);
       }
@@ -226,11 +229,27 @@ io.on('connection', (socket) => {
     // Now that this astrologer is busy, no other request can be accepted.
     // Notify those waiting users immediately instead of leaving them hanging.
     if (reqData.astrologerId) {
+      const astroName = typeof acceptedAstrologerName === 'string' ? acceptedAstrologerName : 'Astrologer';
       const rejectedRoomIds = [];
       for (const [pendingRoomId, pendingData] of pendingRequests.entries()) {
         if (pendingData.astrologerId === reqData.astrologerId) {
+          // Legacy event for backward compat
           io.to(pendingData.userSocketId).emit('session_rejected', {
-            reason: 'Astrologer just accepted another request. Please try again shortly.'
+            reason: `${astroName} is now busy with another consultation.`
+          });
+          // New dedicated event for the WaitingScreen "busy" popup
+          io.to(pendingData.userSocketId).emit('session_request_declined', {
+            reason: `${astroName} just accepted another consultation and is now busy. Please try again shortly or browse other astrologers.`,
+            astrologerName: astroName
+          });
+          // Tell astrologer frontend to remove THIS specific request card
+          io.to(`astro_${reqData.astrologerId}`).emit('session_request_cancelled', {
+            userId: pendingData.userId,
+            roomId: pendingRoomId
+          });
+          io.to(`room_astro_${reqData.astrologerId}`).emit('session_request_cancelled', {
+            userId: pendingData.userId,
+            roomId: pendingRoomId
           });
           rejectedRoomIds.push(pendingRoomId);
         }
