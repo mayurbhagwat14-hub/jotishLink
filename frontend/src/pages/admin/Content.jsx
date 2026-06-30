@@ -142,6 +142,16 @@ const AdminContent = () => {
     }
   };
 
+  const handleCouponNumberChange = (key, value) => {
+    if (value === '') {
+      setNewCoupon(prev => ({ ...prev, [key]: '' }));
+      return;
+    }
+    const num = Number(value);
+    if (isNaN(num) || num < 0) return;
+    setNewCoupon(prev => ({ ...prev, [key]: num }));
+  };
+
   // --- Coupon Actions ---
   const handleCreateCoupon = async () => {
     try {
@@ -475,11 +485,11 @@ const AdminContent = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Discount %</label>
-                  <input type="number" value={newCoupon.discountPercent} onChange={e=>setNewCoupon({...newCoupon, discountPercent: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
+                  <input type="number" min="0" value={newCoupon.discountPercent} onChange={e=>handleCouponNumberChange('discountPercent', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Max Discount (₹)</label>
-                  <input type="number" value={newCoupon.maxDiscount} onChange={e=>setNewCoupon({...newCoupon, maxDiscount: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="0 for no limit"/>
+                  <input type="number" min="0" value={newCoupon.maxDiscount} onChange={e=>handleCouponNumberChange('maxDiscount', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="0 for no limit"/>
                 </div>
               </div>
               <div>
@@ -488,7 +498,7 @@ const AdminContent = () => {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Usage Limit</label>
-                <input type="number" value={newCoupon.usageLimit} onChange={e=>setNewCoupon({...newCoupon, usageLimit: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="0 for unlimited"/>
+                <input type="number" min="0" value={newCoupon.usageLimit} onChange={e=>handleCouponNumberChange('usageLimit', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20" placeholder="0 for unlimited"/>
               </div>
               <button onClick={handleCreateCoupon} disabled={isCreatingCoupon} className={`w-full py-3 mt-2 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${isCreatingCoupon ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}>
                 {isCreatingCoupon ? <FiLoader size={16} className="animate-spin" /> : null}

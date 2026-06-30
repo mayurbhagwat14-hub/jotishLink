@@ -163,7 +163,12 @@ const Wallet = () => {
                         {tx.type === 'recharge' ? <FiArrowDownLeft size={18} /> : <FiArrowUpRight size={18} />}
                       </div>
                       <div>
-                        <h4 className="font-bold text-sm text-gray-800 capitalize">{tx.type === 'recharge' ? 'Wallet Recharge' : 'Wallet Deduction'}</h4>
+                        <h4 className="font-bold text-sm text-gray-800 capitalize">
+                          {tx.type === 'recharge' ? 'Wallet Recharge' : 
+                           (tx.desc?.toLowerCase().includes('video') ? 'Video Call' :
+                            tx.desc?.toLowerCase().includes('audio') || tx.desc?.toLowerCase().includes('voice') ? 'Audio Call' :
+                            tx.desc?.toLowerCase().includes('chat') ? 'Chat' : 'Wallet Deduction')}
+                        </h4>
                         <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
                           <FiClock size={10} />
                           <span>{new Date(tx.createdAt).toLocaleString()}</span>

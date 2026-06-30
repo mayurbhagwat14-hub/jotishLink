@@ -162,6 +162,8 @@ instance.interceptors.response.use(
       if (isAuthenticated) {
         toast.error(error.response?.data?.message || 'You are not authorized to perform this action.');
       }
+    } else if (error.response?.status === 400 && error.response?.data?.message) {
+      toast.error(error.response.data.message);
     } else if (error.response?.status >= 500) {
       toast.error('Internal Server Error. Please try again later.');
     } else if (error.message === 'Network Error') {

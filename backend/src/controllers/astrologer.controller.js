@@ -466,12 +466,8 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   let totalEarnings = 0;
   let todayEarnings = 0;
   
-  // Calculate Start of Today in IST
-  const now = new Date();
-  const istOffset = 330; // IST is UTC+5:30
-  const istTime = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
-  istTime.setHours(0, 0, 0, 0);
-  const startOfTodayIST = new Date(istTime.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
+  const { getISTStartOfToday } = await import('../utils/dateHelper.js');
+  const startOfTodayIST = getISTStartOfToday();
 
   revenueLogs.forEach(log => {
     const amount = log.astrologerShare || 0;
@@ -547,9 +543,9 @@ export const getAstrologerEarnings = asyncHandler(async (req, res) => {
   const totalWithdrawnOrPending = pendingWithdrawalAmount + completedWithdrawalAmount;
   const total = totalEarnings - totalWithdrawnOrPending;
 
-  const now = new Date();
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const { getISTStartOfMonth, getISTStartOfLastMonth } = await import('../utils/dateHelper.js');
+  const currentMonthStart = getISTStartOfMonth();
+  const lastMonthStart = getISTStartOfLastMonth();
 
   let thisMonthTotal = 0;
   let lastMonthTotal = 0;
@@ -961,18 +957,10 @@ export const getAstrologerAnalytics = asyncHandler(async (req, res) => {
     ? Math.round((returningCustomers / totalUsersConsulted) * 100) 
     : 0;
 
-  // 3. Consultation Trends (last 7 days)
-  const now = new Date();
-  const istOffset = 330; // IST is UTC+5:30
+  const { getISTEndOfToday, getISTStartOfSevenDaysAgo } = await import('../utils/dateHelper.js');
   
-  const istTimeToday = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
-  istTimeToday.setHours(23, 59, 59, 999);
-  const today = new Date(istTimeToday.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
-
-  const istTimeSevenDaysAgo = new Date(istTimeToday);
-  istTimeSevenDaysAgo.setDate(istTimeToday.getDate() - 6);
-  istTimeSevenDaysAgo.setHours(0, 0, 0, 0);
-  const sevenDaysAgo = new Date(istTimeSevenDaysAgo.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
+  const today = getISTEndOfToday();
+  const sevenDaysAgo = getISTStartOfSevenDaysAgo();
   const recentChats = await ChatSession.find({
     astrologerId: astrologer._id,
     status: 'completed',

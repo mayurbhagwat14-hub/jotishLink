@@ -28,7 +28,7 @@ const AdminLayout = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [liveSessionsCount, setLiveSessionsCount] = useState(0);
-  const [pendingCounts, setPendingCounts] = useState({ astrologers: 0, orders: 0, cancelRequests: 0 });
+  const [pendingCounts, setPendingCounts] = useState({ astrologers: 0, orders: 0, cancelRequests: 0, withdrawals: 0, lowStock: 0 });
   const searchRef = useRef(null);
 
   const handleLogout = async () => {
@@ -88,7 +88,7 @@ const AdminLayout = () => {
       ]);
       const allSessions = sessionsRes.data?.data?.sessions || [];
       const allCalls = callsRes.data?.data?.calls || [];
-      const counts = pendingRes.data?.data || { astrologers: 0, orders: 0, cancelRequests: 0 };
+      const counts = pendingRes.data?.data || { astrologers: 0, orders: 0, cancelRequests: 0, withdrawals: 0, lowStock: 0 };
       
       const liveChats = allSessions.filter(s => s.status === 'ongoing' && s.userId && s.astrologerId).length;
       const liveCalls = allCalls.filter(c => ['accepted', 'ongoing', 'ringing'].includes(c.status) && c.userId && c.astrologerId).length;
@@ -137,11 +137,11 @@ const AdminLayout = () => {
     {
       title: 'Operations',
       icon: <FiMessageSquare size={18} />,
-      badge: liveSessionsCount > 0 ? liveSessionsCount.toString() : null,
+      badge: (liveSessionsCount + pendingCounts.withdrawals) > 0 ? (liveSessionsCount + pendingCounts.withdrawals).toString() : null,
       children: [
         { path: '/admin/sessions', name: 'Live Sessions', icon: <FiMessageSquare size={16} />, badge: liveSessionsCount > 0 ? liveSessionsCount.toString() : null },
         { path: '/admin/ratings', name: 'Ratings', icon: <FiStar size={16} /> },
-        { path: '/admin/finance', name: 'Finance', icon: <FiCreditCard size={16} /> },
+        { path: '/admin/finance', name: 'Finance', icon: <FiCreditCard size={16} />, badge: pendingCounts.withdrawals > 0 ? pendingCounts.withdrawals.toString() : null },
         { path: '/admin/earnings', name: 'Earnings', icon: <FaRupeeSign size={14} /> },
         { path: '/admin/services', name: 'Services', icon: <GiFlowerPot size={16} /> },
       ],
@@ -149,11 +149,11 @@ const AdminLayout = () => {
     {
       title: 'Store Management',
       icon: <FiShoppingCart size={18} />,
-      badge: (pendingCounts.orders + pendingCounts.cancelRequests) > 0 ? (pendingCounts.orders + pendingCounts.cancelRequests).toString() : null,
+      badge: (pendingCounts.orders + pendingCounts.cancelRequests + pendingCounts.lowStock) > 0 ? (pendingCounts.orders + pendingCounts.cancelRequests + pendingCounts.lowStock).toString() : null,
       children: [
         { path: '/admin/products', name: 'Products', icon: <FiBox size={16} /> },
         { path: '/admin/orders', name: 'Orders', icon: <FiShoppingCart size={16} />, badge: (pendingCounts.orders + pendingCounts.cancelRequests) > 0 ? (pendingCounts.orders + pendingCounts.cancelRequests).toString() : null },
-        { path: '/admin/inventory', name: 'Inventory', icon: <FiDatabase size={16} /> },
+        { path: '/admin/inventory', name: 'Inventory', icon: <FiDatabase size={16} />, badge: pendingCounts.lowStock > 0 ? pendingCounts.lowStock.toString() : null },
       ],
     },
     {

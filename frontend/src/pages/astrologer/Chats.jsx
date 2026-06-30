@@ -69,7 +69,7 @@ const Chats = () => {
   };
 
   return (
-    <div className="p-4 animate-fade-in mb-6 flex flex-col h-[calc(100vh-130px)]">
+    <div className="p-4 mb-6 flex flex-col h-[calc(100vh-130px)]">
       <div className="mb-4 shrink-0">
         <h1 className="text-2xl font-bold text-gray-800">Chats</h1>
         <p className="text-sm text-gray-500 font-medium">Manage your live chat sessions</p>

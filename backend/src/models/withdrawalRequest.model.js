@@ -32,6 +32,7 @@ const withdrawalRequestSchema = new mongoose.Schema(
     },
     rejectionReason: {
       type: String,
+      maxlength: [200, 'Rejection reason cannot exceed 200 characters']
     },
     paymentProof: {
       type: String, // URL of the screenshot uploaded by admin

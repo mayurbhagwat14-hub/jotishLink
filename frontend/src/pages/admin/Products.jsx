@@ -65,6 +65,16 @@ const AdminProducts = () => {
     }
   };
 
+  const handleNumberChange = (key, value) => {
+    if (value === '') {
+      setFormData(prev => ({ ...prev, [key]: '' }));
+      return;
+    }
+    const num = Number(value);
+    if (isNaN(num) || num < 0) return;
+    setFormData(prev => ({ ...prev, [key]: num }));
+  };
+
   const handleSaveProduct = async () => {
     if (isSubmitting) return;
     try {
@@ -454,15 +464,15 @@ const AdminProducts = () => {
               <div className="grid grid-cols-5 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Selling Price</label>
-                  <input type="number" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.price} onChange={e => handleNumberChange('price', e.target.value)} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Cost Price</label>
-                  <input type="number" value={formData.costPrice} onChange={e => setFormData({...formData, costPrice: e.target.value})} placeholder="200" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.costPrice} onChange={e => handleNumberChange('costPrice', e.target.value)} placeholder="200" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">MRP (₹)</label>
-                  <input type="number" value={formData.originalPrice} onChange={e => setFormData({...formData, originalPrice: e.target.value})} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.originalPrice} onChange={e => handleNumberChange('originalPrice', e.target.value)} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Discount Tag</label>
@@ -470,26 +480,26 @@ const AdminProducts = () => {
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Stock</label>
-                  <input type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.stock} onChange={e => handleNumberChange('stock', e.target.value)} placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Weight (kg)</label>
-                  <input type="number" step="0.01" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} placeholder="0.5" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" step="0.01" value={formData.weight} onChange={e => handleNumberChange('weight', e.target.value)} placeholder="0.5" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Length (cm)</label>
-                  <input type="number" value={formData.length} onChange={e => setFormData({...formData, length: e.target.value})} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.length} onChange={e => handleNumberChange('length', e.target.value)} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Breadth (cm)</label>
-                  <input type="number" value={formData.breadth} onChange={e => setFormData({...formData, breadth: e.target.value})} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.breadth} onChange={e => handleNumberChange('breadth', e.target.value)} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Height (cm)</label>
-                  <input type="number" value={formData.height} onChange={e => setFormData({...formData, height: e.target.value})} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.height} onChange={e => handleNumberChange('height', e.target.value)} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 

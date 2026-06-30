@@ -280,9 +280,14 @@ const AdminInventory = () => {
                     className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
                   ><FiMinus size={16} /></button>
                   <input
-                    type="number"
+                    type="text"
                     value={restockQty}
-                    onChange={e => setRestockQty(e.target.value)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '' || val === '-') return setRestockQty(val);
+                      const num = Number(val);
+                      if (!isNaN(num)) setRestockQty(String(num));
+                    }}
                     placeholder="0"
                     className="flex-1 px-4 py-3 rounded-xl bg-gray-50 border-0 text-center text-lg font-black text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                   />

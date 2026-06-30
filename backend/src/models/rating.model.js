@@ -21,6 +21,7 @@ const ratingSchema = new mongoose.Schema(
     review: {
       type: String,
       default: '',
+      maxlength: [1000, 'Review cannot exceed 1000 characters']
     },
   },
   {

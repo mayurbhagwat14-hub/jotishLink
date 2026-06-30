@@ -38,9 +38,9 @@ class AiService {
       let apiLanguage = 'en';
       
       // If we detect Hinglish query, we append prompt instructions to q
-      let finalQuestion = message;
+      let finalQuestion = `${message} (Instructions: Keep your response extremely short, concise, and conversational, like a WhatsApp chat message. Maximum 1 or 2 short sentences. Do not write long paragraphs.)`;
       if (isHinglish) {
-        finalQuestion = `${message} (Instructions: Please reply directly in friendly Hinglish - Hindi language written in Latin/English characters. Do not use Devnagari script. Talk like a friendly human astrologer.)`;
+        finalQuestion = `${message} (Instructions: Please reply directly in friendly Hinglish - Hindi language written in Latin/English characters. Do not use Devnagari script. Talk like a friendly human astrologer. Keep your response extremely short, concise, and conversational, like a WhatsApp chat message. Maximum 1 or 2 short sentences. Do not write long paragraphs.)`;
       }
 
       const payload = {

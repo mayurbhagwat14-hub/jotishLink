@@ -30,14 +30,17 @@ const callSessionSchema = new mongoose.Schema(
     duration: {
       type: Number, // in seconds
       default: 0,
+      min: [0, 'Duration cannot be negative']
     },
     ratePerMinute: {
       type: Number,
-      required: true,
+      required: [true, 'Rate per minute is required'],
+      min: [0, 'Rate cannot be negative']
     },
     totalAmount: {
       type: Number,
       default: 0,
+      min: [0, 'Total amount cannot be negative']
     },
     status: {
       type: String,

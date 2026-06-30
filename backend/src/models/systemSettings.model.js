@@ -22,6 +22,8 @@ const systemSettingsSchema = new mongoose.Schema(
     razorpayEnabled: { type: Boolean, default: false },
     smsEnabled: { type: Boolean, default: false },
     freeChatDuration: { type: Number, default: 1 },
+    flatShippingFee: { type: Number, default: 50 },
+    defaultGstPercent: { type: Number, default: 18 },
   },
   {
     timestamps: true,

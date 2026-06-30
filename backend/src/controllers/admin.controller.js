@@ -21,23 +21,11 @@ import axios from 'axios';
 
 export const getAdminEarnings = async (req, res, next) => {
   try {
-    const now = new Date();
-    const istOffset = 330; // IST is UTC+5:30
+    const { getISTStartOfToday, getISTStartOfSevenDaysAgo, getISTStartOfMonth } = await import('../utils/dateHelper.js');
     
-    // Calculate IST Midnight for Today
-    const istTimeToday = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
-    istTimeToday.setHours(0, 0, 0, 0);
-    const today = new Date(istTimeToday.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
-
-    // Calculate IST Midnight for 7 Days Ago
-    const thisWeek = new Date(today);
-    thisWeek.setDate(thisWeek.getDate() - 7);
-
-    // Calculate IST Midnight for 1st of this Month
-    const istTimeMonth = new Date(now.getTime() + (istOffset + now.getTimezoneOffset()) * 60000);
-    istTimeMonth.setDate(1);
-    istTimeMonth.setHours(0, 0, 0, 0);
-    const thisMonth = new Date(istTimeMonth.getTime() - (istOffset + now.getTimezoneOffset()) * 60000);
+    const today = getISTStartOfToday();
+    const thisWeek = getISTStartOfSevenDaysAgo();
+    const thisMonth = getISTStartOfMonth();
 
     const logs = await RevenueLog.find().populate('astrologerId', 'name').sort({ date: -1 });
 
@@ -1069,16 +1057,15 @@ export const getAdminCalls = asyncHandler(async (req, res) => {
   const filter = req.query.filter || 'All';
   let query = {};
   
-  const now = new Date();
+  const { getISTStartOfToday, getISTStartOfSevenDaysAgo, getISTStartOfMonth, getISTStartOfLastMonth } = await import('../utils/dateHelper.js');
+
   if (filter === 'Today') {
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    query.createdAt = { $gte: today };
+    query.createdAt = { $gte: getISTStartOfToday() };
   } else if (filter === 'This Week') {
-    const weekAgo = new Date(now.setDate(now.getDate() - 7));
-    query.createdAt = { $gte: weekAgo };
+    query.createdAt = { $gte: getISTStartOfSevenDaysAgo() };
   } else if (filter === 'This Month') {
-    const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
-    query.createdAt = { $gte: monthAgo };
+    // Usually 'This Month' means from 1st of the month
+    query.createdAt = { $gte: getISTStartOfMonth() };
   }
 
   const calls = await CallSession.find(query)
@@ -1250,17 +1237,23 @@ export const getAdminPendingCounts = asyncHandler(async (req, res) => {
   const [
     pendingAstrologers,
     pendingOrders,
-    pendingCancelRequests
+    pendingCancelRequests,
+    pendingWithdrawals,
+    lowStockProducts
   ] = await Promise.all([
     Astrologer.countDocuments({ status: 'pending' }),
     Order.countDocuments({ orderStatus: 'pending' }),
-    Order.countDocuments({ 'cancelRequest.requested': true, 'cancelRequest.adminResponse': 'pending' })
+    Order.countDocuments({ 'cancelRequest.requested': true, 'cancelRequest.adminResponse': 'pending' }),
+    WithdrawalRequest.countDocuments({ status: 'pending' }),
+    Product.countDocuments({ stock: { $lte: 10 } })
   ]);
 
   return res.status(200).json(new ApiResponse(200, {
     astrologers: pendingAstrologers,
     orders: pendingOrders,
-    cancelRequests: pendingCancelRequests
+    cancelRequests: pendingCancelRequests,
+    withdrawals: pendingWithdrawals,
+    lowStock: lowStockProducts
   }, 'Pending counts fetched'));
 });
 

@@ -467,7 +467,12 @@ const AdminUsers = () => {
                 <input 
                   type="number" 
                   value={refundAmount}
-                  onChange={e => setRefundAmount(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '') return setRefundAmount('');
+                    const num = Number(val);
+                    if (!isNaN(num) && num >= 0) setRefundAmount(num);
+                  }}
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 text-sm font-bold"
                   placeholder="e.g. 50"
                   min="1"

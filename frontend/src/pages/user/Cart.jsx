@@ -31,7 +31,7 @@ const CartSkeleton = () => (
 const Cart = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { cart, loading } = useSelector((state) => state.cart);
+  const { cart, pricing, loading } = useSelector((state) => state.cart);
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -96,13 +96,17 @@ const Cart = () => {
     setCouponLoading(true);
     setCouponError('');
     try {
-      const res = await verifyStoreCoupon(couponCode, subtotal);
+      const res = await verifyStoreCoupon(couponCode);
       const data = res.data?.data || res.data;
       setAppliedCoupon({
         code: data.couponCode || couponCode.toUpperCase(),
-        discountAmount: data.discountAmount || 0,
+        discountAmount: data.pricing?.couponDiscount || 0,
       });
-      toast.success(`Coupon applied! ₹${data.discountAmount} off`, { icon: '🎉', style: { borderRadius: '12px', fontWeight: 600 } });
+      toast.success(`Coupon applied! ₹${data.pricing?.couponDiscount} off`, { icon: '🎉', style: { borderRadius: '12px', fontWeight: 600 } });
+      
+      // Update the pricing in Redux manually without re-fetching everything
+      dispatch({ type: 'cart/updatePricing', payload: data.pricing });
+
     } catch (err) {
       setCouponError(err.response?.data?.message || 'Invalid coupon');
       setAppliedCoupon(null);
@@ -119,10 +123,16 @@ const Cart = () => {
 
   const items = cart?.items || [];
   
-  const subtotal = items.reduce((sum, item) => sum + (item.productId?.price || 0) * item.quantity, 0);
-  const shipping = subtotal >= 499 ? 0 : subtotal > 0 ? 49 : 0;
+  // Directly use the highly accurate pricing returned from the backend
+  const subtotal = pricing?.subtotal || 0;
+  const shipping = pricing?.shippingFee || 0;
+  const gstAmount = pricing?.gstAmount || 0;
   const discount = appliedCoupon?.discountAmount || 0;
-  const total = Math.max(0, subtotal + shipping - discount);
+  // Fallback to local sum if pricing is missing for some reason
+  const fallbackSubtotal = items.reduce((sum, item) => sum + (item.productId?.price || 0) * item.quantity, 0);
+  
+  const displaySubtotal = pricing ? subtotal : fallbackSubtotal;
+  const displayTotal = pricing ? pricing.grandTotal : Math.max(0, fallbackSubtotal + shipping - discount);
 
   const hasOutOfStockItems = items.some(item => !item.productId?.inStock || item.productId?.stock < item.quantity);
 
@@ -309,8 +319,20 @@ const Cart = () => {
               <div className="space-y-2.5 text-[13px]">
                 <div className="flex justify-between text-store-subtitle">
                   <span>Subtotal ({items.reduce((acc, item) => acc + item.quantity, 0)} items)</span>
-                  <span className="font-semibold text-store-text">₹{subtotal}</span>
+                  <span className="font-semibold text-store-text">₹{displaySubtotal}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="font-medium">Coupon Discount</span>
+                    <span className="font-bold">-₹{discount}</span>
+                  </div>
+                )}
+                {gstAmount > 0 && (
+                  <div className="flex justify-between text-store-subtitle">
+                    <span>GST / Taxes</span>
+                    <span className="font-semibold text-store-text">₹{gstAmount}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-store-subtitle">
                   <span>Delivery Fee</span>
                   {shipping === 0 ? (
@@ -319,15 +341,9 @@ const Cart = () => {
                     <span className="font-semibold text-store-text">₹{shipping}</span>
                   )}
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span className="font-medium">Coupon Discount</span>
-                    <span className="font-bold">-₹{discount}</span>
-                  </div>
-                )}
                 <div className="pt-3 mt-3 border-t border-store-border flex justify-between">
-                  <span className="font-bold text-store-text text-[15px]">Total Amount</span>
-                  <span className="font-extrabold text-store-text text-[18px]">₹{total}</span>
+                  <span className="font-bold text-store-text text-[15px]">Grand Total</span>
+                  <span className="font-extrabold text-store-text text-[18px]">₹{displayTotal}</span>
                 </div>
               </div>
               {discount > 0 && (
@@ -346,7 +362,7 @@ const Cart = () => {
           <div className="flex items-center justify-between mb-3">
             <div>
               <span className="text-[11px] text-store-muted font-medium block">Total</span>
-              <span className="text-[20px] font-extrabold text-store-text">₹{total}</span>
+              <span className="text-[20px] font-extrabold text-store-text">₹{displayTotal}</span>
             </div>
             {discount > 0 && (
               <span className="text-[11px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md">Saving ₹{discount}</span>
@@ -358,7 +374,7 @@ const Cart = () => {
             </p>
           )}
           <button
-            onClick={() => navigate('/user/checkout', { state: { total, couponCode: appliedCoupon?.code } })}
+            onClick={() => navigate('/user/checkout', { state: { total: displayTotal, couponCode: appliedCoupon?.code } })}
             disabled={hasOutOfStockItems}
             className={`w-full font-bold py-4 rounded-store text-[15px] flex items-center justify-center gap-2 transition-all ${
               hasOutOfStockItems 

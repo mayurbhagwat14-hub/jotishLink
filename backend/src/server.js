@@ -1,4 +1,24 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config();
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.resolve(__dirname, '../.env');
+
+// Automatically reload .env when it changes
+if (fs.existsSync(envPath)) {
+  fs.watch(envPath, (eventType) => {
+    if (eventType === 'change') {
+      dotenv.config({ override: true });
+      console.log('Environment variables reloaded automatically due to .env change.');
+    }
+  });
+}
+
 import express from 'express';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
@@ -10,6 +30,8 @@ import connectDB from './config/db.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { apiLimiter as apiRateLimiter } from './middlewares/rateLimiter.middleware.js';
 import { initFirebase } from './config/firebase.config.js';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
@@ -495,34 +517,19 @@ io.on('connection', (socket) => {
         setTimeout(async () => {
           try {
             const botReply = await AiService.getChatResponse(message.text, session.userId, session);
-            const rawSentences = botReply.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 0);
             
-            const sentences = [];
-            for (let s of rawSentences) {
-              if (s.length <= 4 && sentences.length > 0) {
-                sentences[sentences.length - 1] += ' ' + s;
-              } else {
-                sentences.push(s);
-              }
+            // Simulate realistic typing for a short text
+            const typingDelay = Math.min(1000 + (botReply.length * 10), 2000);
+            if (typingDelay > 0) {
+              await new Promise(resolve => setTimeout(resolve, typingDelay));
             }
-
-            for (let i = 0; i < sentences.length; i++) {
-              const sentence = sentences[i];
-              // Base delay is 0 for first sentence (already waited 1.5s), dynamic for others
-              const typingDelay = i === 0 ? 0 : Math.min(1000 + (sentence.length * 20), 3000);
-              
-              if (typingDelay > 0) {
-                io.to(roomId).emit('user_typing', { sender: 'bot' });
-                await new Promise(resolve => setTimeout(resolve, typingDelay));
-              }
-              
-              const botTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-              const botMsg = { sender: 'bot', text: sentence, time: botTime, type: 'text' };
-              await ChatSession.findByIdAndUpdate(sessionId, { $push: { messages: botMsg } });
-              
-              io.to(roomId).emit('user_stopped_typing', { sender: 'bot' });
-              io.to(roomId).emit('receive_message', botMsg);
-            }
+            
+            const botTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+            const botMsg = { sender: 'bot', text: botReply, time: botTime, type: 'text' };
+            await ChatSession.findByIdAndUpdate(sessionId, { $push: { messages: botMsg } });
+            
+            io.to(roomId).emit('user_stopped_typing', { sender: 'bot' });
+            io.to(roomId).emit('receive_message', botMsg);
           } catch (e) {
             console.error('Bot reply error:', e);
             io.to(roomId).emit('user_stopped_typing', { sender: 'bot' });
@@ -1177,6 +1184,13 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
 app.use(apiRateLimiter);
 
 // ──────────────────────────────────────────────

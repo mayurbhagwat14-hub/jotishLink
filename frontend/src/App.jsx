@@ -158,9 +158,13 @@ const AppContent = () => {
   }, [isAuthenticated, token, dispatch]);
 
   const getHomePath = () => {
+    if (isAstrologerAuthenticated && astrologerUser) {
+      if (astrologerUser.approvalStatus !== 'approved') return '/astrologer/apply';
+      return '/astrologer/dashboard';
+    }
+    if (isAdminAuthenticated && adminUser) return '/admin/dashboard';
+    
     if (!isAuthenticated || !user) return '/user/home';
-    if (userRole === 'admin') return '/admin/dashboard';
-    if (userRole === 'astrologer') return '/astrologer/dashboard';
     
     // Check if the user is new or hasn't filled details (only if user object is loaded)
     if (user && (user.isNewUser || user.name === 'Guest User' || !user.name)) {
@@ -248,6 +252,7 @@ const AppContent = () => {
           <AdminLayout />
         </ProtectedRoute>
       }>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
         <Route path="astrologers" element={<AdminAstrologers />} />
@@ -275,6 +280,7 @@ const AppContent = () => {
           <AstrologerLayout />
         </ProtectedRoute>
       }>
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AstrologerDashboard />} />
         <Route path="chats" element={<Chats />} />
         <Route path="calls" element={<Calls />} />

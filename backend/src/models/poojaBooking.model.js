@@ -15,6 +15,7 @@ const poojaBookingSchema = new mongoose.Schema(
     poojaName: {
       type: String,
       required: true,
+      maxlength: [100, 'Pooja name cannot exceed 100 characters']
     },
     date: {
       type: String, // format: YYYY-MM-DD
@@ -26,6 +27,7 @@ const poojaBookingSchema = new mongoose.Schema(
     },
     address: {
       type: String,
+      maxlength: [250, 'Address cannot exceed 250 characters']
     },
     paymentMethod: {
       type: String,
@@ -53,6 +55,7 @@ const poojaBookingSchema = new mongoose.Schema(
     amountHold: {
       type: Number,
       default: 0,
+      min: [0, 'Amount hold cannot be negative']
     },
     paymentStatus: {
       type: String,
@@ -66,10 +69,12 @@ const poojaBookingSchema = new mongoose.Schema(
     proofNotes: {
       type: String,
       default: '',
+      maxlength: [1000, 'Proof notes cannot exceed 1000 characters']
     },
     price: {
       type: Number,
       default: 0,
+      min: [0, 'Price cannot be negative']
     },
   },
   {

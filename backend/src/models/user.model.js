@@ -7,20 +7,25 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: 'Guest User',
+      minlength: [2, 'Name must be at least 2 characters long'],
+      maxlength: [50, 'Name cannot exceed 50 characters'],
+      match: [/^[a-zA-Z\s.-]+$/, 'Name can only contain letters, spaces, dots, and hyphens']
     },
     fcmToken: { type: [String], default: [] }, // For web tokens
     fcmTokenMobile: { type: [String], default: [] }, // For mobile tokens
     phone: {
       type: String,
       unique: true,
-      required: true,
+      required: [true, 'Phone number is required'],
       index: true,
+      match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
     },
     email: {
       type: String,
       trim: true,
       lowercase: true,
       sparse: true,
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
     },
     password: {
       type: String,
@@ -40,6 +45,7 @@ const userSchema = new mongoose.Schema(
     wallet: {
       type: Number,
       default: 0,
+      min: [0, 'Wallet balance cannot be negative']
     },
     ratedAstrologers: [{
       type: mongoose.Schema.Types.ObjectId,
@@ -58,15 +64,24 @@ const userSchema = new mongoose.Schema(
     },
     placeOfBirth: {
       type: String,
+      trim: true,
+      maxlength: [100, 'Place of birth cannot exceed 100 characters']
     },
     address: {
       type: String,
+      trim: true,
+      maxlength: [250, 'Address cannot exceed 250 characters']
     },
     city: {
       type: String,
+      trim: true,
+      maxlength: [50, 'City cannot exceed 50 characters'],
+      match: [/^[a-zA-Z\s]+$/, 'City can only contain letters and spaces']
     },
     pincode: {
       type: String,
+      trim: true,
+      match: [/^[0-9]{6}$/, 'Please enter a valid 6-digit pincode']
     },
     zodiacSign: {
       type: String,

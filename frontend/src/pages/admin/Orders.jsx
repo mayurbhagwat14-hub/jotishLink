@@ -80,7 +80,8 @@ const AdminOrders = () => {
         shippingProvider: o.courierPartner || 'Unknown',
         date: new Date(o.createdAt).toLocaleDateString(),
         time: new Date(o.createdAt).toLocaleTimeString(),
-        timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }]
+        timeline: [{ label: 'Order Placed', time: new Date(o.createdAt).toLocaleString(), icon: 'check' }],
+        rawOrder: o
       }));
       setOrders(formattedOrders);
     } catch (err) {
@@ -668,10 +669,42 @@ const AdminOrders = () => {
                           </div>
                         ))}
                       </div>
-                      <div className="flex justify-between mt-3 pt-3 border-t border-gray-100">
-                        <span className="text-sm font-bold text-gray-600">Total</span>
-                        <span className="text-lg font-black text-gray-900">₹{order.total.toLocaleString()}</span>
+                      <div className="flex flex-col gap-1.5 mt-3 pt-3 border-t border-gray-100 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Subtotal</span>
+                          <span className="font-bold text-gray-700">₹{order.rawOrder?.subtotal || 0}</span>
+                        </div>
+                        {order.rawOrder?.discountAmount > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Coupon Discount ({order.rawOrder?.couponCode})</span>
+                            <span className="font-bold">-₹{order.rawOrder.discountAmount}</span>
+                          </div>
+                        )}
+                        {order.rawOrder?.gstAmount > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">GST / Taxes</span>
+                            <span className="font-bold text-gray-700">₹{order.rawOrder.gstAmount}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Shipping</span>
+                          <span className="font-bold text-gray-700">{order.rawOrder?.shippingFee ? `₹${order.rawOrder.shippingFee}` : 'FREE'}</span>
+                        </div>
+                        <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
+                          <span className="text-sm font-bold text-gray-800">Grand Total</span>
+                          <span className="text-lg font-black text-gray-900">₹{order.total.toLocaleString()}</span>
+                        </div>
                       </div>
+                      {order.status !== 'Cancelled' && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => window.open(`${import.meta.env.VITE_API_URL.replace('/api', '')}/api/store/orders/${order.dbId}/invoice`, '_blank')}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors"
+                          >
+                            <FiPackage size={14} /> Download PDF Invoice
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Tracking Info */}

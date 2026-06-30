@@ -5,20 +5,25 @@ const astrologerSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      required: [true, 'Name is required'],
       trim: true,
+      minlength: [2, 'Name must be at least 2 characters long'],
+      maxlength: [50, 'Name cannot exceed 50 characters'],
+      match: [/^[a-zA-Z\s.-]+$/, 'Name can only contain letters, spaces, dots, and hyphens']
     },
     phone: {
       type: String,
       unique: true,
-      required: true,
+      required: [true, 'Phone number is required'],
       index: true,
+      match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
     },
     email: {
       type: String,
       trim: true,
       lowercase: true,
       sparse: true,
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
     },
     password: {
       type: String,
@@ -36,10 +41,10 @@ const astrologerSchema = new mongoose.Schema(
     // Personal Details
     dob: { type: String }, // DD/MM/YYYY or Date
     gender: { type: String, enum: ['Male', 'Female', 'Other'] },
-    address: { type: String },
-    city: { type: String },
-    state: { type: String },
-    pincode: { type: String },
+    address: { type: String, maxlength: [250, 'Address cannot exceed 250 characters'] },
+    city: { type: String, maxlength: [50, 'City cannot exceed 50 characters'], match: [/^[a-zA-Z\s]+$/, 'City can only contain letters and spaces'] },
+    state: { type: String, maxlength: [50, 'State cannot exceed 50 characters'], match: [/^[a-zA-Z\s]+$/, 'State can only contain letters and spaces'] },
+    pincode: { type: String, match: [/^[0-9]{6}$/, 'Please enter a valid 6-digit pincode'] },
     
     avatar: {
       type: String,
@@ -50,10 +55,10 @@ const astrologerSchema = new mongoose.Schema(
     },
 
     earnings: {
-      total: { type: Number, default: 0 },
-      pending: { type: Number, default: 0 },
-      withdrawn: { type: Number, default: 0 },
-      available: { type: Number, default: 0 },
+      total: { type: Number, default: 0, min: 0 },
+      pending: { type: Number, default: 0, min: 0 },
+      withdrawn: { type: Number, default: 0, min: 0 },
+      available: { type: Number, default: 0, min: 0 },
     },
     isBlocked: {
       type: Boolean,
@@ -84,14 +89,17 @@ const astrologerSchema = new mongoose.Schema(
     experience: {
       type: Number,
       default: 0,
+      min: [0, 'Experience cannot be negative'],
+      max: [100, 'Experience seems unrealistically high']
     },
     about: {
       type: String,
       default: '',
+      maxlength: [1000, 'About section cannot exceed 1000 characters']
     },
-    consultationStyle: { type: String },
-    education: { type: String },
-    certificationDetails: { type: String },
+    consultationStyle: { type: String, maxlength: [200, 'Consultation style text is too long'] },
+    education: { type: String, maxlength: [200, 'Education text is too long'] },
+    certificationDetails: { type: String, maxlength: [200, 'Certification text is too long'] },
 
     // Documents
     identityProof: { type: String }, // Legacy

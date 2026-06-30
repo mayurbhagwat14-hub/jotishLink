@@ -85,10 +85,32 @@ const AdminSettings = () => {
     }
   };
 
+  const handleGeneralNumberChange = (key, value) => {
+    if (value === '') {
+      setGeneralSettings(prev => ({ ...prev, [key]: '' }));
+      return;
+    }
+    const num = Number(value);
+    if (isNaN(num) || num < 0) return; // prevent negatives and invalid numbers
+    setGeneralSettings(prev => ({ ...prev, [key]: num }));
+  };
+
   const handleCommissionChange = (key, value) => {
     // Prevent empty string from turning into 0 when user deletes
-    const val = value === '' ? '' : Number(value);
+    if (value === '') {
+      setGeneralSettings(prev => ({
+        ...prev,
+        commissionRates: {
+          ...prev.commissionRates,
+          [key]: ''
+        }
+      }));
+      return;
+    }
     
+    const val = Number(value);
+    if (isNaN(val) || val < 0) return; // prevent negatives and invalid numbers
+
     setGeneralSettings(prev => ({
       ...prev,
       commissionRates: {
@@ -243,7 +265,7 @@ const AdminSettings = () => {
 
             <div className="space-y-1.5 pt-2">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Min Wallet Balance for Chat (₹)</label>
-              <input type="number" value={generalSettings.minChatBalance} onChange={e => setGeneralSettings({...generalSettings, minChatBalance: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <input type="number" min="0" value={generalSettings.minChatBalance ?? ''} onChange={e => handleGeneralNumberChange('minChatBalance', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <div className="space-y-1.5">
@@ -253,12 +275,22 @@ const AdminSettings = () => {
 
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Free Chat Duration (minutes)</label>
-              <select value={generalSettings.freeChatDuration} onChange={e => setGeneralSettings({...generalSettings, freeChatDuration: Number(e.target.value)})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
+              <select value={generalSettings.freeChatDuration} onChange={e => handleGeneralNumberChange('freeChatDuration', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20">
                 <option value={1}>1 minute</option>
                 <option value={2}>2 minutes</option>
                 <option value={5}>5 minutes</option>
                 <option value={10}>10 minutes</option>
               </select>
+            </div>
+
+            <div className="space-y-1.5 pt-2 border-t border-gray-100">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider text-orange-500">Store Flat Shipping Fee (₹)</label>
+              <input type="number" min="0" value={generalSettings.flatShippingFee ?? ''} onChange={e => handleGeneralNumberChange('flatShippingFee', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider text-orange-500">Store Default GST (%)</label>
+              <input type="number" min="0" value={generalSettings.defaultGstPercent ?? ''} onChange={e => handleGeneralNumberChange('defaultGstPercent', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <button onClick={() => handleSaveGeneral('controls')} disabled={savingSection !== null} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${savingSection === 'controls' ? 'opacity-70 cursor-not-allowed' : ''}`}>

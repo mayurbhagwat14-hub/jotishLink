@@ -11,6 +11,7 @@ const Checkout = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const total = location.state?.total || 0;
+  const couponCode = location.state?.couponCode || null;
   
   const { user } = useSelector((state) => state.auth);
   const { cart } = useSelector((state) => state.cart);
@@ -136,7 +137,8 @@ const Checkout = () => {
       if (paymentMethod === 'cod') {
         const res = await dispatch(createOrderThunk({
           shippingAddress: formData,
-          paymentMethod: 'cod'
+          paymentMethod: 'cod',
+          couponCode
         })).unwrap();
         navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
       } else {
@@ -176,7 +178,7 @@ const Checkout = () => {
 
           // 1. Create order on backend
           const { createRazorpayOrder } = await import('../../api/storeApis');
-          const orderResponse = await createRazorpayOrder(total);
+          const orderResponse = await createRazorpayOrder(couponCode);
           const orderData = orderResponse.data?.data || orderResponse.data;
 
           // 2. Open Razorpay modal
@@ -193,7 +195,8 @@ const Checkout = () => {
                 const res = await dispatch(createOrderThunk({
                   shippingAddress: formData,
                   paymentMethod: 'online',
-                  paymentData: response
+                  paymentData: response,
+                  couponCode
                 })).unwrap();
                 navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
               } catch (err) {
@@ -235,7 +238,8 @@ const Checkout = () => {
     try {
       const res = await dispatch(createOrderThunk({
         shippingAddress: formData,
-        paymentMethod: 'wallet'
+        paymentMethod: 'wallet',
+        couponCode
       })).unwrap();
       
       // Refresh user wallet state

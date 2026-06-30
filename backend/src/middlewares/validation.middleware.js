@@ -3,7 +3,7 @@ import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const validate = (schema) => asyncHandler(async (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false });
+  const { error } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
   if (error) {
     console.error("VALIDATION FAILED FOR PAYLOAD:", JSON.stringify(req.body, null, 2));
     const errorMessage = error.details.map((detail) => detail.message).join(', ');

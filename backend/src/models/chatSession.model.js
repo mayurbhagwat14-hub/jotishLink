@@ -47,6 +47,7 @@ const chatSessionSchema = new mongoose.Schema(
         text: {
           type: String,
           required: false,
+          maxlength: [5000, 'Message cannot exceed 5000 characters']
         },
         imageUrl: {
           type: String,
@@ -65,10 +66,12 @@ const chatSessionSchema = new mongoose.Schema(
     durationSeconds: {
       type: Number,
       default: 0,
+      min: [0, 'Duration cannot be negative']
     },
     amountDeducted: {
       type: Number,
       default: 0,
+      min: [0, 'Amount deducted cannot be negative']
     },
     isFreeChat: {
       type: Boolean,

@@ -15,11 +15,13 @@ const transactionSchema = new mongoose.Schema(
     },
     amount: {
       type: Number,
-      required: true,
+      required: [true, 'Amount is required'],
+      min: [0, 'Transaction amount cannot be negative']
     },
     desc: {
       type: String,
-      required: true,
+      required: [true, 'Description is required'],
+      maxlength: [200, 'Description cannot exceed 200 characters']
     },
     date: {
       type: Date,

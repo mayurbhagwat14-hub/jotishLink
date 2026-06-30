@@ -25,12 +25,17 @@ export const getCart = asyncHandler(async (req, res) => {
       await cart.save();
     }
   }
-  return res.status(200).json(new ApiResponse(200, { cart }, 'Cart fetched'));
+  
+  const PricingService = (await import('../services/pricing.service.js')).default;
+  const itemsForPricing = cart.items.map(item => ({ productId: item.productId._id, quantity: item.quantity }));
+  const pricing = await PricingService.calculateOrderPricing(itemsForPricing, null, { userId: req.user._id });
+
+  return res.status(200).json(new ApiResponse(200, { cart, pricing }, 'Cart fetched'));
 });
 
 // POST /api/store/cart
 export const updateCart = asyncHandler(async (req, res) => {
-  const { productId, quantity } = req.body; // quantity can be absolute value or delta
+  const { productId, quantity } = req.body;
   
   if (typeof quantity !== 'number' || !Number.isInteger(quantity) || isNaN(quantity)) {
     throw new ApiError(400, 'Quantity must be a valid integer');
@@ -65,29 +70,30 @@ export const updateCart = asyncHandler(async (req, res) => {
   await cart.save();
   const populatedCart = await Cart.findById(cart._id).populate('items.productId');
   
-  return res.status(200).json(new ApiResponse(200, { cart: populatedCart }, 'Cart updated'));
+  const PricingService = (await import('../services/pricing.service.js')).default;
+  const itemsForPricing = populatedCart.items.map(item => ({ productId: item.productId._id, quantity: item.quantity }));
+  const pricing = await PricingService.calculateOrderPricing(itemsForPricing, null, { userId: req.user._id });
+
+  return res.status(200).json(new ApiResponse(200, { cart: populatedCart, pricing }, 'Cart updated'));
 });
 
 // POST /api/store/coupon/verify
 export const verifyCoupon = asyncHandler(async (req, res) => {
-  const { couponCode, totalAmount } = req.body;
-  if (!couponCode || !totalAmount) throw new ApiError(400, 'Coupon code and total amount are required');
+  const { couponCode } = req.body;
+  if (!couponCode) throw new ApiError(400, 'Coupon code is required');
 
-  const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
-  if (!coupon) throw new ApiError(400, 'Invalid or inactive coupon');
-  if (new Date(coupon.expiryDate) < new Date()) throw new ApiError(400, 'Coupon has expired');
-  if (coupon.usageLimit > 0 && coupon.currentUsage >= coupon.usageLimit) throw new ApiError(400, 'Coupon usage limit reached');
+  const cart = await Cart.findOne({ userId: req.user._id });
+  if (!cart || cart.items.length === 0) throw new ApiError(400, 'Cart is empty');
 
-  const calculatedDiscount = (totalAmount * coupon.discountPercent) / 100;
-  let discountAmount = coupon.maxDiscount > 0 ? Math.min(calculatedDiscount, coupon.maxDiscount) : calculatedDiscount;
-  discountAmount = Math.round(discountAmount);
-
-  const finalAmount = Math.max(0, totalAmount - discountAmount);
+  const PricingService = (await import('../services/pricing.service.js')).default;
+  const itemsForPricing = cart.items.map(item => ({ productId: item.productId, quantity: item.quantity }));
+  
+  // This will throw error if coupon is invalid based on advanced rules
+  const pricing = await PricingService.calculateOrderPricing(itemsForPricing, couponCode, { userId: req.user._id });
 
   return res.status(200).json(new ApiResponse(200, {
-    discountAmount,
-    finalAmount,
-    couponCode: coupon.code,
+    pricing,
+    couponCode: pricing.appliedCoupon?.code,
   }, 'Coupon applied successfully'));
 });
 
@@ -104,51 +110,20 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Cart is empty');
   }
 
-  // Calculate total and validate stock
-  let totalAmount = 0;
-  for (const item of cart.items) {
-    if (!item.productId) continue;
-    if (item.quantity > item.productId.stock) {
-      throw new ApiError(400, `Product ${item.productId.name} is out of stock or requested quantity is not available. Available stock: ${item.productId.stock}`);
-    }
-  }
+  const PricingService = (await import('../services/pricing.service.js')).default;
+  const itemsForPricing = cart.items.map(item => ({ productId: item.productId._id, quantity: item.quantity }));
+  const pricing = await PricingService.calculateOrderPricing(itemsForPricing, couponCode, { userId: req.user._id, isFirstOrder: false /* Add logic later if needed */ });
+  
+  const totalAmount = pricing.grandTotal;
 
-  const orderItems = [];
-  for (const item of cart.items) {
-    if (!item.productId) continue;
-    const price = item.productId.price;
-    const costPrice = item.productId.costPrice || 0;
-    totalAmount += price * item.quantity;
-    orderItems.push({
-      productId: item.productId._id,
-      quantity: item.quantity,
-      price: price,
-      costPrice: costPrice
-    });
-  }
-
-  let discountAmount = 0;
-  let appliedCoupon = null;
-
-  if (couponCode) {
-    appliedCoupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
-    if (!appliedCoupon) {
-      throw new ApiError(400, 'Invalid or inactive coupon');
-    }
-    if (new Date(appliedCoupon.expiryDate) < new Date()) {
-      throw new ApiError(400, 'Coupon has expired');
-    }
-    if (appliedCoupon.usageLimit > 0 && appliedCoupon.currentUsage >= appliedCoupon.usageLimit) {
-      throw new ApiError(400, 'Coupon usage limit reached');
-    }
-
-    const calculatedDiscount = (totalAmount * appliedCoupon.discountPercent) / 100;
-    discountAmount = appliedCoupon.maxDiscount > 0 ? Math.min(calculatedDiscount, appliedCoupon.maxDiscount) : calculatedDiscount;
-    discountAmount = Math.round(discountAmount);
-
-    totalAmount -= discountAmount;
-    if (totalAmount < 0) totalAmount = 0;
-  }
+  const orderItems = pricing.items.map(item => ({
+    productId: item.productId,
+    quantity: item.quantity,
+    price: item.price,
+    costPrice: item.costPrice,
+    gstPercent: item.gstPercent,
+    hsnCode: item.hsnCode
+  }));
 
   const user = await User.findById(req.user._id);
 
@@ -247,11 +222,15 @@ export const createOrder = asyncHandler(async (req, res) => {
     userId: req.user._id,
     items: orderItems,
     shippingAddress,
-    totalAmount,
+    subtotal: pricing.subtotal,
+    taxableAmount: pricing.taxableAmount,
+    gstAmount: pricing.gstAmount,
+    shippingFee: pricing.shippingFee,
+    totalAmount: pricing.grandTotal,
     paymentMethod,
     paymentStatus,
-    couponCode: appliedCoupon ? appliedCoupon.code : null,
-    discountAmount,
+    couponCode: pricing.appliedCoupon ? pricing.appliedCoupon.code : null,
+    discountAmount: pricing.couponDiscount,
   });
 
   // 5. Send Notification
@@ -266,9 +245,18 @@ export const createOrder = asyncHandler(async (req, res) => {
   }).catch(err => console.error('Notify error:', err));
 
   // 6. Update Coupon
-  if (appliedCoupon) {
-    appliedCoupon.currentUsage += 1;
-    await appliedCoupon.save();
+  if (pricing.appliedCoupon) {
+    pricing.appliedCoupon.currentUsage += 1;
+    
+    const userUsage = pricing.appliedCoupon.usedBy?.find(u => u.userId.toString() === user._id.toString());
+    if (userUsage) {
+      userUsage.count += 1;
+    } else {
+      if (!pricing.appliedCoupon.usedBy) pricing.appliedCoupon.usedBy = [];
+      pricing.appliedCoupon.usedBy.push({ userId: user._id, count: 1 });
+    }
+
+    await pricing.appliedCoupon.save();
   }
 
   // Clear cart
@@ -377,6 +365,19 @@ export const getOrderById = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { order }, 'Order details fetched'));
 });
 
+// GET /api/store/orders/:id/invoice
+export const downloadInvoice = asyncHandler(async (req, res) => {
+  const order = await Order.findOne({ _id: req.params.id, userId: req.user._id })
+    .populate('items.productId');
+  
+  if (!order) {
+    throw new ApiError(404, 'Order not found');
+  }
+
+  const InvoiceService = (await import('../services/invoice.service.js')).default;
+  await InvoiceService.generateInvoice(order, res);
+});
+
 // POST /api/store/orders/:id/cancel
 export const requestCancelOrder = asyncHandler(async (req, res) => {
   const { reason } = req.body;
@@ -415,10 +416,21 @@ export const requestCancelOrder = asyncHandler(async (req, res) => {
 
 // POST /api/store/razorpay-order
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount } = req.body;
+  const { couponCode } = req.body;
   
+  const cart = await Cart.findOne({ userId: req.user._id });
+  if (!cart || cart.items.length === 0) {
+    throw new ApiError(400, 'Cart is empty');
+  }
+
+  const PricingService = (await import('../services/pricing.service.js')).default;
+  const itemsForPricing = cart.items.map(item => ({ productId: item.productId, quantity: item.quantity }));
+  const pricing = await PricingService.calculateOrderPricing(itemsForPricing, couponCode, { userId: req.user._id });
+
+  const amount = pricing.grandTotal;
+
   if (!amount || amount <= 0) {
-    throw new ApiError(400, 'Invalid amount');
+    throw new ApiError(400, 'Invalid amount calculated for Razorpay order');
   }
 
   const razorpay = new Razorpay({

@@ -39,6 +39,7 @@ export const createOrderThunk = createAsyncThunk(
 
 const initialState = {
   cart: { items: [] },
+  pricing: null,
   loading: false,
   error: null,
 };
@@ -46,7 +47,11 @@ const initialState = {
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
-  reducers: {},
+  reducers: {
+    updatePricing: (state, action) => {
+      state.pricing = action.payload;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchCartThunk.pending, (state) => {
@@ -55,6 +60,7 @@ const cartSlice = createSlice({
       .addCase(fetchCartThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.cart = action.payload?.data?.cart || { items: [] };
+        state.pricing = action.payload?.data?.pricing || null;
       })
       .addCase(fetchCartThunk.rejected, (state, action) => {
         state.loading = false;
@@ -62,9 +68,11 @@ const cartSlice = createSlice({
       })
       .addCase(updateCartThunk.fulfilled, (state, action) => {
         state.cart = action.payload?.data?.cart || { items: [] };
+        state.pricing = action.payload?.data?.pricing || null;
       })
       .addCase(createOrderThunk.fulfilled, (state) => {
-        state.cart = { items: [] }; // Clear cart on successful order
+        state.cart = { items: [] };
+        state.pricing = null;
       });
   },
 });
