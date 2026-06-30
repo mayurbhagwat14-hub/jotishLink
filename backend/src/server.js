@@ -307,7 +307,6 @@ io.on('connection', (socket) => {
         console.log(`[Socket.IO] Auto-rejected ${rejectedRequests.length} other pending request(s) for astrologer ${reqData.astrologerId}`);
       }
     }
-
     // Notify user that their session was accepted
     io.to(userSocketId).emit('session_accepted', { roomId });
     
@@ -339,7 +338,7 @@ io.on('connection', (socket) => {
 
     // Notify astrologer's own socket too (confirmation)
     socket.emit('session_accept_confirmed', { roomId });
-    console.log(`[Socket.IO] Session accepted. Room: ${roomId}`);
+    console.log('[Socket.IO] Session accepted. Room: ' + roomId);
   });
 
   // ── Astrologer rejects session
@@ -350,34 +349,33 @@ io.on('connection', (socket) => {
       pendingRequests.delete(roomId);
     }
     io.to(userSocketId).emit('session_rejected', { reason: reason || 'Astrologer is busy right now.' });
-    console.log(`[Socket.IO] Astrologer rejected session. Reason: ${reason}`);
+    console.log('[Socket.IO] Astrologer rejected session. Reason: ' + reason);
   });
 
   // ── Join a call room for audio/video (no DB session creation)
   socket.on('join_call_room', ({ roomId }) => {
     socket.join(roomId);
     socketRoomMap.set(socket.id, { roomId, type: 'audio_call' });
-    console.log(`[Socket.IO] Socket ${socket.id} joined call room ${roomId}`);
+    console.log('[Socket.IO] Socket ' + socket.id + ' joined call room ' + roomId);
   });
 
   // ── Join a chat room
   socket.on('join_room', async ({ roomId, userId, astrologerId, isBot, sessionType }) => {
     try {
       socket.join(roomId);
-      socketRoomMap.set(socket.id, { roomId, type: 'chat_session', astrologerId });
+      socketRoomMap.set(socket.id, { roomId, type: sessionType || 'chat_session', astrologerId });
 
       // ── Cancel any pending disconnect grace timer for this room.
-      // This means the user reconnected (e.g. page refresh) before the grace
-      // period expired — chat resumes normally, no auto-end.
       if (disconnectGraceTimers.has(roomId)) {
         clearTimeout(disconnectGraceTimers.get(roomId));
         disconnectGraceTimers.delete(roomId);
-        console.log(`[Socket.IO] Grace timer cancelled for room ${roomId} — user reconnected`);
+        console.log('[Socket.IO] Grace timer cancelled for room ' + roomId + ' — user reconnected');
       }
 
       socket.to(roomId).emit('user_joined', { userId, message: 'A user has joined the session' });
-      console.log(`[Socket.IO] ${userId} joined room ${roomId} (Type: ${sessionType || 'chat'})`);
+      console.log('[Socket.IO] ' + userId + ' joined room ' + roomId + ' (Type: ' + (sessionType || 'chat') + ')');
 
+      const ChatSession = (await import('./models/chatSession.model.js')).default;
       let session = await ChatSession.findOne({ roomId });
       let isNewSession = false;
 
@@ -394,13 +392,14 @@ io.on('connection', (socket) => {
       if (!session) {
         let astroName = 'Astrologer';
         if (astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {
+          const Astrologer = (await import('./models/astrologer.model.js')).default;
           const astroDoc = await Astrologer.findById(astrologerId);
           if (astroDoc && astroDoc.name) astroName = astroDoc.name;
         }
 
         const welcomeMessage = {
           sender: 'bot',
-          text: `Namaste, welcome! I am ${astroName}. Please share your name, date of birth, time of birth, and place of birth, along with your question. I am analyzing your chart now.`,
+          text: 'Namaste, welcome! I am ' + astroName + '. Please share your name, date of birth, time of birth, and place of birth, along with your question. I am analyzing your chart now.',
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         };
 
@@ -414,7 +413,7 @@ io.on('connection', (socket) => {
           messages: [welcomeMessage],
         });
         isNewSession = true;
-        console.log(`[Socket.IO] Created ChatSession in DB with welcome message: ${session._id}`);
+        console.log('[Socket.IO] Created ChatSession in DB with welcome message: ' + session._id);
       } else if (!session.astrologerId && astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {
         session.astrologerId = astrologerId;
         await session.save();
@@ -1138,6 +1137,28 @@ io.on('connection', (socket) => {
 
         if (timerData && timerData.callId) {
           await handleEndCall({ roomId, callId: timerData.callId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds });
+        } else {
+          // If no timer started yet (e.g., disconnected while ringing/connecting)
+          try {
+            const { CallSession } = await import('./models/callSession.model.js');
+            const session = await CallSession.findOneAndUpdate(
+              { channelName: roomId, status: { $in: ['pending', 'ringing', 'accepted'] } },
+              { status: 'completed', endTime: new Date() },
+              { new: true }
+            );
+            
+            const astroIdToReset = session?.astrologerId || targetAstroId;
+            if (astroIdToReset) {
+              const Astrologer = (await import('./models/astrologer.model.js')).default;
+              await Astrologer.findOneAndUpdate(
+                { _id: astroIdToReset, onlineStatus: 'busy' },
+                { onlineStatus: 'online' }
+              );
+              io.emit('astro_status_changed', { astrologerId: astroIdToReset, status: 'online' });
+            }
+          } catch (err) {
+            console.error('[Socket.IO] Error forcefully ending call on disconnect:', err.message);
+          }
         }
       } else {
         // For CHAT sessions, DO NOT immediately end the chat on disconnect.

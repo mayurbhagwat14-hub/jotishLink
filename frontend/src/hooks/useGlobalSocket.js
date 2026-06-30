@@ -75,7 +75,7 @@ export const useGlobalSocket = () => {
       toast.success(`Incoming ${data.type} request from ${data.userName}!`, {
         duration: 10000,
         position: 'top-center',
-        icon: data.type === 'call' || data.type === 'video' ? '📞' : '💬',
+        icon: data.type === 'video' ? '📹' : (data.type === 'audio' ? '📞' : '💬'),
         style: { background: '#fa6830', color: '#fff', fontWeight: 'bold' }
       });
       dispatch(fetchAstrologerDashboardThunk());

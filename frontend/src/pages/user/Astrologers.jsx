@@ -100,6 +100,11 @@ const Astrologers = () => {
     // 1. Check auth
     if (!isAuthenticated) return navigate('/user/login');
     
+    // 1.5. Check profile completion
+    if (user?.isNewUser || user?.name === 'Guest User' || !user?.name) {
+      return navigate('/user/details', { state: { redirectTo: location.pathname } });
+    }
+    
     // 2. Check wallet balance
     const minBalance = settings?.minChatBalance || 10;
     

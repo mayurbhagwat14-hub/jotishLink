@@ -135,17 +135,7 @@ const ApplyAstrologer = () => {
   };
 
   const handleCityChange = (e) => {
-    const val = e.target.value;
-    if (val.includes(',')) {
-      const parts = val.split(',').map(s => s.trim());
-      setFormData(prev => ({
-        ...prev,
-        city: parts[0],
-        state: parts[1] || prev.state
-      }));
-    } else {
-      handleChange(e);
-    }
+    handleChange(e);
   };
 
   const compressImage = (file, maxWidth = 800, callback) => {
@@ -577,18 +567,32 @@ const ApplyAstrologer = () => {
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Address <span className="text-red-500">*</span></label>
-                    <input type="text" name="address" required value={formData.address} onChange={handleChange} placeholder="Street Address" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
+                    <textarea 
+                      name="address" 
+                      required 
+                      value={formData.address} 
+                      onChange={handleChange} 
+                      placeholder="Street Address, Area, Landmark" 
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800 resize-none h-full min-h-[50px] max-h-[120px]" 
+                      rows={3}
+                    />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3">
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">City <span className="text-red-500">*</span></label>
-                      <LocationAutocomplete 
+                      <input 
+                        type="text" 
                         name="city" 
-                        required={true} 
+                        list="city-suggestions" 
+                        required 
                         value={formData.city} 
-                        onChange={handleCityChange} 
+                        onChange={handleChange} 
                         placeholder="City/Village" 
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                       />
+                      <datalist id="city-suggestions">
+                        {MAJOR_CITIES.map(c => <option key={c} value={c} />)}
+                      </datalist>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">State <span className="text-red-500">*</span></label>
@@ -599,7 +603,21 @@ const ApplyAstrologer = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pincode <span className="text-red-500">*</span></label>
-                      <input type="text" name="pincode" required pattern="^\d{6}$" title="6-digit pincode" value={formData.pincode} onChange={handleChange} placeholder="e.g. 400001" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
+                      <input 
+                        type="tel" 
+                        name="pincode" 
+                        required 
+                        pattern="^\d{6}$" 
+                        maxLength={6}
+                        title="6-digit pincode" 
+                        value={formData.pincode} 
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          handleChange({ target: { name: 'pincode', value: val } });
+                        }} 
+                        placeholder="e.g. 400001" 
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" 
+                      />
                     </div>
                   </div>
                 </div>

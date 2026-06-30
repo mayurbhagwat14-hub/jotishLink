@@ -241,7 +241,10 @@ const Profile = () => {
           {/* Pincode */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Pincode</label>
-            <input type="text" pattern="[0-9]{6}" maxLength={6} name="pincode" value={formData.pincode} onChange={handleChange} placeholder="6-digit PIN"
+            <input type="tel" pattern="[0-9]{6}" maxLength={6} name="pincode" value={formData.pincode} onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              handleChange({ target: { name: 'pincode', value: val } });
+            }} placeholder="6-digit PIN"
               className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
           </div>
         </div>
