@@ -201,7 +201,8 @@ const ApplyAstrologer = () => {
     if (!aadhaarFront || !aadhaarBack || !panCard || !certificate || !selfieVerification) { toast.error('All Document uploads are required.'); return setLoading(false); }
     
     if (formData.fullName.trim().length < 3) { toast.error('Full Name must be at least 3 characters.'); return setLoading(false); }
-    if (!/^[6-9]\d{9}$/.test(formData.mobile)) { toast.error('Mobile Number must be a valid 10-digit Indian number.'); return setLoading(false); }
+    if (!/^[a-zA-Z\\s]+$/.test(formData.fullName)) { toast.error('Full Name can only contain letters and spaces.'); return setLoading(false); }
+    if (!/^[6-9]\\d{9}$/.test(formData.mobile)) { toast.error('Mobile Number must be a valid 10-digit Indian number.'); return setLoading(false); }
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(formData.email)) { 
       toast.error('Please enter a valid email format (e.g. name@domain.com).'); 
@@ -215,7 +216,9 @@ const ApplyAstrologer = () => {
     }
     if (formData.password.length < 6) { toast.error('Password must be at least 6 characters.'); return setLoading(false); }
     if (!formData.dob || !formData.address || !formData.city || !formData.state || !formData.pincode) { toast.error('All Personal Details are required.'); return setLoading(false); }
-    if (!/^\d{6}$/.test(formData.pincode)) { toast.error('Pincode must be exactly 6 digits.'); return setLoading(false); }
+    if (!/^[a-zA-Z\\s]+$/.test(formData.city)) { toast.error('City can only contain letters and spaces.'); return setLoading(false); }
+    if (!/^[a-zA-Z\\s]+$/.test(formData.state)) { toast.error('State can only contain letters and spaces.'); return setLoading(false); }
+    if (!/^\\d{6}$/.test(formData.pincode)) { toast.error('Pincode must be exactly 6 digits.'); return setLoading(false); }
     
     if (formData.skills.length === 0) { toast.error('Please select at least one Primary Skill.'); return setLoading(false); }
     if (formData.categories.length === 0) { toast.error('Please select at least one Expertise Category.'); return setLoading(false); }
@@ -225,7 +228,9 @@ const ApplyAstrologer = () => {
     if (Number(formData.chatPrice) < 5 || Number(formData.callPrice) < 5 || Number(formData.videoPrice) < 5) { toast.error('All prices (Chat, Call, Video) must be at least ₹5/min.'); return setLoading(false); }
     
     if (!formData.accountHolderName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) { toast.error('Bank details are required.'); return setLoading(false); }
-    if (!/^\d{9,18}$/.test(formData.accountNumber)) { toast.error('Account Number must be between 9 and 18 digits.'); return setLoading(false); }
+    if (!/^[a-zA-Z\\s]+$/.test(formData.accountHolderName)) { toast.error('Account Holder Name can only contain letters and spaces.'); return setLoading(false); }
+    if (!/^[a-zA-Z\\s]+$/.test(formData.bankName)) { toast.error('Bank Name can only contain letters and spaces.'); return setLoading(false); }
+    if (!/^\\d{9,18}$/.test(formData.accountNumber)) { toast.error('Account Number must be between 9 and 18 digits.'); return setLoading(false); }
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) { toast.error('Invalid IFSC Code format. Example: SBIN0123456'); return setLoading(false); }
     
     if (formData.description.trim().length < 20) { toast.error('About You description must be at least 20 characters.'); return setLoading(false); }
