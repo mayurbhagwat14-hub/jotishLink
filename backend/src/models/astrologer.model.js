@@ -23,7 +23,7 @@ const astrologerSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       sparse: true,
-      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
+      match: [/^[a-zA-Z0-9._%+-]+@gmail\.com$/, 'Only @gmail.com email addresses are allowed']
     },
     password: {
       type: String,

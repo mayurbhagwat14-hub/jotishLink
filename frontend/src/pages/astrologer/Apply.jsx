@@ -70,7 +70,6 @@ const ApplyAstrologer = () => {
     chatPrice: 5,
     callPrice: 5,
     videoPrice: 10,
-    reportPrice: 0,
     accountHolderName: '',
     bankName: '',
     accountNumber: '',
@@ -314,8 +313,7 @@ const ApplyAstrologer = () => {
         pricing: {
           chat: Number(formData.chatPrice) || 5,
           audioCall: Number(formData.callPrice) || 5,
-          videoCall: Number(formData.videoPrice) || 10,
-          report: Number(formData.reportPrice) || 0
+          videoCall: Number(formData.videoPrice) || 10
         },
         bankDetails: {
           accountHolderName: formData.accountHolderName,
@@ -369,12 +367,12 @@ const ApplyAstrologer = () => {
       const rawAuth = sessionStorage.getItem('apply_authData');
       const savedAuthData = rawAuth ? JSON.parse(rawAuth) : tempAuthData;
       
-      interval = setInterval(async () => {
+      const checkStatus = async () => {
         try {
           const res = await checkAstrologerPhone({ phone: pollingMobile });
           const data = res.data?.data || res.data;
           if (data?.approvalStatus === 'approved') {
-            clearInterval(interval);
+            if (interval) clearInterval(interval);
             
             // Clear all storages ONLY upon approval
             localStorage.removeItem('astrologerApplyData');
@@ -389,6 +387,10 @@ const ApplyAstrologer = () => {
             sessionStorage.removeItem('apply_selfieVerification');
             
             if (savedAuthData) {
+              // Update the stale user data with the fresh approved status so routing works
+              if (savedAuthData.user) {
+                savedAuthData.user.approvalStatus = 'approved';
+              }
               dispatch(astrologerLogin(savedAuthData));
             } else {
               navigate('/astrologer/login');
@@ -397,9 +399,15 @@ const ApplyAstrologer = () => {
         } catch (e) {
           console.error('Polling error', e);
         }
-      }, 5000); // Check every 5 seconds
+      };
+
+      // Check instantly on mount/refresh so there is no 5 second delay
+      checkStatus();
+      interval = setInterval(checkStatus, 5000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [step, formData.mobile, navigate, tempAuthData, dispatch]);
 
   return (
@@ -491,11 +499,11 @@ const ApplyAstrologer = () => {
                     type="email" 
                     name="email"
                     required
-                    pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$"
-                    title="Enter a valid email address"
+                    pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$"
+                    title="Only @gmail.com email addresses are allowed"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="name@example.com" 
+                    placeholder="name@.gmail.com" 
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
                   />
                 </div>
@@ -522,6 +530,7 @@ const ApplyAstrologer = () => {
                     type="date" 
                     name="dob"
                     required
+                    max={new Date().toISOString().split('T')[0]}
                     value={formData.dob}
                     onChange={handleChange}
                     className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
@@ -717,7 +726,7 @@ const ApplyAstrologer = () => {
                 </div>
                 
                 {/* Pricing Details */}
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Chat /min (₹) <span className="text-red-500">*</span></label>
                     <input type="number" name="chatPrice" min="5" required value={formData.chatPrice} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
@@ -729,10 +738,6 @@ const ApplyAstrologer = () => {
                   <div>
                     <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Video Call /min (₹) <span className="text-red-500">*</span></label>
                     <input type="number" name="videoPrice" min="5" required value={formData.videoPrice} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Report Price (₹)</label>
-                    <input type="number" name="reportPrice" min="0" value={formData.reportPrice} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
                   </div>
                 </div>
 
