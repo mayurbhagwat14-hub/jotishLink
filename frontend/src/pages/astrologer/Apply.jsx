@@ -5,11 +5,31 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { astrologerLogin, astrologerSignupThunk } from '../../store/slices/astrologerAuthSlice';
 import { checkAstrologerPhone, requestOtp, astrologerSignup } from '../../api/astrologerApis';
+import LocationAutocomplete from '../../components/LocationAutocomplete';
 
 const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career', 'Business', 'Kids'];
 const SPECIALITIES = ['Vedic Astrology', 'Tarot Reading', 'Numerology', 'Palmistry', 'Vastu Shastra'];
 const LANGUAGES = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Gujarati', 'Bengali'];
 const POOJA_TYPES = ['Satyanarayan Pooja', 'Griha Pravesh', 'Navagraha Shanti', 'Rudrabhishek', 'Vastu Shanti', 'Marriage Pooja', 'Maha Mrityunjaya', 'Kaal Sarp Dosh Nivaran', 'Mangal Dosh Nivaran'];
+
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
+  "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli", "Daman and Diu", "Delhi", "Goa", 
+  "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", 
+  "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", 
+  "Mizoram", "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
+
+const MAJOR_CITIES = [
+  "Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", 
+  "Pune", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", 
+  "Pimpri-Chinchwad", "Patna", "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Ranchi", 
+  "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli", "Vasai-Virar", "Varanasi", "Srinagar", 
+  "Aurangabad", "Dhanbad", "Amritsar", "Navi Mumbai", "Allahabad", "Howrah", "Gwalior", 
+  "Jabalpur", "Coimbatore", "Vijayawada", "Jodhpur", "Madurai", "Raipur", "Kota", "Guwahati", 
+  "Chandigarh", "Solapur"
+];
 
 const ApplyAstrologer = () => {
   const navigate = useNavigate();
@@ -107,7 +127,25 @@ const ApplyAstrologer = () => {
   const [selfieVerification, setSelfieVerification] = useState(() => sessionStorage.getItem('apply_selfieVerification') || '');
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCityChange = (e) => {
+    const val = e.target.value;
+    if (val.includes(',')) {
+      const parts = val.split(',').map(s => s.trim());
+      setFormData(prev => ({
+        ...prev,
+        city: parts[0],
+        state: parts[1] || prev.state
+      }));
+    } else {
+      handleChange(e);
+    }
   };
 
   const compressImage = (file, maxWidth = 800, callback) => {
@@ -541,14 +579,23 @@ const ApplyAstrologer = () => {
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Address <span className="text-red-500">*</span></label>
                     <input type="text" name="address" required value={formData.address} onChange={handleChange} placeholder="Street Address" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
                   </div>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3">
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">City <span className="text-red-500">*</span></label>
-                      <input type="text" name="city" required value={formData.city} onChange={handleChange} placeholder="City" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
+                      <LocationAutocomplete 
+                        name="city" 
+                        required={true} 
+                        value={formData.city} 
+                        onChange={handleCityChange} 
+                        placeholder="City/Village" 
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">State <span className="text-red-500">*</span></label>
-                      <input type="text" name="state" required value={formData.state} onChange={handleChange} placeholder="State" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
+                      <input type="text" name="state" list="state-suggestions" required value={formData.state} onChange={handleChange} autoComplete="address-level1" placeholder="State" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
+                      <datalist id="state-suggestions">
+                        {INDIAN_STATES.map(s => <option key={s} value={s} />)}
+                      </datalist>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pincode <span className="text-red-500">*</span></label>
