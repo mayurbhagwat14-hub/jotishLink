@@ -33,12 +33,18 @@ import { checkGlobalMobileExists } from '../utils/authUtils.js';
 
 // POST /api/astrologer/auth/check-phone
 export const checkAstrologerPhone = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+  const { phone, name } = req.body;
   if (!phone) throw new ApiError(400, 'Phone number is required');
 
   const existingRole = await checkGlobalMobileExists(phone);
   if (existingRole && existingRole !== 'astrologer') {
     throw new ApiError(409, `This number is already registered as a ${existingRole}. Please login to the correct portal.`);
+  }
+
+  if (name) {
+    const escapedName = name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existingName = await Astrologer.findOne({ name: new RegExp(`^${escapedName}$`, 'i'), phone: { $ne: phone } });
+    if (existingName) throw new ApiError(409, 'An Astrologer with this exact name already exists. Please use a slightly different name (e.g. include your surname).');
   }
 
   const astrologer = await Astrologer.findOne({ phone });
@@ -89,7 +95,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   const { 
     name, phone, password, otp, skills, categories, languages, experience, about, pricing, 
     identityProof, avatar, dob, gender, address, city, state, pincode, consultationStyle, 
-    education, certificationDetails, bankDetails, email, isPandit, poojasOffered
+    education, certificationDetails, bankDetails, isPandit, poojasOffered
   } = req.body;
 
   console.log("SIGNUP PAYLOAD RECEIVED:", JSON.stringify(req.body, null, 2));
@@ -99,6 +105,16 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
   const existingRole = await checkGlobalMobileExists(phone);
   if (existingRole && existingRole !== 'astrologer') {
     throw new ApiError(409, `Phone number already registered as ${existingRole}`);
+  }
+
+
+
+  // Ensure unique name across astrologers
+  if (name) {
+    // Escape special characters in name for regex
+    const escapedName = name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const existingName = await Astrologer.findOne({ name: new RegExp(`^${escapedName}$`, 'i'), phone: { $ne: phone } });
+    if (existingName) throw new ApiError(409, 'An Astrologer with this exact name already exists. Please use a slightly different name (e.g. include your surname).');
   }
 
   // Validate pricing minimums
@@ -149,11 +165,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     if (consultationStyle) astrologer.consultationStyle = consultationStyle;
     if (education) astrologer.education = education;
     if (certificationDetails) astrologer.certificationDetails = certificationDetails;
-    if (email) {
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(email)) throw new ApiError(400, 'Invalid email format');
-      astrologer.email = email;
-    }
+
     if (isPandit !== undefined) astrologer.isPandit = isPandit;
     if (poojasOffered) astrologer.poojasOffered = typeof poojasOffered === 'string' ? JSON.parse(poojasOffered) : poojasOffered;
     
@@ -250,7 +262,7 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     new ApiResponse(201, {
       accessToken,
       refreshToken,
-      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', avatar: astrologer.avatar },
+      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', avatar: astrologer.avatar, approvalStatus: astrologer.approvalStatus },
       astrologer,
     }, 'Astrologer account created. Pending verification.')
   );
@@ -311,7 +323,7 @@ export const astrologerLogin = asyncHandler(async (req, res) => {
     new ApiResponse(200, {
       accessToken,
       refreshToken,
-      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', onlineStatus: astrologer.onlineStatus, avatar: astrologer.avatar },
+      user: { _id: astrologer._id, name: astrologer.name, phone, role: 'astrologer', onlineStatus: astrologer.onlineStatus, avatar: astrologer.avatar, approvalStatus: astrologer.approvalStatus },
       astrologer,
     }, 'Login successful')
   );

@@ -51,7 +51,6 @@ const ApplyAstrologer = () => {
   const [formData, setFormData] = useState({
     mobile: prefilledPhone,
     fullName: '',
-    email: '',
     password: '',
     gender: '',
     dob: '',
@@ -258,7 +257,7 @@ const ApplyAstrologer = () => {
 
     try {
       // Pre-flight check: see if they are already an astrologer
-      const checkRes = await checkAstrologerPhone({ phone: formData.mobile });
+      const checkRes = await checkAstrologerPhone({ phone: formData.mobile, name: formData.fullName });
       const checkData = checkRes.data?.data || checkRes.data;
       
       if (checkData?.exists) {
@@ -285,7 +284,6 @@ const ApplyAstrologer = () => {
       const payload = {
         name: formData.fullName,
         phone: formData.mobile,
-        email: formData.email,
         password: formData.password,
         otp: otp.join(''),
         skills: formData.skills,
@@ -419,7 +417,14 @@ const ApplyAstrologer = () => {
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-8 py-10 text-white relative overflow-hidden">
           <div className="absolute -right-10 -top-10 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
           <div className="relative z-10">
-            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm font-bold mb-6 cursor-pointer bg-transparent border-none p-0">
+            <button onClick={() => {
+              if (step === 2) {
+                setStep(1);
+                setApiError('');
+              } else {
+                navigate(-1);
+              }
+            }} className="inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm font-bold mb-6 cursor-pointer bg-transparent border-none p-0">
               <FiArrowLeft size={16} /> Back
             </button>
             <h1 className="text-3xl font-black mb-2">Join as an Astrologer</h1>
@@ -492,21 +497,7 @@ const ApplyAstrologer = () => {
                   </div>
                 </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Email Address <span className="text-red-500">*</span></label>
-                  <input 
-                    type="email" 
-                    name="email"
-                    required
-                    pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$"
-                    title="Only @gmail.com email addresses are allowed"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="name@.gmail.com" 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
-                  />
-                </div>
+
 
                 {/* Password */}
                 <div>
