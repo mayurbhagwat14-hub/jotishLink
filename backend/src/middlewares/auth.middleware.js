@@ -38,7 +38,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    if (error.name !== 'TokenExpiredError') {
+    if (error.message !== 'jwt expired') {
       console.error('verifyJWT Failed: JWT verification error or other error:', error.message);
     }
     throw new ApiError(401, error.message || 'Invalid Access Token');

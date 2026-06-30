@@ -68,13 +68,25 @@ const AdminFinance = () => {
         const entityType = isAstro ? 'Astro' : (isUser ? 'User' : 'Unknown');
 
         let displayType = t.type;
+        const descLower = (t.desc || '').toLowerCase();
+        
         if (entityType === 'Astro') {
-          if (t.type === 'recharge') displayType = 'Session Earnings';
+          if (t.type === 'recharge') {
+            if (descLower.includes('video')) displayType = 'Video Call Earnings';
+            else if (descLower.includes('audio') || descLower.includes('voice')) displayType = 'Audio Call Earnings';
+            else if (descLower.includes('chat')) displayType = 'Chat Earnings';
+            else displayType = 'Session Earnings';
+          }
           else if (t.type === 'refund' || t.type === 'withdrawal') displayType = 'Payout/Withdrawal';
           else displayType = 'Astrologer Deduction';
         } else if (entityType === 'User') {
           if (t.type === 'recharge') displayType = 'Wallet Deposit';
-          else if (t.type === 'deduction') displayType = 'Session Payment';
+          else if (t.type === 'deduction') {
+            if (descLower.includes('video')) displayType = 'Video Call Payment';
+            else if (descLower.includes('audio') || descLower.includes('voice')) displayType = 'Audio Call Payment';
+            else if (descLower.includes('chat')) displayType = 'Chat Payment';
+            else displayType = 'Session Payment';
+          }
           else if (t.type === 'refund') displayType = 'Wallet Refund';
         } else {
           displayType = t.type === 'recharge' ? 'Wallet Recharge' : t.type === 'deduction' ? 'Session Deduction' : 'Refund/Payout';
