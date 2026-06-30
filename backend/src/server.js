@@ -256,6 +256,34 @@ io.on('connection', (socket) => {
 
     pendingRequests.delete(roomId);
 
+    // Safety timeout: if neither user nor astrologer successfully joins/starts the session within 25s, revert busy status
+    const astroIdForTimeout = reqData.astrologerId;
+    setTimeout(async () => {
+      try {
+        const hasTimer = activeTimers.has(roomId);
+        if (!hasTimer) {
+          const Astrologer = (await import('./models/astrologer.model.js')).default;
+          const ChatSession = (await import('./models/chatSession.model.js')).default;
+          const reverted = await Astrologer.findOneAndUpdate(
+            { _id: astroIdForTimeout, onlineStatus: 'busy' },
+            { onlineStatus: 'online' },
+            { new: true }
+          );
+          if (reverted) {
+            io.emit('astro_status_changed', { astrologerId: astroIdForTimeout, status: 'online' });
+            console.log(`[Socket.IO] Safety timeout: Reverted astrologer ${astroIdForTimeout} to online (room ${roomId} was never established)`);
+          }
+          // Also complete any stub chat session if it got created but not established
+          await ChatSession.findOneAndUpdate(
+            { roomId, status: 'ongoing' },
+            { status: 'completed' }
+          );
+        }
+      } catch (err) {
+        console.error('[Socket.IO] Safety timeout error:', err.message);
+      }
+    }, 25000);
+
     // ── Auto-reject all OTHER pending requests for the same astrologer.
     // Now that this astrologer is busy, no other request can be accepted.
     // Notify those waiting users immediately instead of leaving them hanging.
@@ -1137,6 +1165,8 @@ io.on('connection', (socket) => {
 
         if (timerData && timerData.callId) {
           await handleEndCall({ roomId, callId: timerData.callId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds });
+        } else if (timerData && timerData.sessionId) {
+          await handleEndSession({ roomId, sessionId: timerData.sessionId, userId: timerData.userId, endedBy: 'peer_disconnected', finalSeconds: timerData.seconds, sessionType: type });
         } else {
           // If no timer started yet (e.g., disconnected while ringing/connecting)
           try {
