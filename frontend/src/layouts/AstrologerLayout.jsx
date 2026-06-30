@@ -5,6 +5,7 @@ import { astrologerLogout } from '../store/slices/astrologerAuthSlice';
 import { clearAstrologerDashboard } from '../store/slices/dashboardSlice';
 import axios from '../api/axios';
 import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiSettings, FiLogOut, FiLogIn, FiUserPlus, FiCreditCard, FiActivity, FiClock, FiMenu, FiCheckCircle } from 'react-icons/fi';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
 import { login } from '../store/slices/authSlice';
@@ -176,7 +177,9 @@ const AstrologerLayout = () => {
       <main className="flex-1 overflow-x-hidden overflow-y-auto pb-16 relative">
          {/* Subtle background decoration */}
          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
-         <Outlet />
+         <ErrorBoundary>
+           <Outlet />
+         </ErrorBoundary>
       </main>
 
       {/* Side Drawer Navbar */}
