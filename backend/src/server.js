@@ -101,7 +101,7 @@ const REQUEST_TIMEOUT_MS = 60 * 1000; // 60s timeout matching WaitingScreen.jsx
 // ── Grace-period timers for chat disconnect auto-end (roomId -> timerId)
 // When a chat user disconnects, we wait this long before auto-ending the session.
 // If the user reconnects (join_room) within this window, the timer is cancelled.
-const DISCONNECT_GRACE_PERIOD_MS = 90_000; // 90 seconds
+const DISCONNECT_GRACE_PERIOD_MS = 15_000; // 15 seconds
 const disconnectGraceTimers = new Map();
 
 io.on('connection', (socket) => {
@@ -207,6 +207,7 @@ io.on('connection', (socket) => {
     }
     console.log(`[Socket.IO] User ${userId} cancelled request to Astrologer ${astrologerId}`);
   });
+
 
   // ── Astrologer accepts session
   socket.on('accept_session', async ({ roomId, userSocketId }) => {
@@ -788,6 +789,48 @@ io.on('connection', (socket) => {
 
   // ── End session manually
   const handleEndSession = async ({ roomId, sessionId, userId, endedBy = 'user', finalSeconds, sessionType = 'chat' }) => {
+    // Fast-path: Reset astrologer's status to online instantly so other users see it immediately
+    try {
+      let astroIdToReset = null;
+      const roomInfo = socketRoomMap.get(socket.id);
+      if (roomInfo && roomInfo.astrologerId) {
+        astroIdToReset = roomInfo.astrologerId;
+      }
+      const timer = activeTimers.get(roomId);
+      if (!astroIdToReset && timer && timer.astrologerId) {
+        astroIdToReset = timer.astrologerId;
+      }
+      if (!astroIdToReset && (sessionId || roomId)) {
+        const ChatSession = (await import('./models/chatSession.model.js')).default;
+        const queryConds = [];
+        if (sessionId && /^[0-9a-fA-F]{24}$/.test(sessionId.toString())) {
+          queryConds.push({ _id: sessionId });
+        }
+        if (roomId) {
+          queryConds.push({ roomId });
+        }
+        if (queryConds.length > 0) {
+          const stub = await ChatSession.findOne({ $or: queryConds });
+          if (stub && stub.astrologerId) astroIdToReset = stub.astrologerId.toString();
+        }
+      }
+
+      if (astroIdToReset && /^[0-9a-fA-F]{24}$/.test(astroIdToReset.toString())) {
+        const Astrologer = (await import('./models/astrologer.model.js')).default;
+        const updated = await Astrologer.findOneAndUpdate(
+          { _id: astroIdToReset, onlineStatus: 'busy' },
+          { onlineStatus: 'online' },
+          { new: true }
+        );
+        if (updated) {
+          io.emit('astro_status_changed', { astrologerId: astroIdToReset.toString(), status: 'online' });
+          console.log(`[Socket.IO] Fast-path: Reverted astrologer ${astroIdToReset} to online`);
+        }
+      }
+    } catch (err) {
+      console.error('[Socket.IO] Fast-path online status reset failed:', err);
+    }
+
     // Clear any pending disconnect grace timer for this room to prevent double-end
     // (e.g. user clicks "End Chat" explicitly, then disconnects — the grace timer
     // shouldn't fire a redundant second end after the session is already completed).

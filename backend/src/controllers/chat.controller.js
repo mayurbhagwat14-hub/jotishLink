@@ -131,20 +131,20 @@ export const endChatSession = asyncHandler(async (req, res) => {
     }
   }
 
+  // Mark astrologer back as online instantly in frontend via socket
+  const io = req.app.get('io');
+  if (io && astrologer) {
+    io.emit('astro_status_changed', { astrologerId: astrologer._id, status: 'online' });
+  }
+
   session.status = 'completed';
   session.durationSeconds = actualDuration;
   session.amountDeducted = totalAmount;
   await session.save();
 
-  // Mark astrologer back as online
   if (astrologer) {
     astrologer.onlineStatus = 'online';
     await astrologer.save();
-    
-    const io = req.app.get('io');
-    if (io) {
-      io.emit('astro_status_changed', { astrologerId: astrologer._id, status: 'online' });
-    }
   }
 
   return res.status(200).json(
