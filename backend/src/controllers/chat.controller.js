@@ -140,6 +140,11 @@ export const endChatSession = asyncHandler(async (req, res) => {
   if (astrologer) {
     astrologer.onlineStatus = 'online';
     await astrologer.save();
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('astro_status_changed', { astrologerId: astrologer._id, status: 'online' });
+    }
   }
 
   return res.status(200).json(
