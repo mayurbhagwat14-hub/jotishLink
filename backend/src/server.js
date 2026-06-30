@@ -815,7 +815,11 @@ io.on('connection', (socket) => {
 
     try {
       if (finalSessionId && !astroId) {
-        const sessionForEnd = await ChatSession.findById(finalSessionId);
+        let sessionForEnd = await ChatSession.findById(finalSessionId);
+        if (!sessionForEnd) {
+          const { CallSession } = await import('./models/callSession.model.js');
+          sessionForEnd = await CallSession.findById(finalSessionId);
+        }
         if (sessionForEnd?.astrologerId) astroId = sessionForEnd.astrologerId;
       }
       if (astroId) {
@@ -840,11 +844,19 @@ io.on('connection', (socket) => {
     try {
       if (!finalSessionId) return;
       // Atomic lock: Only process if it's currently 'ongoing'
-      const session = await ChatSession.findOneAndUpdate(
+      let session = await ChatSession.findOneAndUpdate(
         { _id: finalSessionId, status: 'ongoing' },
         { status: 'completed', durationSeconds: duration, amountDeducted: currentCost },
         { new: true }
       );
+      if (!session) {
+        const { CallSession } = await import('./models/callSession.model.js');
+        session = await CallSession.findOneAndUpdate(
+          { _id: finalSessionId, status: { $in: ['accepted', 'ongoing', 'ringing'] } },
+          { status: 'completed', durationSeconds: duration, amountDeducted: currentCost },
+          { new: true }
+        );
+      }
 
       if (session) {
         if (currentCost > 0 && userId && remainingDelta > 0) {
@@ -876,7 +888,11 @@ io.on('connection', (socket) => {
         }
       }
       if (finalSessionId) {
-        const checkSession = await ChatSession.findById(finalSessionId);
+        let checkSession = await ChatSession.findById(finalSessionId);
+        if (!checkSession) {
+          const { CallSession } = await import('./models/callSession.model.js');
+          checkSession = await CallSession.findById(finalSessionId);
+        }
         if (checkSession && checkSession.astrologerId) {
           const updatedAstro = await Astrologer.findOneAndUpdate(
             { _id: checkSession.astrologerId, onlineStatus: 'busy' },
