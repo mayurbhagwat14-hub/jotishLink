@@ -223,17 +223,7 @@ const ApplyAstrologer = () => {
     if (formData.fullName.trim().length < 3) { toast.error('Full Name must be at least 3 characters.'); return setLoading(false); }
     if (!/^[a-zA-Z\s.-]+$/.test(formData.fullName)) { toast.error('Full Name can only contain letters, spaces, dots, and hyphens.'); return setLoading(false); }
     if (!/^[6-9]\d{9}$/.test(formData.mobile)) { toast.error('Mobile Number must be a valid 10-digit Indian number.'); return setLoading(false); }
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(formData.email)) { 
-      toast.error('Please enter a valid email format (e.g. name@domain.com).'); 
-      return setLoading(false); 
-    }
-    const domain = formData.email.split('@')[1]?.toLowerCase();
-    const commonTypos = ['gnail.com', 'gamil.com', 'gmai.com', 'yaho.com', 'yahooo.com', 'hotmial.com'];
-    if (commonTypos.includes(domain)) {
-      toast.error(`Typo detected in email domain (${domain}). Please enter a valid email.`);
-      return setLoading(false);
-    }
+
     if (formData.password.length < 6) { toast.error('Password must be at least 6 characters.'); return setLoading(false); }
     if (!formData.dob || !formData.address || !formData.city || !formData.state || !formData.pincode) { toast.error('All Personal Details are required.'); return setLoading(false); }
     if (!/^[a-zA-Z\s]+$/.test(formData.city)) { toast.error('City can only contain letters and spaces.'); return setLoading(false); }
