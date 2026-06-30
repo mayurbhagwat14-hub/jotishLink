@@ -58,17 +58,35 @@ const userSchema = new mongoose.Schema(
     },
     dob: {
       type: String,
-      match: [/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format']
+      validate: {
+        validator: function(v) {
+          if (!v || v.trim() === '') return true;
+          return /^\d{4}-\d{2}-\d{2}$/.test(v);
+        },
+        message: 'Date of birth must be in YYYY-MM-DD format'
+      }
     },
     timeOfBirth: {
       type: String,
-      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Time of birth must be in HH:MM format (24-hour)']
+      validate: {
+        validator: function(v) {
+          if (!v || v.trim() === '') return true;
+          return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+        },
+        message: 'Time of birth must be in HH:MM format (24-hour)'
+      }
     },
     placeOfBirth: {
       type: String,
       trim: true,
       maxlength: [100, 'Place of birth cannot exceed 100 characters'],
-      match: [/^[a-zA-Z\s,.-]+$/, 'Place of birth can only contain letters, spaces, commas, dots, and hyphens']
+      validate: {
+        validator: function(v) {
+          if (!v || v.trim() === '') return true;
+          return /^[a-zA-Z\s,.-]+$/.test(v);
+        },
+        message: 'Place of birth can only contain letters, spaces, commas, dots, and hyphens'
+      }
     },
     address: {
       type: String,
@@ -79,12 +97,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: [100, 'City cannot exceed 100 characters'],
-      match: [/^[a-zA-Z\s,.-]+$/, 'City can only contain letters, spaces, commas, dots, and hyphens']
+      validate: {
+        validator: function(v) {
+          if (!v || v.trim() === '') return true;
+          return /^[a-zA-Z\s,.-]+$/.test(v);
+        },
+        message: 'City can only contain letters, spaces, commas, dots, and hyphens'
+      }
     },
     pincode: {
       type: String,
       trim: true,
-      match: [/^[0-9]{6}$/, 'Please enter a valid 6-digit pincode']
+      validate: {
+        validator: function(v) {
+          if (!v || v.trim() === '') return true;
+          return /^[0-9]{6}$/.test(v);
+        },
+        message: 'Please enter a valid 6-digit pincode'
+      }
     },
     zodiacSign: {
       type: String,

@@ -127,7 +127,10 @@ export const getHomepageData = asyncHandler(async (req, res) => {
     user = await User.findById(req.user._id).select('wallet name');
     
     // Find the most recent chat session for this user
-    const lastSession = await ChatSession.findOne({ userId: req.user._id })
+    const lastSession = await ChatSession.findOne({ 
+        userId: req.user._id,
+        $or: [{ type: 'chat' }, { type: { $exists: false } }]
+      })
       .sort({ createdAt: -1 })
       .populate('astrologerId', 'name avatar')
       .lean();

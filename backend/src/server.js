@@ -777,6 +777,24 @@ io.on('connection', (socket) => {
       activeTimers.delete(roomId);
     }
 
+    if (!finalSessionId && roomId) {
+      try {
+        const ChatSession = (await import('./models/chatSession.model.js')).default;
+        const existingChat = await ChatSession.findOne({ roomId, status: 'ongoing' });
+        if (existingChat) {
+          finalSessionId = existingChat._id;
+        } else {
+          const { CallSession } = await import('./models/callSession.model.js');
+          const existingCall = await CallSession.findOne({ channelName: roomId, status: { $in: ['accepted', 'ongoing', 'ringing'] } });
+          if (existingCall) {
+            finalSessionId = existingCall._id;
+          }
+        }
+      } catch (err) {
+        console.error('[Socket.IO] Error recovering session by roomId:', err);
+      }
+    }
+
     const duration = finalSeconds !== undefined ? finalSeconds : (timerData?.seconds || 0);
     const rate = timerData?.astrologerRate || 0;
     const currentCost = Number(((duration * rate) / 60).toFixed(2));
