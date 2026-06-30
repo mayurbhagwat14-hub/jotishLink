@@ -15,7 +15,29 @@ const ApplyAstrologer = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const [step, setStep] = useState(1);
+  
+  // Use sessionStorage for bulletproof step persistency across refreshes
+  const [step, setStepState] = useState(() => Number(sessionStorage.getItem('apply_step')) || 1);
+
+  const setStep = (newStep, extraState = {}) => {
+    sessionStorage.setItem('apply_step', newStep);
+    if (extraState.mobile) sessionStorage.setItem('apply_mobile', extraState.mobile);
+    if (extraState.authData) sessionStorage.setItem('apply_authData', JSON.stringify(extraState.authData));
+    
+    setStepState(newStep);
+    navigate(location.pathname, { replace: false }); // Push state for back button handling
+  };
+
+  // Intercept back button
+  useEffect(() => {
+    const handlePopState = () => {
+      if (step > 1) {
+        navigate('/astrologer/login');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [step, navigate]);
   const [loading, setLoading] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [identityProof, setIdentityProof] = useState('');
@@ -307,29 +329,17 @@ const ApplyAstrologer = () => {
       
       // Store auth data temporarily instead of dispatching immediately
       // so we don't bypass the pending screen
+      let authData = null;
       if (res.data?.data?.accessToken) {
-        setTempAuthData({ 
-          user: res.data.data.user, 
-          token: res.data.data.accessToken 
-        });
+        authData = { user: res.data.data.user, token: res.data.data.accessToken };
+        setTempAuthData(authData);
       } else if (res.data?.accessToken) {
-        setTempAuthData({
-          user: res.data.user,
-          token: res.data.accessToken
-        });
+        authData = { user: res.data.user, token: res.data.accessToken };
+        setTempAuthData(authData);
       }
 
-      // Clear local storage and session storage after successful submission
-      localStorage.removeItem('astrologerApplyData');
-      sessionStorage.removeItem('apply_profilePic');
-      sessionStorage.removeItem('apply_aadhaarFront');
-      sessionStorage.removeItem('apply_aadhaarBack');
-      sessionStorage.removeItem('apply_panCard');
-      sessionStorage.removeItem('apply_certificate');
-      sessionStorage.removeItem('apply_selfieVerification');
-
       setLoading(false);
-      setStep(3); // Pending screen
+      setStep(3, { mobile: formData.mobile, authData }); // Pass state for polling across refreshes
     } catch (err) {
       console.error(err);
       const errorMsg = err.response?.data?.message || err.message || 'Invalid OTP. Please try again.';
@@ -355,22 +365,39 @@ const ApplyAstrologer = () => {
   useEffect(() => {
     let interval;
     if (step === 3) {
+      const pollingMobile = sessionStorage.getItem('apply_mobile') || formData.mobile;
+      const rawAuth = sessionStorage.getItem('apply_authData');
+      const savedAuthData = rawAuth ? JSON.parse(rawAuth) : tempAuthData;
+      
       interval = setInterval(async () => {
         try {
-          const res = await checkAstrologerPhone({ phone: formData.mobile });
+          const res = await checkAstrologerPhone({ phone: pollingMobile });
           const data = res.data?.data || res.data;
           if (data?.approvalStatus === 'approved') {
             clearInterval(interval);
-            if (tempAuthData) {
-              dispatch(astrologerLogin(tempAuthData));
+            
+            // Clear all storages ONLY upon approval
+            localStorage.removeItem('astrologerApplyData');
+            sessionStorage.removeItem('apply_step');
+            sessionStorage.removeItem('apply_mobile');
+            sessionStorage.removeItem('apply_authData');
+            sessionStorage.removeItem('apply_profilePic');
+            sessionStorage.removeItem('apply_aadhaarFront');
+            sessionStorage.removeItem('apply_aadhaarBack');
+            sessionStorage.removeItem('apply_panCard');
+            sessionStorage.removeItem('apply_certificate');
+            sessionStorage.removeItem('apply_selfieVerification');
+            
+            if (savedAuthData) {
+              dispatch(astrologerLogin(savedAuthData));
             } else {
               navigate('/astrologer/login');
             }
           }
         } catch (e) {
-          // ignore
+          console.error('Polling error', e);
         }
-      }, 3000); // Check every 3 seconds
+      }, 5000); // Check every 5 seconds
     }
     return () => clearInterval(interval);
   }, [step, formData.mobile, navigate, tempAuthData, dispatch]);

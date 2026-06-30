@@ -274,7 +274,15 @@ const AstrologerLogin = () => {
           <div className="mt-8 pt-6 border-t border-gray-100 flex flex-col items-center gap-3 w-full">
             <p className="text-[13px] font-medium text-gray-500">
               Not an astrologer yet?{' '}
-              <Link to="/astrologer/apply" className="text-[#fa6830] font-bold hover:underline transition-colors">
+              <Link 
+                to="/astrologer/apply" 
+                onClick={() => {
+                  sessionStorage.removeItem('apply_step');
+                  sessionStorage.removeItem('apply_mobile');
+                  sessionStorage.removeItem('apply_authData');
+                }}
+                className="text-[#fa6830] font-bold hover:underline transition-colors"
+              >
                 Apply Here
               </Link>
             </p>
