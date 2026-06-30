@@ -20,7 +20,7 @@ const Dashboard = () => {
   const activeSessionsCount = (incomingRequests?.length || 0) + (dbData.pendingActionCount || 0);
 
   return (
-    <div className="p-4 space-y-6 animate-fade-in mb-8 bg-gray-50 min-h-screen">
+    <div className="p-4 space-y-6 mb-8 bg-gray-50 min-h-screen">
       
       {/* Welcome Card */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-3xl p-6 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden flex items-center justify-between">
