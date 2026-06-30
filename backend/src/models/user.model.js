@@ -57,15 +57,18 @@ const userSchema = new mongoose.Schema(
       default: 'Male',
     },
     dob: {
-      type: String, // Format YYYY-MM-DD
+      type: String,
+      match: [/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format']
     },
     timeOfBirth: {
-      type: String, // Format HH:MM AM/PM
+      type: String,
+      match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Time of birth must be in HH:MM format (24-hour)']
     },
     placeOfBirth: {
       type: String,
       trim: true,
-      maxlength: [100, 'Place of birth cannot exceed 100 characters']
+      maxlength: [100, 'Place of birth cannot exceed 100 characters'],
+      match: [/^[a-zA-Z\s,.-]+$/, 'Place of birth can only contain letters, spaces, commas, dots, and hyphens']
     },
     address: {
       type: String,
@@ -75,8 +78,8 @@ const userSchema = new mongoose.Schema(
     city: {
       type: String,
       trim: true,
-      maxlength: [50, 'City cannot exceed 50 characters'],
-      match: [/^[a-zA-Z\s]+$/, 'City can only contain letters and spaces']
+      maxlength: [100, 'City cannot exceed 100 characters'],
+      match: [/^[a-zA-Z\s,.-]+$/, 'City can only contain letters, spaces, commas, dots, and hyphens']
     },
     pincode: {
       type: String,
