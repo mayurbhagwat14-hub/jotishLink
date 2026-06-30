@@ -61,10 +61,31 @@ const AdminFinance = () => {
       const txns = res.data?.data?.transactions || res.data?.transactions || [];
       
       const formatted = txns.map(t => {
+        const rawName = t.userId?.name || 'Unknown';
+        const isAstro = rawName.startsWith('Astro: ');
+        const isUser = rawName.startsWith('User: ');
+        const name = rawName.replace('Astro: ', '').replace('User: ', '');
+        const entityType = isAstro ? 'Astro' : (isUser ? 'User' : 'Unknown');
+
+        let displayType = t.type;
+        if (entityType === 'Astro') {
+          if (t.type === 'recharge') displayType = 'Session Earnings';
+          else if (t.type === 'refund' || t.type === 'withdrawal') displayType = 'Payout/Withdrawal';
+          else displayType = 'Astrologer Deduction';
+        } else if (entityType === 'User') {
+          if (t.type === 'recharge') displayType = 'Wallet Deposit';
+          else if (t.type === 'deduction') displayType = 'Session Payment';
+          else if (t.type === 'refund') displayType = 'Wallet Refund';
+        } else {
+          displayType = t.type === 'recharge' ? 'Wallet Recharge' : t.type === 'deduction' ? 'Session Deduction' : 'Refund/Payout';
+        }
+
         return {
           id: t._id.slice(-6).toUpperCase(),
-          user: t.userId?.name || 'Unknown',
-          type: t.type === 'recharge' ? 'Wallet Recharge' : t.type === 'deduction' ? 'Session Deduction' : 'Refund/Payout',
+          user: name,
+          entityType,
+          rawName,
+          type: displayType,
           amount: t.amount,
           status: 'Success',
           date: new Date(t.createdAt).toLocaleString(),
@@ -310,6 +331,18 @@ const AdminFinance = () => {
           All Transactions
         </button>
         <button
+          onClick={() => setActiveTab('user_transactions')}
+          className={`pb-3 font-bold text-sm transition-colors ${activeTab === 'user_transactions' ? 'border-b-2 border-orange-500 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          User Transactions
+        </button>
+        <button
+          onClick={() => setActiveTab('astro_transactions')}
+          className={`pb-3 font-bold text-sm transition-colors ${activeTab === 'astro_transactions' ? 'border-b-2 border-orange-500 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Astrologer Ledger
+        </button>
+        <button
           onClick={() => setActiveTab('payouts')}
           className={`pb-3 font-bold text-sm transition-colors ${activeTab === 'payouts' ? 'border-b-2 border-orange-500 text-orange-600' : 'text-gray-500 hover:text-gray-700'}`}
         >
@@ -318,10 +351,12 @@ const AdminFinance = () => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'transactions' ? (
+      {['transactions', 'user_transactions', 'astro_transactions'].includes(activeTab) ? (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
           <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-            <h2 className="font-bold text-gray-900">All Transactions</h2>
+            <h2 className="font-bold text-gray-900">
+              {activeTab === 'transactions' ? 'All Transactions' : activeTab === 'user_transactions' ? 'User Transactions' : 'Astrologer Ledger'}
+            </h2>
             <div className="flex gap-2">
               <div className="relative flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1 sm:max-w-[200px]">
@@ -360,11 +395,12 @@ const AdminFinance = () => {
               </div>
               <div className="relative w-full sm:w-auto">
                 <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="appearance-none px-3 py-2 pr-8 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/20">
-                  <option>All</option>
-                  <option>Wallet Recharge</option>
-                  <option>Payout</option>
-                  <option>Refund</option>
-                  <option>Session Deduction</option>
+                  <option value="All">All Types</option>
+                  <option value="Wallet Deposit">Wallet Deposit</option>
+                  <option value="Session Payment">Session Payment</option>
+                  <option value="Wallet Refund">Wallet Refund</option>
+                  <option value="Session Earnings">Session Earnings</option>
+                  <option value="Payout/Withdrawal">Payout/Withdrawal</option>
                 </select>
                 <FiChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={12} />
               </div>
@@ -385,6 +421,11 @@ const AdminFinance = () => {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {transactions
+                  .filter(t => {
+                    if (activeTab === 'user_transactions') return t.entityType === 'User';
+                    if (activeTab === 'astro_transactions') return t.entityType === 'Astro';
+                    return true;
+                  })
                   .filter(t => typeFilter === 'All' || t.type.includes(typeFilter))
                   .filter(t => {
                     if (!startDateFilter && !endDateFilter) return true;
@@ -397,7 +438,14 @@ const AdminFinance = () => {
                   .map((txn, i) => (
                   <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                     <td className="py-3.5 px-6 font-bold text-sm text-gray-800 font-mono">{txn.id}</td>
-                    <td className="py-3.5 px-6 text-sm font-bold text-gray-600">{txn.user}</td>
+                    <td className="py-3.5 px-6">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${txn.entityType === 'Astro' ? 'bg-orange-100 text-orange-600' : txn.entityType === 'User' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+                          {txn.entityType}
+                        </span>
+                        <span className="text-sm font-bold text-gray-600">{txn.user}</span>
+                      </div>
+                    </td>
                     <td className="py-3.5 px-6 text-xs text-gray-500 font-medium">{txn.type}</td>
                     <td className="py-3.5 px-6">
                       <span className={`font-black text-sm flex items-center gap-1 ${txn.isCredit ? 'text-green-600' : 'text-red-500'}`}>
