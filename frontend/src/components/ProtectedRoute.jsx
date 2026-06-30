@@ -42,11 +42,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/user/home" replace />;
   }
 
-  // Block access to dashboard if astrologer is not approved
+  // Block access to dashboard if astrologer is not explicitly approved
   if (
     location.pathname.startsWith('/astrologer') && 
     user.role === 'astrologer' && 
-    user.approvalStatus && 
     user.approvalStatus !== 'approved'
   ) {
     return <Navigate to="/astrologer/login" state={{ from: location }} replace />;
