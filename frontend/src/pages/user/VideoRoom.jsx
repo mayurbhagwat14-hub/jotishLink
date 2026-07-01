@@ -70,6 +70,7 @@ const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user,
         sessionId: data.sessionId,
         userId: user?._id,
         astrologerRate: rate,
+        type: callType === 'audio' ? 'audio_call' : 'video_call'
       });
     };
 

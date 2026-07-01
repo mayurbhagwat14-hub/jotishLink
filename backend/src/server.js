@@ -731,13 +731,13 @@ io.on('connection', (socket) => {
     }, 1000);
 
     let sysComm = await SystemSettings.findOne();
-    let commissionRate = sysComm?.commissionRates?.chat || 20;
+    let commissionRate = sysComm?.commissionRates?.chat ?? 30;
     activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, isBot: false, lastDeducted: 0, sessionType: 'chat', commissionRate });
     console.log(`[Socket.IO] Transitioned room ${roomId} to real chat with rate ${astrologerRate}`);
   });
 
   // ── Start session timer (called when chat begins)
-  socket.on('start_timer', async ({ roomId, sessionId, userId, astrologerRate }) => {
+  socket.on('start_timer', async ({ roomId, sessionId, userId, astrologerRate, type = 'chat' }) => {
     if (activeTimers.has(roomId)) return; // Already running
     activeTimers.set(roomId, { pending: true }); // Sync lock
 
@@ -761,7 +761,7 @@ io.on('connection', (socket) => {
             reason: 'insufficient_balance',
             durationSeconds: seconds - 1,
           });
-          handleEndSession({ roomId, sessionId, userId, endedBy: 'system', finalSeconds: seconds - 1, sessionType: 'chat' });
+          handleEndSession({ roomId, sessionId, userId, endedBy: 'system', finalSeconds: seconds - 1, sessionType: type });
           return;
         }
 
@@ -782,9 +782,13 @@ io.on('connection', (socket) => {
     }, 1000);
 
     let sysComm = await SystemSettings.findOne();
-    let commissionRate = sysComm?.commissionRates?.chat || 30;
-    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, lastDeducted: 0, sessionType: 'chat', commissionRate });
-    console.log(`[Socket.IO] Timer started for room ${roomId}`);
+    let commissionRate = 30;
+    if (type === 'video_call') commissionRate = sysComm?.commissionRates?.videoCall ?? 30;
+    else if (type === 'audio_call') commissionRate = sysComm?.commissionRates?.audioCall ?? 30;
+    else commissionRate = sysComm?.commissionRates?.chat ?? 30;
+    
+    activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, lastDeducted: 0, sessionType: type, commissionRate });
+    console.log(`[Socket.IO] Timer started for room ${roomId} with type ${type} and commission ${commissionRate}%`);
   });
 
   // ── End session manually
@@ -995,7 +999,7 @@ io.on('connection', (socket) => {
           if (session.type === 'audio_call' || session.type === 'audio') sessionTypeLabel = 'Audio Call';
           if (session.type === 'video_call' || session.type === 'video') sessionTypeLabel = 'Video Call';
 
-          const comm = timerData?.commissionRate || 30;
+          const comm = timerData?.commissionRate ?? 30;
           const creditRes = await WalletService.creditAstrologer(
             session.astrologerId, 
             userId, 
@@ -1078,7 +1082,7 @@ io.on('connection', (socket) => {
     }, 1000);
 
     let sysComm = await SystemSettings.findOne();
-    let commissionRate = type === 'video' ? (sysComm?.commissionRates?.videoCall || 30) : (sysComm?.commissionRates?.audioCall || 30);
+    let commissionRate = type === 'video' || type === 'video_call' ? (sysComm?.commissionRates?.videoCall ?? 30) : (sysComm?.commissionRates?.audioCall ?? 30);
     activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, callId, userId, type, lastDeducted: 0, commissionRate });
     console.log(`[Socket.IO] ${type} Call Timer started for room ${roomId}`);
   });
@@ -1175,7 +1179,7 @@ io.on('connection', (socket) => {
           const typeLabel = type === 'video' ? 'Video Call' : 'Audio Call';
           await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${typeLabel} with ${astroName} (${duration}s)` });
 
-          const comm = timerData?.commissionRate || 30;
+          const comm = timerData?.commissionRate ?? 30;
           const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, session._id, type, currentCost, `${type} Call Earning`, comm, duration);
           if (creditRes && creditRes.netAmount) {
             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });

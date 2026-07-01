@@ -117,7 +117,7 @@ export const endChatSession = asyncHandler(async (req, res) => {
 
     if (totalAmount > 0) {
       let sysComm = await SystemSettings.findOne();
-      let commissionRate = sysComm?.commissionRates?.chat || 20;
+      let commissionRate = sysComm?.commissionRates?.chat ?? 30;
       await WalletService.creditAstrologer(
         session.astrologerId, 
         req.user._id, 

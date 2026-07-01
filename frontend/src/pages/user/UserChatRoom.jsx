@@ -107,7 +107,7 @@ Please analyze my chart based on this information.`;
         socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: astrologer._id });
       } else if (!viewOnly) {
         const rate = astrologer.pricing?.chat || astrologer.rate || 5;
-        socket.emit('start_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate });
+        socket.emit('start_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate, type: 'chat' });
       }
     };
 

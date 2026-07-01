@@ -700,7 +700,7 @@ export const updatePoojaStatus = asyncHandler(async (req, res) => {
     }
 
     const settings = await SystemSettings.findOne({}) || new SystemSettings();
-    const poojaComm = settings.commissionRates?.pooja || 20;
+    const poojaComm = settings.commissionRates?.pooja ?? 20;
 
     await WalletService.creditAstrologer(
       booking.astrologerId,
@@ -885,15 +885,19 @@ export const getAstrologerHistory = asyncHandler(async (req, res) => {
   
   // For poojas, we might not have it in revenueLogs yet depending on structure, so fallback to setting or 20%
   const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  const rates = settings.commissionRates || { pooja: 20 };
-  const poojaShare = (100 - (rates.pooja || 20)) / 100;
+  const rates = settings.commissionRates || {};
+  const poojaShare = (100 - (rates.pooja ?? 20)) / 100;
 
   const history = [
     ...sessions.map(s => {
       const rLog = revenueLogs.find(r => r.sessionId === s._id.toString());
       let finalAmount = rLog ? rLog.astrologerShare : 0;
       if (!rLog && s.amountDeducted) {
-         finalAmount = parseFloat((s.amountDeducted * 0.7).toFixed(2));
+         let comm = 30;
+         if (s.type === 'video' || s.type === 'video_call') comm = settings.commissionRates?.videoCall ?? 30;
+         else if (s.type === 'audio' || s.type === 'audio_call') comm = settings.commissionRates?.audioCall ?? 30;
+         else comm = settings.commissionRates?.chat ?? 30;
+         finalAmount = parseFloat((s.amountDeducted * ((100 - comm) / 100)).toFixed(2));
       }
       const isFree = s.isFreeChat || finalAmount === 0;
 
