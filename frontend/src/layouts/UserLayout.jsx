@@ -40,6 +40,10 @@ const UserLayout = () => {
     } catch (err) {
       console.error('Logout error:', err);
     }
+    
+    // Disconnect socket properly on logout
+    import('../socket/socketManager').then(({ resetSocket }) => resetSocket());
+    
     dispatch(logout());
     setIsSidebarOpen(false);
     navigate('/');
@@ -149,6 +153,9 @@ const UserLayout = () => {
                       localStorage.removeItem('jl_last_fcm_token');
                       localStorage.removeItem('jl_last_fcm_role');
                     } catch (e) {}
+                    
+                    import('../socket/socketManager').then(({ resetSocket }) => resetSocket());
+                    
                     dispatch(logout());
                     setIsSidebarOpen(false);
                     navigate('/user/login');

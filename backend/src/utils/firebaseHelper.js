@@ -73,7 +73,7 @@ export const sendPushNotification = async ({ userId, role, title, body, data = {
  */
 export const sendMulticastPushNotification = async (tokens, title, body, data = {}) => {
   try {
-    const validTokens = tokens?.filter(t => typeof t === 'string' && t.trim().length > 0) || [];
+    const validTokens = [...new Set(tokens?.filter(t => typeof t === 'string' && t.trim().length > 0) || [])];
     if (validTokens.length === 0) return false;
     
     const adminSDK = getFirebaseAdmin();

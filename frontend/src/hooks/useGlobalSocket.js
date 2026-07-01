@@ -71,6 +71,7 @@ export const useGlobalSocket = () => {
     // --- Astrologer Global Listeners ---
     const handleIncomingRequest = (data) => {
       if (!astrologerAuth.isAuthenticated) return;
+      if (data.astrologerId && astrologerAuth.user && data.astrologerId !== astrologerAuth.user._id) return;
       dispatch(addIncomingRequest(data));
       toast.success(`Incoming ${data.type} request from ${data.userName}!`, {
         duration: 10000,
@@ -176,5 +177,10 @@ export const useGlobalSocket = () => {
       socket.off('session_accept_confirmed', handleAcceptConfirmed);
       socket.off('astro_status_changed', handleAstroStatusChanged);
     };
-  }, [userAuth.isAuthenticated, adminAuth.isAuthenticated, astrologerAuth.isAuthenticated, dispatch]);
+  }, [
+    userAuth.isAuthenticated, userAuth.user?._id,
+    adminAuth.isAuthenticated, adminAuth.user?._id,
+    astrologerAuth.isAuthenticated, astrologerAuth.user?._id,
+    dispatch
+  ]);
 };

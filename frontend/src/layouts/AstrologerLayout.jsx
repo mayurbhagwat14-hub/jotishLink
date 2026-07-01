@@ -98,6 +98,10 @@ const AstrologerLayout = () => {
     } catch (err) {
       console.error('Logout error:', err);
     }
+    
+    // Disconnect socket properly on logout
+    import('../socket/socketManager').then(({ resetSocket }) => resetSocket());
+    
     dispatch(astrologerLogout());
     dispatch(clearAstrologerDashboard());
     navigate('/astrologer/login');

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiVideo, FiX } from 'react-icons/fi';
 import { getUserPoojaById } from '../../api/userApis';
 import { toast } from 'react-hot-toast';
-import { useGlobalSocket } from '../../hooks/useGlobalSocket';
+import { getSocket } from '../../socket/socketManager';
 import { formatTime12Hour } from '../../utils/formatTime';
 import SplashScreen from '../../components/SplashScreen';
 const PoojaDetails = () => {
@@ -12,7 +12,7 @@ const PoojaDetails = () => {
   const [pooja, setPooja] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const socket = useGlobalSocket();
+  const socket = getSocket();
 
   useEffect(() => {
     if (!socket || !pooja) return;

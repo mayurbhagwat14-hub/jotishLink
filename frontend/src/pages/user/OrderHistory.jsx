@@ -6,7 +6,6 @@ import { GiFlowerPot } from 'react-icons/gi';
 import { getUserSessions, getUserPoojas, getUserCalls, deleteUserHistory } from '../../api/userApis';
 import { getUserOrders } from '../../api/storeApis';
 import { getSocket } from '../../socket/socketManager';
-import { useGlobalSocket } from '../../hooks/useGlobalSocket';
 import { formatTime12Hour } from '../../utils/formatTime';
 import { toast } from 'react-hot-toast';
 import LogoLoader from '../../components/LogoLoader';
@@ -62,7 +61,7 @@ const OrderHistory = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const socket = useGlobalSocket();
+  const socket = getSocket();
 
   useEffect(() => {
     if (!socket) return;

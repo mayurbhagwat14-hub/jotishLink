@@ -3,7 +3,7 @@ import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiChec
 import { FaRupeeSign } from 'react-icons/fa';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB, getShiprocketOrderDetails } from '../../api/adminApis';
-import { useGlobalSocket } from '../../hooks/useGlobalSocket';
+import { getSocket } from '../../socket/socketManager';
 const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -17,7 +17,7 @@ const AdminOrders = () => {
   const [successToast, setSuccessToast] = useState(null);
   const [shiprocketDetails, setShiprocketDetails] = useState(null);
   const itemsPerPage = 8;
-  const socket = useGlobalSocket();
+  const socket = getSocket();
 
   useEffect(() => {
     if (!socket) return;

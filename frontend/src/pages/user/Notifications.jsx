@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Bell, Check, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axios';
-import { useGlobalSocket } from '../../hooks/useGlobalSocket';
+import { getSocket } from '../../socket/socketManager';
 import LogoLoader from '../../components/LogoLoader';
 
 const Notifications = () => {
@@ -10,7 +10,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const socket = useGlobalSocket();
+  const socket = getSocket();
 
   useEffect(() => {
     fetchNotifications();
