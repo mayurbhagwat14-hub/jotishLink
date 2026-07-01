@@ -81,6 +81,11 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'name') {
+      const val = value.replace(/[^a-zA-Z\s.-]/g, '');
+      setFormData((prev) => ({ ...prev, [name]: val }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 

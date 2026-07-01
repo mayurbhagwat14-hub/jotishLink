@@ -28,14 +28,14 @@ export const verifyOtpSchema = Joi.object({
 
 export const registerUserSchema = Joi.object({
   name: Joi.string().min(3).max(50).required(),
-  email: Joi.string().email().optional(),
-  gender: Joi.string().valid('Male', 'Female', 'Other').optional(),
-  dob: Joi.string().optional(),
-  timeOfBirth: Joi.string().optional(),
-  placeOfBirth: Joi.string().optional(),
-  address: Joi.string().optional(),
-  city: Joi.string().optional(),
-  pincode: Joi.string().optional(),
+  email: Joi.string().email().optional().allow(''),
+  gender: Joi.string().valid('Male', 'Female', 'Other').optional().allow(''),
+  dob: Joi.string().optional().allow(''),
+  timeOfBirth: Joi.string().optional().allow(''),
+  placeOfBirth: Joi.string().optional().allow(''),
+  address: Joi.string().optional().allow(''),
+  city: Joi.string().optional().allow(''),
+  pincode: Joi.string().optional().allow(''),
 });
 
 export const changePasswordSchema = Joi.object({

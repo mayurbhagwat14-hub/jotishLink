@@ -284,7 +284,10 @@ const Profile = () => {
                 <input 
                   type="text" 
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^a-zA-Z\s.-]/g, '');
+                    setFormData({...formData, name: val});
+                  }}
                   className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
                 />
               </div>

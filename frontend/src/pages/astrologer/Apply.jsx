@@ -128,6 +128,17 @@ const ApplyAstrologer = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Prevent special characters in full name
+    if (name === 'fullName') {
+      const val = value.replace(/[^a-zA-Z\s.-]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: val
+      }));
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value

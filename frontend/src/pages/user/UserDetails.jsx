@@ -458,11 +458,22 @@ const UserDetails = () => {
         {indicators.map((ind) => {
           const isActive = ind.activeOn.includes(currentStep);
           const isCompleted = ind.completedOn(currentStep);
+          const targetStep = ind.activeOn[0];
+          const isClickable = targetStep < currentStep;
 
           return (
             <div
               key={ind.id}
+              onClick={() => {
+                if (isClickable) {
+                  setApiError('');
+                  setStepError('');
+                  setCurrentStep(targetStep);
+                }
+              }}
               className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
+                isClickable ? 'cursor-pointer hover:opacity-80 hover:scale-110' : ''
+              } ${
                 isCompleted
                   ? 'bg-[#FF6A1A]'
                   : isActive
@@ -492,7 +503,8 @@ const UserDetails = () => {
               value={formData.name}
               onChange={(e) => {
                 setStepError('');
-                setFormData({ ...formData, name: e.target.value });
+                const val = e.target.value.replace(/[^a-zA-Z\s.-]/g, '');
+                setFormData({ ...formData, name: val });
               }}
               placeholder="Enter Your Name"
               maxLength={50}
