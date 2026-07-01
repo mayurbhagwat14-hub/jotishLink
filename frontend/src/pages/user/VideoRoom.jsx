@@ -190,7 +190,7 @@ const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user,
       {!isAudio && (
         <div className="absolute top-6 right-4 w-28 h-40 bg-gray-700 rounded-2xl overflow-hidden border-2 border-gray-600 shadow-lg z-20">
           {!isVideoOff ? (
-            <LocalVideoTrack track={localCameraTrack} play className="w-full h-full object-cover" />
+            <LocalVideoTrack track={localCameraTrack} play className="w-full h-full object-cover unmirror-video" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-800">
               <FiVideoOff className="text-gray-500" size={24} />

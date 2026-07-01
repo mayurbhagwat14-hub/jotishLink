@@ -51,7 +51,7 @@ export const useGlobalSocket = () => {
 
     // Real-Time Notifications
     const handleNewNotification = (data) => {
-      toast.success(`New Notification: ${data.title}`);
+      // toast.success(`New Notification: ${data.title}`); // Removed to prevent duplicate toasts with FCM
       // dispatch(fetchNotifications()); // Refetch notifications or push to state
     };
 

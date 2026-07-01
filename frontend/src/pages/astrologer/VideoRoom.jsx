@@ -153,7 +153,7 @@ const AgoraVideoCall = ({ sessionData, channelName, rtcToken, uid, appId }) => {
             
             <div className="absolute top-6 right-6 w-32 h-48 bg-black rounded-xl overflow-hidden border-2 border-white/20 z-10 shadow-2xl">
                {localCameraTrack && isVideoEnabled ? (
-                 <LocalVideoTrack track={localCameraTrack} play className="w-full h-full object-cover" />
+                 <LocalVideoTrack track={localCameraTrack} play className="w-full h-full object-cover unmirror-video" />
                ) : (
                  <div className="w-full h-full flex items-center justify-center bg-gray-800 text-white/50">You</div>
                )}

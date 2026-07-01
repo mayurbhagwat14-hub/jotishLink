@@ -196,10 +196,13 @@ export const usePushNotifications = () => {
         pooja_booking: '🙏',
       };
 
-      toast(body || title, {
-        icon: iconMap[type] || '🔔',
-        duration: (type === 'incoming_call' || type === 'incoming_chat') ? 6000 : 5000,
-      });
+      // Only show toast if it's not a call/chat, because those have full-screen modals
+      if (type !== 'incoming_call' && type !== 'incoming_chat') {
+        toast(body || title, {
+          icon: iconMap[type] || '🔔',
+          duration: 5000,
+        });
+      }
 
       // Skipping native OS notification in foreground to prevent duplicates.
       // The toast above is sufficient when the app is active.

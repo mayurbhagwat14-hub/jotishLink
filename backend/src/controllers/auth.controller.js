@@ -88,14 +88,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   delete userObj.otpExpires;
 
   import('../utils/notifyHelper.js').then(({ notify }) => {
-    notify({ 
-      userId: user._id, 
-      role: 'user', 
-      title: 'Welcome back 👋', 
-      message: `Logged in successfully on ${new Date().toLocaleString()}`, 
-      type: 'info', 
-      link: '/user/home' 
-    });
+    // Delay push notification by 5 seconds to allow frontend to sync FCM token
+    setTimeout(() => {
+      notify({ 
+        userId: user._id, 
+        role: 'user', 
+        title: 'Welcome back 👋', 
+        message: `Logged in successfully on ${new Date().toLocaleString()}`, 
+        type: 'info', 
+        link: '/user/home' 
+      });
+    }, 5000);
   }).catch(console.error);
 
   return res.status(200).json(

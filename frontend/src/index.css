@@ -211,3 +211,6 @@
 .store-stagger > *:nth-child(5) { animation-delay: 0.25s; }
 .store-stagger > *:nth-child(6) { animation-delay: 0.3s; }
 .store-stagger > *:nth-child(n+7) { animation-delay: 0.35s; }
+.unmirror-video video {
+  transform: scaleX(1) !important;
+}

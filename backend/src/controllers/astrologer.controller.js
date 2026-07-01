@@ -310,14 +310,17 @@ export const astrologerLogin = asyncHandler(async (req, res) => {
   });
 
   import('../utils/notifyHelper.js').then(({ notify }) => {
-    notify({
-      userId: astrologer._id,
-      role: 'astrologer',
-      title: 'Login Successful',
-      message: 'Welcome back to your dashboard!',
-      type: 'success',
-      link: '/astrologer/dashboard'
-    });
+    // Delay push notification by 5 seconds to allow frontend to sync FCM token
+    setTimeout(() => {
+      notify({
+        userId: astrologer._id,
+        role: 'astrologer',
+        title: 'Login Successful',
+        message: 'Welcome back to your dashboard!',
+        type: 'success',
+        link: '/astrologer/dashboard'
+      });
+    }, 5000);
   }).catch(console.error);
 
   return res.status(200).json(
