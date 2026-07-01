@@ -257,7 +257,7 @@ const SectionHeader = ({ title, subtitle, onViewAll, icon }) => (
    ═══════════════════════════════════════════ */
 const Store = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(tabs[0]);
+  const [activeTab, setActiveTab] = useState(location.state?.tab || tabs[0]);
   const [searchQuery, setSearchQuery] = useState(location.state?.category || '');
   const [activeFilterSection, setActiveFilterSection] = useState('none'); // 'none', 'top_selling', 'newly_launch', 'all'
   const [panditSearchQuery, setPanditSearchQuery] = useState('');

@@ -359,13 +359,13 @@ const Home = () => {
             { name: 'Chat', icon: <MessageCircle size={20} className="text-[#fa6830]" strokeWidth={2} />, path: '/user/astrologers?type=chat', bg: 'bg-orange-50' },
             { name: 'Call', icon: <Phone size={20} className="text-green-500" strokeWidth={2} />, path: '/user/astrologers?type=call', bg: 'bg-green-50' },
             { name: 'Video Call', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-500"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>, path: '/user/video-call', bg: 'bg-purple-50' },
-            { name: 'Pooja', icon: <Star size={20} className="text-[#fa6830]" strokeWidth={2} />, path: '/user/poojas', bg: 'bg-orange-50' },
+            { name: 'Pooja', icon: <Star size={20} className="text-[#fa6830]" strokeWidth={2} />, action: () => navigate('/user/store', { state: { tab: 'Pandit Booking' } }), bg: 'bg-orange-50' },
             { name: 'Store', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-pink-500"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store', bg: 'bg-pink-50' },
             { name: 'Kundli', icon: <Grid size={20} className="text-blue-500" strokeWidth={2} />, path: '/user/kundli', bg: 'bg-blue-50' },
             { name: 'Reports', icon: <FileText size={20} className="text-teal-500" strokeWidth={2} />, path: '/user/history', bg: 'bg-teal-50' },
             { name: 'Panchang', icon: <Calendar size={20} className="text-red-500" strokeWidth={2} />, path: '/user/panchang', bg: 'bg-red-50' },
           ].map((service, idx) => (
-            <div key={idx} onClick={() => service.path && navigate(service.path)} className="bg-white rounded-[20px] p-2 py-4 border border-gray-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-all hover:shadow-md hover:border-gray-200">
+            <div key={idx} onClick={() => service.action ? service.action() : (service.path && navigate(service.path))} className="bg-white rounded-[20px] p-2 py-4 border border-gray-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-all hover:shadow-md hover:border-gray-200">
               <div className={`w-[48px] h-[48px] rounded-full ${service.bg} flex items-center justify-center`}>
                 {service.icon}
               </div>
