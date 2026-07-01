@@ -329,17 +329,23 @@ const OrderDetails = () => {
            <div className="space-y-3 mb-4">
               <div className="flex justify-between text-[13px] font-medium text-gray-600">
                 <span>Items Subtotal</span>
-                <span className="font-bold text-gray-800">₹{order.totalAmount + (order.discountAmount || 0)}</span>
+                <span className="font-bold text-gray-800">₹{(order.subtotal || (order.totalAmount + (order.discountAmount || 0) - (order.gstAmount || 0))).toFixed(2)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between text-[13px] font-medium text-green-600">
                   <span>Coupon Discount</span>
-                  <span className="font-bold">-₹{order.discountAmount}</span>
+                  <span className="font-bold">-₹{order.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              {order.gstAmount > 0 && (
+                <div className="flex justify-between text-[13px] font-medium text-gray-600">
+                  <span>GST (18%)</span>
+                  <span className="font-bold text-gray-800">₹{order.gstAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-[13px] font-medium text-gray-600">
                 <span>Shipping Fee</span>
-                <span className="font-bold text-green-600">FREE</span>
+                <span className="font-bold text-green-600">{order.shippingFee > 0 ? `₹${order.shippingFee.toFixed(2)}` : 'FREE'}</span>
               </div>
            </div>
            

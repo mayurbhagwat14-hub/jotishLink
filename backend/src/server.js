@@ -443,9 +443,11 @@ io.on('connection', (socket) => {
         });
         isNewSession = true;
         console.log('[Socket.IO] Created ChatSession in DB with welcome message: ' + session._id);
+        io.to('admin_room').emit('dashboard_updated');
       } else if (!session.astrologerId && astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/)) {
         session.astrologerId = astrologerId;
         await session.save();
+        io.to('admin_room').emit('dashboard_updated');
       }
 
       let pastMessages = [];
@@ -1035,6 +1037,7 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.error('[Socket.IO] Session end error:', err);
     }
+    io.to('admin_room').emit('dashboard_updated');
     console.log(`[Socket.IO] Session ended for room ${roomId}`);
   };
 
@@ -1199,6 +1202,7 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.error('[Socket.IO] Call end error:', err.message);
     }
+    io.to('admin_room').emit('dashboard_updated');
     console.log(`[Socket.IO] Call ended for room ${roomId}`);
   };
 

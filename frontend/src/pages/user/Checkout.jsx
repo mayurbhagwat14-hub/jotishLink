@@ -88,11 +88,7 @@ const Checkout = () => {
       }
     }, (error) => {
       setIsLocating(false);
-      if (error.code === error.POSITION_UNAVAILABLE || error.code === error.PERMISSION_DENIED) {
-        setShowGpsModal(true);
-      } else {
-        toast.error('Location request failed or timed out. Please try again.');
-      }
+      setShowGpsModal(true);
     }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
   };
   
@@ -106,10 +102,11 @@ const Checkout = () => {
 
   const validateForm = () => {
     if (!formData.fullName.trim()) return 'Full name is required';
+    if (!formData.email || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(formData.email.trim().toLowerCase())) return 'Only @gmail.com email addresses are allowed';
     if (!/^\d{10}$/.test(formData.phone)) return 'Please enter a valid 10-digit phone number';
     if (!formData.addressLine || formData.addressLine.trim().length < 10) return 'Please enter a complete address (min 10 characters)';
-    if (!formData.city.trim()) return 'City is required';
-    if (!formData.state.trim()) return 'State is required';
+    if (!formData.city.trim() || /\d/.test(formData.city)) return 'City is required and cannot contain numbers';
+    if (!formData.state.trim() || /\d/.test(formData.state)) return 'State is required and cannot contain numbers';
     if (!/^\d{6}$/.test(formData.pincode)) return 'Please enter a valid 6-digit pincode';
     return null; // null means no errors
   };
@@ -140,7 +137,7 @@ const Checkout = () => {
           paymentMethod: 'cod',
           couponCode
         })).unwrap();
-        navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
+        navigate(`/user/order-success/${res?.data?.order?._id || res?.order?._id || 'recent'}`);
       } else {
         // If wallet has enough balance, show confirmation modal
         if (user?.wallet >= total) {
@@ -198,7 +195,7 @@ const Checkout = () => {
                   paymentData: response,
                   couponCode
                 })).unwrap();
-                navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
+                navigate(`/user/order-success/${res?.data?.order?._id || res?.order?._id || 'recent'}`);
               } catch (err) {
                 toast.error(err.message || 'Payment verification failed');
               }
@@ -245,7 +242,7 @@ const Checkout = () => {
       // Refresh user wallet state
       dispatch(fetchWalletThunk());
       
-      navigate(`/user/order-success/${res?.order?._id || 'recent'}`);
+      navigate(`/user/order-success/${res?.data?.order?._id || res?.order?._id || 'recent'}`);
     } catch (err) {
       toast.error(err.message || 'Failed to place order');
     } finally {
