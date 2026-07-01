@@ -178,6 +178,8 @@ const UserDetails = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [stepError, setStepError] = useState('');
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -224,34 +226,92 @@ const UserDetails = () => {
 
 
 
+  const validateStep = (stepType) => {
+    switch (stepType) {
+      case 'name':
+        if (!formData.name || formData.name.trim() === '') {
+          return 'Name is required';
+        }
+        if (formData.name.trim().length < 3) {
+          return 'Name must be at least 3 characters long';
+        }
+        if (!/^[a-zA-Z\s.-]+$/.test(formData.name)) {
+          return 'Name can only contain letters, spaces, dots, and hyphens';
+        }
+        return '';
+      case 'birthplace':
+        if (!formData.birthplace || formData.birthplace.trim() === '') {
+          return 'Place of birth is required';
+        }
+        if (!/^[a-zA-Z\s,.-]+$/.test(formData.birthplace)) {
+          return 'Place of birth can only contain letters, spaces, commas, dots, and hyphens';
+        }
+        if (formData.birthplace.length > 100) {
+          return 'Place of birth cannot exceed 100 characters';
+        }
+        return '';
+      case 'dob':
+        if (!formData.dobDay || !formData.dobMonth || !formData.dobYear) {
+          return 'Date of birth is required';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
   const handleNext = async () => {
+    setApiError('');
+    setStepError('');
+
+    // Check step validation before proceeding
+    const validationError = validateStep(step.type);
+    if (validationError) {
+      setStepError(validationError);
+      return;
+    }
+
     if (step.type === 'time_choice' && !knowsTime) {
       // Skip the time entry step and go straight to birthplace (Step index 5)
       setCurrentStep(5);
     } else if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
+      let finalTime = '';
+      if (knowsTime && formData.birthHour) {
+        let h = parseInt(formData.birthHour, 10);
+        const m = formData.birthMin.padStart(2, '0');
+        if (formData.birthPeriod === 'PM' && h < 12) {
+          h += 12;
+        } else if (formData.birthPeriod === 'AM' && h === 12) {
+          h = 0;
+        }
+        finalTime = `${String(h).padStart(2, '0')}:${m}`;
+      }
+
       const payload = {
         name: formData.name,
         gender: formData.gender,
         dob: `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay}`,
-        timeOfBirth: knowsTime && formData.birthHour ? `${formData.birthHour}:${formData.birthMin} ${formData.birthPeriod}` : 'Not provided',
+        timeOfBirth: finalTime || '', // Send empty string if not knowsTime
         placeOfBirth: formData.birthplace,
       };
 
       try {
         await dispatch(registerUserThunk(payload)).unwrap();
+        dispatch(updateUser(payload));
+        localStorage.removeItem('userDetailsApplyData'); // Clear after successful completion
+        navigate(redirectTo);
       } catch (err) {
-        console.error("API registration failed, updating local state", err);
+        console.error("API registration failed", err);
+        setApiError(err.message || err.error || (typeof err === 'string' ? err : 'Registration failed. Please try again.'));
       }
-
-      dispatch(updateUser(payload));
-      localStorage.removeItem('userDetailsApplyData'); // Clear after successful completion
-      navigate(redirectTo);
     }
   };
 
   const handleBack = () => {
+    setApiError('');
+    setStepError('');
     if (currentStep === 5 && !knowsTime) {
       // Go back past the skipped time selection to time_choice (Step index 3)
       setCurrentStep(3);
@@ -264,13 +324,20 @@ const UserDetails = () => {
 
   const canProceed = () => {
     switch (step.type) {
-      case 'name': return formData.name.trim().length >= 3;
-      case 'gender': return formData.gender !== '';
-      case 'dob': return formData.dobDay && formData.dobMonth && formData.dobYear;
-      case 'time_choice': return true;
-      case 'time': return true;
-      case 'birthplace': return formData.birthplace.trim().length > 0;
-      default: return false;
+      case 'name':
+        return formData.name.trim().length > 0;
+      case 'gender':
+        return formData.gender !== '';
+      case 'dob':
+        return !!(formData.dobDay && formData.dobMonth && formData.dobYear);
+      case 'time_choice':
+        return true;
+      case 'time':
+        return true;
+      case 'birthplace':
+        return formData.birthplace.trim().length > 0;
+      default:
+        return false;
     }
   };
 
@@ -423,12 +490,20 @@ const UserDetails = () => {
             <input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                setStepError('');
+                setFormData({ ...formData, name: e.target.value });
+              }}
               placeholder="Enter Your Name"
               maxLength={50}
               className="w-full border-b-2 border-gray-200 focus:border-[#FF6A1A] py-3 text-[16px] text-gray-800 font-semibold outline-none bg-transparent transition-colors placeholder-gray-300"
               autoFocus
             />
+            {stepError && (
+              <p className="text-red-500 text-xs font-semibold mt-2.5 pl-1 animate-fade-in">
+                {stepError}
+              </p>
+            )}
           </div>
         );
 
@@ -632,6 +707,7 @@ const UserDetails = () => {
                 value={searchQuery}
                 onChange={(e) => {
                   const val = e.target.value;
+                  setStepError('');
                   setSearchQuery(val);
                   setFormData({ ...formData, birthplace: val });
                   if (val.trim().length < 2) {
@@ -654,6 +730,11 @@ const UserDetails = () => {
                 </div>
               )}
             </div>
+            {stepError && (
+              <p className="text-red-500 text-xs font-semibold mt-0.5 pl-1 animate-fade-in">
+                {stepError}
+              </p>
+            )}
 
             {/* Suggestions Overlay */}
             {suggestions.length > 0 && (
@@ -663,6 +744,7 @@ const UserDetails = () => {
                     key={idx}
                     type="button"
                     onClick={() => {
+                      setStepError('');
                       setFormData({ ...formData, birthplace: sug });
                       setSearchQuery(sug);
                       setSuggestions([]);
@@ -689,6 +771,7 @@ const UserDetails = () => {
                       key={city}
                       type="button"
                       onClick={() => {
+                        setStepError('');
                         setFormData({ ...formData, birthplace: city });
                         setSearchQuery(city);
                         setSuggestions([]);
@@ -738,6 +821,11 @@ const UserDetails = () => {
 
       {/* Action CTA Button */}
       <div className="px-6 pb-12 mt-auto">
+        {apiError && (
+          <div className="mb-4 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-xs font-bold text-center animate-fade-in">
+            {apiError}
+          </div>
+        )}
         <button
           onClick={handleNext}
           disabled={!canProceed()}

@@ -4,6 +4,7 @@ import User from '../models/user.model.js';
 import Astrologer from '../models/astrologer.model.js';
 import PoojaBooking from '../models/poojaBooking.model.js';
 import ChatSession from '../models/chatSession.model.js';
+import { CallSession } from '../models/callSession.model.js';
 import Transaction from '../models/transaction.model.js';
 import WithdrawalRequest from '../models/withdrawalRequest.model.js';
 import { ApiError } from '../utils/apiError.js';
@@ -436,8 +437,13 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   const astrologer = await Astrologer.findById(req.user._id).lean();
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
-  const [recentSessions, recentBookings, allSessions, allPoojas, withdrawals] = await Promise.all([
+  const [recentSessions, recentCalls, recentBookings, allSessions, allCalls, allPoojas, withdrawals] = await Promise.all([
     ChatSession.find({ astrologerId: req.user._id, isFreeChat: { $ne: true }, deletedByAstrologer: { $ne: true } })
+      .populate('userId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean(),
+    CallSession.find({ astrologerId: req.user._id, deletedByAstrologer: { $ne: true } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
       .limit(5)
@@ -448,6 +454,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       .limit(5)
       .lean(),
     ChatSession.find({ astrologerId: req.user._id, status: 'completed', isFreeChat: { $ne: true }, deletedByAstrologer: { $ne: true } }).lean(),
+    CallSession.find({ astrologerId: req.user._id, status: 'completed', deletedByAstrologer: { $ne: true } }).lean(),
     PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['Completed'] }, deletedByAstrologer: { $ne: true } }).lean(),
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['completed', 'pending'] } }).lean()
   ]);
@@ -455,7 +462,9 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   // Safely calculate earnings using immutable RevenueLog
   const revenueLogs = await RevenueLog.find({ astrologerId: req.user._id }).lean();
 
-  const processedRecentSessions = recentSessions.map(s => {
+  const allRecent = [...recentSessions, ...recentCalls].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+
+  const processedRecentSessions = allRecent.map(s => {
     // Find matching revenue log to ensure astrologerShare is historically accurate
     const rLog = revenueLogs.find(r => r.sessionId === s._id.toString());
     let finalAmount = rLog ? rLog.astrologerShare : 0;
@@ -500,7 +509,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       todayEarnings: parseFloat(todayEarnings.toFixed(2)),
       totalWithdraw: parseFloat(totalWithdraw.toFixed(2)),
       stats: {
-        totalSessions: allSessions.length + allPoojas.length,
+        totalSessions: allSessions.length + allCalls.length + allPoojas.length,
         onlineStatus: astrologer.onlineStatus,
         rating: astrologer.rating,
       },

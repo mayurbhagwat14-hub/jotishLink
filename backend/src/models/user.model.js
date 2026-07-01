@@ -151,6 +151,31 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+userSchema.pre('validate', function (next) {
+  if (this.timeOfBirth) {
+    const tob = this.timeOfBirth.trim();
+    if (/^not\s+provided$/i.test(tob)) {
+      this.timeOfBirth = '';
+    } else {
+      const ampmMatch = tob.match(/(am|pm)/i);
+      if (ampmMatch) {
+        const timeParts = tob.replace(/(am|pm)/i, '').trim().split(':');
+        if (timeParts.length >= 2) {
+          let hr = parseInt(timeParts[0], 10);
+          const mn = parseInt(timeParts[1], 10);
+          const isPm = ampmMatch[0].toLowerCase() === 'pm';
+          if (isPm && hr < 12) hr += 12;
+          if (!isPm && hr === 12) hr = 0;
+          if (!isNaN(hr) && !isNaN(mn)) {
+            this.timeOfBirth = `${String(hr).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
+          }
+        }
+      }
+    }
+  }
+  next();
+});
+
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {

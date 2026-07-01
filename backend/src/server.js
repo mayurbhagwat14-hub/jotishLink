@@ -947,11 +947,28 @@ io.on('connection', (socket) => {
       }
 
       if (session) {
-        if (currentCost > 0 && userId && remainingDelta > 0) {
+        if (session.isBotSession && userId) {
+          try {
+            const settings = await SystemSettings.findOne();
+            await User.findByIdAndUpdate(userId, {
+              freeChatUsed: true,
+              freeChatUsedAt: new Date(),
+              freeChatDuration: settings?.freeChatDuration || 1
+            });
+            io.to(roomId).emit('wallet_update', { freeChatUsed: true });
+          } catch (e) {
+            console.error('[Socket.IO] Error marking free chat used on manual end:', e);
+          }
+        }
+
+        if (remainingDelta > 0 && userId) {
           await User.updateOne(
             { _id: userId },
             { $inc: { wallet: -remainingDelta } }
           );
+        }
+
+        if (currentCost > 0 && userId) {
           const Transaction = (await import('./models/transaction.model.js')).default;
           const Astrologer = (await import('./models/astrologer.model.js')).default;
 
@@ -965,11 +982,30 @@ io.on('connection', (socket) => {
             if (astro) astroName = astro.name;
           }
 
-          await Transaction.create({ userId, type: 'deduction', amount: -currentCost, desc: `${sessionTypeLabel} with ${astroName} (${duration}s)` });
+          await Transaction.create({ 
+            userId, 
+            type: 'deduction', 
+            amount: -currentCost, 
+            desc: `${sessionTypeLabel} with ${astroName} (${duration}s)` 
+          });
+        }
+
+        if (currentCost > 0 && session.astrologerId) {
+          let sessionTypeLabel = 'Chat Session';
+          if (session.type === 'audio_call' || session.type === 'audio') sessionTypeLabel = 'Audio Call';
+          if (session.type === 'video_call' || session.type === 'video') sessionTypeLabel = 'Video Call';
 
           const comm = timerData?.commissionRate || 30;
-
-          const creditRes = await WalletService.creditAstrologer(session.astrologerId, userId, finalSessionId, session.type || 'chat', currentCost, `${sessionTypeLabel} Earning`, comm, duration);
+          const creditRes = await WalletService.creditAstrologer(
+            session.astrologerId, 
+            userId, 
+            finalSessionId, 
+            session.type || 'chat', 
+            currentCost, 
+            `${sessionTypeLabel} Earning`, 
+            comm, 
+            duration
+          );
           if (creditRes && creditRes.netAmount) {
             io.to(`astro_${session.astrologerId}`).emit('earning_credited', { netAmount: creditRes.netAmount, sessionId: session._id });
           }

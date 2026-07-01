@@ -16,7 +16,6 @@ const transactionSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: [true, 'Amount is required'],
-      min: [0, 'Transaction amount cannot be negative']
     },
     desc: {
       type: String,
