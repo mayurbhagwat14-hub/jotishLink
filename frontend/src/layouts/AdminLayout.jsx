@@ -289,18 +289,14 @@ const AdminLayout = () => {
               );
             }
 
-            // Expandable section (has children)
-            const isExpanded = expandedSections[section.title] || sidebarCollapsed;
-
+            // Always expanded section (has children)
             return (
               <div key={section.title}>
-                <button
-                  onClick={() => sidebarCollapsed ? setSidebarCollapsed(false) : toggleSection(section.title)}
+                <div
+                  onClick={() => sidebarCollapsed && setSidebarCollapsed(false)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group w-full ${
-                    sectionIsActive && !isExpanded
-                      ? 'bg-orange-50/60 text-orange-600'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  } ${sidebarCollapsed ? 'justify-center' : ''}`}
+                    sidebarCollapsed ? 'justify-center cursor-pointer hover:bg-gray-50' : 'text-gray-400'
+                  }`}
                   title={sidebarCollapsed ? section.title : ''}
                 >
                   <span className={`shrink-0 relative ${sectionIsActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600'}`}>
@@ -310,26 +306,20 @@ const AdminLayout = () => {
                     )}
                   </span>
                   {!sidebarCollapsed && (
-                    <>
-                      <span className="font-semibold text-[12px] flex-1 text-left flex items-center gap-2">
-                        {section.title}
-                        {section.badge && (
-                          <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse shadow-sm">
-                            {section.badge}
-                          </span>
-                        )}
-                      </span>
-                      <FiChevronDown
-                        size={14}
-                        className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-                      />
-                    </>
+                    <span className="font-bold text-[11px] uppercase tracking-wider flex-1 text-left flex items-center gap-2 mt-0.5">
+                      {section.title}
+                      {section.badge && (
+                        <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse shadow-sm">
+                          {section.badge}
+                        </span>
+                      )}
+                    </span>
                   )}
-                </button>
+                </div>
 
                 {/* Children */}
                 {!sidebarCollapsed && (
-                  <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="overflow-visible">
                     <div className="ml-3 pl-3 border-l-2 border-gray-100 space-y-0.5 py-1">
                       {section.children.map((child) => {
                         const childActive = isLinkActive(child.path);
