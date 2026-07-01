@@ -943,8 +943,7 @@ export const deleteAstrologerHistoryBulk = asyncHandler(async (req, res) => {
   // Soft Delete from ChatSessions and CallSessions
   await ChatSession.updateMany({ _id: { $in: ids }, astrologerId: req.user._id }, { $set: { deletedByAstrologer: true } });
   
-  // Need to dynamically import CallSession if not top-level
-  const { CallSession } = await import('../models/callSession.model.js');
+  // CallSession is already imported at the top level
   await CallSession.updateMany({ _id: { $in: ids }, astrologerId: req.user._id }, { $set: { deletedByAstrologer: true } });
 
   // Soft Delete from PoojaBookings

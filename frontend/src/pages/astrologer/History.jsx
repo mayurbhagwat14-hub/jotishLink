@@ -34,6 +34,19 @@ const History = () => {
     return !item.isFreeChat;
   });
 
+  const allFilteredSelected = filteredHistory.length > 0 && filteredHistory.every(item => selectedIds.includes(item._id));
+  
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      const filteredIds = filteredHistory.map(i => i._id);
+      setSelectedIds(prev => prev.filter(id => !filteredIds.includes(id)));
+    } else {
+      const filteredIds = filteredHistory.map(i => i._id);
+      const newSelections = new Set([...selectedIds, ...filteredIds]);
+      setSelectedIds(Array.from(newSelections));
+    }
+  };
+
   // Group history by date string (e.g. "Today, May 27", "Yesterday, May 26", etc)
   const groupedHistory = filteredHistory.reduce((acc, item) => {
     const d = new Date(item.date);
@@ -93,6 +106,12 @@ const History = () => {
     setIsConfirmModalOpen(true);
   };
 
+  const handleDeleteSingle = (e, id) => {
+    e.stopPropagation();
+    setSelectedIds([id]);
+    setIsConfirmModalOpen(true);
+  };
+
   const executeDelete = async () => {
     setIsDeleting(true);
     await dispatch(deleteAstrologerHistoryBulkThunk(selectedIds)).unwrap();
@@ -104,33 +123,35 @@ const History = () => {
   return (
     <div className="p-4 animate-fade-in mb-6 flex flex-col h-[calc(100vh-130px)]">
       
-      <div className="mb-4 shrink-0">
-        <h1 className="text-2xl font-bold text-gray-800">History</h1>
-        <p className="text-sm text-gray-500 font-medium">Log of all your past activities</p>
+      <div className="mb-4 shrink-0 flex justify-between items-end">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">History</h1>
+          <p className="text-sm text-gray-500 font-medium">Log of all your past activities</p>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4 shrink-0 overflow-x-auto no-scrollbar">
+      <div className="flex gap-2 mb-4 shrink-0 overflow-x-auto no-scrollbar pb-1">
         <button 
-          onClick={() => { setActiveTab('all'); setSelectedIds([]); }} 
+          onClick={() => setActiveTab('all')} 
           className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'all' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           All History
         </button>
         <button 
-          onClick={() => { setActiveTab('consultations'); setSelectedIds([]); }} 
+          onClick={() => setActiveTab('consultations')} 
           className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'consultations' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           Consultations
         </button>
         <button 
-          onClick={() => { setActiveTab('freeChats'); setSelectedIds([]); }} 
+          onClick={() => setActiveTab('freeChats')} 
           className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'freeChats' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           Free Chats
         </button>
         <button 
-          onClick={() => { setActiveTab('pooja'); setSelectedIds([]); }} 
+          onClick={() => setActiveTab('pooja')} 
           className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${activeTab === 'pooja' ? 'bg-[#fa6830] text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           Poojas
@@ -159,21 +180,15 @@ const History = () => {
                   <div 
                     key={item._id} 
                     onClick={(e) => handleCardClick(e, item)}
-                    className={`bg-white p-4 rounded-2xl border shadow-sm relative transition-colors ${item.type === 'chat' ? 'cursor-pointer hover:border-orange-200 hover:shadow-md' : ''} ${selectedIds.includes(item._id) ? 'border-red-400 bg-red-50/30' : 'border-gray-100'}`}
+                    className={`bg-white p-4 rounded-2xl border shadow-sm relative transition-all border-gray-100 ${item.type === 'chat' ? 'cursor-pointer hover:border-orange-200 hover:shadow-md' : ''}`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-3">
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 text-red-500 rounded border-gray-300 focus:ring-red-500 cursor-pointer"
-                          checked={selectedIds.includes(item._id)}
-                          onChange={() => toggleSelection(item._id)}
-                        />
-                        <div className="w-10 h-10 rounded-full bg-orange-100 text-[#fa6830] flex items-center justify-center border border-orange-200">
+                        <div className="w-11 h-11 rounded-full bg-orange-50 text-[#fa6830] flex items-center justify-center border border-orange-100 shadow-sm">
                           {getIconForType(item.type)}
                         </div>
                         <div>
-                          <h4 className="font-bold text-gray-800 text-sm capitalize flex items-center gap-2">
+                          <h4 className="font-bold text-gray-800 text-[15px] capitalize flex items-center gap-2">
                             {item.type === 'pooja' ? item.poojaName : item.userName}
                             {item.isFreeChat && (
                               <span className="bg-green-100 text-green-700 text-[9px] px-1.5 py-0.5 rounded-sm font-bold uppercase tracking-widest border border-green-200">Free</span>
@@ -186,26 +201,35 @@ const History = () => {
                             )}
                           </p>
                           <p className="text-xs text-gray-500 flex items-center gap-1 font-medium mt-1">
-                            <FiClock size={10} /> 
+                            <FiClock size={10} className="text-gray-400" /> 
                             {new Date(item.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                             {item.duration > 0 && ` • ${formatDuration(item.duration)}`}
                           </p>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <p className="font-black text-gray-800 text-lg flex items-baseline gap-1">
-                          ₹{item.amount}
-                        </p>
-                        <p className="text-[9px] text-gray-400 italic mb-1">(Platform fees deducted)</p>
-                        {item.status === 'completed' || item.status === 'confirmed' ? (
-                          <span className="text-[10px] text-green-500 font-bold flex items-center gap-1 justify-end">
-                            <FiCheckCircle size={10} /> Completed
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-red-500 font-bold flex items-center gap-1 justify-end">
-                            <FiXCircle size={10} /> {item.status}
-                          </span>
-                        )}
+                      <div className="text-right flex flex-col items-end gap-1.5 h-full justify-between">
+                        <div>
+                          <p className="font-black text-gray-800 text-lg flex items-baseline justify-end gap-1">
+                            ₹{item.amount}
+                          </p>
+                          {item.status === 'completed' || item.status === 'confirmed' ? (
+                            <span className="text-[10px] text-green-500 font-bold flex items-center gap-1 justify-end mt-0.5 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">
+                              <FiCheckCircle size={10} /> Completed
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-red-500 font-bold flex items-center gap-1 justify-end mt-0.5 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                              <FiXCircle size={10} /> {item.status}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <button 
+                          onClick={(e) => handleDeleteSingle(e, item._id)}
+                          className="mt-2 text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50"
+                          title="Delete record"
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -215,24 +239,6 @@ const History = () => {
           ))
         )}
       </div>
-
-      {/* Bulk Delete Bar */}
-      {selectedIds.length > 0 && (
-        <div className="fixed bottom-[90px] left-0 right-0 px-4 z-40 animate-fade-in-up">
-          <div className="bg-gray-800 text-white rounded-2xl shadow-xl p-3 flex justify-between items-center max-w-lg mx-auto border border-gray-700">
-            <span className="font-medium text-sm ml-2">
-              {selectedIds.length} selected
-            </span>
-            <button 
-              onClick={handleDeleteSelected}
-              disabled={isDeleting}
-              className="bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
-            >
-              <FiTrash2 size={16} /> Delete
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Custom Confirmation Modal */}
       {isConfirmModalOpen && (
@@ -244,7 +250,7 @@ const History = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">Delete History</h3>
               <p className="text-gray-500 text-sm">
-                Are you sure you want to delete {selectedIds.length} item{selectedIds.length > 1 ? 's' : ''} from your history? This action cannot be undone.
+                Are you sure you want to delete this item from your history? This action cannot be undone.
               </p>
             </div>
             <div className="p-4 bg-gray-50 flex gap-3 border-t border-gray-100">
