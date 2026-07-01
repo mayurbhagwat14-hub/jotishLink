@@ -55,7 +55,7 @@ const initialState = {
   // User Panel Dashboard
   userHome: {
     services: [],
-    celebrities: [],
+
     blogs: [],
     liveAstrologers: [],
     activeSession: null,

@@ -32,10 +32,6 @@ export const deleteAdminProduct = (id) => axios.delete(`/admin/products/${id}`);
 export const getAdminSettings = () => axios.get('/admin/settings');
 export const updateAdminSettings = (settings) => axios.put('/admin/settings', settings);
 
-export const getAdminCelebrities = () => axios.get('/admin/celebrities');
-export const createAdminCelebrity = (data) => axios.post('/admin/celebrities', data);
-export const updateAdminCelebrity = (id, data) => axios.put(`/admin/celebrities/${id}`, data);
-export const deleteAdminCelebrity = (id) => axios.delete(`/admin/celebrities/${id}`);
 
 export const getAdminTransactions = () => axios.get('/admin/transactions');
 

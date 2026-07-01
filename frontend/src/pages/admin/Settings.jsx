@@ -20,9 +20,6 @@ const AdminSettings = () => {
   const [newUserWelcome, setNewUserWelcome] = useState(true);
   const [astrologerApproval, setAstrologerApproval] = useState(true);
   const [lowStockAlert, setLowStockAlert] = useState(true);
-  const [celebrities, setCelebrities] = useState([]);
-  const [newCeleb, setNewCeleb] = useState({ name: '', role: '', img: '', quote: '', isActive: true });
-  const [isAddingCeleb, setIsAddingCeleb] = useState(false);
   
   const [generalSettings, setGeneralSettings] = useState({
     appName: 'JyotishLink',
@@ -36,9 +33,7 @@ const AdminSettings = () => {
   });
 
   useEffect(() => {
-    if (activeTab === 'Celebrities') {
-      fetchCelebrities();
-    } else if (activeTab === 'General') {
+    if (activeTab === 'General') {
       fetchGeneralSettings();
     }
   }, [activeTab]);
@@ -133,44 +128,11 @@ const AdminSettings = () => {
     }
   };
 
-  const fetchCelebrities = async () => {
-    try {
-      const res = await adminApis.getAdminCelebrities();
-      setCelebrities(res.data.data.celebrities);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  const handleAddCeleb = async () => {
-    if (!newCeleb.name || !newCeleb.role || !newCeleb.img) return toast.error("Fill all fields");
-    try {
-      setIsAddingCeleb(true);
-      await adminApis.createAdminCelebrity(newCeleb);
-      setNewCeleb({ name: '', role: '', img: '', quote: '', isActive: true });
-      fetchCelebrities();
-      toast.success("Celebrity added successfully");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to add celebrity");
-    } finally {
-      setIsAddingCeleb(false);
-    }
-  };
-
-  const handleDeleteCeleb = async (id) => {
-    try {
-      await adminApis.deleteAdminCelebrity(id);
-      fetchCelebrities();
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const tabs = [
     { id: 'General', icon: <FiSettings size={14} /> },
     { id: 'Commission', icon: <FiPercent size={14} /> },
-    { id: 'Celebrities', icon: <FiStar size={14} /> },
   ];
 
   const ToggleSwitch = ({ enabled, onToggle, label }) => (
@@ -354,79 +316,7 @@ const AdminSettings = () => {
         </div>
       )}
 
-      {/* ═══ CELEBRITIES TAB ═══ */}
-      {activeTab === 'Celebrities' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
-            <h3 className="font-bold text-gray-900 flex items-center gap-2"><FiStar size={16} className="text-orange-500" /> Add New Celebrity Review</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Celebrity Name</label>
-                <input type="text" value={newCeleb.name} onChange={e => setNewCeleb({...newCeleb, name: e.target.value})} placeholder="e.g. Maniesh Bahl" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Role / Profession</label>
-                <input type="text" value={newCeleb.role} onChange={e => setNewCeleb({...newCeleb, role: e.target.value})} placeholder="e.g. Bollywood" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Image URL</label>
-                <input type="text" value={newCeleb.img} onChange={e => setNewCeleb({...newCeleb, img: e.target.value})} placeholder="https://..." className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-              </div>
-              <div className="space-y-1.5 md:col-span-3">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Review / Quote</label>
-                <textarea rows="3" value={newCeleb.quote} onChange={e => setNewCeleb({...newCeleb, quote: e.target.value})} placeholder={`Write what the celebrity says about ${generalSettings.appName || 'the app'}...`} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"></textarea>
-              </div>
-            </div>
-            
-            <button onClick={handleAddCeleb} disabled={isAddingCeleb} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isAddingCeleb ? 'opacity-70 cursor-not-allowed' : ''}`}>
-              {isAddingCeleb ? <FiLoader size={14} className="animate-spin" /> : <FiPlus size={14} />} 
-              {isAddingCeleb ? 'Adding...' : 'Add Celebrity'}
-            </button>
-          </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-900">Existing Celebrity Reviews</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/50">
-                    <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Image</th>
-                    <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Name</th>
-                    <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Role</th>
-                    <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Quote</th>
-                    <th className="py-4 px-6 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {celebrities.map((c) => (
-                    <tr key={c._id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="py-3 px-6">
-                        <img src={c.img} alt={c.name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
-                      </td>
-                      <td className="py-3 px-6 font-bold text-sm text-gray-800">{c.name}</td>
-                      <td className="py-3 px-6 text-sm text-gray-500">{c.role}</td>
-                      <td className="py-3 px-6 text-[12px] text-gray-500 max-w-[250px] truncate">{c.quote || '-'}</td>
-                      <td className="py-3 px-6 text-right">
-                        <button onClick={() => handleDeleteCeleb(c._id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center transition-colors inline-flex ml-auto">
-                          <FiTrash2 size={14} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {celebrities.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="py-8 text-center text-gray-400 text-sm font-medium">No celebrities added yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

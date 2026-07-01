@@ -19,10 +19,7 @@ import {
   updateAdminProfile,
   deleteAdminProfile,
   adminChangePassword,
-  getAdminCelebrities,
-  createAdminCelebrity,
-  updateAdminCelebrity,
-  deleteAdminCelebrity,
+
   refundUserWallet,
   getAdminTransactions,
   getAdminCoupons,
@@ -122,11 +119,6 @@ router.delete('/admin/products/:id', deleteAdminProduct);
 router.get('/admin/settings', getAdminSettings);
 router.put('/admin/settings', updateAdminSettings);
 
-// Celebrity Reviews
-router.get('/admin/celebrities', getAdminCelebrities);
-router.post('/admin/celebrities', createAdminCelebrity);
-router.put('/admin/celebrities/:id', updateAdminCelebrity);
-router.delete('/admin/celebrities/:id', deleteAdminCelebrity);
 
 // Transactions
 router.get('/admin/transactions', getAdminTransactions);

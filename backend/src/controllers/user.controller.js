@@ -6,7 +6,7 @@ import ChatSession from '../models/chatSession.model.js';
 import { CallSession } from '../models/callSession.model.js';
 import Order from '../models/order.model.js';
 import Transaction from '../models/transaction.model.js';
-import Celebrity from '../models/celebrity.model.js';
+
 import Banner from '../models/banner.model.js';
 import Rating from '../models/rating.model.js';
 import mongoose from 'mongoose';
@@ -96,13 +96,12 @@ export const deleteUserAccount = asyncHandler(async (req, res) => {
 
 // GET /api/user/homepage-data
 export const getHomepageData = asyncHandler(async (req, res) => {
-  const [astrologers, products, celebrities, liveAstrologersRaw, storeCategories, banners] = await Promise.all([
+  const [astrologers, products, liveAstrologersRaw, storeCategories, banners] = await Promise.all([
     Astrologer.find({ isVerified: true, isTopVerified: true, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
       .lean(),
     Product.find().sort({ inStock: -1, createdAt: -1 }).limit(6).lean(),
-    Celebrity.find({ isActive: true }).sort({ createdAt: -1 }).lean(),
     Astrologer.find({ isVerified: true, onlineStatus: { $in: ['online', 'busy'] }, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
@@ -166,7 +165,6 @@ export const getHomepageData = asyncHandler(async (req, res) => {
         liveAstrologers,
         featuredProducts: products,
         services: storeCategories,
-        celebrities,
         banners: banners || [],
         settings: { minChatBalance: settings.minChatBalance, freeChatDuration: settings.freeChatDuration, astrologerBannerMessage: settings.astrologerBannerMessage, supportEmail: settings.supportEmail, supportPhone: settings.supportPhone },
       }, 'Homepage data fetched')
