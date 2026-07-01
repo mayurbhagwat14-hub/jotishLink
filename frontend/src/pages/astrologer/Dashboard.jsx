@@ -138,7 +138,7 @@ const Dashboard = () => {
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
                        <GiWallet size={12} className="text-gray-400" />
-                       <span>₹{session.amount !== undefined ? session.amount : ((session.amountDeducted || 0) * 0.7).toFixed(2)}</span>
+                       <span>₹{session.amount !== undefined ? session.amount : 0}</span>
                        <span className="text-[9px] text-gray-400 italic ml-1">(Platform fees deducted)</span>
                     </div>
                  </div>

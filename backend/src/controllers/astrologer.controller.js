@@ -437,7 +437,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
   const astrologer = await Astrologer.findById(req.user._id).lean();
   if (!astrologer) throw new ApiError(404, 'Profile not found');
 
-  const [recentSessions, recentCalls, recentBookings, allSessions, allCalls, allPoojas, withdrawals] = await Promise.all([
+  const [recentSessions, recentCalls, recentBookings, withdrawals] = await Promise.all([
     ChatSession.find({ astrologerId: req.user._id, isFreeChat: { $ne: true }, deletedByAstrologer: { $ne: true } })
       .populate('userId', 'name')
       .sort({ createdAt: -1 })
@@ -453,9 +453,6 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(5)
       .lean(),
-    ChatSession.find({ astrologerId: req.user._id, status: 'completed', isFreeChat: { $ne: true }, deletedByAstrologer: { $ne: true } }).lean(),
-    CallSession.find({ astrologerId: req.user._id, status: 'completed', deletedByAstrologer: { $ne: true } }).lean(),
-    PoojaBooking.find({ astrologerId: astrologer._id, status: { $in: ['Completed'] }, deletedByAstrologer: { $ne: true } }).lean(),
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['completed', 'pending'] } }).lean()
   ]);
 
@@ -464,6 +461,8 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
 
   const allRecent = [...recentSessions, ...recentCalls].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
+  const settings = await SystemSettings.findOne({}) || new SystemSettings();
+
   const processedRecentSessions = allRecent.map(s => {
     // Find matching revenue log to ensure astrologerShare is historically accurate
     const rLog = revenueLogs.find(r => r.sessionId === s._id.toString());
@@ -471,7 +470,11 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
     
     // For poojas or other items that might not have a revenue log in the same format
     if (!rLog && s.amountDeducted) {
-       finalAmount = parseFloat((s.amountDeducted * 0.7).toFixed(2));
+       let comm = 30;
+       if (s.type === 'video' || s.type === 'video_call') comm = settings.commissionRates?.videoCall ?? 30;
+       else if (s.type === 'audio' || s.type === 'audio_call') comm = settings.commissionRates?.audioCall ?? 30;
+       else comm = settings.commissionRates?.chat ?? 30;
+       finalAmount = parseFloat((s.amountDeducted * ((100 - comm) / 100)).toFixed(2));
     }
     
     // If it's effectively 0, treat it as a Free Chat
@@ -484,7 +487,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
     };
   }).filter(s => !s.isFreeChat);
 
-  let totalEarnings = 0;
+  let totalEarnings = astrologer.totalEarnings || 0;
   let todayEarnings = 0;
   
   const { getISTStartOfToday } = await import('../utils/dateHelper.js');
@@ -492,7 +495,6 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
 
   revenueLogs.forEach(log => {
     const amount = log.astrologerShare || 0;
-    totalEarnings += amount;
     if (new Date(log.date || log.createdAt) >= startOfTodayIST) {
       todayEarnings += amount;
     }
@@ -509,7 +511,7 @@ export const getAstrologerDashboard = asyncHandler(async (req, res) => {
       todayEarnings: parseFloat(todayEarnings.toFixed(2)),
       totalWithdraw: parseFloat(totalWithdraw.toFixed(2)),
       stats: {
-        totalSessions: allSessions.length + allCalls.length + allPoojas.length,
+        totalSessions: (astrologer.totalChats || 0) + (astrologer.totalAudioCalls || 0) + (astrologer.totalVideoCalls || 0),
         onlineStatus: astrologer.onlineStatus,
         rating: astrologer.rating,
       },
@@ -553,7 +555,8 @@ export const getAstrologerEarnings = asyncHandler(async (req, res) => {
     };
   }).filter(e => !e.isFree).sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const totalEarnings = allEarnings.reduce((sum, e) => sum + e.amount, 0);
+  const astrologer = await Astrologer.findById(req.user._id).lean();
+  const totalEarnings = astrologer?.totalEarnings || 0;
 
   // Calculate Available Balance by deducting pending and completed withdrawals
   const withdrawals = await WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean();
@@ -618,7 +621,7 @@ export const requestWithdrawal = asyncHandler(async (req, res) => {
     WithdrawalRequest.find({ astrologerId: req.user._id, status: { $in: ['pending', 'completed'] } }).lean()
   ]);
 
-  const totalEarnings = revenueLogs.reduce((sum, r) => sum + r.astrologerShare, 0);
+  const totalEarnings = astrologer.totalEarnings || 0;
 
   const totalWithdrawnOrPending = withdrawals.reduce((sum, w) => sum + w.amount, 0);
   const availableBalance = totalEarnings - totalWithdrawnOrPending;
