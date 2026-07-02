@@ -802,37 +802,43 @@ const AdminOrders = () => {
                           <FiAlertCircle size={14} /> Cancel Request from Customer
                         </p>
                         <p className="text-xs text-gray-600 mb-3">Reason: {order.cancelRequest.reason || 'No reason given'}</p>
-                        <div className="flex flex-col gap-2 mb-4">
-                          <label className="text-[12px] font-bold text-gray-700">Custom Refund Amount (₹):</label>
-                          <input
-                            type="number"
-                            defaultValue={order.payment === 'cod' || order.paymentMethod === 'cod' ? 0 : Math.round(order.total * (order.cancelRequest.refundPercent || 80) / 100)}
-                            min={0}
-                            max={order.total}
-                            id={`refund-${order.id}`}
-                            className="w-full px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold focus:ring-2 focus:ring-yellow-400 outline-none"
-                            placeholder="Enter amount to refund"
-                          />
-                          <span className="text-[11px] text-gray-500">Max allowed: ₹{order.total}</span>
-                        </div>
+                        {!(order.payment === 'cod' || order.paymentMethod === 'cod' || order.payment?.toLowerCase() === 'cod') && (
+                          <div className="flex flex-col gap-2 mb-4">
+                            <label className="text-[12px] font-bold text-gray-700">Custom Refund Amount (₹):</label>
+                            <input
+                              type="number"
+                              defaultValue={Math.round(order.total * (order.cancelRequest.refundPercent || 80) / 100)}
+                              min={0}
+                              max={order.total}
+                              id={`refund-${order.id}`}
+                              className="w-full px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-bold focus:ring-2 focus:ring-yellow-400 outline-none"
+                              placeholder="Enter amount to refund"
+                            />
+                            <span className="text-[11px] text-gray-500">Max allowed: ₹{order.total}</span>
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <button
                             onClick={async () => {
-                              const refundEl = document.getElementById(`refund-${order.id}`);
-                              const customRefundAmount = parseInt(refundEl?.value) || 0;
+                              const isCod = order.payment === 'cod' || order.paymentMethod === 'cod' || order.payment?.toLowerCase() === 'cod';
+                              let customRefundAmount = 0;
+                              if (!isCod) {
+                                const refundEl = document.getElementById(`refund-${order.id}`);
+                                customRefundAmount = parseInt(refundEl?.value) || 0;
+                              }
                               try {
                                 await processCancelRequestApi(order.dbId, 'approved', customRefundAmount);
                                 setOrders(prev => prev.map(o => o.id === order.id ? {
                                   ...o, status: 'Cancelled', payment: o.payment === 'Paid' ? 'Refunded' : o.payment,
                                   cancelRequest: { ...o.cancelRequest, adminResponse: 'approved' },
-                                  timeline: [...o.timeline, { label: 'Cancelled by User Request', time: now(), icon: 'cancel', detail: `Refunded ₹${customRefundAmount}` }]
+                                  timeline: [...o.timeline, { label: 'Cancelled by User Request', time: now(), icon: 'cancel', detail: isCod ? 'No refund required (COD)' : `Refunded ₹${customRefundAmount}` }]
                                 } : o));
-                                showToast(`${order.id} cancelled. ₹${customRefundAmount} refund issued.`);
+                                showToast(`${order.id} cancelled. ${isCod ? 'No refund required (COD).' : `₹${customRefundAmount} refund issued.`}`);
                                 setSelectedOrder(null);
                               } catch(e) { showToast('Failed to process cancel'); }
                             }}
                             className="flex-1 px-3 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1"
-                          ><FiCheck size={12} /> Approve Cancel</button>
+                          ><FiCheck size={12} /> {(order.payment === 'cod' || order.paymentMethod === 'cod' || order.payment?.toLowerCase() === 'cod') ? 'Approve (No Refund)' : 'Approve Cancel'}</button>
                           <button
                             onClick={async () => {
                               try {
