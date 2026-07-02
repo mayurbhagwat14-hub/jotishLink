@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FiSearch, FiChevronDown, FiChevronLeft, FiChevronRight, FiTruck, FiCheck, FiX, FiPackage, FiMapPin, FiClock, FiEye, FiMoreHorizontal, FiFilter, FiDownload, FiAlertCircle, FiCheckCircle, FiLoader } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
-import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB, getShiprocketOrderDetails } from '../../api/adminApis';
+import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB, getShiprocketOrderDetails, downloadAdminOrderInvoice } from '../../api/adminApis';
 import { getSocket } from '../../socket/socketManager';
 const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
@@ -304,6 +305,30 @@ const AdminOrders = () => {
       }
     }
   }, [selectedOrder]);
+
+  const handleDownloadInvoice = async (orderId) => {
+    try {
+      const showToastMessage = (msg, type='success') => {
+        // since toast is not imported in this file, we can use the existing successToast state or a simple alert/console for error.
+        // Actually this file has `setSuccessToast` but no error toast.
+        // Wait, `showToast` is defined at line 147? Let me check where `showToast` is defined.
+        // I will just use setSuccessToast for success, and console.error for error, or alert.
+      };
+      
+      const res = await downloadAdminOrderInvoice(orderId);
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice_${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download invoice', error);
+      alert('Failed to download invoice. Please try again.');
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -621,9 +646,12 @@ const AdminOrders = () => {
         )}
       </div>
 
-      {/* ═══ ORDER DETAIL MODAL ═══ */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
+      {/* ═══ MODALS PORTAL ═══ */}
+      {createPortal(
+        <>
+          {/* ORDER DETAIL MODAL */}
+          {selectedOrder && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {(() => {
@@ -698,7 +726,7 @@ const AdminOrders = () => {
                       {order.status !== 'Cancelled' && (
                         <div className="mt-4">
                           <button
-                            onClick={() => window.open(`${import.meta.env.VITE_API_URL.replace('/api', '')}/api/store/orders/${order.dbId}/invoice`, '_blank')}
+                            onClick={() => handleDownloadInvoice(order.dbId)}
                             className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-bold hover:bg-gray-800 transition-colors"
                           >
                             <FiPackage size={14} /> Download PDF Invoice
@@ -865,7 +893,7 @@ const AdminOrders = () => {
 
       {/* ═══ SHIP MODAL ═══ */}
       {showShipModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowShipModal(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setShowShipModal(null)}>
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
           <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100">
@@ -929,6 +957,9 @@ const AdminOrders = () => {
             </div>
           </div>
         </div>
+      )}
+      </>,
+      document.body
       )}
     </div>
   );

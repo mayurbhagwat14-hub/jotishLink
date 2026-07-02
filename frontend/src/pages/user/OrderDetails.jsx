@@ -273,7 +273,7 @@ const OrderDetails = () => {
             <Package size={18} className="text-[#fa6830]" /> Products Ordered
           </h3>
           <div className="space-y-4">
-            {order.items.map((item, idx) => (
+            {order.items?.map((item, idx) => (
               <div key={idx} className="flex gap-4 items-start pb-4 border-b border-gray-50 last:border-0 last:pb-0 cursor-pointer group" onClick={() => navigate(`/user/product/${item.productId?._id}`)}>
                 <div className="w-20 h-20 rounded-xl bg-gray-50 overflow-hidden border border-gray-100 shrink-0 relative group-hover:border-orange-200 transition-colors">
                   <img src={item.productId?.image || item.productId?.img || '/store_bracelet.png'} alt="Product" className="w-full h-full object-cover" />
@@ -282,7 +282,7 @@ const OrderDetails = () => {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0 pt-1">
-                  <h4 className="text-[14px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-[#e55923] transition-colors">{item.productId?.name}</h4>
+                  <h4 className="text-[14px] font-bold text-gray-800 line-clamp-2 leading-snug group-hover:text-[#e55923] transition-colors">{item.productId?.name || 'Deleted Product'}</h4>
                   <p className="text-[11px] text-gray-500 mt-1 font-medium">{item.productId?.category || 'Store Item'}</p>
                   <p className="text-[15px] font-black text-gray-900 mt-2">₹{item.price}</p>
                 </div>
@@ -298,19 +298,19 @@ const OrderDetails = () => {
                <Map className="text-[#fa6830]" size={18} /> Shipping Address
              </h3>
              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <p className="text-[13px] font-bold text-gray-900 mb-1">{order.shippingAddress.fullName || order.shippingAddress.name || 'Customer'}</p>
+                <p className="text-[13px] font-bold text-gray-900 mb-1">{order.shippingAddress?.fullName || order.shippingAddress?.name || 'Customer'}</p>
                 <p className="text-[12px] text-gray-600 leading-relaxed mb-2">
-                  {order.shippingAddress.addressLine || order.shippingAddress.street}<br/>
-                  {order.shippingAddress.city}, {order.shippingAddress.state} - {order.shippingAddress.pincode || order.shippingAddress.zipCode}
+                  {order.shippingAddress?.addressLine || order.shippingAddress?.street || 'N/A'}<br/>
+                  {order.shippingAddress?.city || 'N/A'}, {order.shippingAddress?.state || 'N/A'} - {order.shippingAddress?.pincode || order.shippingAddress?.zipCode || 'N/A'}
                 </p>
-                {(order.shippingAddress.phone || order.shippingAddress.email) && (
+                {(order.shippingAddress?.phone || order.shippingAddress?.email) && (
                   <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-gray-200">
-                    {order.shippingAddress.phone && (
+                    {order.shippingAddress?.phone && (
                       <p className="text-[12px] font-medium text-gray-700 flex items-center gap-1.5">
                         <Phone size={12} className="text-gray-400" /> {order.shippingAddress.phone}
                       </p>
                     )}
-                    {order.shippingAddress.email && (
+                    {order.shippingAddress?.email && (
                       <p className="text-[12px] font-medium text-gray-700 flex items-center gap-1.5">
                         <Mail size={12} className="text-gray-400" /> {order.shippingAddress.email}
                       </p>
@@ -329,23 +329,23 @@ const OrderDetails = () => {
            <div className="space-y-3 mb-4">
               <div className="flex justify-between text-[13px] font-medium text-gray-600">
                 <span>Items Subtotal</span>
-                <span className="font-bold text-gray-800">₹{(order.subtotal || (order.totalAmount + (order.discountAmount || 0) - (order.gstAmount || 0))).toFixed(2)}</span>
+                <span className="font-bold text-gray-800">₹{Number(order.subtotal || (order.totalAmount + (order.discountAmount || 0) - (order.gstAmount || 0)) || 0).toFixed(2)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div className="flex justify-between text-[13px] font-medium text-green-600">
                   <span>Coupon Discount</span>
-                  <span className="font-bold">-₹{order.discountAmount.toFixed(2)}</span>
+                  <span className="font-bold">-₹{Number(order.discountAmount).toFixed(2)}</span>
                 </div>
               )}
               {order.gstAmount > 0 && (
                 <div className="flex justify-between text-[13px] font-medium text-gray-600">
                   <span>GST (18%)</span>
-                  <span className="font-bold text-gray-800">₹{order.gstAmount.toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">₹{Number(order.gstAmount).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-[13px] font-medium text-gray-600">
                 <span>Shipping Fee</span>
-                <span className="font-bold text-green-600">{order.shippingFee > 0 ? `₹${order.shippingFee.toFixed(2)}` : 'FREE'}</span>
+                <span className="font-bold text-green-600">{order.shippingFee > 0 ? `₹${Number(order.shippingFee).toFixed(2)}` : 'FREE'}</span>
               </div>
            </div>
            
@@ -358,7 +358,7 @@ const OrderDetails = () => {
                   (order.paymentStatus === 'paid' || order.orderStatus === 'delivered') ? 'text-green-600' : 
                   (order.paymentStatus === 'failed' || order.orderStatus === 'cancelled') ? 'text-red-500' : 'text-[#fa6830]'
                }`}>
-                  {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? <><CheckCircle size={14}/> Payment Successful</> : 
+                  {(order.orderStatus === 'delivered' || order.paymentStatus === 'paid') ? <><CheckCircle2 size={14}/> Payment Successful</> : 
                    (order.orderStatus === 'cancelled' && order.paymentStatus === 'pending') ? <><X size={14}/> Cancelled</> : <><Clock size={14}/> Pending Payment</>}
                </span>
              </div>

@@ -14,23 +14,45 @@ const Checkout = () => {
   const couponCode = location.state?.couponCode || null;
   
   const { user } = useSelector((state) => state.auth);
-  const { cart } = useSelector((state) => state.cart);
+  const { cart, loading: cartLoading } = useSelector((state) => state.cart);
   
   useEffect(() => {
+    // If cart is empty, try to fetch it first (in case of page refresh)
     if (!cart?.items || cart.items.length === 0) {
-      navigate('/user/cart', { replace: true });
+      dispatch(fetchCartThunk()).unwrap().then((res) => {
+        const items = res?.data?.cart?.items || res?.cart?.items || [];
+        if (items.length === 0) {
+          navigate('/user/cart', { replace: true });
+        }
+      }).catch(() => {
+        navigate('/user/cart', { replace: true });
+      });
     }
-  }, [cart, navigate]);
+  }, [dispatch, navigate]);
   
-  const [formData, setFormData] = useState({
-    fullName: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phoneNumber || user?.phone || '',
-    addressLine: '',
-    city: '',
-    state: '',
-    pincode: '',
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem('checkoutFormData');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse checkoutFormData', e);
+      }
+    }
+    return {
+      fullName: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phoneNumber || user?.phone || '',
+      addressLine: '',
+      city: '',
+      state: '',
+      pincode: '',
+    };
   });
+
+  useEffect(() => {
+    sessionStorage.setItem('checkoutFormData', JSON.stringify(formData));
+  }, [formData]);
   
   const [isLocating, setIsLocating] = useState(false);
   const [showGpsModal, setShowGpsModal] = useState(false);
@@ -180,7 +202,7 @@ const Checkout = () => {
 
           // 2. Open Razorpay modal
           const options = {
-            key: 'rzp_test_dummy', // Replace with your actual key
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SpzpIBZCETVQYD', // Use actual key
             amount: orderData.amount,
             currency: orderData.currency,
             name: 'Astrotalk Replica',

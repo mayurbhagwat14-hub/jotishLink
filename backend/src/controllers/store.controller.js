@@ -367,7 +367,12 @@ export const getOrderById = asyncHandler(async (req, res) => {
 
 // GET /api/store/orders/:id/invoice
 export const downloadInvoice = asyncHandler(async (req, res) => {
-  const order = await Order.findOne({ _id: req.params.id, userId: req.user._id })
+  const query = { _id: req.params.id };
+  if (req.user.role !== 'admin') {
+    query.userId = req.user._id;
+  }
+
+  const order = await Order.findOne(query)
     .populate('items.productId');
   
   if (!order) {
@@ -439,7 +444,7 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
   });
 
   const options = {
-    amount: amount * 100, // amount in the smallest currency unit
+    amount: Math.round(amount * 100), // amount in the smallest currency unit
     currency: 'INR',
     receipt: 'order_rcptid_' + Date.now()
   };
@@ -448,7 +453,8 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
     const order = await razorpay.orders.create(options);
     res.status(200).json(new ApiResponse(200, order, 'Razorpay order created'));
   } catch (error) {
-    throw new ApiError(500, error.message || 'Failed to create Razorpay order');
+    console.error('Razorpay Error:', error);
+    throw new ApiError(500, error?.error?.description || error.message || 'Failed to create Razorpay order');
   }
 });
 

@@ -23,6 +23,7 @@ export const updateAdminOrderStatus = (id, status) => axios.put(`/admin/orders/$
 export const processCancelRequest = (id, action, customRefundAmount) => axios.put(`/admin/orders/${id}/cancel`, { action, customRefundAmount });
 export const pushOrderToShiprocket = (id) => axios.post(`/admin/orders/${id}/shiprocket/push`);
 export const generateOrderAWB = (id, courierId) => axios.post(`/admin/orders/${id}/shiprocket/awb`, { courierId });
+export const downloadAdminOrderInvoice = (id) => axios.get(`/store/orders/${id}/invoice`, { responseType: 'blob' });
 export const getShiprocketOrderDetails = (id) => axios.get(`/admin/orders/${id}/shiprocket/details`);
 export const getPendingCounts = () => axios.get('/admin/pending-counts');
 export const getAdminProducts = () => axios.get('/admin/products');
