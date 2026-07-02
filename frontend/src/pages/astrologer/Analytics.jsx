@@ -16,7 +16,7 @@ const Analytics = () => {
   const reviews = data.topReviews || [];
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-fade-in">
+    <div className="p-4 md:p-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-800 mb-1">Analytics Overview</h1>
         <p className="text-gray-500 font-medium">Track your performance and growth</p>

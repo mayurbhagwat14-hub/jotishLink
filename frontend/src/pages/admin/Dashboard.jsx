@@ -45,7 +45,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="space-y-7 animate-fade-in">
+    <div className="space-y-7">
 
       {/* ═══ WELCOME BANNER ═══ */}
       <div className="bg-gradient-to-r from-orange-500 via-orange-500 to-amber-500 rounded-2xl p-6 lg:p-8 text-white relative overflow-hidden">

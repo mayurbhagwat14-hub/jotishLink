@@ -137,7 +137,7 @@ const WaitingScreen = () => {
 
   if (status === 'busy_declined') {
     return (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] px-6 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] px-6">
         <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-orange-50 border-2 border-orange-200 flex items-center justify-center text-primary">
             <span className="text-4xl">🔒</span>

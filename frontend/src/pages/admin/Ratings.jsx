@@ -80,7 +80,7 @@ const AdminRatings = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in relative">
+    <div className="space-y-6 relative">
       {/* ═══ SUCCESS TOAST ═══ */}
       {successToast && (
         <div className="fixed top-6 right-6 z-[60] animate-slide-down">

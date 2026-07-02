@@ -185,7 +185,7 @@ const AdminSessions = () => {
     .filter(s => filterStatus === 'All' || s.status === filterStatus);
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8">
 
       {/* Header */}
       <div>

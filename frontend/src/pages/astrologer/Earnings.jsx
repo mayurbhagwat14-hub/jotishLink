@@ -136,7 +136,7 @@ const Earnings = () => {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-fade-in">
+    <div className="p-4 md:p-8 space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-1">Earnings & Wallet</h1>

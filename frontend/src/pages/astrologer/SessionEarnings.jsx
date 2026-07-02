@@ -12,7 +12,7 @@ const SessionEarnings = () => {
   }, [dispatch]);
 
   return (
-    <div className="p-4 md:p-8 space-y-6 animate-fade-in max-w-4xl mx-auto">
+    <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto">
       <div className="flex flex-col gap-1 mb-8">
         <h1 className="text-3xl font-black text-gray-800 flex items-center gap-3">
           <div className="w-12 h-12 bg-orange-100 text-[#fa6830] rounded-full flex items-center justify-center">

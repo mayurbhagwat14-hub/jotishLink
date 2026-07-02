@@ -62,7 +62,7 @@ const OrderSuccess = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans animate-fade-in">
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-3">

@@ -497,7 +497,7 @@ const UserDetails = () => {
     switch (step.type) {
       case 'name':
         return (
-          <div className="w-full animate-fade-in px-2 max-w-sm mx-auto">
+    <div className="w-full px-2 max-w-sm mx-auto">
             <input
               type="text"
               value={formData.name}
@@ -521,7 +521,7 @@ const UserDetails = () => {
 
       case 'gender':
         return (
-          <div className="flex gap-10 justify-center items-center py-6 select-none animate-fade-in">
+    <div className="flex gap-10 justify-center items-center py-6 select-none">
             {/* Male */}
             <div className="flex flex-col items-center gap-3">
               <button
@@ -566,7 +566,7 @@ const UserDetails = () => {
 
       case 'dob':
         return (
-          <div className="w-full animate-fade-in">
+    <div className="w-full">
             {/* Drum Date Picker */}
             <div className="flex justify-center items-center max-w-[280px] mx-auto py-6 bg-white border border-gray-100 rounded-2xl shadow-sm relative select-none">
               {/* Overlay Separators */}
@@ -604,7 +604,7 @@ const UserDetails = () => {
 
       case 'time_choice':
         return (
-          <div className="flex flex-col gap-4 w-full max-w-sm mx-auto select-none animate-fade-in">
+    <div className="flex flex-col gap-4 w-full max-w-sm mx-auto select-none">
             {/* Yes Card */}
             <button
               type="button"
@@ -650,7 +650,7 @@ const UserDetails = () => {
 
       case 'time':
         return (
-          <div className="w-full animate-fade-in flex flex-col items-center">
+    <div className="w-full flex flex-col items-center">
             {/* Drum Time Picker */}
             <div className="flex justify-center items-center max-w-[280px] w-full mx-auto py-6 bg-white border border-gray-100 rounded-2xl shadow-sm relative select-none">
               {/* Overlay Separators */}
@@ -712,7 +712,7 @@ const UserDetails = () => {
 
       case 'birthplace':
         return (
-          <div className="flex flex-col gap-4 w-full animate-fade-in px-2 max-w-sm mx-auto relative">
+    <div className="flex flex-col gap-4 w-full px-2 max-w-sm mx-auto relative">
             <div className="relative w-full">
               <input
                 type="text"

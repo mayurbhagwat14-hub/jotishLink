@@ -106,7 +106,7 @@ const OrderDetails = () => {
   const currentStepIndex = getOrderStatusProgress();
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen font-sans pb-24 animate-fade-in">
+    <div className="w-full bg-gray-50 min-h-screen font-sans pb-24">
       {/* ═══ TOP NAVBAR ═══ */}
       <div className="bg-white sticky top-0 z-30 shadow-[0_2px_10px_rgba(0,0,0,0.05)] border-b border-gray-100 flex items-center px-4 py-4">
         <button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">

@@ -121,7 +121,7 @@ const History = () => {
   };
 
   return (
-    <div className="p-4 animate-fade-in mb-6 flex flex-col h-[calc(100vh-130px)]">
+    <div className="p-4 mb-6 flex flex-col h-[calc(100vh-130px)]">
       
       <div className="mb-4 shrink-0 flex justify-between items-end">
         <div>

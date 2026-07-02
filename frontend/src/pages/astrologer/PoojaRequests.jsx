@@ -30,7 +30,7 @@ const PoojaRequests = () => {
   const confirmedRequests = poojaRequests.filter(req => req.status === 'Accepted' || req.status === 'In Progress');
 
   return (
-    <div className="p-4 animate-fade-in mb-6 space-y-6">
+    <div className="p-4 mb-6 space-y-6">
       
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Pooja Requests</h1>

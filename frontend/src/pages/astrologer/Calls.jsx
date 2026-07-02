@@ -76,7 +76,7 @@ const Calls = () => {
   };
 
   return (
-    <div className="p-4 animate-fade-in mb-6 flex flex-col h-[calc(100vh-130px)]">
+    <div className="p-4 mb-6 flex flex-col h-[calc(100vh-130px)]">
       
       <div className="mb-4 shrink-0">
         <h1 className="text-2xl font-bold text-gray-800">Calls Center</h1>

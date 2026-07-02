@@ -194,7 +194,7 @@ const AdminContent = () => {
 
 
   return (
-    <div className="space-y-6 animate-fade-in relative">
+    <div className="space-y-6 relative">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Content & CMS</h1>
         <p className="text-sm text-gray-400 font-medium mt-1">Manage homepage banners, coupon codes, and push notifications</p>
