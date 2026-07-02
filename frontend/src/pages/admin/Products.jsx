@@ -403,7 +403,7 @@ const AdminProducts = () => {
               {/* Image Upload */}
               <div className="flex justify-center mb-2">
                 <label className={`border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center hover:border-orange-300 transition-colors cursor-pointer relative overflow-hidden group ${formData.image ? 'w-40 h-40 shrink-0' : 'w-full p-8'}`}>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageUpload} />
                   {formData.image ? (
                     <>
                       <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />

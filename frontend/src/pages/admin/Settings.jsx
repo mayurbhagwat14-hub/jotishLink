@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiLoader, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiLoader, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2, FiFileText } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import * as adminApis from '../../api/adminApis';
 import { GiFlowerPot } from 'react-icons/gi';
@@ -29,7 +29,9 @@ const AdminSettings = () => {
     supportPhone: '+91 1800 000 000',
     astrologerBannerMessage: 'Will I have love or arranged marriage?',
     minChatBalance: 50,
-    freeChatDuration: 1
+    freeChatDuration: 1,
+    termsOfUse: '',
+    privacyPolicy: ''
   });
 
   useEffect(() => {
@@ -52,6 +54,16 @@ const AdminSettings = () => {
 
   const handleSaveGeneral = async (section) => {
     try {
+      if (section === 'info') {
+        if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(generalSettings.supportEmail.trim().toLowerCase())) {
+          return toast.error('Support email must be a valid @gmail.com address');
+        }
+        const strippedPhone = generalSettings.supportPhone.replace(/\D/g, '');
+        if (strippedPhone.length < 10) {
+          return toast.error('Support phone must be a valid number (at least 10 digits)');
+        }
+      }
+
       setSavingSection(section);
       const payload = { ...generalSettings, maintenanceMode };
       await adminApis.updateAdminSettings(payload);
@@ -133,6 +145,7 @@ const AdminSettings = () => {
   const tabs = [
     { id: 'General', icon: <FiSettings size={14} /> },
     { id: 'Commission', icon: <FiPercent size={14} /> },
+    { id: 'Legal', icon: <FiFileText size={14} /> },
   ];
 
   const ToggleSwitch = ({ enabled, onToggle, label }) => (
@@ -307,15 +320,53 @@ const AdminSettings = () => {
               </div>
             ))}
           </div>
-          <div className="px-6 py-5 border-t border-gray-100 flex justify-end">
-            <button onClick={handleSaveCommission} disabled={isSavingCommission} className={`px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-orange-500/20 transition-all w-full sm:w-auto ${isSavingCommission ? 'opacity-70 cursor-not-allowed' : ''}`}>
+          <div className="px-6 py-5 bg-gray-50 border-t border-gray-100 flex justify-end">
+            <button onClick={handleSaveCommission} disabled={isSavingCommission} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${isSavingCommission ? 'opacity-70 cursor-not-allowed' : ''}`}>
               {isSavingCommission ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
-              {isSavingCommission ? 'Saving Rates...' : 'Save Commission Rates'}
+              {isSavingCommission ? 'Saving...' : 'Save Commission Rates'}
             </button>
           </div>
         </div>
       )}
 
+      {/* ═══ LEGAL TAB ═══ */}
+      {activeTab === 'Legal' && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-6">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <FiFileText size={16} className="text-orange-500" /> Legal Documents
+          </h3>
+          <p className="text-sm text-gray-400 font-medium">Manage the content for your platform's legal pages. This will be publicly visible to users.</p>
+
+          <div className="space-y-4">
+            <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Terms & Conditions</label>
+            <textarea 
+              value={generalSettings.termsOfUse || ''} 
+              onChange={e => setGeneralSettings({...generalSettings, termsOfUse: e.target.value})} 
+              rows={8}
+              placeholder="Enter Terms & Conditions content here..."
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" 
+            />
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-gray-100">
+            <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Privacy Policy</label>
+            <textarea 
+              value={generalSettings.privacyPolicy || ''} 
+              onChange={e => setGeneralSettings({...generalSettings, privacyPolicy: e.target.value})} 
+              rows={8}
+              placeholder="Enter Privacy Policy content here..."
+              className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" 
+            />
+          </div>
+
+          <div className="pt-4 flex justify-end">
+            <button onClick={() => handleSaveGeneral('legal')} disabled={savingSection !== null} className={`px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all ${savingSection === 'legal' ? 'opacity-70 cursor-not-allowed' : ''}`}>
+              {savingSection === 'legal' ? <FiLoader size={14} className="animate-spin" /> : <FiSave size={14} />} 
+              {savingSection === 'legal' ? 'Saving...' : 'Save Legal Documents'}
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

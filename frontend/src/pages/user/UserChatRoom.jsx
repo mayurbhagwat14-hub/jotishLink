@@ -468,7 +468,7 @@ Please analyze my chart based on this information.`;
         <div className="flex items-center gap-2">
           {/* Removed call buttons */}
           {!sessionEnded && !viewOnly && (
-            <button onClick={handleEndChat} className="text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">
+            <button onClick={() => setShowLeaveConfirm(true)} className="text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">
               End Chat
             </button>
           )}

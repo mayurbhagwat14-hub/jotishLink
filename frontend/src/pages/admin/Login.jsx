@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { adminLogin, adminLoginThunk } from '../../store/slices/adminAuthSlice';
 import { FiLock, FiUser, FiArrowRight, FiShield, FiCheckCircle, FiCpu, FiKey } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import OtpInput from '../../components/OtpInput';
 
 const AdminLogin = () => {
   const [step, setStep] = useState(1); // 1: Credentials, 2: OTP
@@ -17,7 +18,6 @@ const AdminLogin = () => {
   const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const otpRefs = useRef([]);
 
   const handleCredentialsSubmit = async (e) => {
     e.preventDefault();
@@ -50,23 +50,7 @@ const AdminLogin = () => {
     }
   };
 
-  const handleOtpChange = (index, value) => {
-    if (isNaN(value)) return;
-    
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
 
-    if (value !== '' && index < 5) {
-      otpRefs.current[index + 1].focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1].focus();
-    }
-  };
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
@@ -227,20 +211,7 @@ const AdminLogin = () => {
                   )}
                 </div>
 
-                <div className="flex gap-2 justify-center">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => (otpRefs.current[index] = el)}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="w-12 h-14 text-center text-xl font-bold rounded-lg bg-black border border-gray-800 focus:bg-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-white outline-none"
-                    />
-                  ))}
-                </div>
+                <OtpInput length={6} value={otp} onChange={setOtp} autoFocus inputClassName="w-12 h-14 text-center text-xl font-bold rounded-lg bg-black border border-gray-800 focus:bg-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-white outline-none" />
 
                 <button
                   type="submit"

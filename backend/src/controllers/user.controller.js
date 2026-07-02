@@ -31,7 +31,13 @@ export const getUserProfile = asyncHandler(async (req, res) => {
 export const getPublicSettings = asyncHandler(async (req, res) => {
   const SystemSettings = (await import('../models/systemSettings.model.js')).default;
   const settings = await SystemSettings.findOne({}) || new SystemSettings();
-  return res.status(200).json(new ApiResponse(200, { appName: settings.appName, appLogo: settings.appLogo, tagline: settings.tagline }, 'Public settings fetched'));
+  return res.status(200).json(new ApiResponse(200, { 
+    appName: settings.appName, 
+    appLogo: settings.appLogo, 
+    tagline: settings.tagline,
+    termsOfUse: settings.termsOfUse,
+    privacyPolicy: settings.privacyPolicy
+  }, 'Public settings fetched'));
 });
 
 // PUT /api/user/profile

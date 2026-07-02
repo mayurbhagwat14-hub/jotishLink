@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
+import OtpInput from '../../components/OtpInput';
 import { astrologerLogin, astrologerSignupThunk } from '../../store/slices/astrologerAuthSlice';
 import { checkAstrologerPhone, requestOtp, astrologerSignup } from '../../api/astrologerApis';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
@@ -129,9 +130,9 @@ const ApplyAstrologer = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Prevent special characters in full name
-    if (name === 'fullName') {
-      const val = value.replace(/[^a-zA-Z\s.-]/g, '');
+    // Prevent special characters in full name, city, state
+    if (name === 'fullName' || name === 'city' || name === 'state') {
+      const val = value.replace(/[^a-zA-Z\s]/g, '');
       setFormData(prev => ({
         ...prev,
         [name]: val
@@ -245,7 +246,7 @@ const ApplyAstrologer = () => {
   const updatePoojaPrice = (poojaName, price) => {
     setFormData({ 
       ...formData, 
-      poojasOffered: formData.poojasOffered.map(p => p.poojaName === poojaName ? { ...p, price: Number(price) } : p)
+      poojasOffered: formData.poojasOffered.map(p => p.poojaName === poojaName ? { ...p, price: price === '' ? '' : Number(price) } : p)
     });
   };
 
@@ -253,7 +254,7 @@ const ApplyAstrologer = () => {
     e.preventDefault();
     setLoading(true);
     setApiError('');
-    setOtp(['', '', '', '']); // Clear the OTP blocks
+    setOtp(['', '', '', '']); 
 
     // Comprehensive format validations
     if (!profilePic) { toast.error('Profile Photo is required.'); return setLoading(false); }
@@ -283,6 +284,19 @@ const ApplyAstrologer = () => {
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) { toast.error('Invalid IFSC Code format. Example: SBIN0123456'); return setLoading(false); }
     
     if (formData.description.trim().length < 20) { toast.error('About You description must be at least 20 characters.'); return setLoading(false); }
+
+    if (formData.isPandit) {
+      if (formData.poojasOffered.length === 0) {
+        toast.error('Pandits must select at least one Pooja.');
+        return setLoading(false);
+      }
+      for (const p of formData.poojasOffered) {
+        if (!p.price || Number(p.price) < 51) {
+          toast.error(`Price for ${p.poojaName} must be at least ₹51.`);
+          return setLoading(false);
+        }
+      }
+    }
 
     try {
       // Pre-flight check: see if they are already an astrologer
@@ -371,18 +385,6 @@ const ApplyAstrologer = () => {
       setApiError(errorMsg);
       toast.error(errorMsg);
       setLoading(false);
-    }
-  };
-
-  const handleOtpChange = (index, value) => {
-    if (value.length > 1) value = value.slice(-1); // Only allow one digit
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto focus next input
-    if (value && index < 3) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
     }
   };
 
@@ -481,7 +483,7 @@ const ApplyAstrologer = () => {
                   <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-white text-xs font-bold">Upload</span>
                   </div>
-                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                  <input type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoUpload} />
                 </label>
                 <p className="text-xs font-bold text-gray-500 mt-2">Profile Photo <span className="text-red-500">*</span></p>
               </div>
@@ -514,9 +516,12 @@ const ApplyAstrologer = () => {
                       required
                       value={formData.mobile}
                       onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.startsWith('91') && val.length > 10) val = val.slice(2);
+                        if (val.startsWith('0') && val.length > 10) val = val.slice(1);
+                        if (val.length > 10) val = val.slice(0, 10);
                         if (val.length > 0 && !/^[6-9]/.test(val)) return;
-                        if (val.length <= 10) handleChange({ target: { name: 'mobile', value: val } });
+                        handleChange({ target: { name: 'mobile', value: val } });
                       }}
                       pattern="^[6-9]\d{9}$"
                       title="10-digit mobile number starting with 6-9"
@@ -851,7 +856,7 @@ const ApplyAstrologer = () => {
                   { label: "Selfie Verification", state: selfieVerification, setter: setSelfieVerification, key: 'apply_selfieVerification' },
                 ].map((doc, idx) => (
                   <label key={idx} className="relative cursor-pointer border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-orange-300 transition-colors bg-gray-50">
-                    <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter, doc.key)} required={!doc.state} />
+                    <input type="file" accept="image/*,.pdf" capture="environment" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter, doc.key)} required={!doc.state} />
                     {doc.state ? (
                       doc.state.startsWith('data:image/') ? (
                         <div className="relative w-full h-24 rounded-xl overflow-hidden group">
@@ -903,19 +908,7 @@ const ApplyAstrologer = () => {
               
               {apiError && <p className="text-xs font-bold text-red-500 text-center mb-4">{apiError}</p>}
               <form onSubmit={handleVerifyOtp}>
-                <div className="flex justify-center gap-3 mb-8">
-                  {[0, 1, 2, 3].map((index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      type="text"
-                      inputMode="numeric"
-                      value={otp[index]}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      className="w-14 h-14 rounded-xl border-2 border-gray-200 focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 text-center text-xl font-black text-gray-900 outline-none transition-all"
-                    />
-                  ))}
-                </div>
+                <OtpInput length={4} value={otp} onChange={setOtp} autoFocus inputClassName="w-14 h-14 rounded-xl border-2 border-gray-200 focus:border-[#fa6830] focus:ring-4 focus:ring-orange-500/10 text-center text-xl font-black text-gray-900 outline-none transition-all" />
                 
                 <button 
                   type="submit"

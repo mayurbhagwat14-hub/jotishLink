@@ -15,6 +15,7 @@ const UserLayout = () => {
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [isBottomBannerHidden, setIsBottomBannerHidden] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -166,7 +167,7 @@ const UserLayout = () => {
                 </button>
               ) : (
                 <button
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 font-bold py-2.5 rounded-lg hover:bg-red-100 transition-colors text-[14px]"
                 >
                   <LogOut size={16} /> Logout
@@ -256,6 +257,37 @@ const UserLayout = () => {
                   <p className="font-bold text-gray-800 text-sm mt-0.5">{settings?.supportPhone || '+91 9999999999'}</p>
                 </div>
               </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ LOGOUT CONFIRMATION MODAL ═══ */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative w-full max-w-xs bg-white rounded-2xl shadow-2xl p-6 animate-scale-in text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+              <LogOut size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Log Out</h3>
+            <p className="text-sm text-gray-500 mb-6 font-medium">Are you sure you want to log out of your account?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  handleLogout();
+                }}
+                className="flex-1 py-2.5 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-sm shadow-red-500/30"
+              >
+                Log Out
+              </button>
             </div>
           </div>
         </div>

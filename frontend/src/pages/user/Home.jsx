@@ -265,7 +265,7 @@ const Home = () => {
             </div>
             <div className="flex flex-col">
               <h3 className="text-white font-bold text-[16px] mb-0.5 leading-tight tracking-wide">Got any questions?</h3>
-              <p className="text-white/90 text-[12px] font-medium">Chat with Astrologer @ ₹5/min</p>
+              <p className="text-white/90 text-[12px] font-medium">Chat with Verified Astrologers</p>
             </div>
           </div>
           <ChevronRight size={20} className="text-white/90 relative z-10" />
@@ -424,7 +424,7 @@ const Home = () => {
                 </div>
                 
                 <div className="flex items-center justify-between mt-2 w-full pt-1">
-                  <span className="text-[#fa6830] font-bold text-[14px]">₹{astro.rate || 5}/min</span>
+                  <span className="text-[#fa6830] font-bold text-[14px]">₹{astro.pricing?.chat || astro.rate || 5}/min</span>
                   {isOffline ? (
                     <button disabled className="px-5 py-1.5 rounded-full bg-gray-100 text-gray-400 text-[12px] font-bold cursor-not-allowed">
                       Offline
@@ -493,7 +493,7 @@ const Home = () => {
           
           <div className="relative z-10 w-full">
             <h3 className="text-white font-bold text-[20px] mb-1.5 tracking-tight">Unlock Your Cosmic Destiny</h3>
-            <p className="text-orange-50 text-[13px] mb-5 font-medium">Chat with verified astrologers at ₹5/min</p>
+            <p className="text-orange-50 text-[13px] mb-5 font-medium">Chat with verified astrologers</p>
             <button 
               onClick={() => handleChatCallAction('/user/astrologers')} 
               className="bg-white text-[#fa6830] font-bold text-[14px] px-6 py-2.5 rounded-full shadow-sm hover:shadow-md transition-shadow active:scale-95"

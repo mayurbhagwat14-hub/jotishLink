@@ -26,6 +26,7 @@ const ChatRoom = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -295,7 +296,7 @@ const ChatRoom = () => {
         
         {!isViewOnly && (
         <div className="flex gap-2 items-center">
-          <button onClick={handleEndChat} disabled={sessionEnded} className="ml-2 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50">
+          <button onClick={() => setShowEndConfirm(true)} disabled={sessionEnded} className="ml-2 text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50">
             End Chat
           </button>
         </div>
@@ -468,6 +469,44 @@ const ChatRoom = () => {
             onClick={(e) => e.stopPropagation()}
             onDragStart={(e) => e.preventDefault()}
           />
+        </div>
+      )}
+
+      {/* ═══ END CHAT CONFIRMATION MODAL ═══ */}
+      {showEndConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-slide-up-mobile sm:animate-scale-in">
+            <div className="bg-red-50 p-6 flex flex-col items-center border-b border-red-100">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                <FiX size={32} className="text-red-500" />
+              </div>
+              <h3 className="text-[20px] font-black text-gray-800 mb-1">End Chat?</h3>
+            </div>
+
+            <div className="p-5">
+              <p className="text-[14px] text-gray-700 font-medium leading-relaxed text-center">
+                Are you sure you want to end this chat session?
+              </p>
+            </div>
+
+            <div className="p-5 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={() => setShowEndConfirm(false)}
+                className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowEndConfirm(false);
+                  handleEndChat();
+                }}
+                className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
+              >
+                End Chat
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -13,6 +13,7 @@ import LocationAutocomplete from '../../components/LocationAutocomplete';
 import { updateUser } from '../../store/slices/authSlice';
 import { getKundli } from '../../api/userApis';
 import html2canvas from 'html2canvas';
+import { toast } from 'react-hot-toast';
 
 const Kundli = () => {
   const navigate = useNavigate();
@@ -56,15 +57,43 @@ const Kundli = () => {
 
   const handleDownload = async () => {
     if (!kundliRef.current) return;
+    
+    const toastId = toast.loading('Preparing Kundli Report...');
+    
     try {
-      const canvas = await html2canvas(kundliRef.current, { scale: 2, useCORS: true });
-      const image = canvas.toDataURL("image/jpeg", 1.0);
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `Kundli_${result?.name || 'Report'}.jpg`;
-      link.click();
+      const canvas = await html2canvas(kundliRef.current, { 
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error('Failed to generate image', { id: toastId });
+          return;
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = url;
+        link.download = `Kundli_${result?.name || 'Report'}.jpg`;
+        
+        // Append to body (required for Firefox and some mobile browsers)
+        document.body.appendChild(link);
+        link.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          toast.success('Download started!', { id: toastId });
+        }, 150);
+      }, "image/jpeg", 1.0);
+      
     } catch (error) {
       console.error("Error downloading Kundli:", error);
+      toast.error('Download failed. Please try again.', { id: toastId });
     }
   };
 
@@ -72,6 +101,12 @@ const Kundli = () => {
     if (!svgString) return '';
     let cleaned = svgString.replace(/<svg([^>]*)\bwidth="[^"]*"/g, '<svg$1');
     cleaned = cleaned.replace(/<svg([^>]*)\bheight="[^"]*"/g, '<svg$1');
+    
+    // Inject xmlns if missing (required by html2canvas)
+    if (!cleaned.includes('xmlns=')) {
+      cleaned = cleaned.replace(/<svg/g, '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
     if (!cleaned.includes('viewBox')) {
       cleaned = cleaned.replace(/<svg/g, '<svg viewBox="0 0 350 350" style="width: 100%; height: auto; max-width: 350px; display: block; margin: 0 auto;"');
     } else {

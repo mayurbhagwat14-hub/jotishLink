@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import * as userApis from '../api/userApis';
 import { login } from '../store/slices/authSlice';
 import { FiChevronDown, FiArrowLeft } from 'react-icons/fi';
+import OtpInput from '../components/OtpInput';
 
 const Login = () => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(() => sessionStorage.getItem('loginPhone') || '');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -16,10 +17,19 @@ const Login = () => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { appName, appLogo } = useSelector(state => state.settings) || { appName: 'JyotishLink', appLogo: '' };
-  const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   
   const redirectTo = location.state?.redirectTo || 
     (location.state?.from ? `${location.state.from.pathname}${location.state.from.search || ''}` : '/user/home');
+
+  useEffect(() => {
+    // Clear any stale user details when arriving at the login page
+    localStorage.removeItem('userDetailsApplyData');
+    localStorage.removeItem('astrologerApplyData');
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('loginPhone', phoneNumber);
+  }, [phoneNumber]);
 
   useEffect(() => {
     let interval;
@@ -30,22 +40,6 @@ const Login = () => {
     }
     return () => clearInterval(interval);
   }, [step, timer]);
-
-  const handleOtpChange = (index, value) => {
-    if (value.length > 1) value = value.slice(-1);
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    if (value !== '' && index < 3) {
-      inputRefs[index + 1].current.focus();
-    }
-  };
-
-  const handleOtpKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
-      inputRefs[index - 1].current.focus();
-    }
-  };
 
   const requestOtp = async (e) => {
     if (e) e.preventDefault();
@@ -60,9 +54,6 @@ const Login = () => {
       setStep(2);
       setTimer(58);
       setOtp(['', '', '', '']); // clear OTP on resend
-      if (inputRefs[0]?.current) {
-        setTimeout(() => inputRefs[0].current.focus(), 100);
-      }
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to send OTP. Please try again.');
     } finally {
@@ -134,21 +125,7 @@ const Login = () => {
 
           <form onSubmit={verifyOtp} className="w-full max-w-sm flex flex-col items-center mt-6">
             {/* OTP Input boxes */}
-            <div className="flex gap-4 mb-10">
-              {otp.map((digit, idx) => (
-                <input
-                  key={idx}
-                  ref={inputRefs[idx]}
-                  type="text"
-                  inputMode="numeric"
-                  className="w-14 h-14 bg-white border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 shadow-sm transition-all duration-200"
-                  value={digit}
-                  onChange={(e) => handleOtpChange(idx, e.target.value)}
-                  onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                  maxLength={1}
-                />
-              ))}
-            </div>
+            <OtpInput length={4} value={otp} onChange={setOtp} autoFocus />
 
             <button
               type="submit"
@@ -173,23 +150,7 @@ const Login = () => {
                 </p>
               )}
 
-              <p className="text-gray-400 text-xs text-center px-4 leading-relaxed font-medium mt-2">
-              By signing up, you agree to our <br /> <span className="text-gray-600 underline">Terms of Use</span> and <span className="text-gray-600 underline">Privacy Policy</span>
-            </p>
-            
-            {/* DEBUG: Admin Login Bypass */}
-             <div className="mt-8">
-                <button 
-                  type="button"
-                  onClick={() => {
-                    dispatch(login({ user: { name: 'Super Admin', role: 'admin', phone: '0000000000' }, token: 'admin-token-123' }));
-                    navigate('/admin/dashboard');
-                  }}
-                  className="text-[10px] text-gray-300 font-bold hover:text-orange-500 uppercase tracking-widest transition-colors"
-                >
-                  [Developer: Login as Admin]
-                </button>
-             </div>
+
             </div>
           </form>
         </div>
@@ -262,14 +223,16 @@ const Login = () => {
             <input
               type="tel"
               required
-              maxLength={10}
               className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-3 sm:px-4 py-3.5 bg-white text-[15px] text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
               placeholder="10 digit mobile number"
               value={phoneNumber}
               onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, '');
+                let val = e.target.value.replace(/\D/g, '');
+                if (val.startsWith('91') && val.length > 10) val = val.slice(2);
+                if (val.startsWith('0') && val.length > 10) val = val.slice(1);
+                if (val.length > 10) val = val.slice(0, 10);
                 if (val.length > 0 && !/^[6-9]/.test(val)) return;
-                if (val.length <= 10) setPhoneNumber(val);
+                setPhoneNumber(val);
               }}
             />
           </div>
@@ -300,9 +263,9 @@ const Login = () => {
         {/* Footer Text */}
         <p className="text-center text-gray-400 text-[12px] mt-6 max-w-[280px] leading-relaxed">
           By signing up, you agree to our{' '}
-          <span className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors">Terms of Use</span>{' '}
+          <Link to="/user/terms" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors">Terms & Conditions</Link>{' '}
           &{' '}
-          <span className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors">Privacy Policy</span>
+          <Link to="/user/privacy" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors">Privacy Policy</Link>
         </p>
       </div>
     </div>

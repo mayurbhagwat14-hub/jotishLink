@@ -267,7 +267,7 @@ const AdminAstrologers = () => {
                         </div>
                       </td>
                       <td className="py-4 px-5">
-                        <span className="text-sm font-black text-gray-900">₹{ast.rate}/min</span>
+                        <span className="text-sm font-black text-gray-900">₹{ast.pricing?.chat || ast.rate || 5}/min</span>
                       </td>
                       <td className="py-4 px-5">
                         <span className="text-sm font-bold text-gray-600">{ast.sessions}</span>

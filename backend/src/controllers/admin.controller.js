@@ -140,7 +140,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
       astrologerAvatar: s.astrologerId?.avatar || '',
       type: callType,
       duration: s.createdAt ? Math.max(0, Math.floor((Date.now() - new Date(s.createdAt).getTime()) / 60000)) + 'm ongoing' : 'Ongoing',
-      rate: (s.isFreeChat || s.isBotSession) ? 0 : (s.astrologerId?.rate || 5)
+      rate: (s.isFreeChat || s.isBotSession) ? 0 : (s.astrologerId?.pricing?.chat || s.astrologerId?.rate || 5)
     };
   });
 

@@ -143,6 +143,8 @@ const authSlice = createSlice({
       state.error = null;
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('persist:auth_user');
+      localStorage.removeItem('userDetailsApplyData');
+      localStorage.removeItem('astrologerApplyData');
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };

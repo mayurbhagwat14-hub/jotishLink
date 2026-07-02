@@ -25,6 +25,7 @@ const AstrologerLayout = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -139,7 +140,7 @@ const AstrologerLayout = () => {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-sans overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
       
       {/* Top Header */}
       <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-2 sm:px-4 z-10 shrink-0 relative">
@@ -184,7 +185,7 @@ const AstrologerLayout = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto pb-16 relative">
+      <main className="flex-1 overflow-x-hidden pb-16 relative">
          {/* Subtle background decoration */}
          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-200 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
          <ErrorBoundary>
@@ -243,7 +244,7 @@ const AstrologerLayout = () => {
                 <p className="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Account</p>
                 
                 {user ? (
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-red-50 hover:text-red-600 font-bold transition-colors text-left">
+                  <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-red-50 hover:text-red-600 font-bold transition-colors text-left">
                     <FiLogOut size={18} /> Log out
                   </button>
                 ) : (
@@ -294,6 +295,37 @@ const AstrologerLayout = () => {
       </div>
       )}
       
+      {/* ═══ LOGOUT CONFIRMATION MODAL ═══ */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setShowLogoutConfirm(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative w-full max-w-xs bg-white rounded-2xl shadow-2xl p-6 animate-scale-in text-center" onClick={e => e.stopPropagation()}>
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+              <FiLogOut size={28} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Log Out</h3>
+            <p className="text-sm text-gray-500 mb-6 font-medium">Are you sure you want to log out of your astrologer account?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  handleLogout();
+                }}
+                className="flex-1 py-2.5 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-sm shadow-red-500/30"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Desktop Wrapper (Optional, to keep it centered like an app on large screens) */}
       <style>{`
         @media (min-width: 768px) {

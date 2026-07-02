@@ -111,7 +111,14 @@ const AdminContent = () => {
   };
 
   const handleSendBroadcast = async () => {
-    if (!broadcastData.title || !broadcastData.message) return;
+    if (!broadcastData.title?.trim()) {
+      toast.error("Please fill title");
+      return;
+    }
+    if (!broadcastData.message?.trim()) {
+      toast.error("fill message");
+      return;
+    }
     try {
       setIsSendingBroadcast(true);
       await adminApis.sendBroadcast(broadcastData);
@@ -400,7 +407,7 @@ const AdminContent = () => {
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Banner Image</label>
                 <label className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer block relative overflow-hidden group">
-                  <input type="file" accept="image/*" className="hidden" onChange={handleBannerImageUpload} />
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleBannerImageUpload} />
                   {newBanner.imageUrl ? (
                     <div className="absolute inset-0 w-full h-full">
                       <img src={newBanner.imageUrl} alt="Preview" className="w-full h-full object-cover" />

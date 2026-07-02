@@ -127,7 +127,7 @@ const AstrologerProfile = () => {
             </div>
             <div className="flex flex-col items-center flex-1">
               <span className="text-gray-500 text-xs font-medium mb-1">Price/min</span>
-              <span className="font-bold text-gray-900">₹{astrologer.rate || astrologer.pricing?.chat || 5}</span>
+              <span className="font-bold text-gray-900">₹{astrologer.pricing?.chat || astrologer.rate || 5}</span>
             </div>
           </div>
         </div>

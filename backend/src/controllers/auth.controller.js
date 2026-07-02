@@ -90,13 +90,14 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   import('../utils/notifyHelper.js').then(({ notify }) => {
     // Delay push notification by 5 seconds to allow frontend to sync FCM token
     setTimeout(() => {
+      const isNew = userObj.isNewUser || userObj.name === 'Guest User' || !userObj.name;
       notify({ 
         userId: user._id, 
         role: 'user', 
-        title: 'Welcome back 👋', 
-        message: `Logged in successfully on ${new Date().toLocaleString()}`, 
+        title: isNew ? 'Welcome to JyotishLink! 🎉' : 'Welcome back 👋', 
+        message: isNew ? 'Please complete your profile to get started.' : `Logged in successfully on ${new Date().toLocaleString()}`, 
         type: 'info', 
-        link: '/user/home' 
+        link: isNew ? '/user/details' : '/user/home' 
       });
     }, 5000);
   }).catch(console.error);

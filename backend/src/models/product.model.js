@@ -105,7 +105,7 @@ const productSchema = new mongoose.Schema(
     },
     gstPercent: {
       type: Number,
-      default: 18,
+      default: null,
       min: [0, 'GST percent cannot be negative'],
       max: [100, 'GST percent cannot exceed 100']
     },

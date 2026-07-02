@@ -45,6 +45,8 @@ import PoojaBookingForm from './pages/user/PoojaBookingForm';
 import GlobalSearch from './pages/user/GlobalSearch';
 import WaitingScreen from './pages/user/WaitingScreen';
 import Notifications from './pages/user/Notifications';
+import Terms from './pages/user/Terms';
+import PrivacyPolicy from './pages/user/PrivacyPolicy';
 
 // Admin Pages
 import AdminLogin from './pages/admin/Login';
@@ -207,6 +209,8 @@ const AppContent = () => {
         <Route path="panchang" element={<Panchang />} />
         <Route path="muhurat" element={<Muhurat />} />
         <Route path="matchmaking" element={<Matchmaking />} />
+        <Route path="terms" element={<Terms />} />
+        <Route path="privacy" element={<PrivacyPolicy />} />
 
         {/* Protected Routes within User Panel */}
         <Route element={<ProtectedRoute allowedRoles={['user']} />}>
@@ -321,7 +325,18 @@ const AppContent = () => {
   );
 };
 
+import { useToasterStore, toast } from 'react-hot-toast';
+
 function App() {
+  const { toasts } = useToasterStore();
+
+  useEffect(() => {
+    toasts
+      .filter((t) => t.visible)
+      .filter((_, i) => i >= 1) // Enforce max 1 visible toast
+      .forEach((t) => toast.dismiss(t.id));
+  }, [toasts]);
+
   return (
     <Router>
       <Toaster position="top-center" />

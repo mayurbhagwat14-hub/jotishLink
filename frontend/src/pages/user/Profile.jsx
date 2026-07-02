@@ -160,7 +160,7 @@ const Profile = () => {
             </div>
             <label className="absolute bottom-1 right-1 w-8 h-8 bg-[#fa6830] rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-[#e55923] transition-colors">
               <FiUploadCloud size={16} className="text-white" />
-              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              <input type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoUpload} />
             </label>
           </div>
           <span className="text-gray-500 text-[14px] font-medium">{user?.phone || '+91-876xxxx836'}</span>

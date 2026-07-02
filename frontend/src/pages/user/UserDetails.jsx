@@ -4,134 +4,25 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiUser, FiCalendar, FiClock, FiMapPin } from 'react-icons/fi';
 import { updateUser, registerUserThunk } from '../../store/slices/authSlice';
 
-const ScrollWheel = ({ options, value, onChange, className }) => {
-  const containerRef = useRef(null);
-  const scrollTimeoutRef = useRef(null);
-  const isProgrammaticScroll = useRef(false);
-  const isFirstRender = useRef(true);
-  
-  // Keep track of the value locally to render immediate feedback
-  const [prevValue, setPrevValue] = useState(value);
-  const [localValue, setLocalValue] = useState(value);
-
-  if (value !== prevValue) {
-    setPrevValue(value);
-    setLocalValue(value);
-  }
-
-  // Sync scroll position when value or options change
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const targetIndex = options.indexOf(value);
-    if (targetIndex === -1) return;
-
-    const targetScrollTop = targetIndex * 40;
-    
-    // Only scroll if the container is not already close to the target
-    if (Math.abs(container.scrollTop - targetScrollTop) > 2) {
-      isProgrammaticScroll.current = true;
-      container.scrollTo({
-        top: targetScrollTop,
-        behavior: isFirstRender.current ? 'auto' : 'smooth'
-      });
-      
-      // Clear flag after smooth scroll is expected to end
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = setTimeout(() => {
-        isProgrammaticScroll.current = false;
-      }, isFirstRender.current ? 50 : 250);
-    }
-    isFirstRender.current = false;
-  }, [value, options]);
-
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
-  }, []);
-
-  const onScroll = () => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    // Ignore scroll events during programmatic scrolling
-    if (isProgrammaticScroll.current) return;
-
-    const scrollTop = container.scrollTop;
-    const index = Math.round(scrollTop / 40);
-
-    if (index >= 0 && index < options.length) {
-      const selectedValue = options[index];
-      
-      // Update local state instantly for visual highlight feedback
-      if (selectedValue !== localValue) {
-        setLocalValue(selectedValue);
-      }
-
-      // Debounce the call to parent onChange until scroll finishes
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = setTimeout(() => {
-        if (selectedValue !== value) {
-          onChange(selectedValue);
-        }
-      }, 100);
-    }
-  };
-
-  const handleItemClick = (index) => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    isProgrammaticScroll.current = true;
-    container.scrollTo({
-      top: index * 40,
-      behavior: 'smooth'
-    });
-    
-    const selectedValue = options[index];
-    setLocalValue(selectedValue);
-    onChange(selectedValue);
-
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 250);
-  };
-
+const NativeSelect = ({ options, value, onChange, className }) => {
   return (
-    <div className={`relative h-[120px] overflow-hidden ${className}`}>
-      <div
-        ref={containerRef}
-        onScroll={onScroll}
-        className="h-full overflow-y-scroll snap-y snap-mandatory no-scrollbar"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+    <div className={`relative ${className}`}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none bg-transparent text-gray-800 text-[16px] font-bold py-2 px-1 text-center outline-none cursor-pointer hover:bg-orange-50 rounded-lg transition-colors"
+        style={{ textAlignLast: 'center' }}
       >
-        {/* Top spacer */}
-        <div className="h-10 shrink-0 pointer-events-none" />
-        
-        {/* Options */}
-        {options.map((opt, idx) => {
-          const isSelected = opt === localValue;
-          return (
-            <div
-              key={opt}
-              onClick={() => handleItemClick(idx)}
-              className={`h-10 flex items-center justify-center snap-center cursor-pointer transition-all duration-150 ${
-                isSelected
-                  ? 'text-gray-800 text-[18px] font-bold scale-110'
-                  : 'text-gray-300 text-[14px] font-semibold hover:text-gray-400'
-              }`}
-            >
-              {opt}
-            </div>
-          );
-        })}
-
-        {/* Bottom spacer */}
-        <div className="h-10 shrink-0 pointer-events-none" />
+        {options.map((opt) => (
+          <option key={opt} value={opt} className="text-gray-800 font-semibold">
+            {opt}
+          </option>
+        ))}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-gray-400">
+        <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+          <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+        </svg>
       </div>
     </div>
   );
@@ -503,7 +394,7 @@ const UserDetails = () => {
               value={formData.name}
               onChange={(e) => {
                 setStepError('');
-                const val = e.target.value.replace(/[^a-zA-Z\s.-]/g, '');
+                const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                 setFormData({ ...formData, name: val });
               }}
               placeholder="Enter Your Name"
@@ -567,35 +458,31 @@ const UserDetails = () => {
       case 'dob':
         return (
     <div className="w-full">
-            {/* Drum Date Picker */}
-            <div className="flex justify-center items-center max-w-[280px] mx-auto py-6 bg-white border border-gray-100 rounded-2xl shadow-sm relative select-none">
-              {/* Overlay Separators */}
-              <div className="absolute left-6 right-6 top-[64px] h-[1px] bg-gray-200" />
-              <div className="absolute left-6 right-6 top-[104px] h-[1px] bg-gray-200" />
-
-              <div className="flex justify-around w-full items-center">
+            {/* Native Date Picker Dropdowns */}
+            <div className="flex justify-center items-center max-w-[280px] mx-auto py-4 bg-white border border-gray-100 rounded-2xl shadow-sm relative select-none">
+              <div className="flex justify-around w-full items-center px-4 gap-2">
                 {/* Month Column */}
-                <ScrollWheel
+                <NativeSelect
                   options={monthsList}
                   value={currentMonthName}
                   onChange={handleMonthChange}
-                  className="w-16"
+                  className="w-24 border border-gray-200 rounded-lg bg-gray-50"
                 />
 
                 {/* Day Column */}
-                <ScrollWheel
+                <NativeSelect
                   options={days}
                   value={currentDay}
                   onChange={handleDayChange}
-                  className="w-16"
+                  className="w-20 border border-gray-200 rounded-lg bg-gray-50"
                 />
 
                 {/* Year Column */}
-                <ScrollWheel
+                <NativeSelect
                   options={years}
                   value={currentYear}
                   onChange={handleYearChange}
-                  className="w-16"
+                  className="w-24 border border-gray-200 rounded-lg bg-gray-50"
                 />
               </div>
             </div>
@@ -651,37 +538,33 @@ const UserDetails = () => {
       case 'time':
         return (
     <div className="w-full flex flex-col items-center">
-            {/* Drum Time Picker */}
-            <div className="flex justify-center items-center max-w-[280px] w-full mx-auto py-6 bg-white border border-gray-100 rounded-2xl shadow-sm relative select-none">
-              {/* Overlay Separators */}
-              <div className="absolute left-6 right-6 top-[64px] h-[1px] bg-gray-200" />
-              <div className="absolute left-6 right-6 top-[104px] h-[1px] bg-gray-200" />
-
-              <div className="flex justify-around w-full items-center">
+            {/* Native Time Picker Dropdowns */}
+            <div className="flex justify-center items-center max-w-[280px] w-full mx-auto py-4 bg-white border border-gray-100 rounded-2xl shadow-sm relative select-none">
+              <div className="flex justify-around w-full items-center px-4 gap-2">
                 {/* Hour Column */}
-                <ScrollWheel
+                <NativeSelect
                   options={hours}
                   value={currentHour}
                   onChange={handleHourChange}
-                  className="w-12"
+                  className="w-20 border border-gray-200 rounded-lg bg-gray-50"
                 />
 
-                <span className="text-gray-400 font-bold text-[20px] mb-1 select-none">:</span>
+                <span className="text-gray-400 font-bold text-[20px] select-none">:</span>
 
                 {/* Minute Column */}
-                <ScrollWheel
+                <NativeSelect
                   options={minutesList}
                   value={currentMin}
                   onChange={handleMinChange}
-                  className="w-12"
+                  className="w-20 border border-gray-200 rounded-lg bg-gray-50"
                 />
 
                 {/* Period Column */}
-                <ScrollWheel
+                <NativeSelect
                   options={periods}
                   value={currentPeriod}
                   onChange={handlePeriodChange}
-                  className="w-12"
+                  className="w-20 border border-gray-200 rounded-lg bg-gray-50"
                 />
               </div>
             </div>
@@ -718,7 +601,7 @@ const UserDetails = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => {
-                  const val = e.target.value;
+                  const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                   setStepError('');
                   setSearchQuery(val);
                   setFormData({ ...formData, birthplace: val });
@@ -813,9 +696,13 @@ const UserDetails = () => {
       {/* Header */}
       <div className="flex flex-col px-4 pt-4 pb-4 bg-[#FCFAF7]">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={handleBack} className="text-gray-800 p-1 -ml-1 hover:bg-orange-50/50 rounded-full transition-colors">
-            <FiArrowLeft size={22} />
-          </button>
+          {currentStep > 0 ? (
+            <button onClick={handleBack} className="text-gray-800 p-1 -ml-1 hover:bg-orange-50/50 rounded-full transition-colors">
+              <FiArrowLeft size={22} />
+            </button>
+          ) : (
+            <div className="w-8 h-8" />
+          )}
           <h1 className="text-[16px] font-bold text-gray-800">{step.title}</h1>
         </div>
 

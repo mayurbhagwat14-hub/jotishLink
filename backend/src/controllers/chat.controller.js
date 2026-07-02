@@ -20,7 +20,8 @@ export const startChatSession = asyncHandler(async (req, res) => {
   const isFreeChat = !user.freeChatUsed;
 
   if (!isFreeChat) {
-    const requiredBalance = astrologer.pricing.chat * 2; // Minimum 2 min balance required
+    const chatPrice = astrologer.pricing?.chat || astrologer.rate || 5;
+    const requiredBalance = chatPrice * 2; // Minimum 2 min balance required
     if (user.wallet < requiredBalance) {
       throw new ApiError(400, `Insufficient balance. Minimum ₹${requiredBalance} required.`);
     }
@@ -80,7 +81,7 @@ export const endChatSession = asyncHandler(async (req, res) => {
   }
 
   const astrologer = await Astrologer.findById(session.astrologerId);
-  const ratePerMin = astrologer?.pricing?.chat || 5;
+  const ratePerMin = astrologer?.pricing?.chat || astrologer?.rate || 5;
   const actualDuration = durationSeconds || 0;
   const durationMinutes = Math.max(1, Math.ceil(actualDuration / 60));
   

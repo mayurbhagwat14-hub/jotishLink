@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { astrologerLogin, astrologerLoginThunk } from '../../store/slices/astrologerAuthSlice';
+import OtpInput from '../../components/OtpInput';
 import { checkAstrologerPhone, requestOtp } from '../../api/astrologerApis';
 import { FiMoon, FiPhone, FiCheckCircle } from 'react-icons/fi';
 
@@ -101,16 +102,7 @@ const AstrologerLogin = () => {
     return () => clearInterval(interval);
   }, [step, phone]);
 
-  const handleOtpChange = (index, value) => {
-    if (value.length > 1) value = value.slice(-1);
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
 
-    if (value && index < 3) {
-      document.getElementById(`otp-${index + 1}`)?.focus();
-    }
-  };
 
   const resendOtp = async () => {
     setLoading(true);
@@ -186,9 +178,12 @@ const AstrologerLogin = () => {
                   required
                   value={phone}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.startsWith('91') && val.length > 10) val = val.slice(2);
+                    if (val.startsWith('0') && val.length > 10) val = val.slice(1);
+                    if (val.length > 10) val = val.slice(0, 10);
                     if (val.length > 0 && !/^[6-9]/.test(val)) return;
-                    if (val.length <= 10) setPhone(val);
+                    setPhone(val);
                   }}
                   placeholder="Enter 10-digit number" 
                   className="flex-1 min-w-0 border-2 border-gray-200 rounded-xl px-4 py-3.5 bg-gray-50 text-[15px] text-gray-900 outline-none focus:border-[#fa6830] focus:bg-white focus:ring-2 focus:ring-orange-100 placeholder-gray-400 font-medium transition-all duration-200"
@@ -214,20 +209,7 @@ const AstrologerLogin = () => {
                 OTP Sent to +91 {phone}
               </p>
               <form onSubmit={handleLogin} className="flex flex-col items-center">
-                <div className="flex gap-4 mb-10 justify-center w-full">
-                  {[0, 1, 2, 3].map((index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={otp[index]}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      className="w-14 h-14 bg-white border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 shadow-sm transition-all duration-200"
-                    />
-                  ))}
-                </div>
+                <OtpInput length={4} value={otp} onChange={setOtp} autoFocus inputClassName="w-14 h-14 bg-white border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 outline-none focus:border-[#fa6830] focus:ring-2 focus:ring-orange-100 shadow-sm transition-all duration-200" />
                 
                 <button 
                   type="submit"

@@ -124,7 +124,7 @@ const Profile = () => {
 
   const updatePoojaPrice = (poojaName, price) => {
     const currentPoojas = Array.isArray(poojasOffered) ? poojasOffered : [];
-    setPoojasOffered(currentPoojas.map(p => p.poojaName === poojaName ? { ...p, price: Number(price) } : p));
+    setPoojasOffered(currentPoojas.map(p => p.poojaName === poojaName ? { ...p, price: price === '' ? '' : Number(price) } : p));
   };
 
   const handlePhotoUpload = (e) => {
@@ -142,6 +142,24 @@ const Profile = () => {
     const cPrice = Number(formData.chatPrice);
     const aPrice = Number(formData.audioPrice);
     const vPrice = Number(formData.videoPrice);
+
+    if (!formData.name?.trim()) { toast.error('Name is required.'); return; }
+    if (!formData.address?.trim()) { toast.error('Address is required.'); return; }
+    if (!formData.city?.trim()) { toast.error('City is required.'); return; }
+    if (!formData.state?.trim()) { toast.error('State is required.'); return; }
+
+    if (formData.isPandit) {
+      if (!poojasOffered || poojasOffered.length === 0) {
+        toast.error("Pandits must select at least one Pooja.");
+        return;
+      }
+      for (const p of poojasOffered) {
+        if (!p.price || Number(p.price) < 51) {
+          toast.error(`Price for ${p.poojaName} must be at least ₹51.`);
+          return;
+        }
+      }
+    }
 
     if (cPrice < 5 || aPrice < 5 || vPrice < 5) {
       toast.error("Minimum price for any service must be at least ₹5/min");
@@ -267,7 +285,7 @@ const Profile = () => {
               </div>
               <label className="absolute bottom-0 right-0 w-8 h-8 bg-[#fa6830] text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-[#e55923] transition-colors">
                 <FiPlus />
-                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                <input type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoUpload} />
               </label>
             </div>
             <div>
@@ -285,7 +303,7 @@ const Profile = () => {
                   type="text" 
                   value={formData.name}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^a-zA-Z\s.-]/g, '');
+                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
                     setFormData({...formData, name: val});
                   }}
                   className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
@@ -342,7 +360,10 @@ const Profile = () => {
                 <input 
                   type="text" 
                   value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                    setFormData({...formData, city: val});
+                  }}
                   className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
                 />
               </div>
@@ -351,7 +372,10 @@ const Profile = () => {
                 <input 
                   type="text" 
                   value={formData.state}
-                  onChange={(e) => setFormData({...formData, state: e.target.value})}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                    setFormData({...formData, state: val});
+                  }}
                   className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
                 />
               </div>

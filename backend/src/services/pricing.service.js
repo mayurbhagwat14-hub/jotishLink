@@ -51,7 +51,7 @@ class PricingService {
         price: product.price,
         quantity: item.quantity,
         total: itemTotal,
-        gstPercent: product.gstPercent !== undefined && product.gstPercent !== null ? product.gstPercent : defaultGstRate,
+        gstPercent: defaultGstRate, // Always use global default because admin UI doesn't allow setting per-product GST yet
         hsnCode: product.hsnCode || '000000',
         weight: product.weight || 0,
         discountApplied: 0,

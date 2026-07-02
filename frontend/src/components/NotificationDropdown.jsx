@@ -24,7 +24,9 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
     if (isUserAuthenticated) {
       fetchNotifications();
     }
-    
+  }, [isUserAuthenticated]);
+
+  useEffect(() => {
     // Set up socket listener for real-time notifications
     try {
       const socket = getSocket();

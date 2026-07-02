@@ -10,7 +10,7 @@
     zoom: 1;
   }
   body {
-    @apply bg-white text-gray-800 font-sans antialiased overflow-x-hidden;
+    @apply bg-white text-gray-800 font-sans antialiased;
   }
   /* Safe area for notched devices */
   :root {

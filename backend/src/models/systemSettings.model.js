@@ -24,6 +24,8 @@ const systemSettingsSchema = new mongoose.Schema(
     freeChatDuration: { type: Number, default: 1 },
     flatShippingFee: { type: Number, default: 50 },
     defaultGstPercent: { type: Number, default: 18 },
+    termsOfUse: { type: String, default: 'Terms of Use content goes here. You can update this from the admin panel.' },
+    privacyPolicy: { type: String, default: 'Privacy Policy content goes here. You can update this from the admin panel.' },
   },
   {
     timestamps: true,
