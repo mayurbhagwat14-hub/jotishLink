@@ -73,8 +73,20 @@ export const getMuhurat = asyncHandler(async (req, res) => {
   // 3. Brahma Muhurat (Approx 1h 36m before sunrise)
   if (panchangRaw?.sunrise) {
     try {
-      const [sh, sm, ss] = panchangRaw.sunrise.split(':').map(Number);
-      let dateStart = new Date(); dateStart.setHours(sh, sm, ss);
+      let timeStr = panchangRaw.sunrise.trim();
+      let ampm = timeStr.slice(-2).toUpperCase();
+      let timeParts = timeStr.replace(/[^0-9:]/g, '').split(':').map(Number);
+      let sh = timeParts[0] || 0;
+      let sm = timeParts[1] || 0;
+      let ss = timeParts[2] || 0;
+      
+      if (ampm === 'PM' && sh !== 12) sh += 12;
+      if (ampm === 'AM' && sh === 12) sh = 0;
+      
+      let dateStart = new Date(); 
+      dateStart.setHours(sh, sm, ss);
+      if (isNaN(dateStart.getTime())) throw new Error("Invalid Date");
+      
       dateStart.setMinutes(dateStart.getMinutes() - 96);
       let dateEnd = new Date(dateStart);
       dateEnd.setMinutes(dateEnd.getMinutes() + 48);

@@ -26,10 +26,15 @@ const Terms = () => {
             <p className="text-orange-100 mt-2 font-medium relative z-10">Welcome to {appName}</p>
           </div>
           
-          <div className="p-8 sm:p-12 prose prose-orange max-w-none text-gray-700 whitespace-pre-wrap font-medium leading-relaxed">
-            {termsOfUse || (
+          <div className="p-8 sm:p-12 prose prose-green max-w-none text-gray-700 font-medium leading-relaxed">
+            {termsOfUse ? (
+              <div 
+                dangerouslySetInnerHTML={{ __html: termsOfUse.replace(/\n/g, '<br />') }} 
+                className="whitespace-pre-wrap"
+              />
+            ) : (
               <div className="text-center text-gray-400 py-10">
-                <FiFileText size={48} className="mx-auto mb-4 opacity-50" />
+                <FiShield size={48} className="mx-auto mb-4 opacity-50" />
                 <p>Terms & Conditions have not been updated yet.</p>
               </div>
             )}

@@ -17,6 +17,8 @@ const initialState = {
   appName: 'JyotishLink',
   appLogo: '',
   tagline: 'Connect with the Stars',
+  termsOfUse: '',
+  privacyPolicy: '',
   loading: false,
 };
 
@@ -29,6 +31,8 @@ const settingsSlice = createSlice({
       if (data.appName !== undefined) state.appName = data.appName;
       if (data.appLogo !== undefined) state.appLogo = data.appLogo;
       if (data.tagline !== undefined) state.tagline = data.tagline;
+      if (data.termsOfUse !== undefined) state.termsOfUse = data.termsOfUse;
+      if (data.privacyPolicy !== undefined) state.privacyPolicy = data.privacyPolicy;
     }
   },
   extraReducers: (builder) => {
@@ -42,6 +46,8 @@ const settingsSlice = createSlice({
         if (data.appName) state.appName = data.appName;
         if (data.appLogo) state.appLogo = data.appLogo;
         if (data.tagline) state.tagline = data.tagline;
+        if (data.termsOfUse) state.termsOfUse = data.termsOfUse;
+        if (data.privacyPolicy) state.privacyPolicy = data.privacyPolicy;
       })
       .addCase(fetchPublicSettingsThunk.rejected, (state) => {
         state.loading = false;

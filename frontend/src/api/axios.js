@@ -160,14 +160,14 @@ instance.interceptors.response.use(
         else isAuthenticated = state.auth?.isAuthenticated;
       }
       if (isAuthenticated) {
-        toast.error(error.response?.data?.message || 'You are not authorized to perform this action.');
+        toast.error(error.response?.data?.message || 'You are not authorized to perform this action.', { id: 'auth-error' });
       }
     } else if (error.response?.status === 400 && error.response?.data?.message) {
-      toast.error(error.response.data.message);
+      toast.error(error.response.data.message, { id: 'bad-request' });
     } else if (error.response?.status >= 500) {
-      toast.error('Internal Server Error. Please try again later.');
+      toast.error('Internal Server Error. Please try again later.', { id: 'server-error' });
     } else if (error.message === 'Network Error') {
-      toast.error('Network error. Please check your internet connection.');
+      toast.error('Network error. Please check your internet connection.', { id: 'network-error' });
     }
 
     return Promise.reject(error);

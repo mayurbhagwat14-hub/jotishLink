@@ -274,6 +274,12 @@ const AstrologerLogin = () => {
                 Login Here
               </Link>
             </p>
+            <p className="text-[11px] text-gray-400 font-medium text-center leading-relaxed mt-4">
+              By continuing, you agree to our{' '}
+              <Link to="/user/terms" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
+              and{' '}
+              <Link to="/user/privacy" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Privacy Policy</Link>
+            </p>
           </div>
         )}
 

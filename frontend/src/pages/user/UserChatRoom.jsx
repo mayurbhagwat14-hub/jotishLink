@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiPaperclip, FiSend } from 'react-icons/fi';
+import { FiArrowLeft, FiPaperclip, FiSend, FiCamera, FiCornerUpLeft, FiX } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
 import { getSocket } from '../../socket/socketManager';
 import LowBalanceModal from '../../components/LowBalanceModal';
@@ -43,6 +43,8 @@ const UserChatRoom = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -209,6 +211,7 @@ Please analyze my chart based on this information.`;
   }, [roomId, user?._id]);
 
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   // Keep refs in sync with state so popstate/beforeunload closures have current values
   useEffect(() => {
@@ -347,7 +350,8 @@ Please analyze my chart based on this information.`;
         sessionId: sessionIdRef.current || sessionId, 
         sender: 'user', 
         text: previewImage, 
-        type: 'image' 
+        type: 'image',
+        replyTo: replyTo ? { text: replyTo.text, sender: replyTo.sender, type: replyTo.type } : null
       });
       setPreviewImage(null);
     }
@@ -357,13 +361,15 @@ Please analyze my chart based on this information.`;
         roomId, 
         sessionId: sessionIdRef.current || sessionId, 
         sender: 'user', 
-        text: inputText 
+        text: inputText,
+        replyTo: replyTo && !previewImage ? { text: replyTo.text, sender: replyTo.sender, type: replyTo.type } : null 
       });
     }
 
     socket.emit('stop_typing', { roomId, sender: 'user' });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setInputText('');
+    setReplyTo(null);
   };
 
   const handleEndChat = () => {
@@ -371,6 +377,11 @@ Please analyze my chart based on this information.`;
       navigate(-1);
       return;
     }
+    setShowEndConfirm(true);
+  };
+
+  const confirmEndChat = () => {
+    setShowEndConfirm(false);
     const socket = getSocket();
     socket.emit('end_session', {
       roomId,
@@ -378,7 +389,6 @@ Please analyze my chart based on this information.`;
       userId: user?._id,
       endedBy: 'user',
     });
-    // session_ended event will trigger rating modal
   };
 
   const handleRatingSubmit = async (ratingData) => {
@@ -507,21 +517,38 @@ Please analyze my chart based on this information.`;
                 </div>
               )}
               <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%]`}>
-                <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} ${msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? 'p-1.5' : 'px-4 py-3'} rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit relative`}>
-                  {msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? (
-                    <img 
-                      src={msg.type === 'image' ? msg.imageUrl : msg.text} 
-                      alt="attachment" 
-                      className="max-w-full rounded-xl max-h-64 sm:max-h-80 object-cover cursor-pointer" 
-                      onClick={() => setViewingImage(msg.type === 'image' ? msg.imageUrl : msg.text)} 
-                    />
-                  ) : (
-                    (msg.text || '').split(/(\*\*.*?\*\*)/g).map((part, i) => {
-                      if (part.startsWith('**') && part.endsWith('**')) {
-                        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
-                      }
-                      return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
-                    })
+                <div className={`flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''} group`}>
+                  <div className={`${isMe ? 'bg-[#fa6830] text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'} ${msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? 'p-1.5' : 'px-4 py-3'} rounded-2xl shadow-sm text-[15px] text-left inline-block w-fit relative`}>
+                    {msg.replyTo && (
+                      <div className={`mb-2 px-3 py-2 rounded-xl text-sm border-l-4 ${isMe ? 'bg-orange-600/30 border-orange-200' : 'bg-gray-100 border-orange-400'} cursor-pointer opacity-90`}>
+                        <p className={`text-xs font-bold mb-0.5 ${isMe ? 'text-orange-100' : 'text-orange-500'}`}>
+                          {msg.replyTo.sender === 'user' ? 'You' : astrologer.name || 'Astrologer'}
+                        </p>
+                        <p className={`truncate max-w-[200px] ${isMe ? 'text-white/90' : 'text-gray-600'}`}>
+                          {msg.replyTo.type === 'image' ? '📷 Image' : msg.replyTo.text}
+                        </p>
+                      </div>
+                    )}
+                    {msg.type === 'image' || (msg.text && msg.text.startsWith('data:image/')) ? (
+                      <img 
+                        src={msg.type === 'image' ? msg.imageUrl : msg.text} 
+                        alt="attachment" 
+                        className="max-w-full rounded-xl max-h-64 sm:max-h-80 object-cover cursor-pointer" 
+                        onClick={() => setViewingImage(msg.type === 'image' ? msg.imageUrl : msg.text)} 
+                      />
+                    ) : (
+                      (msg.text || '').split(/(\*\*.*?\*\*)/g).map((part, i) => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                          return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+                        }
+                        return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
+                      })
+                    )}
+                  </div>
+                  {!viewOnly && !sessionEnded && (
+                    <button onClick={() => setReplyTo(msg)} className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-all shrink-0 active:scale-95">
+                      <FiCornerUpLeft size={16} />
+                    </button>
                   )}
                 </div>
                 <span className={`text-[10px] text-gray-400 mt-1 font-bold block ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
@@ -545,6 +572,17 @@ Please analyze my chart based on this information.`;
 
       {/* Input */}
       <footer className="p-3 bg-white border-t border-gray-100 shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] flex flex-col">
+        {replyTo && (
+          <div className="mb-2 mx-1 px-3 py-2 bg-gray-50 border-l-4 border-[#fa6830] rounded-r-xl flex items-center justify-between shadow-sm">
+            <div>
+              <p className="text-xs font-bold text-[#fa6830] mb-0.5">Replying to {replyTo.sender === 'user' ? 'Yourself' : astrologer.name || 'Astrologer'}</p>
+              <p className="text-sm text-gray-600 truncate max-w-[240px]">{replyTo.type === 'image' ? '📷 Image' : replyTo.text}</p>
+            </div>
+            <button onClick={() => setReplyTo(null)} className="p-1.5 text-gray-400 hover:text-red-500 rounded-full transition-colors active:scale-95">
+              <FiX size={16} />
+            </button>
+          </div>
+        )}
         {previewImage && (
           <div className="mb-3 relative w-20 h-20 rounded-xl overflow-hidden shadow-sm border border-gray-200">
             <img src={previewImage} alt="Preview" className="w-full h-full object-cover" />
@@ -552,7 +590,7 @@ Please analyze my chart based on this information.`;
               onClick={() => setPreviewImage(null)}
               className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-colors"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <FiX size={12} strokeWidth={3} />
             </button>
           </div>
         )}
@@ -564,13 +602,29 @@ Please analyze my chart based on this information.`;
             accept="image/jpeg, image/png, image/jpg" 
             className="hidden" 
           />
+          <input 
+            type="file" 
+            ref={cameraInputRef} 
+            onChange={handleFileUpload} 
+            accept="image/jpeg, image/png, image/jpg" 
+            capture="environment"
+            className="hidden" 
+          />
           <button 
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={showLowBalance || sessionEnded || viewOnly || isUploading}
-            className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+            className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full hover:text-orange-500 hover:bg-orange-50 disabled:opacity-50 transition-colors shrink-0"
           >
             <FiPaperclip size={20} />
+          </button>
+          <button 
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={showLowBalance || sessionEnded || viewOnly || isUploading}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 bg-gray-50 rounded-full hover:text-orange-500 hover:bg-orange-50 disabled:opacity-50 transition-colors shrink-0"
+          >
+            <FiCamera size={20} />
           </button>
           <div className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl overflow-hidden focus-within:border-orange-300 focus-within:bg-white transition-all shadow-inner relative">
             <textarea

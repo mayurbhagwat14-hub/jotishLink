@@ -97,22 +97,13 @@ const Kundli = () => {
     }
   };
 
-  const makeSvgResponsive = (svgString) => {
+  const getSvgDataUrl = (svgString) => {
     if (!svgString) return '';
-    let cleaned = svgString.replace(/<svg([^>]*)\bwidth="[^"]*"/g, '<svg$1');
-    cleaned = cleaned.replace(/<svg([^>]*)\bheight="[^"]*"/g, '<svg$1');
-    
-    // Inject xmlns if missing (required by html2canvas)
+    let cleaned = svgString;
     if (!cleaned.includes('xmlns=')) {
       cleaned = cleaned.replace(/<svg/g, '<svg xmlns="http://www.w3.org/2000/svg"');
     }
-
-    if (!cleaned.includes('viewBox')) {
-      cleaned = cleaned.replace(/<svg/g, '<svg viewBox="0 0 350 350" style="width: 100%; height: auto; max-width: 350px; display: block; margin: 0 auto;"');
-    } else {
-      cleaned = cleaned.replace(/<svg/g, '<svg style="width: 100%; height: auto; max-width: 350px; display: block; margin: 0 auto;"');
-    }
-    return cleaned;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(cleaned)))}`;
   };
 
   return (
@@ -178,6 +169,7 @@ const Kundli = () => {
                 <input 
                   required 
                   type="date"
+                  max={new Date().toISOString().split('T')[0]}
                   value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})}
                   className="w-full border border-gray-200 focus:border-[#fa6830] rounded-2xl py-3.5 px-4 outline-none transition-all text-[15px] bg-[#fafafc] focus:bg-white shadow-sm" 
                 />
@@ -275,10 +267,13 @@ const Kundli = () => {
                   <h3 className="font-extrabold text-gray-900 text-[16px] mb-5 w-full text-center flex items-center justify-center gap-2">
                     <span className="w-2.5 h-4.5 bg-[#fa6830] rounded-sm inline-block" /> Lagna Chart (D1)
                   </h3>
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: makeSvgResponsive(result.chartSvg) }} 
-                    className="w-full flex justify-center items-center p-2 rounded-2xl bg-orange-50/10 border border-orange-100/50"
-                  />
+                  <div className="w-full flex justify-center items-center p-2 rounded-2xl bg-orange-50/10 border border-orange-100/50">
+                    <img 
+                      src={getSvgDataUrl(result.chartSvg)} 
+                      alt="Lagna Chart" 
+                      className="w-full max-w-[350px] h-auto block mx-auto" 
+                    />
+                  </div>
                 </div>
               )}
 

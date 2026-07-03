@@ -200,7 +200,7 @@ const Profile = () => {
           {/* Date of Birth */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Date of Birth</label>
-            <input type="date" name="dob" value={formData.dob} onChange={handleChange}
+            <input type="date" name="dob" max={new Date().toISOString().split('T')[0]} value={formData.dob} onChange={handleChange}
               className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
           </div>
 

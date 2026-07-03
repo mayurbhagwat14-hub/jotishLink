@@ -108,7 +108,8 @@ const Matchmaking = () => {
                     <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Name</label>
                     <input 
                       required type="text" placeholder="Enter boy's name"
-                      value={formData.boyName} onChange={e => setFormData({...formData, boyName: e.target.value})}
+                      value={formData.boyName} 
+                      onChange={e => setFormData({...formData, boyName: e.target.value.replace(/[^a-zA-Z\s]/g, '').replace(/\b\w/g, l => l.toUpperCase())})}
                       className="w-full border border-gray-200 focus:border-blue-500 bg-white rounded-2xl py-3 px-4 outline-none transition-all text-[14px] shadow-sm" 
                     />
                   </div>
@@ -117,6 +118,7 @@ const Matchmaking = () => {
                       <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Date of Birth</label>
                       <input 
                         required type="date" 
+                        max={new Date().toISOString().split('T')[0]}
                         value={formData.boyDob} onChange={e => setFormData({...formData, boyDob: e.target.value})}
                         className="w-full border border-gray-200 focus:border-blue-500 bg-white rounded-2xl py-3 px-3 outline-none transition-all text-[14px] shadow-sm" 
                       />
@@ -150,7 +152,8 @@ const Matchmaking = () => {
                     <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">Name</label>
                     <input 
                       required type="text" placeholder="Enter girl's name"
-                      value={formData.girlName} onChange={e => setFormData({...formData, girlName: e.target.value})}
+                      value={formData.girlName} 
+                      onChange={e => setFormData({...formData, girlName: e.target.value.replace(/[^a-zA-Z\s]/g, '').replace(/\b\w/g, l => l.toUpperCase())})}
                       className="w-full border border-gray-200 focus:border-rose-500 bg-white rounded-2xl py-3 px-4 outline-none transition-all text-[14px] shadow-sm" 
                     />
                   </div>
@@ -159,6 +162,7 @@ const Matchmaking = () => {
                       <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Date of Birth</label>
                       <input 
                         required type="date" 
+                        max={new Date().toISOString().split('T')[0]}
                         value={formData.girlDob} onChange={e => setFormData({...formData, girlDob: e.target.value})}
                         className="w-full border border-gray-200 focus:border-rose-500 bg-white rounded-2xl py-3 px-3 outline-none transition-all text-[14px] shadow-sm" 
                       />

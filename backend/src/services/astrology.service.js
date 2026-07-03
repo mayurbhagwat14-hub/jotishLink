@@ -143,7 +143,17 @@ class AstrologyService {
       chartSvgData = chartResponse.data?.svg;
     } catch (e) {
       console.warn("API Chart Fallback:", e.message);
-      chartSvgData = `<svg width="100%" height="100%" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="#fff7ed" stroke="#fb923c"/><text x="50%" y="50%" font-family="Arial" font-size="14" fill="#ea580c" text-anchor="middle" alignment-baseline="middle">Chart currently unavailable</text></svg>`;
+      chartSvgData = `<svg width="100%" height="100%" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#fff7ed" stroke="#fb923c"/>
+  <line x1="0" y1="0" x2="300" y2="300" stroke="#fb923c" stroke-width="2"/>
+  <line x1="300" y1="0" x2="0" y2="300" stroke="#fb923c" stroke-width="2"/>
+  <line x1="150" y1="0" x2="300" y2="150" stroke="#fb923c" stroke-width="2"/>
+  <line x1="300" y1="150" x2="150" y2="300" stroke="#fb923c" stroke-width="2"/>
+  <line x1="150" y1="300" x2="0" y2="150" stroke="#fb923c" stroke-width="2"/>
+  <line x1="0" y1="150" x2="150" y2="0" stroke="#fb923c" stroke-width="2"/>
+  <text x="50%" y="50%" font-family="Arial" font-size="14" fill="#ea580c" text-anchor="middle" alignment-baseline="middle" font-weight="bold">Lagna Chart</text>
+  <text x="50%" y="60%" font-family="Arial" font-size="10" fill="#f97316" text-anchor="middle" alignment-baseline="middle">(Data not found)</text>
+</svg>`;
     }
 
     return {

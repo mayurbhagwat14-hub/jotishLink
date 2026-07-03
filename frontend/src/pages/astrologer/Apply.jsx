@@ -990,6 +990,14 @@ const ApplyAstrologer = () => {
               </div>
 
               {apiError && <p className="text-xs font-bold text-red-500 text-center mb-4">{apiError}</p>}
+              
+              <p className="text-[11px] text-gray-400 font-medium text-center leading-relaxed mb-4">
+                By submitting this application, you agree to our{' '}
+                <Link to="/user/terms" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
+                and{' '}
+                <Link to="/user/privacy" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Privacy Policy</Link>
+              </p>
+
               <button 
                 type="submit"
                 disabled={loading}
