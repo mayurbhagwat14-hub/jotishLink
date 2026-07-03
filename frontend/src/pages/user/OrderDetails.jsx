@@ -67,6 +67,10 @@ const OrderDetails = () => {
   }, [id]);
 
   const handleCancelRequest = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Please provide a reason for cancellation.');
+      return;
+    }
     setCancelLoading(true);
     try {
       const res = await requestCancelOrder(order._id, cancelReason);
@@ -121,7 +125,7 @@ const OrderDetails = () => {
         <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
            <div>
               <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Order ID</p>
-              <p className="font-mono text-[14px] font-black text-gray-800">#{order._id.toUpperCase()}</p>
+              <p className="font-mono text-[13px] font-semibold text-gray-800">#{order._id.toUpperCase()}</p>
            </div>
            <div className="text-right">
               <p className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-0.5">Order Date</p>
@@ -400,7 +404,7 @@ const OrderDetails = () => {
         )}
 
         {/* Cancel Button */}
-        {['pending', 'processing', 'shipped'].includes(order.orderStatus) && !order.cancelRequest?.requested && (
+        {['pending', 'processing', 'shipped'].includes(order.orderStatus) && !order.cancelRequest?.requested && !order.shiprocketOrderId && (
           <button 
             onClick={() => setShowCancelModal(true)}
             className="w-full py-4 border border-red-200 bg-white text-red-500 font-black rounded-2xl text-[14px] hover:bg-red-50 transition-all flex items-center justify-center gap-2 shadow-sm mt-6"
@@ -437,7 +441,7 @@ const OrderDetails = () => {
             <textarea
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
-              placeholder="Tell us why you're cancelling (optional)"
+              placeholder="Tell us why you're cancelling"
               rows={3}
               className="w-full bg-white rounded-2xl p-4 text-[13px] font-medium outline-none border border-gray-200 focus:border-[#fa6830] focus:ring-4 focus:ring-orange-50 resize-none mb-5 transition-all placeholder:text-gray-400"
             />

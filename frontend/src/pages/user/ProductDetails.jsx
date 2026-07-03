@@ -118,6 +118,23 @@ const ProductDetails = () => {
     );
   }
 
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} on our store!`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
+
   const isOutOfStock = !product.inStock || product.stock <= 0;
   const discount = product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -197,7 +214,10 @@ const ProductDetails = () => {
             >
               <FiHeart size={16} className={liked ? 'fill-red-500 wishlist-pop' : ''} />
             </button>
-            <button className="w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-store-sm text-store-muted hover:bg-white transition-colors">
+            <button 
+              onClick={handleShare}
+              className="w-9 h-9 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-store-sm text-store-muted hover:bg-white transition-colors"
+            >
               <FiShare2 size={15} />
             </button>
           </div>

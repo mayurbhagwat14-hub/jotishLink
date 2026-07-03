@@ -142,10 +142,10 @@ const AdminUsers = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
+      {/* ═══ TABLE ═══ */}
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 min-h-[500px]">
         <div className="w-full overflow-visible">
-          <table className="w-full text-left">
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/30">
                 <th className="py-3 px-4 text-[10px] font-bold text-gray-400 uppercase tracking-wider">User</th>
@@ -270,17 +270,14 @@ const AdminUsers = () => {
             </p>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30 text-xs font-bold"
-              >|&lt;</button>
-              <button
+                type="button"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
               ><FiChevronLeft size={14} /></button>
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(page => (
                 <button
+                  type="button"
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
@@ -291,15 +288,11 @@ const AdminUsers = () => {
                 >{page}</button>
               ))}
               <button
+                type="button"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages || totalPages === 0}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
               ><FiChevronRight size={14} /></button>
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30 text-xs font-bold"
-              >&gt;|</button>
             </div>
           </div>
         )}

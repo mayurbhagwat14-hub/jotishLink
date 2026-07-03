@@ -158,8 +158,17 @@ export const useGlobalSocket = () => {
     socket.on('session_accept_confirmed', handleAcceptConfirmed);
     socket.on('astro_status_changed', handleAstroStatusChanged);
 
+    // App Lifecycle Event Handler (Bug Fix: Astrologer presence switches offline when minimized)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && socket.disconnected) {
+        socket.connect();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Cleanup to prevent memory leaks and duplicate toasts
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       socket.off('connect', joinRoom);
       socket.off('wallet_updated', handleWalletUpdate);
       socket.off('new_notification', handleNewNotification);

@@ -9,6 +9,8 @@ const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState('Newest First');
+  const [filterBy, setFilterBy] = useState('All');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showShipModal, setShowShipModal] = useState(null);
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -235,11 +237,31 @@ const AdminOrders = () => {
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) || o.customer.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    let matchesTab = true;
     if (activeTab === 'Cancel Requests') {
-      return matchesSearch && o.cancelRequest?.requested && o.cancelRequest?.adminResponse === 'pending';
+      matchesTab = o.cancelRequest?.requested && o.cancelRequest?.adminResponse === 'pending';
+    } else {
+      matchesTab = activeTab === 'All' || o.status === activeTab;
     }
-    const matchesTab = activeTab === 'All' || o.status === activeTab;
-    return matchesSearch && matchesTab;
+
+    let matchesFilter = true;
+    if (filterBy === 'High Value') {
+      matchesFilter = o.total > 5000;
+    } else if (filterBy === 'Delayed') {
+      const isPendingLike = !['Delivered', 'Completed', 'Cancelled'].includes(o.status);
+      const isOld = (new Date() - new Date(o.rawOrder.createdAt)) > (2 * 24 * 60 * 60 * 1000);
+      matchesFilter = isPendingLike && isOld;
+    }
+
+    return matchesSearch && matchesTab && matchesFilter;
+  }).sort((a, b) => {
+    if (sortBy === 'Oldest First') {
+      return new Date(a.rawOrder.createdAt) - new Date(b.rawOrder.createdAt);
+    } else if (sortBy === 'Highest Amount') {
+      return b.total - a.total;
+    }
+    return new Date(b.rawOrder.createdAt) - new Date(a.rawOrder.createdAt);
   });
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
@@ -435,13 +457,13 @@ const AdminOrders = () => {
           <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top-right scale-95 group-hover:scale-100">
             <div className="p-2 space-y-1">
               <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sort By</p>
-              <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">Newest First</button>
-              <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">Oldest First</button>
-              <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">Highest Amount</button>
+              <button onClick={() => setSortBy('Newest First')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Newest First' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Newest First</button>
+              <button onClick={() => setSortBy('Oldest First')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Oldest First' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Oldest First</button>
+              <button onClick={() => setSortBy('Highest Amount')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Highest Amount' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Highest Amount</button>
               <div className="h-px bg-gray-100 my-1"></div>
               <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter</p>
-              <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">High Value Orders</button>
-              <button className="w-full text-left px-3 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">Delayed Orders</button>
+              <button onClick={() => setFilterBy(filterBy === 'High Value' ? 'All' : 'High Value')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${filterBy === 'High Value' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>High Value Orders</button>
+              <button onClick={() => setFilterBy(filterBy === 'Delayed' ? 'All' : 'Delayed')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${filterBy === 'Delayed' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Delayed Orders</button>
             </div>
           </div>
         </div>

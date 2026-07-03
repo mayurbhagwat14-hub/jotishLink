@@ -131,10 +131,10 @@ const OrderSuccess = () => {
         {/* Next Steps Action */}
         <div className="space-y-3">
           <button 
-            onClick={() => navigate('/user/history?tab=Orders')} 
+            onClick={() => navigate(order?.fullId ? `/user/order/${order.fullId}` : '/user/history?tab=Orders')} 
             className="w-full bg-[#fa6830] hover:bg-[#e55923] text-white font-bold py-4 rounded-xl text-[14px] shadow-sm transition-colors"
           >
-            Track in Order History
+            Track Order Details
           </button>
           <button 
             onClick={() => navigate('/user/store')} 

@@ -20,6 +20,7 @@ const AdminProducts = () => {
   const [formData, setFormData] = useState({
     name: '', description: '', category: 'Bracelets', sku: '', price: '', costPrice: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: '', length: '', breadth: '', height: ''
   });
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -46,7 +47,11 @@ const AdminProducts = () => {
         img: p.image || '/store_bracelet.png',
         rating: p.rating || 0,
         reviews: p.reviews?.length || 0,
-        sku: p.sku || p._id.toString().slice(-6).toUpperCase()
+        sku: p.sku || p._id.toString().slice(-6).toUpperCase(),
+        weight: p.weight || '',
+        length: p.length || '',
+        breadth: p.breadth || '',
+        height: p.height || ''
       }));
       setProducts(mapped);
     } catch (err) {
@@ -86,6 +91,10 @@ const AdminProducts = () => {
         toast.error('Weight, Length, Breadth, and Height are required for shipping details.');
         return;
       }
+      if (Number(formData.price) >= Number(formData.originalPrice) && Number(formData.originalPrice) > 0) {
+        toast.error('Selling price must be less than MRP.');
+        return;
+      }
       
       setIsSubmitting(true);
       const payload = {
@@ -103,8 +112,10 @@ const AdminProducts = () => {
 
       if (editingProductId) {
         await updateAdminProduct(editingProductId, payload);
+        toast.success('Product updated successfully!');
       } else {
         await createAdminProduct(payload);
+        toast.success('Product created successfully!');
       }
       
       setShowAddModal(false);
@@ -191,7 +202,7 @@ const AdminProducts = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-32">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -257,7 +268,7 @@ const AdminProducts = () => {
       </div>
 
       {/* Product Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-visible">
+      <div className="bg-white rounded-2xl border border-gray-100 min-h-[400px]">
         <div className="w-full overflow-visible">
           <table className="w-full text-left">
             <thead>
@@ -449,17 +460,42 @@ const AdminProducts = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Category</label>
-                  <input 
-                    type="text"
-                    list="product-categories"
-                    value={formData.category} 
-                    onChange={e => setFormData({...formData, category: e.target.value})} 
-                    placeholder="Select or type..."
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
-                  />
-                  <datalist id="product-categories">
-                    {categories.filter(c => c !== 'All').map(c => <option key={c} value={c} />)}
-                  </datalist>
+                  {!showNewCategoryInput ? (
+                    <select
+                      value={formData.category}
+                      onChange={e => {
+                        if (e.target.value === '__add_new__') {
+                          setShowNewCategoryInput(true);
+                          setFormData({...formData, category: ''});
+                        } else {
+                          setFormData({...formData, category: e.target.value});
+                        }
+                      }}
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                    >
+                      <option value="" disabled>Select Category</option>
+                      {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
+                      <option value="__add_new__" className="font-bold text-orange-600">+ Add New Category</option>
+                    </select>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        value={formData.category} 
+                        onChange={e => setFormData({...formData, category: e.target.value})} 
+                        placeholder="Type new category..."
+                        autoFocus
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowNewCategoryInput(false)}
+                        className="px-3 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 text-xs font-bold"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">SKU</label>

@@ -87,6 +87,8 @@ const io = new SocketIOServer(httpServer, {
     methods: ['GET', 'POST'],
   },
   maxHttpBufferSize: 5e6, // 5MB limit for image uploads
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 app.set('io', io);
