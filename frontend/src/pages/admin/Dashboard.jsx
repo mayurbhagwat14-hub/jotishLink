@@ -151,27 +151,31 @@ const AdminDashboard = () => {
             <Link to="/admin/sessions" className="text-xs font-bold text-orange-500 hover:underline flex items-center gap-1">Monitor All <FiArrowRight size={12} /></Link>
           </div>
           <div className="divide-y divide-gray-50">
-            {(dbData.liveSessions || []).map((s, i) => (
-              <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="flex -space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-blue-600 overflow-hidden">
-                      <img src={s.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.user || 'U')}&background=dbeafe&color=2563eb`} alt={s.user} className="w-full h-full object-cover" />
+            {dbData.liveSessions?.length > 0 ? (
+              dbData.liveSessions.map((s, i) => (
+                <div key={i} className="px-6 py-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="flex -space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-blue-600 overflow-hidden">
+                        <img src={s.userAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.user || 'U')}&background=dbeafe&color=2563eb`} alt={s.user} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-orange-600 overflow-hidden">
+                        <img src={s.astrologerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.astrologer || 'A')}&background=ffedD5&color=f97316`} alt={s.astrologer} className="w-full h-full object-cover" />
+                      </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-orange-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-orange-600 overflow-hidden">
-                      <img src={s.astrologerAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.astrologer || 'A')}&background=ffedD5&color=f97316`} alt={s.astrologer} className="w-full h-full object-cover" />
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">{s.user} ↔ {s.astrologer}</p>
+                      <p className="text-[10px] text-orange-500 font-bold flex items-center gap-1 mt-0.5">
+                        {s.type === 'Video Call' ? <FiVideo size={12} /> : s.type === 'Chat' ? <FiMessageSquare size={12} /> : <FiPhoneCall size={12} />} {s.type} • {s.duration}
+                      </p>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-800">{s.user} ↔ {s.astrologer}</p>
-                    <p className="text-[10px] text-orange-500 font-bold flex items-center gap-1 mt-0.5">
-                      {s.type === 'Video Call' ? <FiVideo size={12} /> : s.type === 'Chat' ? <FiMessageSquare size={12} /> : <FiPhoneCall size={12} />} {s.type} • {s.duration}
-                    </p>
-                  </div>
+                  <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-lg">₹{s.rate}/min</span>
                 </div>
-                <span className="text-xs font-black text-green-600 bg-green-50 px-2.5 py-1 rounded-lg">₹{s.rate}/min</span>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="p-8 text-center text-gray-400 text-sm font-medium">No live sessions currently</div>
+            )}
           </div>
         </div>
 

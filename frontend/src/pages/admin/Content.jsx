@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX, FiCheck, FiLoader } from 'react-icons/fi';
+import { FiImage, FiBell, FiTag, FiPlus, FiTrash2, FiSend, FiEdit, FiToggleLeft, FiToggleRight, FiX, FiCheck, FiLoader, FiCamera } from 'react-icons/fi';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import * as adminApis from '../../api/adminApis';
 import { toast } from 'react-hot-toast';
@@ -406,23 +406,31 @@ const AdminContent = () => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Banner Image</label>
-                <label className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors cursor-pointer block relative overflow-hidden group">
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleBannerImageUpload} />
-                  {newBanner.imageUrl ? (
-                    <div className="absolute inset-0 w-full h-full">
-                      <img src={newBanner.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="text-white font-bold text-sm">Change Image</p>
+                <div className="flex flex-col items-center w-full">
+                  <div className={`border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-orange-300 transition-colors relative overflow-hidden group ${newBanner.imageUrl ? 'w-full mb-3 p-0 h-40' : 'w-full mb-3'}`}>
+                    {newBanner.imageUrl ? (
+                      <div className="absolute inset-0 w-full h-full">
+                        <img src={newBanner.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                       </div>
-                    </div>
-                  ) : (
-                    <>
-                      <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
-                      <p className="text-sm font-bold text-gray-600">Click to upload banner image</p>
-                      <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-                    </>
-                  )}
-                </label>
+                    ) : (
+                      <>
+                        <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm font-bold text-gray-600">No Banner Image</p>
+                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                      <FiImage size={14} /> Upload File
+                      <input type="file" accept="image/*" className="hidden" onChange={handleBannerImageUpload} />
+                    </label>
+                    <label className="cursor-pointer bg-orange-50 border border-orange-100 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                      <FiCamera size={14} /> Take Photo
+                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleBannerImageUpload} />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Pages Selection */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiVideo } from 'react-icons/fi';
 import api from '../../api/axios';
@@ -19,6 +19,26 @@ const PoojaBookingForm = () => {
   const [loading, setLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [errorModalMessage, setErrorModalMessage] = useState('');
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const handleFocus = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(true);
+      }
+    };
+    const handleBlur = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        setIsKeyboardOpen(false);
+      }
+    };
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+    return () => {
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+    };
+  }, []);
 
   if (!pandit) {
     return (
@@ -167,25 +187,27 @@ const PoojaBookingForm = () => {
       </div>
 
       {/* Footer Action */}
-      <div className="px-5 pb-6 pt-4 bg-white border-t border-gray-50 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-        <button
-          onClick={handleSubmitClick}
-          disabled={!isFormValid || loading}
-          className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm flex justify-center items-center gap-2 ${
-            isFormValid && !loading
-              ? 'bg-[#fa6830] text-white shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              BOOKING...
-            </span>
-          ) : 'CONFIRM POOJA BOOKING'}
-        </button>
-        <p className="text-center text-gray-400 text-[12px] font-medium mt-3">You won't be charged yet</p>
-      </div>
+      {!isKeyboardOpen && (
+        <div className="px-5 pb-6 pt-4 bg-white border-t border-gray-50 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] shrink-0">
+          <button
+            onClick={handleSubmitClick}
+            disabled={!isFormValid || loading}
+            className={`w-full py-4 rounded-xl font-bold tracking-wide text-[15px] transition-all duration-300 shadow-sm flex justify-center items-center gap-2 ${
+              isFormValid && !loading
+                ? 'bg-[#fa6830] text-white shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98]'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                BOOKING...
+              </span>
+            ) : 'CONFIRM POOJA BOOKING'}
+          </button>
+          <p className="text-center text-gray-400 text-[12px] font-medium mt-3">You won't be charged yet</p>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {showConfirmModal && (

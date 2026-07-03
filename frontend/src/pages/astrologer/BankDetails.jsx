@@ -36,6 +36,28 @@ const BankDetails = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+
+    const alphaSpaceRegex = /^[a-zA-Z\s]+$/;
+    const accountRegex = /^\d{9,18}$/;
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/i;
+
+    if (!alphaSpaceRegex.test(formData.accountHolderName)) {
+      toast.error('Account Holder Name must contain only alphabets and spaces');
+      return;
+    }
+    if (!alphaSpaceRegex.test(formData.bankName)) {
+      toast.error('Bank Name must contain only alphabets and spaces');
+      return;
+    }
+    if (!accountRegex.test(formData.accountNumber)) {
+      toast.error('Account Number must be between 9 and 18 digits long');
+      return;
+    }
+    if (!ifscRegex.test(formData.ifscCode)) {
+      toast.error('Invalid IFSC Code format');
+      return;
+    }
+
     try {
       await dispatch(updateAstrologerProfileThunk({
         bankDetails: JSON.stringify(formData)

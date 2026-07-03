@@ -8,6 +8,7 @@ const Analytics = () => {
   const { astrologerAnalytics, loading } = useSelector((state) => state.dashboard);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     dispatch(fetchAstrologerAnalyticsThunk());
   }, [dispatch]);
 

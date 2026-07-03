@@ -14,6 +14,7 @@ const AstrologerProfile = () => {
   
   const [astrologer, setAstrologer] = useState(null);
   const [ratings, setRatings] = useState([]);
+  const [showAllReviews, setShowAllReviews] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -144,12 +145,19 @@ const AstrologerProfile = () => {
         <div className="bg-white rounded-2xl m-4 p-5 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-gray-900 text-lg">Reviews</h3>
-            <span className="text-sm font-bold text-[#fa6830]">View All</span>
+            {ratings.length > 3 && (
+              <button 
+                onClick={() => setShowAllReviews(!showAllReviews)}
+                className="text-sm font-bold text-[#fa6830] hover:text-[#e55923]"
+              >
+                {showAllReviews ? 'Show Less' : 'View All'}
+              </button>
+            )}
           </div>
           
           <div className="space-y-4">
             {ratings.length > 0 ? (
-              ratings.map((review, i) => (
+              (showAllReviews ? ratings : ratings.slice(0, 3)).map((review, i) => (
                 <div key={review._id || i} className="border-b border-gray-50 pb-4 last:border-0 last:pb-0">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-bold text-gray-800 text-sm">{review.user?.name || `${appName} User`}</span>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiSearch, FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronLeft, FiChevronRight, FiBox, FiImage, FiToggleLeft, FiToggleRight, FiX, FiFilter, FiMoreHorizontal } from 'react-icons/fi';
+import { FiSearch, FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronLeft, FiChevronRight, FiBox, FiImage, FiToggleLeft, FiToggleRight, FiX, FiFilter, FiMoreHorizontal, FiCamera } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminProducts, createAdminProduct, deleteAdminProduct, updateAdminProduct } from '../../api/adminApis';
@@ -402,23 +402,29 @@ const AdminProducts = () => {
             <div className="p-6 space-y-5 overflow-y-auto">
               {/* Image Upload */}
               <div className="flex justify-center mb-2">
-                <label className={`border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center hover:border-orange-300 transition-colors cursor-pointer relative overflow-hidden group ${formData.image ? 'w-40 h-40 shrink-0' : 'w-full p-8'}`}>
-                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageUpload} />
-                  {formData.image ? (
-                    <>
+                <div className="flex flex-col items-center w-full">
+                  <div className={`border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group ${formData.image ? 'w-40 h-40 shrink-0 mb-3' : 'w-full p-8 mb-3'}`}>
+                    {formData.image ? (
                       <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="text-white font-bold text-sm text-center px-2">Change Image</p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
-                      <p className="text-sm font-bold text-gray-600">Click to upload product image</p>
-                      <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-                    </>
-                  )}
-                </label>
+                    ) : (
+                      <>
+                        <FiImage size={32} className="text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm font-bold text-gray-600">No Product Image</p>
+                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                      <FiImage size={14} /> Upload File
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                    <label className="cursor-pointer bg-orange-50 border border-orange-100 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                      <FiCamera size={14} /> Take Photo
+                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-1.5">

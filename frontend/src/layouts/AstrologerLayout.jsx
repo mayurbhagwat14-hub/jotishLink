@@ -143,7 +143,7 @@ const AstrologerLayout = () => {
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
       
       {/* Top Header */}
-      <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-2 sm:px-4 z-10 shrink-0 relative">
+      <header className="h-16 bg-white border-b border-gray-100 shadow-sm flex items-center justify-between px-2 sm:px-4 z-[60] shrink-0 relative">
         <div className="flex items-center gap-0 sm:gap-1 overflow-hidden">
           <button 
             onClick={() => setIsDrawerOpen(true)}

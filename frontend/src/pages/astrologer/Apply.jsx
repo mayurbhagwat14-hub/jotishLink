@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera, FiImage } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import OtpInput from '../../components/OtpInput';
@@ -579,19 +579,23 @@ const ApplyAstrologer = () => {
               
               {/* Profile Photo Upload */}
               <div className="flex flex-col items-center justify-center mb-4">
-                <label className="relative cursor-pointer group">
-                  <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden transition-all group-hover:border-[#fa6830]">
-                    {profilePic ? (
-                      <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <FiCamera size={28} className="text-gray-400 group-hover:text-[#fa6830] transition-colors" />
-                    )}
-                  </div>
-                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-white text-xs font-bold">Upload</span>
-                  </div>
-                  <input type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoUpload} />
-                </label>
+                <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden mb-3">
+                  {profilePic ? (
+                    <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <FiCamera size={28} className="text-gray-400" />
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                    <FiImage size={14} /> Gallery
+                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                  </label>
+                  <label className="cursor-pointer bg-orange-50 border border-orange-100 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                    <FiCamera size={14} /> Camera
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
+                  </label>
+                </div>
                 <p className="text-xs font-bold text-gray-500 mt-2">Profile Photo <span className="text-red-500">*</span></p>
               </div>
 
@@ -962,30 +966,35 @@ const ApplyAstrologer = () => {
                   { label: "Astrology Certificate", state: certificate, setter: setCertificate, key: 'apply_certificate' },
                   { label: "Selfie Verification", state: selfieVerification, setter: setSelfieVerification, key: 'apply_selfieVerification' },
                 ].map((doc, idx) => (
-                  <label key={idx} className="relative cursor-pointer border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-orange-300 transition-colors bg-gray-50">
-                    <input type="file" accept="image/*,.pdf" capture="environment" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter, doc.key)} required={!doc.state} />
+                  <div key={idx} className="border-2 border-dashed border-gray-200 rounded-2xl p-4 text-center hover:border-orange-300 transition-colors bg-gray-50 flex flex-col items-center justify-center">
                     {doc.state ? (
                       doc.state.startsWith('data:image/') ? (
-                        <div className="relative w-full h-24 rounded-xl overflow-hidden group">
-                          <img src={doc.state} alt={doc.label} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="text-white text-xs font-bold">Change</span>
-                          </div>
+                        <div className="relative w-full h-24 rounded-xl overflow-hidden group mb-3">
+                          <img src={doc.state} alt={doc.label} className="w-full h-full object-cover" />
                         </div>
                       ) : (
-                        <div className="text-green-500 flex flex-col items-center justify-center h-24">
+                        <div className="text-green-500 flex flex-col items-center justify-center h-24 mb-3">
                           <FiCheckCircle size={24} className="mx-auto mb-2" />
                           <p className="text-xs font-bold truncate px-2">{doc.label} Uploaded</p>
-                          <span className="text-[10px] text-gray-500 mt-1 hover:text-[#fa6830]">Click to change</span>
                         </div>
                       )
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-24">
+                      <div className="flex flex-col items-center justify-center h-24 mb-3">
                         <FiUploadCloud size={24} className="text-gray-400 mx-auto mb-2" />
                         <p className="text-[11px] font-bold text-gray-700">{doc.label} <span className="text-red-500">*</span></p>
                       </div>
                     )}
-                  </label>
+                    <div className="flex gap-2 w-full justify-center">
+                      <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] font-bold shadow-sm flex-1 justify-center">
+                        <FiImage size={12} /> File
+                        <input type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter, doc.key)} />
+                      </label>
+                      <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-2 py-1.5 rounded-lg flex items-center gap-1.5 text-[10px] font-bold shadow-sm flex-1 justify-center">
+                        <FiCamera size={12} /> Camera
+                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleDocUpload(e, doc.setter, doc.key)} />
+                      </label>
+                    </div>
+                  </div>
                 ))}
               </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSave, FiPlus, FiX, FiCheck } from 'react-icons/fi';
+import { FiSave, FiPlus, FiX, FiCheck, FiCamera, FiImage } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
@@ -283,14 +283,20 @@ const Profile = () => {
                   profile?.astrologer?.name?.[0] || 'A'
                 )}
               </div>
-              <label className="absolute bottom-0 right-0 w-8 h-8 bg-[#fa6830] text-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-[#e55923] transition-colors">
-                <FiPlus />
-                <input type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoUpload} />
-              </label>
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-800">Profile Photo</h2>
-              <p className="text-sm text-gray-500 font-medium">Update your profile picture to build trust with users.</p>
+              <p className="text-sm text-gray-500 font-medium mb-3">Update your profile picture to build trust with users.</p>
+              <div className="flex gap-2">
+                <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                  <FiImage size={14} /> Upload File
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                </label>
+                <label className="cursor-pointer bg-orange-50 border border-orange-100 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                  <FiCamera size={14} /> Take Photo
+                  <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
+                </label>
+              </div>
             </div>
           </div>
 

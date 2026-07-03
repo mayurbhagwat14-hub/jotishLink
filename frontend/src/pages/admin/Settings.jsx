@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiLoader, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2, FiFileText } from 'react-icons/fi';
+import { FiSettings, FiPercent, FiCreditCard, FiBell, FiSave, FiLoader, FiToggleLeft, FiToggleRight, FiShield, FiGlobe, FiMail, FiPhone, FiSliders, FiMessageSquare, FiPhoneCall, FiVideo, FiStar, FiPlus, FiTrash2, FiFileText, FiImage, FiCamera } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import * as adminApis from '../../api/adminApis';
 import { GiFlowerPot } from 'react-icons/gi';
@@ -197,12 +197,16 @@ const AdminSettings = () => {
                     <span className="text-[10px] text-gray-400 font-bold">No Logo</span>
                   )}
                 </div>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleLogoUpload}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 transition-all cursor-pointer"
-                />
+                <div className="flex gap-2">
+                  <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                    <FiImage size={14} /> Upload File
+                    <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                  </label>
+                  <label className="cursor-pointer bg-orange-50 border border-orange-100 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                    <FiCamera size={14} /> Take Photo
+                    <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleLogoUpload} />
+                  </label>
+                </div>
               </div>
             </div>
 

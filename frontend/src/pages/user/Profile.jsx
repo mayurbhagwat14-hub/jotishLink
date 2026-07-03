@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiArrowLeft, FiUploadCloud, FiSave, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
+import { FiArrowLeft, FiUploadCloud, FiSave, FiTrash2, FiAlertTriangle, FiCamera, FiImage } from 'react-icons/fi';
 import { updateUser, fetchProfileThunk, updateProfileThunk, logout } from '../../store/slices/authSlice';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
 import axiosInstance from '../../api/axios';
@@ -146,8 +146,8 @@ const Profile = () => {
       <div className="flex-1 overflow-y-auto pb-20">
         {/* Avatar Section */}
         <div className="flex flex-col items-center pt-8 pb-6 bg-gradient-to-b from-orange-50 to-white">
-          <div className="relative mb-3">
-            <div className="w-28 h-28 rounded-full border-[3px] border-orange-300 flex items-center justify-center overflow-hidden bg-white shadow-lg">
+          <div className="relative mb-3 flex flex-col items-center">
+            <div className="w-28 h-28 rounded-full border-[3px] border-orange-300 flex items-center justify-center overflow-hidden bg-white shadow-lg mb-3">
               {formData.avatar ? (
                 <img src={formData.avatar} alt="Profile" className="w-full h-full object-cover" />
               ) : (
@@ -158,10 +158,16 @@ const Profile = () => {
                 </div>
               )}
             </div>
-            <label className="absolute bottom-1 right-1 w-8 h-8 bg-[#fa6830] rounded-full flex items-center justify-center shadow-md cursor-pointer hover:bg-[#e55923] transition-colors">
-              <FiUploadCloud size={16} className="text-white" />
-              <input type="file" accept="image/*" capture="user" className="hidden" onChange={handlePhotoUpload} />
-            </label>
+            <div className="flex gap-2">
+              <label className="cursor-pointer bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                <FiImage size={14} /> Upload File
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              </label>
+              <label className="cursor-pointer bg-orange-50 border border-orange-100 hover:bg-orange-100 text-orange-600 px-3 py-1.5 rounded-lg flex items-center gap-2 text-[11px] font-bold shadow-sm transition-colors">
+                <FiCamera size={14} /> Take Photo
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoUpload} />
+              </label>
+            </div>
           </div>
           <span className="text-gray-500 text-[14px] font-medium">{user?.phone || '+91-876xxxx836'}</span>
         </div>

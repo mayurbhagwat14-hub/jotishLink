@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiPaperclip, FiSend, FiArrowLeft, FiX } from 'react-icons/fi';
+import { FiPaperclip, FiSend, FiArrowLeft, FiX, FiCamera } from 'react-icons/fi';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import getSocket from '../../socket/socketManager';
 import api from '../../api/axios';
@@ -30,6 +30,7 @@ const ChatRoom = () => {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const { user: astrologer } = useSelector((state) => state.astrologerAuth);
 
@@ -370,6 +371,14 @@ const ChatRoom = () => {
             accept="image/jpeg, image/png, image/jpg" 
             className="hidden" 
           />
+          <input 
+            type="file" 
+            ref={cameraInputRef} 
+            onChange={handleFileUpload} 
+            accept="image/jpeg, image/png, image/jpg" 
+            capture="environment"
+            className="hidden" 
+          />
           <button 
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -377,6 +386,14 @@ const ChatRoom = () => {
             className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#fa6830] transition-colors shrink-0 bg-gray-50 rounded-full disabled:opacity-50"
           >
             <FiPaperclip size={20} />
+          </button>
+          <button 
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            disabled={sessionEnded || isUploading}
+            className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#fa6830] transition-colors shrink-0 bg-gray-50 rounded-full disabled:opacity-50"
+          >
+            <FiCamera size={20} />
           </button>
           
           <div className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl overflow-hidden focus-within:border-orange-300 focus-within:bg-white transition-all shadow-inner relative">

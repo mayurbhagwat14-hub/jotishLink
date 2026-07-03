@@ -347,12 +347,6 @@ const Home = () => {
       <div className="px-5 mb-6 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-[18px] font-bold text-gray-900">Our Services</h2>
-          <span 
-            onClick={() => navigate('/user/astrologers')}
-            className="text-[13px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors"
-          >
-            View All
-          </span>
         </div>
         <div className="grid grid-cols-4 gap-3">
           {[
@@ -362,7 +356,7 @@ const Home = () => {
             { name: 'Pooja', icon: <Star size={20} className="text-[#fa6830]" strokeWidth={2} />, action: () => navigate('/user/store', { state: { tab: 'Pandit Booking' } }), bg: 'bg-orange-50' },
             { name: 'Store', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-pink-500"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>, path: '/user/store', bg: 'bg-pink-50' },
             { name: 'Kundli', icon: <Grid size={20} className="text-blue-500" strokeWidth={2} />, path: '/user/kundli', bg: 'bg-blue-50' },
-            { name: 'Reports', icon: <FileText size={20} className="text-teal-500" strokeWidth={2} />, path: '/user/history', bg: 'bg-teal-50' },
+            { name: 'Reports', icon: <FileText size={20} className="text-teal-500" strokeWidth={2} />, path: '/user/reports', bg: 'bg-teal-50' },
             { name: 'Panchang', icon: <Calendar size={20} className="text-red-500" strokeWidth={2} />, path: '/user/panchang', bg: 'bg-red-50' },
           ].map((service, idx) => (
             <div key={idx} onClick={() => service.action ? service.action() : (service.path && navigate(service.path))} className="bg-white rounded-[20px] p-2 py-4 border border-gray-100 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col items-center gap-2.5 cursor-pointer active:scale-95 transition-all hover:shadow-md hover:border-gray-200">
@@ -527,14 +521,14 @@ const Home = () => {
         <div className="px-5 pt-3 pb-3 relative z-10 bg-white">
           <div className="flex justify-between items-center mb-3">
             <h2 className="text-[19px] font-bold text-gray-900">Live Astrologers</h2>
-            <span className="text-[14px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors">View All</span>
+            <span onClick={() => navigate('/user/astrologers')} className="text-[14px] text-[#fa6830] font-bold cursor-pointer hover:text-orange-600 transition-colors">View All</span>
           </div>
           <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
             {userHome.liveAstrologers.map((astro, i) => (
               <div 
                 key={i} 
                 className="shrink-0 flex flex-col items-center gap-2 cursor-pointer group"
-                onClick={() => navigate(`/user/search?q=${encodeURIComponent(astro.name)}`)}
+                onClick={() => navigate('/user/astrologers?type=chat', { state: { autoConnectAstro: astro._id } })}
               >
                 <div className="relative">
                   <div className="w-[72px] h-[72px] rounded-full p-[2px] border-2 border-[#fa6830]">

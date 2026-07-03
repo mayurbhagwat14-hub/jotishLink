@@ -261,7 +261,7 @@ const AdminSessions = () => {
       </div>
 
       {/* ═══ RECENT COMPLETED SESSIONS ═══ */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden min-h-[500px]">
         <div className="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h2 className="font-bold text-gray-900">Recently Completed</h2>
           <div className="flex flex-wrap gap-3">

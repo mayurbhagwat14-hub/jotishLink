@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhoneOff, FiRefreshCw } from 'react-icons/fi';
+import { FiMic, FiMicOff, FiVideo, FiVideoOff, FiPhoneOff, FiRefreshCw, FiArrowLeft } from 'react-icons/fi';
 import AgoraRTC, {
   AgoraRTCProvider,
   useLocalMicrophoneTrack,
@@ -148,6 +148,14 @@ const CallUI = ({ astrologer, channelName, rtcToken, uid, appId, callType, user,
 
   return (
     <div className="w-full h-[100dvh] bg-gray-900 relative flex flex-col overflow-hidden">
+      {/* Back Button */}
+      <button 
+        onClick={() => navigate(-1)} 
+        className="absolute top-6 left-4 z-50 w-10 h-10 bg-gray-800/50 hover:bg-gray-700/80 rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+      >
+        <FiArrowLeft className="text-white" size={20} />
+      </button>
+
       {/* Remote video / audio */}
       <div className="absolute inset-0 bg-gray-800 flex flex-col items-center justify-center">
         {isAudio ? (

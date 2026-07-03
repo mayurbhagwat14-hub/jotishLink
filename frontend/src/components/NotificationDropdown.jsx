@@ -91,8 +91,16 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
       }
     }
     setIsOpen(false);
+    
     if (notification.link) {
-      navigate(notification.link);
+      let finalLink = notification.link;
+      if (window.location.pathname.startsWith('/admin') && finalLink.startsWith('/user/')) {
+        if (finalLink.includes('/order/')) finalLink = '/admin/finance';
+        else if (finalLink.includes('pooja') || finalLink.includes('wallet')) finalLink = '/admin/finance';
+        else if (finalLink.includes('calls') || finalLink.includes('video-room')) finalLink = '/admin/sessions';
+        else finalLink = '/admin/dashboard';
+      }
+      navigate(finalLink);
     }
   };
 

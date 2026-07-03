@@ -45,6 +45,7 @@ import PoojaBookingForm from './pages/user/PoojaBookingForm';
 import GlobalSearch from './pages/user/GlobalSearch';
 import WaitingScreen from './pages/user/WaitingScreen';
 import Notifications from './pages/user/Notifications';
+import Reports from './pages/user/Reports';
 import Terms from './pages/user/Terms';
 import PrivacyPolicy from './pages/user/PrivacyPolicy';
 
@@ -238,6 +239,7 @@ const AppContent = () => {
           <Route path="pooja-booking/:panditId" element={<PoojaBookingForm />} />
           <Route path="search" element={<GlobalSearch />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="reports" element={<Reports />} />
           
           {/* Coming Soon Links */}
           <Route path="live" element={<ComingSoon />} />

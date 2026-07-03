@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { GiFlowerPot } from 'react-icons/gi';
-import { FiCheck, FiX, FiCalendar, FiClock, FiVideo, FiTrash2, FiSquare, FiCheckSquare } from 'react-icons/fi';
+import { FiCheck, FiX, FiCalendar, FiClock, FiVideo, FiTrash2, FiSquare, FiCheckSquare, FiImage, FiCamera } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { formatTime12Hour } from '../../utils/formatTime';
 import { fetchAstrologerPoojaRequestsThunk, updatePoojaStatusThunk } from '../../store/slices/astrologerSlice';
@@ -144,26 +144,42 @@ const PoojaRequests = () => {
                       </button>
                     </div>
                   ))}
-                  <label className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
-                    <span className="text-2xl font-light mb-1">+</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider">Add</span>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      multiple 
-                      className="hidden"
-                      onChange={(e) => {
-                         const files = Array.from(e.target.files);
-                         Promise.all(files.map(f => {
-                           return new Promise(res => {
-                             const reader = new FileReader();
-                             reader.onloadend = () => res(reader.result);
-                             reader.readAsDataURL(f);
-                           });
-                         })).then(base64Arr => setProofData({...proofData, photos: [...proofData.photos, ...base64Arr]}));
-                      }}
-                    />
-                  </label>
+                  <div className="flex flex-col gap-1 w-20">
+                    <label className="w-20 h-10 rounded-t-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50 border-b-0">
+                      <FiImage size={14} className="mb-0.5" />
+                      <span className="text-[8px] font-bold uppercase tracking-wider">File</span>
+                      <input 
+                        type="file" accept="image/*" multiple className="hidden"
+                        onChange={(e) => {
+                           const files = Array.from(e.target.files);
+                           Promise.all(files.map(f => {
+                             return new Promise(res => {
+                               const reader = new FileReader();
+                               reader.onloadend = () => res(reader.result);
+                               reader.readAsDataURL(f);
+                             });
+                           })).then(base64Arr => setProofData({...proofData, photos: [...proofData.photos, ...base64Arr]}));
+                        }}
+                      />
+                    </label>
+                    <label className="w-20 h-10 rounded-b-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
+                      <FiCamera size={14} className="mb-0.5" />
+                      <span className="text-[8px] font-bold uppercase tracking-wider">Camera</span>
+                      <input 
+                        type="file" accept="image/*" capture="environment" multiple className="hidden"
+                        onChange={(e) => {
+                           const files = Array.from(e.target.files);
+                           Promise.all(files.map(f => {
+                             return new Promise(res => {
+                               const reader = new FileReader();
+                               reader.onloadend = () => res(reader.result);
+                               reader.readAsDataURL(f);
+                             });
+                           })).then(base64Arr => setProofData({...proofData, photos: [...proofData.photos, ...base64Arr]}));
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
               
@@ -180,23 +196,38 @@ const PoojaRequests = () => {
                     </button>
                   </div>
                 ) : (
-                  <label className="w-full h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
-                    <FiVideo size={24} className="mb-2" />
-                    <span className="text-[11px] font-bold uppercase tracking-wider">Click to upload video</span>
-                    <input 
-                      type="file" 
-                      accept="video/*" 
-                      className="hidden"
-                      onChange={(e) => {
-                         const f = e.target.files[0];
-                         if(f) {
-                           const reader = new FileReader();
-                           reader.onloadend = () => setProofData({...proofData, video: reader.result});
-                           reader.readAsDataURL(f);
-                         }
-                      }}
-                    />
-                  </label>
+                  <div className="flex gap-2">
+                    <label className="flex-1 h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
+                      <FiVideo size={24} className="mb-2" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Upload File</span>
+                      <input 
+                        type="file" accept="video/*" className="hidden"
+                        onChange={(e) => {
+                           const f = e.target.files[0];
+                           if(f) {
+                             const reader = new FileReader();
+                             reader.onloadend = () => setProofData({...proofData, video: reader.result});
+                             reader.readAsDataURL(f);
+                           }
+                        }}
+                      />
+                    </label>
+                    <label className="flex-1 h-24 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-[#fa6830] hover:bg-orange-50 hover:text-[#fa6830] text-gray-400 transition-all bg-gray-50">
+                      <FiCamera size={24} className="mb-2" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Record Video</span>
+                      <input 
+                        type="file" accept="video/*" capture="environment" className="hidden"
+                        onChange={(e) => {
+                           const f = e.target.files[0];
+                           if(f) {
+                             const reader = new FileReader();
+                             reader.onloadend = () => setProofData({...proofData, video: reader.result});
+                             reader.readAsDataURL(f);
+                           }
+                        }}
+                      />
+                    </label>
+                  </div>
                 )}
               </div>
 

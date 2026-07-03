@@ -14,6 +14,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(fetchAstrologerDashboardThunk());
+
+    // Intercept back button to prevent breaking chronological flow
+    window.history.pushState(null, null, window.location.pathname);
+    const handlePopState = () => {
+      window.history.pushState(null, null, window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [dispatch]);
 
   const dbData = astrologerDashboard || {};
@@ -49,7 +57,7 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Today's Earnings */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow">
+        <div onClick={() => navigate('/astrologer/wallet')} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow cursor-pointer active:scale-95">
           <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-3">
              <GiWallet size={20} />
           </div>
