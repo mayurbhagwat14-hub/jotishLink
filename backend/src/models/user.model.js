@@ -145,6 +145,10 @@ const userSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
     },
+    draftData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   {
     timestamps: true,

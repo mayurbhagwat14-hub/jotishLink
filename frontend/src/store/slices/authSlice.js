@@ -145,6 +145,7 @@ const authSlice = createSlice({
       localStorage.removeItem('persist:auth_user');
       localStorage.removeItem('userDetailsApplyData');
       localStorage.removeItem('astrologerApplyData');
+      sessionStorage.removeItem('loginPhone');
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -178,8 +179,13 @@ const authSlice = createSlice({
         state.user = { ...state.user, ...u };
       })
       .addCase(registerUserThunk.fulfilled, (state, action) => {
-        const u = action.payload?.data?.user || action.payload?.user || action.payload;
-        state.user = { ...state.user, ...u };
+        const data = action.payload?.data || action.payload;
+        state.user = data.user || state.user;
+        state.token = data.accessToken || state.token;
+        if (data.refreshToken) {
+          localStorage.setItem('refreshToken', data.refreshToken);
+        }
+        if (data.user) state.isAuthenticated = true;
       })
       .addCase(verifyOtpThunk.fulfilled, (state, action) => {
         const data = action.payload?.data || action.payload;
@@ -206,12 +212,14 @@ const authSlice = createSlice({
         state.error = null;
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('persist:auth_user');
+        sessionStorage.removeItem('loginPhone');
       })
       .addCase(userDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
         localStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('loginPhone');
       });  }
 });
 

@@ -79,6 +79,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   user.otpExpires = undefined;
   await user.save();
 
+  const isNew = user.isNewUser || user.name === 'Guest User' || !user.name;
+
+  if (isNew) {
+    return res.status(200).json(
+      new ApiResponse(200, {
+        isNewUser: true,
+        phone: phoneNumber,
+      }, 'OTP verified. Please complete registration.')
+    );
+  }
+
   const { accessToken, refreshToken } = generateTokens(user._id, user.role);
   setRefreshCookie(res, refreshToken);
 
@@ -89,15 +100,14 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
   import('../utils/notifyHelper.js').then(({ notify }) => {
     // Delay push notification by 5 seconds to allow frontend to sync FCM token
-    setTimeout(() => {
-      const isNew = userObj.isNewUser || userObj.name === 'Guest User' || !userObj.name;
+    setTimeout(async () => {
       notify({ 
         userId: user._id, 
         role: 'user', 
-        title: isNew ? 'Welcome to JyotishLink! 🎉' : 'Welcome back 👋', 
-        message: isNew ? 'Please complete your profile to get started.' : `Logged in successfully on ${new Date().toLocaleString()}`, 
+        title: 'Welcome back 👋', 
+        message: `Logged in successfully on ${new Date().toLocaleString()}`, 
         type: 'info', 
-        link: isNew ? '/user/details' : '/user/home' 
+        link: '/user/home' 
       });
     }, 5000);
   }).catch(console.error);
@@ -146,8 +156,11 @@ export const login = asyncHandler(async (req, res) => {
 
 // POST /api/user/auth/register  (complete profile after OTP)
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, gender, dob, timeOfBirth, placeOfBirth, address, city, pincode } = req.body;
-  const user = req.user;
+  const { phone, name, email, gender, dob, timeOfBirth, placeOfBirth, address, city, pincode } = req.body;
+  if (!phone) throw new ApiError(400, 'Phone number is required for registration');
+
+  const user = await User.findOne({ phone });
+  if (!user) throw new ApiError(404, 'User not found');
 
   user.name = name || user.name;
   user.email = email || user.email;
@@ -159,10 +172,40 @@ export const register = asyncHandler(async (req, res) => {
   if (city !== undefined) user.city = city;
   if (pincode !== undefined) user.pincode = pincode;
   user.isNewUser = false;
+  user.draftData = undefined;
 
   await user.save();
 
-  return res.status(200).json(new ApiResponse(200, { user }, 'Profile completed'));
+  // Generate tokens upon successful registration
+  const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+  setRefreshCookie(res, refreshToken);
+
+  const userObj = user.toObject();
+  delete userObj.password;
+  delete userObj.otpHash;
+  delete userObj.otpExpires;
+
+  import('../utils/notifyHelper.js').then(({ notify }) => {
+    // Delay push notification by 5 seconds to allow frontend to sync FCM token
+    setTimeout(async () => {
+      notify({ 
+        userId: user._id, 
+        role: 'user', 
+        title: 'Welcome to JyotishLink! 🎉', 
+        message: 'Registration completed successfully.', 
+        type: 'info', 
+        link: '/user/home' 
+      });
+    }, 5000);
+  }).catch(console.error);
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      accessToken,
+      refreshToken,
+      user: userObj
+    }, 'Profile completed successfully')
+  );
 });
 
 // POST /api/auth/refresh
@@ -282,4 +325,30 @@ export const adminLogin = asyncHandler(async (req, res) => {
       user: { _id: user._id, name: user.name, email: user.email, role: 'admin' },
     }, 'Admin login successful')
   );
+});
+
+// POST /api/user/auth/draft/save
+export const saveUserDraft = asyncHandler(async (req, res) => {
+  const { phone, draftData } = req.body;
+  if (!phone) throw new ApiError(400, 'Phone is required to save draft');
+
+  const user = await User.findOneAndUpdate(
+    { phone },
+    { $set: { draftData } },
+    { new: true }
+  ).select('draftData');
+
+  if (!user) throw new ApiError(404, 'User not found');
+  return res.status(200).json(new ApiResponse(200, user.draftData, 'User draft saved successfully'));
+});
+
+// POST /api/user/auth/draft/fetch
+export const fetchUserDraft = asyncHandler(async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) throw new ApiError(400, 'Phone is required to fetch draft');
+
+  const user = await User.findOne({ phone }).select('draftData');
+  if (!user) throw new ApiError(404, 'User not found');
+
+  return res.status(200).json(new ApiResponse(200, user.draftData || {}, 'User draft fetched'));
 });

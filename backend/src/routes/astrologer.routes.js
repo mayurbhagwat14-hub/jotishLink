@@ -5,6 +5,8 @@ import {
   astrologerSignup,
   astrologerLogin,
   astrologerChangePassword,
+  saveAstrologerDraft,
+  fetchAstrologerDraft,
   getAstrologerProfile,
   updateAstrologerProfile,
   deleteAstrologerAccount,
@@ -42,6 +44,8 @@ router.post('/astrologer/auth/check-phone', validate(astrologerCheckPhoneSchema)
 router.post('/astrologer/auth/request-otp', otpRateLimiter, validate(astrologerCheckPhoneSchema), astrologerRequestOtp);
 router.post('/astrologer/auth/signup', uploadFields, validate(astrologerSignupSchema), astrologerSignup);
 router.post('/astrologer/auth/verify-otp', validate(astrologerLoginSchema), astrologerLogin);
+router.post('/astrologer/auth/draft/save', saveAstrologerDraft);
+router.post('/astrologer/auth/draft/fetch', fetchAstrologerDraft);
 
 // Protected astrologer routes
 const astroAuth = [verifyJWT, authorizeRoles('astrologer', 'admin')];

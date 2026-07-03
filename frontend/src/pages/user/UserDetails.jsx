@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FiArrowLeft, FiUser, FiCalendar, FiClock, FiMapPin } from 'react-icons/fi';
-import { updateUser, registerUserThunk } from '../../store/slices/authSlice';
+import { updateUser, registerUserThunk, logout } from '../../store/slices/authSlice';
+import { getUserDraft, saveUserDraft } from '../../api/userApis';
 
 const NativeSelect = ({ options, value, onChange, className }) => {
   return (
@@ -78,40 +79,55 @@ const UserDetails = () => {
 
   const redirectTo = location.state?.redirectTo || '/user/home';
   const { user } = useSelector((state) => state.auth);
+  const [phone, setPhone] = useState(() => sessionStorage.getItem('pendingRegisterPhone') || '');
 
   useEffect(() => {
-    // If user is already registered, bypass details form entirely
-    if (user && user.name && user.name !== 'Guest User') {
-      navigate('/user/home', { replace: true });
+    if (!phone) {
+      navigate('/user/login', { replace: true });
     }
-  }, [user, navigate]);
+  }, [phone, navigate]);
 
-  // Load from local storage on mount
+  const isSubmittedRef = useRef(false);
+
+  // Load from Draft API on mount
   useEffect(() => {
-    const savedData = localStorage.getItem('userDetailsApplyData');
-    if (savedData) {
+    if (!phone) return;
+    const loadDraft = async () => {
       try {
-        const parsed = JSON.parse(savedData);
-        if (parsed.formData) setFormData(parsed.formData);
-        if (parsed.currentStep !== undefined) setCurrentStep(parsed.currentStep);
-        if (parsed.knowsTime !== undefined) setKnowsTime(parsed.knowsTime);
-        if (parsed.searchQuery !== undefined) setSearchQuery(parsed.searchQuery);
+        const res = await getUserDraft(phone);
+        const parsed = res.data?.data || res.data;
+        if (parsed && Object.keys(parsed).length > 0) {
+          if (parsed.formData) setFormData(parsed.formData);
+          if (parsed.currentStep !== undefined) setCurrentStep(parsed.currentStep);
+          if (parsed.knowsTime !== undefined) setKnowsTime(parsed.knowsTime);
+          if (parsed.searchQuery !== undefined) setSearchQuery(parsed.searchQuery);
+        }
       } catch (err) {
-        console.error('Failed to parse local storage data', err);
+        console.error('Failed to load draft from API', err);
       }
-    }
-  }, []);
+    };
+    loadDraft();
+  }, [phone]);
 
-  // Save to local storage on change
+  // Save to Draft API on change (debounced by 500ms)
   useEffect(() => {
+    if (!phone) return;
     const dataToSave = {
       formData,
       currentStep,
       knowsTime,
       searchQuery
     };
-    localStorage.setItem('userDetailsApplyData', JSON.stringify(dataToSave));
-  }, [formData, currentStep, knowsTime, searchQuery]);
+    const timer = setTimeout(async () => {
+      try {
+        await saveUserDraft(phone, dataToSave);
+      } catch (err) {
+        console.warn('Failed to save draft to API', err);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [phone, formData, currentStep, knowsTime, searchQuery]);
 
   const step = steps[currentStep];
 
@@ -181,6 +197,7 @@ const UserDetails = () => {
       }
 
       const payload = {
+        phone,
         name: formData.name,
         gender: formData.gender,
         dob: `${formData.dobYear}-${formData.dobMonth}-${formData.dobDay}`,
@@ -189,11 +206,12 @@ const UserDetails = () => {
       };
 
       try {
+        isSubmittedRef.current = true;
         await dispatch(registerUserThunk(payload)).unwrap();
-        dispatch(updateUser(payload));
-        localStorage.removeItem('userDetailsApplyData'); // Clear after successful completion
+        sessionStorage.removeItem('pendingRegisterPhone');
         navigate(redirectTo);
       } catch (err) {
+        isSubmittedRef.current = false;
         console.error("API registration failed", err);
         setApiError(err.message || err.error || (typeof err === 'string' ? err : 'Registration failed. Please try again.'));
       }
@@ -209,7 +227,7 @@ const UserDetails = () => {
     } else if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     } else {
-      navigate(-1);
+      navigate('/user/login');
     }
   };
 

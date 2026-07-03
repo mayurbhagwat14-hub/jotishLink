@@ -24,3 +24,8 @@ export const deleteWithdrawalRequest = (id) => axios.delete(`/astrologer/withdra
 export const deleteAstrologerHistoryBulk = (ids) => axios.post('/astrologer/history/delete', { ids });
 export const updateFcmToken = (fcmToken) => axios.put('/astrologer/fcm-token', { fcmToken });
 export const testPushNotification = () => axios.post('/astrologer/test-push');
+
+// Draft APIs
+export const saveAstrologerDraft = (phone, draftData) => axios.post('/astrologer/auth/draft/save', { phone, draftData });
+export const fetchAstrologerDraft = (phone) => axios.post('/astrologer/auth/draft/fetch', { phone });
+

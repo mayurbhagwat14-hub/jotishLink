@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import OtpInput from '../../components/OtpInput';
 import { astrologerLogin, astrologerSignupThunk } from '../../store/slices/astrologerAuthSlice';
-import { checkAstrologerPhone, requestOtp, astrologerSignup } from '../../api/astrologerApis';
+import { checkAstrologerPhone, requestOtp, astrologerSignup, saveAstrologerDraft, fetchAstrologerDraft } from '../../api/astrologerApis';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
 
 const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career', 'Business', 'Kids'];
@@ -99,24 +99,6 @@ const ApplyAstrologer = () => {
     poojasOffered: []
   });
 
-  // Load from local storage on mount
-  useEffect(() => {
-    const savedData = localStorage.getItem('astrologerApplyData');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setFormData((prev) => ({ ...prev, ...parsed, mobile: prefilledPhone || parsed.mobile || '' }));
-      } catch (err) {
-        console.error('Failed to parse local storage data', err);
-      }
-    }
-  }, [prefilledPhone]);
-
-  // Save to local storage on change
-  useEffect(() => {
-    localStorage.setItem('astrologerApplyData', JSON.stringify(formData));
-  }, [formData]);
-
   const [otp, setOtp] = useState(['', '', '', '']);
 
   // Load photos from sessionStorage
@@ -126,6 +108,131 @@ const ApplyAstrologer = () => {
   const [panCard, setPanCard] = useState(() => sessionStorage.getItem('apply_panCard') || '');
   const [certificate, setCertificate] = useState(() => sessionStorage.getItem('apply_certificate') || '');
   const [selfieVerification, setSelfieVerification] = useState(() => sessionStorage.getItem('apply_selfieVerification') || '');
+
+  // Load draft when phone number changes to a valid 10-digit number
+  useEffect(() => {
+    const checkAndLoadDraft = async () => {
+      const isPhoneValid = formData.mobile && /^[6-9]\d{9}$/.test(formData.mobile);
+      if (isPhoneValid) {
+        try {
+          const res = await fetchAstrologerDraft(formData.mobile);
+          const draft = res.data?.data || res.data;
+          
+          if (draft && Object.keys(draft).length > 0) {
+            // Found a draft, load everything
+            if (draft.formData) {
+              setFormData(prev => ({
+                ...prev,
+                ...draft.formData,
+                mobile: formData.mobile // ensure the active phone number is preserved
+              }));
+            }
+            
+            // Set photos if present in draft
+            if (draft.profilePic) {
+              setProfilePic(draft.profilePic);
+              sessionStorage.setItem('apply_profilePic', draft.profilePic);
+            }
+            if (draft.aadhaarFront) {
+              setAadhaarFront(draft.aadhaarFront);
+              sessionStorage.setItem('apply_aadhaarFront', draft.aadhaarFront);
+            }
+            if (draft.aadhaarBack) {
+              setAadhaarBack(draft.aadhaarBack);
+              sessionStorage.setItem('apply_aadhaarBack', draft.aadhaarBack);
+            }
+            if (draft.panCard) {
+              setPanCard(draft.panCard);
+              sessionStorage.setItem('apply_panCard', draft.panCard);
+            }
+            if (draft.certificate) {
+              setCertificate(draft.certificate);
+              sessionStorage.setItem('apply_certificate', draft.certificate);
+            }
+            if (draft.selfieVerification) {
+              setSelfieVerification(draft.selfieVerification);
+              sessionStorage.setItem('apply_selfieVerification', draft.selfieVerification);
+            }
+          } else {
+            // No draft found for this number, reset all fields to clear leakage from previous numbers
+            setFormData({
+              mobile: formData.mobile,
+              fullName: '',
+              password: '',
+              gender: '',
+              dob: '',
+              address: '',
+              city: '',
+              state: '',
+              pincode: '',
+              skills: [],
+              categories: [],
+              languages: [],
+              experience: '',
+              description: '',
+              consultationStyle: '',
+              education: '',
+              certificationDetails: '',
+              chatPrice: 5,
+              callPrice: 5,
+              videoPrice: 10,
+              accountHolderName: '',
+              bankName: '',
+              accountNumber: '',
+              ifscCode: '',
+              upiId: '',
+              isPandit: false,
+              poojasOffered: []
+            });
+            
+            // Clear photo states & session storage
+            setProfilePic(null);
+            setAadhaarFront('');
+            setAadhaarBack('');
+            setPanCard('');
+            setCertificate('');
+            setSelfieVerification('');
+            sessionStorage.removeItem('apply_profilePic');
+            sessionStorage.removeItem('apply_aadhaarFront');
+            sessionStorage.removeItem('apply_aadhaarBack');
+            sessionStorage.removeItem('apply_panCard');
+            sessionStorage.removeItem('apply_certificate');
+            sessionStorage.removeItem('apply_selfieVerification');
+          }
+        } catch (err) {
+          console.error('Failed to load astrologer draft from API', err);
+        }
+      }
+    };
+
+    checkAndLoadDraft();
+  }, [formData.mobile]);
+
+  // Save draft whenever form data or photo states change (debounced by 1s)
+  useEffect(() => {
+    const isPhoneValid = formData.mobile && /^[6-9]\d{9}$/.test(formData.mobile);
+    if (isPhoneValid) {
+      const draftData = {
+        formData,
+        profilePic,
+        aadhaarFront,
+        aadhaarBack,
+        panCard,
+        certificate,
+        selfieVerification
+      };
+      
+      const timer = setTimeout(async () => {
+        try {
+          await saveAstrologerDraft(formData.mobile, draftData);
+        } catch (err) {
+          console.warn('Failed to save draft to API', err);
+        }
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [formData, profilePic, aadhaarFront, aadhaarBack, panCard, certificate, selfieVerification]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

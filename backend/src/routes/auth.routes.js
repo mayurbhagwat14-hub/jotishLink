@@ -9,6 +9,8 @@ import {
   logout,
   changePassword,
   adminLogin,
+  saveUserDraft,
+  fetchUserDraft,
 } from '../controllers/auth.controller.js';
 import { verifyJWT, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { otpRateLimiter } from '../middlewares/rateLimiter.middleware.js';
@@ -28,9 +30,11 @@ router.post('/user/auth/request-otp', otpRateLimiter, validate(requestOtpSchema)
 router.post('/user/auth/verify-otp', validate(verifyOtpSchema), verifyOtp);
 router.post('/user/auth/login-signup', otpRateLimiter, validate(requestOtpSchema), loginOrSignup);
 router.post('/user/auth/login', validate(verifyOtpSchema), login);
+router.post('/user/auth/register', validate(registerUserSchema), register);
+router.post('/user/auth/draft/save', saveUserDraft);
+router.post('/user/auth/draft/fetch', fetchUserDraft);
 
 // Protected user routes
-router.post('/user/auth/register', verifyJWT, validate(registerUserSchema), register);
 router.post('/user/auth/change-password', verifyJWT, validate(changePasswordSchema), changePassword);
 
 // Token refresh (cookie-based)

@@ -211,6 +211,7 @@ const AppContent = () => {
         <Route path="matchmaking" element={<Matchmaking />} />
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<PrivacyPolicy />} />
+        <Route path="details" element={<UserDetails />} />
 
         {/* Protected Routes within User Panel */}
         <Route element={<ProtectedRoute allowedRoles={['user']} />}>
@@ -228,7 +229,6 @@ const AppContent = () => {
           <Route path="free-chat-offer" element={<FreeChatOffer />} />
           <Route path="wallet" element={<Wallet />} />
           <Route path="recharge" element={<RechargeWallet />} />
-          <Route path="details" element={<UserDetails />} />
           <Route path="video-call" element={<VideoCallList />} />
           <Route path="video-booking/:id" element={<VideoCallBookingForm />} />
           <Route path="waiting" element={<WaitingScreen />} />

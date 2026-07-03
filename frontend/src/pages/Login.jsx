@@ -67,20 +67,20 @@ const Login = () => {
     const otpValue = otp.join('');
     try {
       const res = await userApis.verifyOtp(phoneNumber, otpValue);
-      // Backend returns { statusCode, data: { user, accessToken }, message }
-      const { user, accessToken } = res.data.data;
+      const data = res.data.data;
       
-      dispatch(login({ user, token: accessToken }));
-      
-      // Role-based routing
-      if (user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else if (user.role === 'astrologer') {
-        navigate('/astrologer/dashboard');
+      if (data.isNewUser) {
+        sessionStorage.setItem('pendingRegisterPhone', data.phone);
+        navigate('/user/details', { state: { redirectTo } });
       } else {
-        // App User flow
-        if (user.isNewUser || user.name === 'Guest User' || !user.name) {
-          navigate('/user/details', { state: { redirectTo } });
+        const { user, accessToken } = data;
+        dispatch(login({ user, token: accessToken }));
+        
+        // Role-based routing
+        if (user.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (user.role === 'astrologer') {
+          navigate('/astrologer/dashboard');
         } else {
           navigate(redirectTo);
         }

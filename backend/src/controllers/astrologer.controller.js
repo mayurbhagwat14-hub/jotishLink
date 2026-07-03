@@ -7,6 +7,7 @@ import ChatSession from '../models/chatSession.model.js';
 import { CallSession } from '../models/callSession.model.js';
 import Transaction from '../models/transaction.model.js';
 import WithdrawalRequest from '../models/withdrawalRequest.model.js';
+import AstrologerDraft from '../models/astrologerDraft.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -258,6 +259,9 @@ export const astrologerSignup = asyncHandler(async (req, res) => {
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
+
+  // Delete draft upon successful signup
+  await AstrologerDraft.deleteOne({ phone });
 
   return res.status(201).json(
     new ApiResponse(201, {
@@ -1116,4 +1120,27 @@ export const testPushNotification = asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json(new ApiResponse(200, {}, 'Test notification sent successfully'));
+});
+
+// POST /api/astrologer/auth/draft/save
+export const saveAstrologerDraft = asyncHandler(async (req, res) => {
+  const { phone, draftData } = req.body;
+  if (!phone) throw new ApiError(400, 'Phone is required to save draft');
+  
+  const draft = await AstrologerDraft.findOneAndUpdate(
+    { phone },
+    { $set: { draftData } },
+    { new: true, upsert: true }
+  );
+
+  return res.status(200).json(new ApiResponse(200, draft.draftData, 'Astrologer draft saved successfully'));
+});
+
+// POST /api/astrologer/auth/draft/fetch
+export const fetchAstrologerDraft = asyncHandler(async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) throw new ApiError(400, 'Phone is required to fetch draft');
+
+  const draft = await AstrologerDraft.findOne({ phone });
+  return res.status(200).json(new ApiResponse(200, draft ? (draft.draftData || {}) : {}, 'Astrologer draft fetched'));
 });

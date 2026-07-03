@@ -41,3 +41,8 @@ export const getMuhurat = () => axios.get('/tools/muhurat');
 export const checkMatchmaking = (data) => axios.post('/tools/matchmaking', data);
 export const getHoroscope = (data) => axios.post('/tools/horoscope', data);
 export const getKundli = (data) => axios.post('/tools/kundli', data);
+
+// Draft APIs
+export const getUserDraft = (phone) => axios.post('/user/auth/draft/fetch', { phone });
+export const saveUserDraft = (phone, draftData) => axios.post('/user/auth/draft/save', { phone, draftData });
+
