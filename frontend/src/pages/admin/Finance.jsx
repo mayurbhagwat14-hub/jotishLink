@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiArrowUpRight, FiArrowDownLeft, FiRefreshCcw, FiSearch, FiChevronDown, FiCalendar, FiDownload, FiX, FiChevronLeft, FiChevronRight, FiBriefcase, FiCreditCard, FiHash, FiSmartphone, FiDatabase, FiTrendingUp } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
-import { getAdminTransactions, getAstrologerPayouts, processAstrologerPayout, getAdminAstrologerById } from '../../api/adminApis';
+import { getAdminTransactions, getAstrologerPayouts, processAstrologerPayout, getAdminAstrologerById, getAdminDashboard } from '../../api/adminApis';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -40,10 +40,23 @@ const AdminFinance = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFilter, setExportFilter] = useState('all'); // 'all', 'thisMonth', 'custom'
   const [exportMonth, setExportMonth] = useState(''); // 'YYYY-MM'
+  
+  // Dashboard Stats for Revenue Breakdown
+  const [dashboardStats, setDashboardStats] = useState(null);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const res = await getAdminDashboard();
+      setDashboardStats(res.data?.data || res.data);
+    } catch (err) {
+      console.error('Failed to fetch dashboard stats', err);
+    }
+  };
 
   useEffect(() => {
     fetchTransactions();
     fetchPayouts();
+    fetchDashboardStats();
 
     const token = localStorage.getItem('token') || localStorage.getItem('refreshToken');
     const socket = getSocket(token);
@@ -51,6 +64,7 @@ const AdminFinance = () => {
     const onUpdate = () => {
       fetchTransactions();
       fetchPayouts();
+      fetchDashboardStats();
     };
 
     socket.on('dashboard_updated', onUpdate);
@@ -115,7 +129,6 @@ const AdminFinance = () => {
           amount: t.amount,
           status: 'Success',
           date: new Date(t.createdAt).toLocaleString(),
-          date: new Date(t.createdAt).toLocaleString(),
           rawDate: t.createdAt,
           isCredit: t.type === 'recharge' || (t.type === 'deduction' && descLower.includes('online order payment')),
           rawType: t.type,
@@ -123,7 +136,38 @@ const AdminFinance = () => {
         };
       });
 
-      setTransactions(formatted);
+      let formattedTransactions = formatted;
+
+      // Attach breakdown for user session payments
+      formattedTransactions.forEach(t => {
+        if (t.entityType === 'User' && t.type.includes('Payment') && !t.isCredit) {
+           const matchingAstroTxn = transactions.find(at => {
+             const atRawName = at.userId?.name || '';
+             const atIsAstro = atRawName.startsWith('Astro: ');
+             if (!atIsAstro) return false;
+             if (at.type !== 'recharge') return false;
+             
+             const timeDiff = Math.abs(new Date(at.createdAt).getTime() - new Date(t.rawDate).getTime());
+             return timeDiff < 2000;
+           });
+
+           if (matchingAstroTxn && matchingAstroTxn.desc) {
+              const netMatch = matchingAstroTxn.desc.match(/Net:\s*[₹$]?([\d.]+)/i);
+              const commMatch = matchingAstroTxn.desc.match(/Commission:\s*([\d.]+)%/i);
+              if (netMatch && commMatch) {
+                 const astroGot = parseFloat(netMatch[1]);
+                 const adminGot = t.amount - astroGot;
+                 t.breakdown = {
+                    astroGot,
+                    adminGot,
+                    commissionPercent: parseFloat(commMatch[1])
+                 };
+              }
+           }
+        }
+      });
+
+      setTransactions(formattedTransactions);
       
       const totalIn = formatted.filter(t => 
         (t.entityType === 'User' && t.rawType === 'recharge') || 
@@ -242,11 +286,15 @@ const AdminFinance = () => {
 
       // Calculate Totals
       let totalInflow = 0;
+      let astroEarnings = 0;
       let totalOutflow = 0;
 
       filteredTransactions.forEach(t => {
-        if (t.entityType === 'User' && t.rawType === 'recharge') {
+        if ((t.entityType === 'User' && t.rawType === 'recharge') || 
+            (t.entityType === 'User' && t.rawType === 'deduction' && t.descLower?.includes('online order payment'))) {
           totalInflow += t.amount;
+        } else if (t.entityType === 'Astro' && t.rawType === 'recharge') {
+          astroEarnings += t.amount;
         } else if (
           (t.entityType === 'User' && t.rawType === 'refund') || 
           (t.entityType === 'Astro' && (t.rawType === 'refund' || t.rawType === 'withdrawal' || t.rawType === 'payout'))
@@ -258,34 +306,42 @@ const AdminFinance = () => {
       // Summary Box
       doc.setDrawColor(200, 200, 200);
       doc.setFillColor(250, 250, 250);
-      doc.roundedRect(14, 45, pageWidth - 28, 30, 3, 3, 'FD');
+      doc.roundedRect(14, 45, pageWidth - 28, 42, 3, 3, 'FD');
       
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.setTextColor(40, 40, 40);
-      doc.text(`Total Inflow (Recharges): Rs. ${totalInflow.toLocaleString()}`, 20, 55);
-      doc.text(`Total Outflow (Payouts/Deductions): Rs. ${totalOutflow.toLocaleString()}`, 20, 65);
+      doc.text(`Total Inflow (Gross Revenue): Rs. ${totalInflow.toLocaleString()}`, 20, 55);
+      doc.text(`Astro Earnings (Owed): Rs. ${astroEarnings.toLocaleString()}`, 20, 63);
+      doc.text(`Total Outflow (Withdrawals/Refunds): Rs. ${totalOutflow.toLocaleString()}`, 20, 71);
       
-      const net = totalInflow - totalOutflow;
-      doc.setFontSize(14);
+      const net = totalInflow - astroEarnings - totalOutflow;
+      doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
       if (net >= 0) {
         doc.setTextColor(34, 197, 94); // Green 500
       } else {
         doc.setTextColor(239, 68, 68); // Red 500
       }
-      doc.text(`Net Amount: ${net >= 0 ? '+' : ''}Rs. ${net.toLocaleString()}`, pageWidth - 20, 60, { align: 'right' });
+      doc.text(`Net Platform Wallet Balance: ${net >= 0 ? '+' : ''}Rs. ${net.toLocaleString()}`, 20, 81);
 
       // Table Data
-      const tableColumn = ["TXN ID", "User/Entity", "Type", "Amount (Rs)", "Status", "Date"];
+      const tableColumn = ["TXN ID", "Entity", "Type", "Amount (Rs)", "Admin Share", "Status", "Date"];
       const tableRows = [];
 
       filteredTransactions.forEach(t => {
         const amountStr = t.isCredit ? `+${t.amount}` : `-${Math.abs(t.amount)}`;
+        let adminShareStr = "-";
+        
+        if (t.breakdown) {
+           adminShareStr = `+${t.breakdown.adminGot.toFixed(2)}`;
+        }
+
         tableRows.push([
           t.id, 
           t.user, 
           t.type, 
           amountStr, 
+          adminShareStr,
           t.status, 
           t.date
         ]);
@@ -295,7 +351,7 @@ const AdminFinance = () => {
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
-        startY: 85,
+        startY: 95,
         theme: 'grid',
         headStyles: { fillColor: [17, 24, 39] },
         styles: { fontSize: 9 }
@@ -356,6 +412,11 @@ const AdminFinance = () => {
   const userSpends = transactions.filter(t => t.entityType === 'User' && t.rawType === 'deduction').reduce((s, t) => s + Math.abs(t.amount), 0);
   const userRefunds = transactions.filter(t => t.entityType === 'User' && t.rawType === 'refund').reduce((s, t) => s + Math.abs(t.amount), 0);
 
+  // Revenue Breakdown (Profit) from Dashboard Stats API
+  const adminSessionEarnings = dashboardStats?.metrics?.chatRevenue || 0;
+  const storeEarnings = dashboardStats?.metrics?.storeProfit || 0;
+  const poojaEarnings = dashboardStats?.metrics?.poojaRevenue || 0;
+
   // Astrologers
   const astroEarnings = transactions.filter(t => t.entityType === 'Astro' && t.rawType === 'recharge').reduce((s, t) => s + t.amount, 0);
   const astroDeductions = transactions.filter(t => t.entityType === 'Astro' && t.rawType === 'deduction').reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -383,7 +444,7 @@ const AdminFinance = () => {
       </div>
 
       {/* ═══ CLEAN DASHBOARD CARDS ═══ */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${(activeTab === 'transactions' || activeTab === 'admin') ? 'md:grid-cols-3' : 'md:grid-cols-3'}`}>
         
         {activeTab === 'transactions' && (
           <>
@@ -399,6 +460,18 @@ const AdminFinance = () => {
               </div>
             </div>
 
+            {/* Astro Earnings Card */}
+            <div className="bg-white rounded-2xl p-5 border border-amber-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Astro Earnings</p>
+                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{astroEarnings.toLocaleString()}</h3>
+                <p className="text-[10px] text-gray-400 font-medium">Owed to Astrologers</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl border border-amber-200 bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                <FiArrowUpRight size={18} />
+              </div>
+            </div>
+
             {/* Outflow Card */}
             <div className="bg-white rounded-2xl p-5 border border-rose-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
               <div>
@@ -410,18 +483,58 @@ const AdminFinance = () => {
                 <FiArrowUpRight size={18} />
               </div>
             </div>
+          </>
+        )}
 
+        {activeTab === 'admin' && (
+          <>
             {/* Net Profit Card */}
             <div className="bg-white rounded-2xl p-5 border border-indigo-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
               <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Net Platform Profit</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{netProfit.toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">Total Inflow - Total Outflow</p>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Net Platform Wallet Balance</p>
+                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{(globalInflow - astroEarnings - globalOutflow).toLocaleString()}</h3>
+                <p className="text-[10px] text-gray-400 font-medium">Gross - Astro Share - Outflow</p>
               </div>
               <div className="w-10 h-10 rounded-xl border border-indigo-200 bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
                 <FaRupeeSign size={16} />
               </div>
             </div>
+          
+          {/* Revenue Breakdown Row */}
+          <div className="col-span-1 md:col-span-4 grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
+            <div className="bg-white rounded-2xl p-5 border border-cyan-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Session Profit</p>
+                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{adminSessionEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+                <p className="text-[10px] text-gray-400 font-medium">Admin share from sessions</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl border border-cyan-200 bg-cyan-50 flex items-center justify-center text-cyan-500 shrink-0">
+                <FiSmartphone size={18} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-purple-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Store Profit</p>
+                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{storeEarnings.toLocaleString()}</h3>
+                <p className="text-[10px] text-gray-400 font-medium">E-commerce Orders</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl border border-purple-200 bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
+                <FiBriefcase size={18} />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-orange-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Pooja Profit</p>
+                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{poojaEarnings.toLocaleString()}</h3>
+                <p className="text-[10px] text-gray-400 font-medium">E-Pooja Bookings</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl border border-orange-200 bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                <FiDatabase size={18} />
+              </div>
+            </div>
+          </div>
           </>
         )}
 
@@ -524,6 +637,7 @@ const AdminFinance = () => {
             { id: 'transactions', label: 'All TXNs' },
             { id: 'user_transactions', label: 'Users' },
             { id: 'astro_transactions', label: 'Astrologers' },
+            { id: 'admin', label: 'Admin Profit' },
             { id: 'payouts', label: 'Payouts' }
           ].map((tab) => (
             <button
@@ -541,7 +655,7 @@ const AdminFinance = () => {
         </div>
 
         {/* Unified Filter Bar */}
-        {['transactions', 'user_transactions', 'astro_transactions'].includes(activeTab) && (
+        {['transactions', 'user_transactions', 'astro_transactions', 'admin'].includes(activeTab) && (
           <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
             <div className="relative w-full sm:w-64">
               <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -643,11 +757,21 @@ const AdminFinance = () => {
                     <td className="py-4 px-6">
                       <span className="text-xs font-semibold text-gray-600 bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">{txn.type}</span>
                     </td>
-                    <td className="py-4 px-6">
-                      <div className={`flex items-center gap-1.5 font-black text-base ${txn.isCredit ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <td className="p-4">
+                      <div className={`font-black flex items-center gap-1 ${txn.isCredit ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {txn.isCredit ? <FiArrowDownLeft size={16} /> : <FiArrowUpRight size={16} />}
                         ₹{Math.abs(txn.amount).toLocaleString()}
                       </div>
+                      {txn.breakdown && (
+                        <div className="mt-1.5 flex flex-col gap-1">
+                          <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-2 py-0.5 rounded-md w-max border border-gray-100 flex items-center gap-1">
+                            Astro Share: <span className="text-emerald-600 font-bold">₹{txn.breakdown.astroGot.toFixed(2)}</span>
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-medium bg-gray-50 px-2 py-0.5 rounded-md w-max border border-gray-100 flex items-center gap-1">
+                            Admin Share: <span className="text-indigo-600 font-bold">₹{txn.breakdown.adminGot.toFixed(2)}</span> <span className="text-gray-400">({txn.breakdown.commissionPercent}%)</span>
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-6">
                       <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">

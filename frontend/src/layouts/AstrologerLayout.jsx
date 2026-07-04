@@ -8,7 +8,7 @@ import { FiHome, FiMessageSquare, FiPhoneCall, FiVideo, FiUser, FiBell, FiX, FiS
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GiFlowerPot } from 'react-icons/gi';
 import { updateAstrologerOnlineStatus } from '../api/astrologerApis';
-import { login } from '../store/slices/authSlice';
+import { updateAstrologer } from '../store/slices/astrologerAuthSlice';
 import { addIncomingRequest, removeIncomingRequestByUserId, clearAllIncomingRequests, removeActiveSession } from '../store/slices/astrologerSlice';
 import getSocket from '../socket/socketManager';
 import NotificationDropdown from '../components/NotificationDropdown';
@@ -116,7 +116,7 @@ const AstrologerLayout = () => {
       await updateAstrologerOnlineStatus(newStatus);
       setIsOnline(!isOnline);
       if (user) {
-        dispatch(login({ user: { ...user, onlineStatus: newStatus }, token }));
+        dispatch(updateAstrologer({ onlineStatus: newStatus }));
       }
     } catch (err) {
       console.error('Failed to toggle status:', err);

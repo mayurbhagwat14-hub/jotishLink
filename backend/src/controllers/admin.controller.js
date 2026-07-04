@@ -207,16 +207,16 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
   return res.status(200).json(
     new ApiResponse(200, {
       metrics: {
-        totalRevenue: Math.round(totalRevenue),
+        totalRevenue: Number((totalRevenue || 0).toFixed(2)),
         registeredUsers: totalUsers,
         onlineAstrologers: onlineAstrologers,
         totalOrders: totalOrders,
         pendingOrders: pendingOrders,
         completedOrders: completedOrders,
-        storeRevenue: Math.round(storeRevenue),
-        storeProfit: Math.round(storeProfit),
-        chatRevenue: Math.round(chatRevenue),
-        poojaRevenue: Math.round(poojaRevenue),
+        storeRevenue: Number((storeRevenue || 0).toFixed(2)),
+        storeProfit: Number((storeProfit || 0).toFixed(2)),
+        chatRevenue: Number((chatRevenue || 0).toFixed(2)),
+        poojaRevenue: Number((poojaRevenue || 0).toFixed(2)),
         pendingApprovals: pendingApprovalsCount,
         totalAstrologers: totalAstrologers,
         totalPoojas: totalPoojas,

@@ -1295,7 +1295,7 @@ io.on('connection', (socket) => {
         } catch (err) {
           console.error('[Socket.IO] Auto-offline error:', err.message);
         }
-      }, 5000); // 5 seconds grace period for page refresh
+      }, 20000); // 20 seconds grace period for page refresh
       
       astroDisconnectTimers.set(disconnectedAstroId, timer);
     }
