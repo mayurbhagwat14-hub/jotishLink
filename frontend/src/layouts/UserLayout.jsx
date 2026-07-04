@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import BottomNav from '../components/BottomNav';
@@ -228,7 +229,17 @@ const UserLayout = () => {
               <span className="text-[#e55923] font-bold">Congratulations!</span> Free chat with Astrologer
             </p>
             <button 
-              onClick={() => navigate('/user/astrologers')} 
+              onClick={() => {
+                if (location.pathname === '/user/astrologers') {
+                  toast.success('Click on any astrologer and start free chat', {
+                    duration: 3000,
+                    position: 'bottom-center',
+                    style: { marginBottom: '80px', fontWeight: 'bold' }
+                  });
+                } else {
+                  navigate('/user/astrologers');
+                }
+              }} 
               className="w-full bg-[#fa6830] text-white font-bold py-2 rounded-md text-[11px] uppercase tracking-wide hover:bg-[#e55923] transition-colors shadow-sm"
             >
               CHAT NOW

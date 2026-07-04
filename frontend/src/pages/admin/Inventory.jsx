@@ -261,7 +261,7 @@ const AdminInventory = () => {
 
       {/* ═══ RESTOCK MODAL ═══ */}
       {restockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setRestockModal(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setRestockModal(null)}>
           <div className="absolute inset-0" />
           <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in z-10" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">

@@ -434,7 +434,7 @@ const AdminContent = () => {
 
       {/* --- Modals --- */}
       {showBannerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !isSubmittingBanner && setShowBannerModal(false)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !isSubmittingBanner && setShowBannerModal(false)}>
           <div className="absolute inset-0" />
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative z-10" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -529,7 +529,7 @@ const AdminContent = () => {
       )}
 
       {showCouponModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowCouponModal(false); setEditingCouponId(null); setNewCoupon({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 }); }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => { setShowCouponModal(false); setEditingCouponId(null); setNewCoupon({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 }); }}>
           <div className="absolute inset-0" />
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden relative z-10" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
@@ -570,7 +570,7 @@ const AdminContent = () => {
 
       {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
       {deleteConfirmBanner && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmBanner(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmBanner(null)}>
           <div className="absolute inset-0" />
           <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center z-10" onClick={e => e.stopPropagation()}>
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
@@ -606,7 +606,7 @@ const AdminContent = () => {
       )}
       {/* ═══ DELETE COUPON CONFIRMATION MODAL ═══ */}
       {deleteConfirmCoupon && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmCoupon(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmCoupon(null)}>
           <div className="absolute inset-0" />
           <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center z-10" onClick={e => e.stopPropagation()}>
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">

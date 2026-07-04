@@ -468,7 +468,7 @@ const AdminAstrologers = () => {
       )}
       {/* ═══ PROFILE VIEW MODAL ═══ */}
       {selectedAstrologer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={() => setSelectedAstrologer(null)} />
           <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl flex flex-col">
             
@@ -603,7 +603,7 @@ const AdminAstrologers = () => {
       )}
       {/* ═══ DELETE CONFIRM MODAL ═══ */}
       {deleteConfirmAstrologer && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setDeleteConfirmAstrologer(null)} />
           <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl p-6 text-center animate-scale-in">
             <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">

@@ -468,7 +468,7 @@ const AdminSessions = () => {
 
       {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
       {deleteConfirmSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !isBulkDeleting && setDeleteConfirmSession(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => !isBulkDeleting && setDeleteConfirmSession(null)}>
           <div className="absolute inset-0" />
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative z-10 animate-scale-up text-center">
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">

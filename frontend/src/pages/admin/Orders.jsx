@@ -397,7 +397,7 @@ const AdminOrders = () => {
           { label: 'Total Orders', value: orders.length, icon: <FiPackage size={16} />, color: 'blue' },
           { label: 'Pending Review', value: tabCounts.Pending, icon: <FiClock size={16} />, color: 'orange', pulse: tabCounts.Pending > 0 },
           { label: 'In Transit', value: tabCounts.Shipped, icon: <FiTruck size={16} />, color: 'purple' },
-          { label: 'Total Revenue', value: `₹${orders.filter(o => o.status !== 'Cancelled').reduce((s, o) => s + o.total, 0).toLocaleString()}`, icon: <FaRupeeSign size={14} />, color: 'green' },
+          { label: 'Total Revenue', value: `₹${orders.filter(o => (o.paymentMethod !== 'cod' && o.payment?.toLowerCase() === 'paid' && o.status !== 'Cancelled') || (o.paymentMethod === 'cod' && (o.status === 'Delivered' || o.status === 'Completed'))).reduce((s, o) => s + o.total, 0).toLocaleString()}`, icon: <FaRupeeSign size={14} />, color: 'green' },
         ].map((s, i) => (
           <div key={i} className={`bg-white rounded-2xl p-5 border ${s.pulse ? 'border-orange-200' : 'border-gray-100'} flex items-center gap-4 transition-all`}>
             <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative ${
@@ -467,13 +467,13 @@ const AdminOrders = () => {
           <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top-right scale-95 group-hover:scale-100">
             <div className="p-2 space-y-1">
               <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sort By</p>
-              <button onClick={() => setSortBy('Newest First')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Newest First' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Newest First</button>
-              <button onClick={() => setSortBy('Oldest First')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Oldest First' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Oldest First</button>
-              <button onClick={() => setSortBy('Highest Amount')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Highest Amount' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Highest Amount</button>
+              <button onClick={() => { setSortBy('Newest First'); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Newest First' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Newest First</button>
+              <button onClick={() => { setSortBy('Oldest First'); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Oldest First' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Oldest First</button>
+              <button onClick={() => { setSortBy('Highest Amount'); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${sortBy === 'Highest Amount' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Highest Amount</button>
               <div className="h-px bg-gray-100 my-1"></div>
               <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter</p>
-              <button onClick={() => setFilterBy(filterBy === 'High Value' ? 'All' : 'High Value')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${filterBy === 'High Value' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>High Value Orders</button>
-              <button onClick={() => setFilterBy(filterBy === 'Delayed' ? 'All' : 'Delayed')} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${filterBy === 'Delayed' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Delayed Orders</button>
+              <button onClick={() => { setFilterBy(filterBy === 'High Value' ? 'All' : 'High Value'); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${filterBy === 'High Value' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>High Value Orders</button>
+              <button onClick={() => { setFilterBy(filterBy === 'Delayed' ? 'All' : 'Delayed'); setCurrentPage(1); }} className={`w-full text-left px-3 py-2 text-sm font-bold hover:bg-gray-50 rounded-xl transition-colors ${filterBy === 'Delayed' ? 'text-[#fa6830] bg-orange-50' : 'text-gray-700'}`}>Delayed Orders</button>
             </div>
           </div>
         </div>

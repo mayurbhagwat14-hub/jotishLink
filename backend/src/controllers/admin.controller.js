@@ -120,7 +120,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
   let storeCost = 0;
   orders.forEach(order => {
     // Only count orders where money is actually received
-    const isPaid = order.paymentStatus === 'paid';
+    const isPaid = order.paymentStatus === 'paid' && order.orderStatus !== 'cancelled';
     const isCompletedCOD = order.paymentMethod === 'cod' && (order.orderStatus === 'delivered' || order.orderStatus === 'completed');
     
     if (isPaid || isCompletedCOD) {

@@ -105,6 +105,8 @@ const REQUEST_TIMEOUT_MS = 60 * 1000; // 60s timeout matching WaitingScreen.jsx
 // If the user reconnects (join_room) within this window, the timer is cancelled.
 const DISCONNECT_GRACE_PERIOD_MS = 15_000; // 15 seconds
 const disconnectGraceTimers = new Map();
+const astroSocketMap = new Map();
+const astroDisconnectTimers = new Map();
 
 io.on('connection', (socket) => {
   console.log(`[Socket.IO] Client connected: ${socket.id}`);
@@ -117,6 +119,11 @@ io.on('connection', (socket) => {
     } else if (role === 'astrologer') {
       socket.join(`room_astro_${userId}`);
       console.log(`[Socket.IO] Astrologer ${userId} joined room_astro_${userId}`);
+      astroSocketMap.set(socket.id, userId);
+      if (astroDisconnectTimers.has(userId)) {
+        clearTimeout(astroDisconnectTimers.get(userId));
+        astroDisconnectTimers.delete(userId);
+      }
     } else if (role === 'user') {
       socket.join(`room_user_${userId}`);
       console.log(`[Socket.IO] User ${userId} joined room_user_${userId}`);
@@ -745,12 +752,51 @@ io.on('connection', (socket) => {
     if (activeTimers.has(roomId)) return; // Already running
     activeTimers.set(roomId, { pending: true }); // Sync lock
 
+    let sysComm = await SystemSettings.findOne();
+    let commissionRate = 30;
+    if (type === 'video_call') commissionRate = sysComm?.commissionRates?.videoCall ?? 30;
+    else if (type === 'audio_call') commissionRate = sysComm?.commissionRates?.audioCall ?? 30;
+    else commissionRate = sysComm?.commissionRates?.chat ?? 30;
+
+    let isFreeChat = false;
+    if (sessionId) {
+      const ChatSession = (await import('./models/chatSession.model.js')).default;
+      const CallSession = (await import('./models/callSession.model.js')).default;
+      let sessionObj = await ChatSession.findById(sessionId);
+      if (!sessionObj) sessionObj = await CallSession.findById(sessionId);
+      if (sessionObj && sessionObj.isFreeChat) {
+        isFreeChat = true;
+      }
+    }
+    const freeChatDurationSeconds = (sysComm?.freeChatDuration || 1) * 60;
+
     let seconds = 0;
     const intervalId = setInterval(async () => {
       seconds++;
       const timerData = activeTimers.get(roomId);
       if (timerData) timerData.seconds = seconds;
       io.to(roomId).emit('timer_tick', { seconds });
+
+      // Enforce Free Chat Limit
+      if (isFreeChat && seconds >= freeChatDurationSeconds) {
+        try {
+          await User.findByIdAndUpdate(userId, {
+            freeChatUsed: true,
+            freeChatUsedAt: new Date(),
+            freeChatDuration: sysComm?.freeChatDuration || 1
+          });
+          io.to(roomId).emit('wallet_update', { freeChatUsed: true });
+        } catch (err) {
+          console.error('[Socket.IO] Error updating free chat status:', err);
+        }
+        
+        io.to(roomId).emit('session_ended', {
+          reason: 'free_chat_limit_reached',
+          durationSeconds: seconds,
+        });
+        handleEndSession({ roomId, sessionId, userId, endedBy: 'system', finalSeconds: seconds, sessionType: type });
+        return;
+      }
 
       const currentCost = Number(((seconds * astrologerRate) / 60).toFixed(2));
       if (!timerData) return;
@@ -784,15 +830,9 @@ io.on('connection', (socket) => {
         console.error('[Socket.IO] Billing error:', err);
       }
     }, 1000);
-
-    let sysComm = await SystemSettings.findOne();
-    let commissionRate = 30;
-    if (type === 'video_call') commissionRate = sysComm?.commissionRates?.videoCall ?? 30;
-    else if (type === 'audio_call') commissionRate = sysComm?.commissionRates?.audioCall ?? 30;
-    else commissionRate = sysComm?.commissionRates?.chat ?? 30;
     
     activeTimers.set(roomId, { intervalId, seconds: 0, astrologerRate, sessionId, userId, lastDeducted: 0, sessionType: type, commissionRate });
-    console.log(`[Socket.IO] Timer started for room ${roomId} with type ${type} and commission ${commissionRate}%`);
+    console.log(`[Socket.IO] Timer started for room ${roomId} with type ${type} and commission ${commissionRate}% (isFreeChat: ${isFreeChat})`);
   });
 
   // ── End session manually
@@ -1237,6 +1277,28 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', async () => {
     console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+
+    // Auto-offline logic for astrologers
+    const disconnectedAstroId = astroSocketMap.get(socket.id);
+    if (disconnectedAstroId) {
+      astroSocketMap.delete(socket.id);
+      
+      const timer = setTimeout(async () => {
+        try {
+          const Astrologer = (await import('./models/astrologer.model.js')).default;
+          const astro = await Astrologer.findById(disconnectedAstroId);
+          if (astro && astro.onlineStatus === 'online') {
+            await Astrologer.findByIdAndUpdate(disconnectedAstroId, { onlineStatus: 'offline' });
+            io.emit('astro_status_changed', { astrologerId: disconnectedAstroId, status: 'offline' });
+            console.log(`[Socket.IO] Astrologer ${disconnectedAstroId} auto-offline due to disconnect`);
+          }
+        } catch (err) {
+          console.error('[Socket.IO] Auto-offline error:', err.message);
+        }
+      }, 5000); // 5 seconds grace period for page refresh
+      
+      astroDisconnectTimers.set(disconnectedAstroId, timer);
+    }
 
     // Strict Disconnect Handling
     const roomInfo = socketRoomMap.get(socket.id);

@@ -316,7 +316,7 @@ const AdminUsers = () => {
 
       {/* ═══ COMPREHENSIVE USER DETAIL MODAL ═══ */}
       {detailUser && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDetailUser(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDetailUser(null)}>
           <div className="absolute inset-0" />
           <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
             
@@ -465,7 +465,7 @@ const AdminUsers = () => {
       )}
       {/* ═══ REFUND MODAL ═══ */}
       {refundModal && detailUser && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setRefundModal(false)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setRefundModal(false)}>
           <div className="absolute inset-0" />
           <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden p-6 animate-scale-in" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-900 mb-4">Refund Wallet</h3>
@@ -526,7 +526,7 @@ const AdminUsers = () => {
       )}
       {/* ═══ DELETE CONFIRM MODAL ═══ */}
       {deleteConfirmUser && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0" onClick={() => setDeleteConfirmUser(null)} />
           <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl p-6 text-center animate-scale-in">
             <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">

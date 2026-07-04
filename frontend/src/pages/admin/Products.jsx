@@ -449,7 +449,7 @@ const AdminProducts = () => {
 
       {/* ═══ ADD/EDIT PRODUCT MODAL ═══ */}
       {showAddModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
+        <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
           <div className="absolute inset-0" />
           <div className="w-full sm:max-w-2xl bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in flex flex-col max-h-[90vh] relative z-10" onClick={e => e.stopPropagation()}>
             {/* Header */}
@@ -630,7 +630,7 @@ const AdminProducts = () => {
 
       {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
       {deleteConfirmProduct && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmProduct(null)}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmProduct(null)}>
           <div className="absolute inset-0" />
           <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center z-10" onClick={e => e.stopPropagation()}>
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
