@@ -58,25 +58,19 @@ const AdminDashboard = () => {
   };
 
   const overviewCards = [
-    { label: 'Total Revenue', value: `₹${dbData.metrics?.totalRevenue || 0}`, desc: 'Overall platform revenue', icon: <FaRupeeSign size={16} />, color: 'green', link: '/admin/finance' },
-    { label: 'Consultations', value: `₹${dbData.metrics?.chatRevenue || 0}`, desc: 'Chat & call revenue', icon: <FiMessageSquare size={16} />, color: 'purple', link: '/admin/finance' },
-    { label: 'Store Sales', value: `₹${dbData.metrics?.storeRevenue || 0}`, desc: 'Total e-commerce volume', icon: <FiPackage size={16} />, color: 'yellow', link: '/admin/orders' },
-    { label: 'Pooja Revenue', value: `₹${dbData.metrics?.poojaRevenue || 0}`, desc: 'Total pooja volume', icon: <GiFlowerPot size={16} />, color: 'cyan', link: '/admin/finance' },
-    
-    { label: 'Total Astrologers', value: dbData.metrics?.totalAstrologers || 0, desc: 'Approved astrologers', icon: <FiStar size={16} />, color: 'blue', link: '/admin/astrologers' },
-    { label: 'Astro Requests', value: dbData.metrics?.pendingApprovals || 0, desc: 'Awaiting approval', icon: <FiClock size={16} />, color: 'orange', link: '/admin/astrologers' },
-    { label: 'Online Astrologers', value: dbData.metrics?.onlineAstrologers || 0, desc: 'Currently online', icon: <FiActivity size={16} />, color: 'green', link: '/admin/astrologers' },
+    { label: 'Total Platform Profit', value: `₹${dbData.metrics?.totalRevenue || 0}`, desc: 'Overall admin profit', icon: <FaRupeeSign size={16} />, color: 'green', link: '/admin/finance' },
+    { label: 'Astro Approvals', value: dbData.metrics?.pendingApprovals || 0, desc: 'Awaiting approval', icon: <FiClock size={16} />, color: 'orange', link: '/admin/astrologers' },
     { label: 'Total Users', value: dbData.metrics?.registeredUsers || 0, desc: 'Registered users', icon: <FiUsers size={16} />, color: 'purple', link: '/admin/users' },
-
-    { label: 'Total Orders', value: dbData.metrics?.totalOrders || 0, desc: 'E-commerce orders', icon: <FiShoppingCart size={16} />, color: 'yellow', link: '/admin/orders' },
+    { label: 'Total Astrologers', value: dbData.metrics?.totalAstrologers || 0, desc: 'Approved astrologers', icon: <FiStar size={16} />, color: 'blue', link: '/admin/astrologers' },
+    
+    { label: 'Online Astrologers', value: dbData.metrics?.onlineAstrologers || 0, desc: 'Currently online', icon: <FiActivity size={16} />, color: 'green', link: '/admin/astrologers' },
+    { label: 'E-commerce Profit', value: `₹${dbData.metrics?.storeProfit || 0}`, desc: 'Net store profit', icon: <FiTrendingUp size={16} />, color: 'cyan', link: '/admin/orders' },
+    { label: 'Chat/Call Profit', value: `₹${dbData.metrics?.chatRevenue || 0}`, desc: 'Admin profit from sessions', icon: <FiMessageSquare size={16} />, color: 'purple', link: '/admin/finance' },
+    { label: 'Pooja Profit', value: `₹${dbData.metrics?.poojaRevenue || 0}`, desc: 'Admin profit from poojas', icon: <GiFlowerPot size={16} />, color: 'cyan', link: '/admin/finance' },
+    
     { label: 'Pending Orders', value: dbData.metrics?.pendingOrders || 0, desc: 'Orders awaiting processing', icon: <FiClock size={16} />, color: 'pink', link: '/admin/orders' },
     { label: 'Completed Orders', value: dbData.metrics?.completedOrders || 0, desc: 'Successfully delivered', icon: <FiCheckCircle size={16} />, color: 'green', link: '/admin/orders' },
-    { label: 'Store Profit', value: `₹${dbData.metrics?.storeProfit || 0}`, desc: 'Net e-commerce profit', icon: <FiTrendingUp size={16} />, color: 'cyan', link: '/admin/orders' },
-
-    { label: 'Total Poojas', value: dbData.metrics?.totalPoojas || 0, desc: 'Total pooja bookings', icon: <GiFlowerPot size={16} />, color: 'purple', link: '/admin/finance' },
-    { label: 'Pending Poojas', value: dbData.metrics?.pendingPoojas || 0, desc: 'Awaiting confirmation', icon: <FiClock size={16} />, color: 'yellow', link: '/admin/finance' },
-    { label: 'Active Sessions', value: dbData.metrics?.liveSessionsCount || 0, desc: 'Ongoing chats & calls', icon: <FiPhoneCall size={16} />, color: 'blue', link: '/admin/sessions' },
-    { label: 'Recent Activity', value: dbData.recentActivity?.length || 0, desc: 'Latest transactions', icon: <FiActivity size={16} />, color: 'green', link: '/admin/finance' },
+    { label: 'Active Sessions', value: dbData.metrics?.liveSessionsCount || 0, desc: 'Live chats & calls', icon: <FiPhoneCall size={16} />, color: 'blue', link: '/admin/sessions' },
   ];
 
   return (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FiSearch, FiPlus, FiEdit, FiTrash2, FiChevronDown, FiChevronLeft, FiChevronRight, FiBox, FiImage, FiToggleLeft, FiToggleRight, FiX, FiFilter, FiMoreHorizontal, FiCamera } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
@@ -26,6 +27,15 @@ const AdminProducts = () => {
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  useEffect(() => {
+    if (showAddModal || deleteConfirmProduct) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [showAddModal, deleteConfirmProduct]);
 
   const fetchProducts = async () => {
     try {
@@ -78,6 +88,40 @@ const AdminProducts = () => {
     const num = Number(value);
     if (isNaN(num) || num < 0) return;
     setFormData(prev => ({ ...prev, [key]: num }));
+  };
+
+  const handleMrpChange = (val) => {
+    handleNumberChange('originalPrice', val);
+    const mrp = Number(val);
+    const sp = Number(formData.price);
+    if (mrp > 0 && sp >= 0 && sp <= mrp) {
+      const disc = Math.round(((mrp - sp) / mrp) * 100);
+      setFormData(prev => ({ ...prev, originalPrice: val === '' ? '' : mrp, discount: disc.toString() }));
+    }
+  };
+
+  const handleSellingPriceChange = (val) => {
+    handleNumberChange('price', val);
+    const sp = Number(val);
+    const mrp = Number(formData.originalPrice);
+    if (mrp > 0 && sp >= 0 && sp <= mrp) {
+      const disc = Math.round(((mrp - sp) / mrp) * 100);
+      setFormData(prev => ({ ...prev, price: val === '' ? '' : sp, discount: disc.toString() }));
+    }
+  };
+
+  const handleDiscountChange = (val) => {
+    const rawVal = val.replace(/[^0-9]/g, '');
+    if (rawVal === '' || (Number(rawVal) >= 0 && Number(rawVal) <= 100)) {
+      const disc = Number(rawVal);
+      const mrp = Number(formData.originalPrice);
+      if (mrp > 0) {
+        const sp = Math.round(mrp - (mrp * disc) / 100);
+        setFormData(prev => ({ ...prev, discount: rawVal, price: sp }));
+      } else {
+        setFormData(prev => ({ ...prev, discount: rawVal }));
+      }
+    }
   };
 
   const handleSaveProduct = async () => {
@@ -404,9 +448,10 @@ const AdminProducts = () => {
       </div>
 
       {/* ═══ ADD/EDIT PRODUCT MODAL ═══ */}
-      {showAddModal && (
+      {showAddModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)}>
-          <div className="w-full sm:max-w-2xl bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0" />
+          <div className="w-full sm:max-w-2xl bg-white rounded-t-[2rem] sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-scale-in flex flex-col max-h-[90vh] relative z-10" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 sticky top-0 z-10">
               <div className="flex items-center gap-3">
@@ -517,25 +562,28 @@ const AdminProducts = () => {
 
               <div className="grid grid-cols-5 gap-4">
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Selling Price</label>
-                  <input type="number" min="0" value={formData.price} onChange={e => handleNumberChange('price', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Cost Price</label>
-                  <input type="number" min="0" value={formData.costPrice} onChange={e => handleNumberChange('costPrice', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="200" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
-                </div>
-                <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">MRP (₹)</label>
-                  <input type="number" min="0" value={formData.originalPrice} onChange={e => handleNumberChange('originalPrice', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.originalPrice} onChange={e => handleMrpChange(e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="1000" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Discount Tag (%)</label>
-                  <input type="number" min="0" max="100" value={formData.discount} onChange={e => {
-                    const val = e.target.value.replace(/[^0-9]/g, '');
-                    if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) {
-                      setFormData({...formData, discount: val});
-                    }
-                  }} onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()} placeholder="e.g. 50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Selling Price (₹)</label>
+                  <input type="number" min="0" value={formData.price} onChange={e => handleSellingPriceChange(e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="800" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider text-green-500">Discount Tag (%)</label>
+                  <input type="number" min="0" max="100" value={formData.discount} onChange={e => handleDiscountChange(e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()} placeholder="20" className="w-full px-4 py-3 rounded-xl bg-green-50/50 border-0 text-sm font-bold text-green-700 focus:outline-none focus:ring-2 focus:ring-green-500/20" />
+                </div>
+                <div className="space-y-1.5 relative group">
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                    Cost Price
+                    <span className="text-[9px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded ml-1 lowercase">internal</span>
+                  </label>
+                  <input type="number" min="0" value={formData.costPrice} onChange={e => handleNumberChange('costPrice', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="500" className={`w-full px-4 py-3 rounded-xl border-0 text-sm font-medium focus:outline-none focus:ring-2 ${Number(formData.costPrice) > Number(formData.price) && formData.price !== '' ? 'bg-red-50 text-red-600 focus:ring-red-500/20' : 'bg-gray-50 focus:ring-orange-500/20'}`} />
+                  {Number(formData.costPrice) > Number(formData.price) && formData.price !== '' && (
+                    <div className="absolute -bottom-5 left-0 w-[150%] text-[10px] font-bold text-red-500 animate-fade-in flex items-center gap-1">
+                      ⚠️ Loss making price!
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Stock</label>
@@ -578,13 +626,13 @@ const AdminProducts = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* ═══ DELETE CONFIRMATION MODAL ═══ */}
-      {deleteConfirmProduct && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" onClick={() => setDeleteConfirmProduct(null)}>
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" />
-          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center" onClick={e => e.stopPropagation()}>
+      {deleteConfirmProduct && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmProduct(null)}>
+          <div className="absolute inset-0" />
+          <div className="relative w-full max-w-md bg-white rounded-[2rem] shadow-2xl overflow-hidden animate-scale-in flex flex-col p-8 text-center z-10" onClick={e => e.stopPropagation()}>
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6">
               <FiTrash2 size={32} className="text-red-500" />
             </div>
@@ -615,7 +663,7 @@ const AdminProducts = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 };

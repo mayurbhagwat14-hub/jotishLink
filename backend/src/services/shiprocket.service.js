@@ -71,7 +71,7 @@ class ShiprocketService {
         payload.courier_id = courierId;
       }
 
-      const response = await axios.post(`${this.baseURL}/courier/generate/awb`, payload, {
+      const response = await axios.post(`${this.baseURL}/courier/assign/awb`, payload, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,

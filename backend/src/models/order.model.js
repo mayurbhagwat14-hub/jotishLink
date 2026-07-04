@@ -26,6 +26,18 @@ const orderItemSchema = new mongoose.Schema({
     min: [0, 'GST percent cannot be negative'],
     max: [100, 'GST percent cannot exceed 100']
   },
+  discountApplied: {
+    type: Number,
+    default: 0
+  },
+  taxableAmount: {
+    type: Number,
+    default: 0
+  },
+  gstAmount: {
+    type: Number,
+    default: 0
+  },
   hsnCode: {
     type: String,
     default: '',

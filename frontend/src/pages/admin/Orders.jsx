@@ -42,6 +42,15 @@ const AdminOrders = () => {
     return () => socket.off('order_updated', handleOrderUpdate);
   }, [socket]);
 
+  useEffect(() => {
+    if (selectedOrder || showShipModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [selectedOrder, showShipModal]);
+
   const now = () => {
     const d = new Date();
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -75,6 +84,7 @@ const AdminOrders = () => {
         products: o.items.map(item => ({ name: item.productId?.name || 'Product', qty: item.quantity, price: item.price })),
         total: o.totalAmount || 0,
         payment: o.paymentStatus || 'Paid',
+        paymentMethod: o.paymentMethod || 'online',
         status: o.orderStatus ? (o.orderStatus.charAt(0).toUpperCase() + o.orderStatus.slice(1)) : 'Pending',
         cancelRequest: o.cancelRequest || null,
         shiprocketOrderId: o.shiprocketOrderId,
@@ -517,6 +527,11 @@ const AdminOrders = () => {
                   </td>
                   <td className="py-4 px-5">
                     <span className="text-sm font-black text-gray-900">₹{order.total.toLocaleString()}</span>
+                    {order.rawOrder?.couponCode && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-green-100 text-green-700 uppercase" title={`Discount: ₹${order.rawOrder?.discountAmount}`}>
+                        {order.rawOrder.couponCode}
+                      </span>
+                    )}
                     <p className={`text-[10px] font-bold mt-0.5 ${order.payment === 'Paid' ? 'text-green-500' : (order.payment === 'Refunded' || order.status === 'Cancelled') ? 'text-red-500' : 'text-orange-500'}`}>
                       {order.status === 'Cancelled' && order.payment.toLowerCase() === 'pending' ? 'Cancelled' : order.payment}
                     </p>
@@ -673,9 +688,9 @@ const AdminOrders = () => {
         <>
           {/* ORDER DETAIL MODAL */}
           {selectedOrder && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setSelectedOrder(null)}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedOrder(null)}>
+          <div className="absolute inset-0" />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in max-h-[90vh] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
             {(() => {
               const order = getOrderById(selectedOrder.id) || selectedOrder;
               return (
@@ -715,7 +730,16 @@ const AdminOrders = () => {
                               <p className="text-sm font-bold text-gray-800">{p.name}</p>
                               <p className="text-[10px] text-gray-400">Qty: {p.qty}</p>
                             </div>
-                            <span className="text-sm font-black text-gray-900">₹{(p.price * p.qty).toLocaleString()}</span>
+                            <div className="text-right">
+                              {order.rawOrder?.items?.[i]?.discountApplied ? (
+                                <>
+                                  <span className="text-[10px] line-through text-gray-400 mr-1.5">₹{(p.price * p.qty).toLocaleString()}</span>
+                                  <span className="text-sm font-black text-green-600">₹{((p.price * p.qty) - order.rawOrder.items[i].discountApplied).toLocaleString()}</span>
+                                </>
+                              ) : (
+                                <span className="text-sm font-black text-gray-900">₹{(p.price * p.qty).toLocaleString()}</span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -915,9 +939,9 @@ const AdminOrders = () => {
 
       {/* ═══ SHIP MODAL ═══ */}
       {showShipModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setShowShipModal(null)}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowShipModal(null)}>
+          <div className="absolute inset-0" />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in z-10" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-900 flex items-center gap-2"><FiTruck size={16} className="text-blue-500" /> Ship Order</h3>
               <p className="text-xs text-gray-400 font-medium mt-1">{showShipModal.id} — {showShipModal.customer}</p>

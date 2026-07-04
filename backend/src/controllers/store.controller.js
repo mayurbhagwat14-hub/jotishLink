@@ -122,7 +122,10 @@ export const createOrder = asyncHandler(async (req, res) => {
     price: item.price,
     costPrice: item.costPrice,
     gstPercent: item.gstPercent,
-    hsnCode: item.hsnCode
+    hsnCode: item.hsnCode,
+    discountApplied: item.discountApplied,
+    taxableAmount: item.taxableAmount,
+    gstAmount: item.gstAmount
   }));
 
   const user = await User.findById(req.user._id);
@@ -396,17 +399,45 @@ export const requestCancelOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Cancel request already submitted');
   }
 
-  const refundPercent = 80;
-  const refundAmount = Math.round((order.totalAmount * refundPercent) / 100);
+  if (order.orderStatus === 'pending') {
+    // Auto-approve cancellation and provide 100% refund if order hasn't been processed yet
+    order.orderStatus = 'cancelled';
+    order.cancelRequest = {
+      requested: true,
+      reason: reason || 'No reason provided',
+      requestedAt: new Date(),
+      adminResponse: 'approved',
+      refundPercent: 100,
+      refundAmount: order.totalAmount,
+    };
 
-  order.cancelRequest = {
-    requested: true,
-    reason: reason || 'No reason provided',
-    requestedAt: new Date(),
-    adminResponse: 'pending',
-    refundPercent,
-    refundAmount,
-  };
+    if (order.paymentStatus === 'paid' && order.paymentMethod !== 'cod') {
+      const user = await User.findById(order.userId);
+      if (user) {
+        user.wallet = (user.wallet || 0) + order.totalAmount;
+        await user.save();
+        await Transaction.create({
+          userId: order.userId,
+          amount: order.totalAmount,
+          type: 'refund',
+          desc: `Auto-refund for cancelled order #${order._id.toString().slice(-6).toUpperCase()}`,
+          status: 'success'
+        });
+      }
+    }
+  } else {
+    const refundPercent = 80;
+    const refundAmount = Math.round((order.totalAmount * refundPercent) / 100);
+
+    order.cancelRequest = {
+      requested: true,
+      reason: reason || 'No reason provided',
+      requestedAt: new Date(),
+      adminResponse: 'pending',
+      refundPercent,
+      refundAmount,
+    };
+  }
   await order.save();
 
   // Notify admin via socket

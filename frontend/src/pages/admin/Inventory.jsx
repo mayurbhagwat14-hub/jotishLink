@@ -18,6 +18,15 @@ const AdminInventory = () => {
     fetchInventory();
   }, []);
 
+  useEffect(() => {
+    if (restockModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [restockModal]);
+
   const fetchInventory = async () => {
     try {
       const response = await getAdminProducts();
@@ -252,9 +261,9 @@ const AdminInventory = () => {
 
       {/* ═══ RESTOCK MODAL ═══ */}
       {restockModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setRestockModal(null)}>
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setRestockModal(null)}>
+          <div className="absolute inset-0" />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-scale-in z-10" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-bold text-gray-900">Restock Product</h3>
               <button onClick={() => setRestockModal(null)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600"><FiX size={16} /></button>

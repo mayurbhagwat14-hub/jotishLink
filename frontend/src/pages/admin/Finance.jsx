@@ -60,6 +60,15 @@ const AdminFinance = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (isPayoutModalOpen || isDetailsModalOpen || isExportModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isPayoutModalOpen, isDetailsModalOpen, isExportModalOpen]);
+
   const fetchTransactions = async () => {
     try {
       const res = await getAdminTransactions();

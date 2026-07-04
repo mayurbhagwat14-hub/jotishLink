@@ -31,6 +31,15 @@ const AdminRatings = () => {
     fetchRatings();
   }, []);
 
+  useEffect(() => {
+    if (deleteConfirmRating) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [deleteConfirmRating]);
+
   const showToast = (message) => {
     setSuccessToast(message);
     setTimeout(() => setSuccessToast(null), 3000);
@@ -212,8 +221,8 @@ const AdminRatings = () => {
 
       {/* ═══ DELETE CONFIRM MODAL ═══ */}
       {deleteConfirmRating && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setDeleteConfirmRating(null)} />
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteConfirmRating(null)}>
+          <div className="absolute inset-0" />
           <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl p-6 text-center animate-scale-in">
             <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">
               <FiTrash2 size={32} />

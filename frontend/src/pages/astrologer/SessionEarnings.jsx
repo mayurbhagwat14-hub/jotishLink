@@ -25,7 +25,7 @@ const SessionEarnings = () => {
       e.sessionId,
       e.durationSeconds || 0,
       e.amount,
-      new Date(e.date).toLocaleString().replace(/,/g, '') // avoid commas breaking CSV
+      `"${new Date(e.date).toLocaleString()}"` // enclose in quotes to prevent CSV breakage
     ]);
     
     let csvContent = "data:text/csv;charset=utf-8," 

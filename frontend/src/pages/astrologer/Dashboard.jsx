@@ -57,13 +57,13 @@ const Dashboard = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Today's Earnings */}
-        <div onClick={() => navigate('/astrologer/wallet')} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow cursor-pointer active:scale-95">
+        <Link to="/astrologer/session-earnings" className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow cursor-pointer active:scale-95 block">
           <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-3">
              <GiWallet size={20} />
           </div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Today's Earnings</p>
           <h3 className="text-xl font-black text-gray-800">₹{dbData.todayEarnings?.toLocaleString() || '0'}</h3>
-        </div>
+        </Link>
 
         {/* Total Sessions */}
         <Link to="/astrologer/history" className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col justify-center hover:shadow-md transition-shadow block">

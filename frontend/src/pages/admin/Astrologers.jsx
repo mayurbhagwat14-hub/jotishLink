@@ -23,6 +23,15 @@ const AdminAstrologers = () => {
     fetchAstrologers();
   }, []);
 
+  useEffect(() => {
+    if (selectedAstrologer || deleteConfirmAstrologer) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [selectedAstrologer, deleteConfirmAstrologer]);
+
   const fetchAstrologers = async () => {
     try {
       const response = await getAdminAstrologers();
@@ -459,8 +468,8 @@ const AdminAstrologers = () => {
       )}
       {/* ═══ PROFILE VIEW MODAL ═══ */}
       {selectedAstrologer && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedAstrologer(null)} />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm">
+          <div className="absolute inset-0" onClick={() => setSelectedAstrologer(null)} />
           <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl flex flex-col">
             
             {/* Modal Header */}
@@ -517,7 +526,7 @@ const AdminAstrologers = () => {
                 {/* Pricing Details */}
                 <div className="bg-green-50/50 rounded-2xl p-6 border border-green-100">
                   <h3 className="font-bold text-gray-800 mb-4 border-b border-green-200 pb-2">Pricing Setup</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
                       <p className="text-[10px] font-bold text-gray-400 uppercase">Chat Rate</p>
                       <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.chat || 5}/min</p>
@@ -529,10 +538,6 @@ const AdminAstrologers = () => {
                     <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
                       <p className="text-[10px] font-bold text-gray-400 uppercase">Video Call</p>
                       <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.videoCall || 10}/min</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-xl border border-green-50 text-center shadow-sm">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase">Report</p>
-                      <p className="font-black text-green-600 text-lg">₹{selectedAstrologer.pricing?.report || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -598,7 +603,7 @@ const AdminAstrologers = () => {
       )}
       {/* ═══ DELETE CONFIRM MODAL ═══ */}
       {deleteConfirmAstrologer && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={() => setDeleteConfirmAstrologer(null)} />
           <div className="bg-white rounded-3xl w-full max-w-sm relative z-10 shadow-2xl p-6 text-center animate-scale-in">
             <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mx-auto mb-4">

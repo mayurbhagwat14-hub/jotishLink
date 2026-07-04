@@ -19,6 +19,15 @@ const AdminServices = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (proofsModalPooja) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [proofsModalPooja]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -222,8 +231,9 @@ const AdminServices = () => {
 
       {/* Proofs Modal */}
       {proofsModalPooja && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setProofsModalPooja(null)}>
+          <div className="absolute inset-0" />
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] relative z-10" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <div>
                 <h3 className="text-lg font-bold text-gray-900">Completion Proofs & Notes</h3>

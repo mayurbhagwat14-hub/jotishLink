@@ -106,7 +106,7 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     CallSession.find({ status: { $in: ['accepted', 'ongoing', 'ringing'] } }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
     Order.find().populate('userId', 'name').sort({ createdAt: -1 }).limit(5).lean(),
     Astrologer.countDocuments({ approvalStatus: 'pending' }),
-    Order.countDocuments({ orderStatus: 'delivered' }),
+    Order.countDocuments({ orderStatus: { $in: ['delivered', 'completed'] } }),
     Astrologer.countDocuments({ approvalStatus: 'approved' }),
     PoojaBooking.countDocuments(),
     PoojaBooking.countDocuments({ status: { $in: ['Pending', 'Accepted', 'In Progress'] } })
