@@ -18,6 +18,7 @@ const systemSettingsSchema = new mongoose.Schema(
     },
     newUserWalletBonus: { type: Number, default: 0 },
     minChatBalance: { type: Number, default: 10 },
+    minimumPoojaPrice: { type: Number, default: 51 },
     maintenanceMode: { type: Boolean, default: false },
     razorpayEnabled: { type: Boolean, default: false },
     smsEnabled: { type: Boolean, default: false },

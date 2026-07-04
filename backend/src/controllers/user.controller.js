@@ -37,7 +37,8 @@ export const getPublicSettings = asyncHandler(async (req, res) => {
     tagline: settings.tagline,
     termsOfUse: settings.termsOfUse,
     privacyPolicy: settings.privacyPolicy,
-    defaultGstPercent: settings.defaultGstPercent
+    defaultGstPercent: settings.defaultGstPercent,
+    minimumPoojaPrice: settings.minimumPoojaPrice
   }, 'Public settings fetched'));
 });
 

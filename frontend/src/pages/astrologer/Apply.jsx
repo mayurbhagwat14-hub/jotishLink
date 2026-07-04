@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera, FiImage } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckCircle, FiClock, FiUploadCloud, FiCamera, FiImage, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import OtpInput from '../../components/OtpInput';
 import { astrologerLogin, astrologerSignupThunk } from '../../store/slices/astrologerAuthSlice';
 import { checkAstrologerPhone, requestOtp, astrologerSignup, saveAstrologerDraft, fetchAstrologerDraft } from '../../api/astrologerApis';
 import LocationAutocomplete from '../../components/LocationAutocomplete';
-
+import SearchableDropdown from '../../components/SearchableDropdown';
 const CATEGORIES = ['Love', 'Education', 'Marriage', 'Wealth', 'Health', 'Legal', 'Career', 'Business', 'Kids'];
 const SPECIALITIES = ['Vedic Astrology', 'Tarot Reading', 'Numerology', 'Palmistry', 'Vastu Shastra'];
 const LANGUAGES = ['Hindi', 'English', 'Tamil', 'Telugu', 'Kannada', 'Malayalam', 'Marathi', 'Gujarati', 'Bengali'];
@@ -64,7 +64,9 @@ const ApplyAstrologer = () => {
   const [identityProof, setIdentityProof] = useState('');
   const [apiError, setApiError] = useState('');
   const [tempAuthData, setTempAuthData] = useState(null);
-  const { appName } = useSelector(state => state.settings) || { appName: 'JyotishLink' };
+  const { appName, minimumPoojaPrice = 51 } = useSelector(state => state.settings) || { appName: 'JyotishLink', minimumPoojaPrice: 51 };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showAccountNumber, setShowAccountNumber] = useState(false);
   
   const prefilledPhone = location.state?.phone || '';
   
@@ -335,7 +337,7 @@ const ApplyAstrologer = () => {
     if (exists) {
       setFormData({ ...formData, poojasOffered: formData.poojasOffered.filter(p => p.poojaName !== poojaName) });
     } else {
-      setFormData({ ...formData, poojasOffered: [...formData.poojasOffered, { poojaName, price: 500 }] });
+      setFormData({ ...formData, poojasOffered: [...formData.poojasOffered, { poojaName, price: minimumPoojaPrice }] });
     }
   };
 
@@ -357,6 +359,16 @@ const ApplyAstrologer = () => {
     });
   };
 
+  const focusErrorField = (fieldName) => {
+    setTimeout(() => {
+      const el = document.querySelector(`[name="${fieldName}"]`) || document.getElementById(`input-${fieldName}`);
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -367,30 +379,44 @@ const ApplyAstrologer = () => {
     if (!profilePic) { toast.error('Profile Photo is required.'); return setLoading(false); }
     if (!aadhaarFront || !aadhaarBack || !panCard || !certificate || !selfieVerification) { toast.error('All Document uploads are required.'); return setLoading(false); }
     
-    if (formData.fullName.trim().length < 3) { toast.error('Full Name must be at least 3 characters.'); return setLoading(false); }
-    if (!/^[a-zA-Z\s.-]+$/.test(formData.fullName)) { toast.error('Full Name can only contain letters, spaces, dots, and hyphens.'); return setLoading(false); }
-    if (!/^[6-9]\d{9}$/.test(formData.mobile)) { toast.error('Mobile Number must be a valid 10-digit Indian number.'); return setLoading(false); }
+    if (formData.fullName.trim().length < 3) { toast.error('Full Name must be at least 3 characters.'); focusErrorField('fullName'); return setLoading(false); }
+    if (!/^[a-zA-Z\s.-]+$/.test(formData.fullName)) { toast.error('Full Name can only contain letters, spaces, dots, and hyphens.'); focusErrorField('fullName'); return setLoading(false); }
+    if (!/^[6-9]\d{9}$/.test(formData.mobile)) { toast.error('Mobile Number must be a valid 10-digit Indian number.'); focusErrorField('mobile'); return setLoading(false); }
 
-    if (formData.password.length < 6) { toast.error('Password must be at least 6 characters.'); return setLoading(false); }
-    if (!formData.dob || !formData.address || !formData.city || !formData.state || !formData.pincode) { toast.error('All Personal Details are required.'); return setLoading(false); }
-    if (!/^[a-zA-Z\s]+$/.test(formData.city)) { toast.error('City can only contain letters and spaces.'); return setLoading(false); }
-    if (!/^[a-zA-Z\s]+$/.test(formData.state)) { toast.error('State can only contain letters and spaces.'); return setLoading(false); }
-    if (!/^\d{6}$/.test(formData.pincode)) { toast.error('Pincode must be exactly 6 digits.'); return setLoading(false); }
+    if (formData.password.length < 6) { toast.error('Password must be at least 6 characters.'); focusErrorField('password'); return setLoading(false); }
+    
+    if (!formData.dob) { toast.error('Date of Birth is required.'); focusErrorField('dob'); return setLoading(false); }
+    if (!formData.address) { toast.error('Address is required.'); focusErrorField('address'); return setLoading(false); }
+    if (!formData.city) { toast.error('City is required.'); focusErrorField('city'); return setLoading(false); }
+    if (!formData.state) { toast.error('State is required.'); focusErrorField('state'); return setLoading(false); }
+    if (!formData.pincode) { toast.error('Pincode is required.'); focusErrorField('pincode'); return setLoading(false); }
+
+    if (!/^[a-zA-Z\s]+$/.test(formData.city)) { toast.error('City can only contain letters and spaces.'); focusErrorField('city'); return setLoading(false); }
+    if (!/^[a-zA-Z\s]+$/.test(formData.state)) { toast.error('State can only contain letters and spaces.'); focusErrorField('state'); return setLoading(false); }
+    if (!/^\d{6}$/.test(formData.pincode)) { toast.error('Pincode must be exactly 6 digits.'); focusErrorField('pincode'); return setLoading(false); }
     
     if (formData.skills.length === 0) { toast.error('Please select at least one Primary Skill.'); return setLoading(false); }
     if (formData.categories.length === 0) { toast.error('Please select at least one Expertise Category.'); return setLoading(false); }
     if (formData.languages.length === 0) { toast.error('Please select at least one Language.'); return setLoading(false); }
     
-    if (!formData.education || !formData.consultationStyle) { toast.error('Professional details like education and style are required.'); return setLoading(false); }
-    if (Number(formData.chatPrice) < 5 || Number(formData.callPrice) < 5 || Number(formData.videoPrice) < 5) { toast.error('All prices (Chat, Call, Video) must be at least ₹5/min.'); return setLoading(false); }
+    if (!formData.education) { toast.error('Education details are required.'); focusErrorField('education'); return setLoading(false); }
+    if (!formData.consultationStyle) { toast.error('Consultation style is required.'); focusErrorField('consultationStyle'); return setLoading(false); }
     
-    if (!formData.accountHolderName || !formData.bankName || !formData.accountNumber || !formData.ifscCode) { toast.error('Bank details are required.'); return setLoading(false); }
-    if (!/^[a-zA-Z\s]+$/.test(formData.accountHolderName)) { toast.error('Account Holder Name can only contain letters and spaces.'); return setLoading(false); }
-    if (!/^[a-zA-Z\s]+$/.test(formData.bankName)) { toast.error('Bank Name can only contain letters and spaces.'); return setLoading(false); }
-    if (!/^\d{9,18}$/.test(formData.accountNumber)) { toast.error('Account Number must be between 9 and 18 digits.'); return setLoading(false); }
-    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) { toast.error('Invalid IFSC Code format. Example: SBIN0123456'); return setLoading(false); }
+    if (Number(formData.chatPrice) < 5) { toast.error('Chat price must be at least ₹5/min.'); focusErrorField('chatPrice'); return setLoading(false); }
+    if (Number(formData.callPrice) < 5) { toast.error('Call price must be at least ₹5/min.'); focusErrorField('callPrice'); return setLoading(false); }
+    if (Number(formData.videoPrice) < 5) { toast.error('Video price must be at least ₹5/min.'); focusErrorField('videoPrice'); return setLoading(false); }
     
-    if (formData.description.trim().length < 20) { toast.error('About You description must be at least 20 characters.'); return setLoading(false); }
+    if (!formData.accountHolderName) { toast.error('Account Holder Name is required.'); focusErrorField('accountHolderName'); return setLoading(false); }
+    if (!formData.bankName) { toast.error('Bank Name is required.'); focusErrorField('bankName'); return setLoading(false); }
+    if (!formData.accountNumber) { toast.error('Account Number is required.'); focusErrorField('accountNumber'); return setLoading(false); }
+    if (!formData.ifscCode) { toast.error('IFSC Code is required.'); focusErrorField('ifscCode'); return setLoading(false); }
+    
+    if (!/^[a-zA-Z\s]+$/.test(formData.accountHolderName)) { toast.error('Account Holder Name can only contain letters and spaces.'); focusErrorField('accountHolderName'); return setLoading(false); }
+    if (!/^[a-zA-Z\s]+$/.test(formData.bankName)) { toast.error('Bank Name can only contain letters and spaces.'); focusErrorField('bankName'); return setLoading(false); }
+    if (!/^\d{9,18}$/.test(formData.accountNumber)) { toast.error('Account Number must be between 9 and 18 digits.'); focusErrorField('accountNumber'); return setLoading(false); }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) { toast.error('Invalid IFSC Code format. Example: SBIN0123456'); focusErrorField('ifscCode'); return setLoading(false); }
+    
+    if (formData.description.trim().length < 20) { toast.error('About You description must be at least 20 characters.'); focusErrorField('description'); return setLoading(false); }
 
     if (formData.isPandit) {
       if (formData.poojasOffered.length === 0) {
@@ -398,8 +424,8 @@ const ApplyAstrologer = () => {
         return setLoading(false);
       }
       for (const p of formData.poojasOffered) {
-        if (!p.price || Number(p.price) < 51) {
-          toast.error(`Price for ${p.poojaName} must be at least ₹51.`);
+        if (!p.price || Number(p.price) < minimumPoojaPrice) {
+          toast.error(`Price for ${p.poojaName} must be at least ₹${minimumPoojaPrice}.`);
           return setLoading(false);
         }
       }
@@ -647,16 +673,25 @@ const ApplyAstrologer = () => {
                 {/* Password */}
                 <div>
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Password <span className="text-red-500">*</span></label>
-                  <input 
-                    type="password" 
-                    name="password"
-                    required
-                    minLength={6}
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Minimum 6 characters" 
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
-                  />
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      name="password"
+                      required
+                      minLength={6}
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Minimum 6 characters" 
+                      className="w-full pl-4 pr-12 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    >
+                      {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Date of Birth */}
@@ -705,28 +740,33 @@ const ApplyAstrologer = () => {
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-3">
-                    <div>
+                    <div className="z-20 relative">
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">City <span className="text-red-500">*</span></label>
-                      <input 
-                        type="text" 
-                        name="city" 
-                        list="city-suggestions" 
-                        required 
-                        value={formData.city} 
-                        onChange={handleChange} 
-                        placeholder="City/Village" 
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800"
+                      <LocationAutocomplete
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        onSelectDetailed={(details) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            city: details.placeName || details.label,
+                            state: details.state || prev.state
+                          }));
+                        }}
+                        placeholder="Search City..."
+                        required={true}
                       />
-                      <datalist id="city-suggestions">
-                        {MAJOR_CITIES.map(c => <option key={c} value={c} />)}
-                      </datalist>
                     </div>
-                    <div>
+                    <div className="z-10 relative">
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">State <span className="text-red-500">*</span></label>
-                      <input type="text" name="state" list="state-suggestions" required value={formData.state} onChange={handleChange} autoComplete="address-level1" placeholder="State" className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-[#fa6830] transition-all font-medium text-gray-800" />
-                      <datalist id="state-suggestions">
-                        {INDIAN_STATES.map(s => <option key={s} value={s} />)}
-                      </datalist>
+                      <SearchableDropdown
+                        name="state"
+                        options={INDIAN_STATES}
+                        value={formData.state}
+                        onChange={handleChange}
+                        placeholder="Select State"
+                        required={true}
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Pincode <span className="text-red-500">*</span></label>
@@ -928,7 +968,16 @@ const ApplyAstrologer = () => {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Account Number <span className="text-red-500">*</span></label>
-                      <input type="password" name="accountNumber" required pattern="^\d{9,18}$" title="Account number between 9 and 18 digits" value={formData.accountNumber} onChange={handleChange} className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium" />
+                      <div className="relative">
+                        <input type={showAccountNumber ? "text" : "password"} name="accountNumber" required pattern="^\d{9,18}$" title="Account number between 9 and 18 digits" value={formData.accountNumber} onChange={handleChange} className="w-full pl-4 pr-12 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none font-medium text-gray-800" />
+                        <button 
+                          type="button"
+                          onClick={() => setShowAccountNumber(!showAccountNumber)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                        >
+                          {showAccountNumber ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">IFSC Code <span className="text-red-500">*</span></label>

@@ -20,6 +20,7 @@ const initialState = {
   termsOfUse: '',
   privacyPolicy: '',
   defaultGstPercent: null,
+  minimumPoojaPrice: 51,
   loading: false,
 };
 
@@ -35,6 +36,7 @@ const settingsSlice = createSlice({
       if (data.termsOfUse !== undefined) state.termsOfUse = data.termsOfUse;
       if (data.privacyPolicy !== undefined) state.privacyPolicy = data.privacyPolicy;
       if (data.defaultGstPercent !== undefined) state.defaultGstPercent = data.defaultGstPercent;
+      if (data.minimumPoojaPrice !== undefined) state.minimumPoojaPrice = data.minimumPoojaPrice;
     }
   },
   extraReducers: (builder) => {
@@ -51,6 +53,7 @@ const settingsSlice = createSlice({
         if (data.termsOfUse) state.termsOfUse = data.termsOfUse;
         if (data.privacyPolicy) state.privacyPolicy = data.privacyPolicy;
         if (data.defaultGstPercent !== undefined) state.defaultGstPercent = data.defaultGstPercent;
+        if (data.minimumPoojaPrice !== undefined) state.minimumPoojaPrice = data.minimumPoojaPrice;
       })
       .addCase(fetchPublicSettingsThunk.rejected, (state) => {
         state.loading = false;

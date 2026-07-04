@@ -3,7 +3,7 @@ import { FiMapPin } from 'react-icons/fi';
 
 const popularCities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Surat', 'Pune', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal'];
 
-const LocationAutocomplete = ({ value, onChange, placeholder = "Enter location", className = "", required = false, name = "location" }) => {
+const LocationAutocomplete = ({ value, onChange, onSelectDetailed, placeholder = "Enter location", className = "", required = false, name = "location" }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -42,19 +42,28 @@ const LocationAutocomplete = ({ value, onChange, placeholder = "Enter location",
           
           let display = placeName;
           if (state) display += `, ${state}`;
-          if (country && country !== 'India') display += `, ${country}`; // Optional: only show country if outside India or always show it
+          if (country && country !== 'India') display += `, ${country}`; 
           
-          return display;
+          return { label: display, placeName, state, country };
         });
 
-        // Filter out duplicates
-        const uniqueApi = [...new Set(apiSuggestions)].filter(Boolean);
+        // Filter out duplicates based on label
+        const uniqueApi = [];
+        const seen = new Set();
+        for (const s of apiSuggestions) {
+          if (!seen.has(s.label)) {
+            seen.add(s.label);
+            uniqueApi.push(s);
+          }
+        }
         
         // Find local matches to augment API results
-        const localMatches = popularCities.filter(c => c.toLowerCase().includes(query.toLowerCase()));
+        const localMatches = popularCities
+          .filter(c => c.toLowerCase().includes(query.toLowerCase()))
+          .map(c => ({ label: c, placeName: c, state: '', country: 'India' }));
         
         // Combine, prioritize local exact matches, but rely mostly on API
-        const combined = [...new Set([...uniqueApi, ...localMatches])].slice(0, 5);
+        const combined = [...localMatches, ...uniqueApi].filter((v, i, a) => a.findIndex(t => (t.label === v.label)) === i).slice(0, 5);
         setSuggestions(combined);
         setShowDropdown(true);
       } catch (err) {
@@ -67,8 +76,11 @@ const LocationAutocomplete = ({ value, onChange, placeholder = "Enter location",
     return () => clearTimeout(delayDebounceFn);
   }, [value]);
 
-  const handleSelect = (place) => {
-    onChange({ target: { name, value: place } });
+  const handleSelect = (placeObj) => {
+    onChange({ target: { name, value: placeObj.placeName || placeObj.label } });
+    if (onSelectDetailed) {
+      onSelectDetailed(placeObj);
+    }
     setShowDropdown(false);
   };
 
@@ -99,7 +111,7 @@ const LocationAutocomplete = ({ value, onChange, placeholder = "Enter location",
               <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
                 <FiMapPin className="text-[#fa6830]" size={14} />
               </div>
-              <span className="text-[14px] text-gray-700 font-medium">{place}</span>
+              <span className="text-[14px] text-gray-700 font-medium">{place.label}</span>
             </div>
           ))}
         </div>

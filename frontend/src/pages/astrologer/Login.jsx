@@ -268,12 +268,7 @@ const AstrologerLogin = () => {
                 Apply Here
               </Link>
             </p>
-            <p className="text-[13px] font-medium text-gray-500">
-              Are you a user?{' '}
-              <Link to="/user/login" className="text-[#fa6830] font-bold hover:underline transition-colors">
-                Login Here
-              </Link>
-            </p>
+
             <p className="text-[11px] text-gray-400 font-medium text-center leading-relaxed mt-4">
               By continuing, you agree to our{' '}
               <Link to="/user/terms" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
