@@ -122,7 +122,7 @@ const GlobalSearch = () => {
                     <p className="text-[12px] text-gray-500 truncate">{astro.skills?.join(', ') || 'Astrologer'}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[14px] font-bold text-gray-900">₹{astro.pricing?.chat || astro.rate || 5}/min</p>
+                    <p className="text-[14px] font-bold text-gray-900">₹{astro.pricing?.chat || astro.rate || 10}/min</p>
                   </div>
                 </div>
               ))}

@@ -101,11 +101,12 @@ export const verifyOtp = asyncHandler(async (req, res) => {
   import('../utils/notifyHelper.js').then(({ notify }) => {
     // Delay push notification by 5 seconds to allow frontend to sync FCM token
     setTimeout(async () => {
+      const isRecentlyCreated = (Date.now() - new Date(user.createdAt).getTime()) < 5 * 60 * 1000;
       notify({ 
         userId: user._id, 
         role: 'user', 
-        title: 'Welcome back 👋', 
-        message: `Logged in successfully on ${new Date().toLocaleString()}`, 
+        title: isRecentlyCreated ? 'Welcome to JyotishLink! 🎉' : 'Welcome back 👋', 
+        message: isRecentlyCreated ? 'Registration completed successfully.' : `Logged in successfully on ${new Date().toLocaleString()}`, 
         type: 'info', 
         link: '/user/home' 
       });

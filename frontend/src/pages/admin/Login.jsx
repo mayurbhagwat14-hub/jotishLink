@@ -26,6 +26,13 @@ const AdminLogin = () => {
     
     try {
       const resultAction = await dispatch(adminLoginThunk({ email: username, password }));
+      if (resultAction.error) {
+        setError(resultAction.payload?.message || 'Invalid admin credentials');
+        toast.error('Wrong credentials filled');
+        setIsLoading(false);
+        return;
+      }
+
       if (resultAction.payload && resultAction.payload.data) {
         const payloadData = resultAction.payload.data;
         dispatch(adminLogin({
@@ -44,7 +51,7 @@ const AdminLogin = () => {
       }
     } catch (err) {
       setError(err?.message || 'Invalid admin credentials');
-      toast.error('Login failed');
+      toast.error('Wrong credentials filled');
     } finally {
       setIsLoading(false);
     }
@@ -236,12 +243,7 @@ const AdminLogin = () => {
           </div>
 
           <div className="mt-12 text-center">
-            <button 
-              onClick={() => navigate('/user/login')}
-              className="text-xs font-bold text-gray-500 hover:text-orange-500 transition-colors uppercase tracking-wider"
-            >
-              Back to User Login
-            </button>
+            {/* "Back to User Login" removed for security */}
           </div>
         </div>
       </div>

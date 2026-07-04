@@ -202,10 +202,23 @@ export const usePushNotifications = () => {
           icon: iconMap[type] || '🔔',
           duration: 5000,
         });
+
+        // Also show a native OS notification in the notification bar
+        // This ensures notifications appear in the device's notification center
+        if (Notification.permission === 'granted' && navigator.serviceWorker?.controller) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.showNotification(title, {
+              body,
+              icon: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png',
+              badge: 'https://res.cloudinary.com/dut8feomk/image/upload/v1781699113/astrotalk_branding/otdilt1kns6zctiud2wq.png',
+              tag: type || 'jyotishlink-foreground',
+              data: payload.data || {},
+            });
+          });
+        }
       }
 
-      // Skipping native OS notification in foreground to prevent duplicates.
-      // The toast above is sufficient when the app is active.
+      // Skipping additional native notification for call/chat types to prevent duplicates with modals.
     });
 
     return () => {

@@ -146,6 +146,7 @@ const authSlice = createSlice({
       localStorage.removeItem('userDetailsApplyData');
       localStorage.removeItem('astrologerApplyData');
       sessionStorage.removeItem('loginPhone');
+      sessionStorage.removeItem('pendingRegisterPhone');
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
@@ -213,6 +214,7 @@ const authSlice = createSlice({
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('persist:auth_user');
         sessionStorage.removeItem('loginPhone');
+        sessionStorage.removeItem('pendingRegisterPhone');
       })
       .addCase(userDeleteAccountThunk.fulfilled, (state) => {
         state.user = null;

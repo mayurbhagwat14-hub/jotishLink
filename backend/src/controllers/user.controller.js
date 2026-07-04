@@ -36,7 +36,8 @@ export const getPublicSettings = asyncHandler(async (req, res) => {
     appLogo: settings.appLogo, 
     tagline: settings.tagline,
     termsOfUse: settings.termsOfUse,
-    privacyPolicy: settings.privacyPolicy
+    privacyPolicy: settings.privacyPolicy,
+    defaultGstPercent: settings.defaultGstPercent
   }, 'Public settings fetched'));
 });
 

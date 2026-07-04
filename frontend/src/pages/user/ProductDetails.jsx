@@ -291,7 +291,7 @@ const ProductDetails = () => {
         {/* Description */}
         <div className="bg-white rounded-store p-4 shadow-store-sm mb-4">
           <h3 className="text-[15px] font-bold text-store-text mb-2">Description</h3>
-          <p className="text-[13px] text-store-subtitle leading-relaxed whitespace-pre-wrap">
+          <p className="text-[13px] text-store-subtitle leading-relaxed whitespace-pre-wrap break-words w-full overflow-hidden">
             {product.description || 'No description available for this product. Please contact us for more details.'}
           </p>
         </div>

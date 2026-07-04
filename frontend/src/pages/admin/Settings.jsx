@@ -55,12 +55,16 @@ const AdminSettings = () => {
   const handleSaveGeneral = async (section) => {
     try {
       if (section === 'info') {
-        if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(generalSettings.supportEmail.trim().toLowerCase())) {
-          return toast.error('Support email must be a valid @gmail.com address');
+        // Strict email validation: must be valid format @gmail.com
+        const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._%+-]*[a-zA-Z0-9])?@gmail\.com$/;
+        if (!emailRegex.test(generalSettings.supportEmail.trim().toLowerCase())) {
+          return toast.error('Support email must be a valid @gmail.com address (e.g. support@gmail.com)');
         }
-        const strippedPhone = generalSettings.supportPhone.replace(/\D/g, '');
-        if (strippedPhone.length < 10) {
-          return toast.error('Support phone must be a valid number (at least 10 digits)');
+        // Strict phone validation: must be +91 followed by exactly 10 digits
+        const strippedPhone = generalSettings.supportPhone.replace(/[\s-]/g, '');
+        const phoneRegex = /^\+91[6-9]\d{9}$/;
+        if (!phoneRegex.test(strippedPhone)) {
+          return toast.error('Support phone must be a valid Indian number: +91 followed by 10 digits (e.g. +91 9876543210)');
         }
       }
 

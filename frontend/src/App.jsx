@@ -30,6 +30,7 @@ import VideoCallList from './pages/user/VideoCallList';
 import VideoCallBookingForm from './pages/user/VideoCallBookingForm';
 import VideoRoom from './pages/user/VideoRoom';
 import Store from './pages/user/Store';
+import Wishlist from './pages/user/Wishlist';
 import ProductDetails from './pages/user/ProductDetails';
 import Cart from './pages/user/Cart';
 import Checkout from './pages/user/Checkout';
@@ -92,7 +93,10 @@ import { fetchPublicSettingsThunk } from './store/slices/settingsSlice';
 import getSocket from './socket/socketManager';
 import SplashScreen from './components/SplashScreen';
 import IOSInstallPrompt from './components/IOSInstallPrompt';
+import ScrollToTop from './components/ScrollToTop';
 import { useState } from 'react';
+
+
 
 const AppContent = () => {
   const dispatch = useDispatch();
@@ -219,6 +223,7 @@ const AppContent = () => {
           <Route path="astrologers" element={<Astrologers />} />
           <Route path="astrologer/:id" element={<AstrologerProfile />} />
           <Route path="store" element={<Store />} />
+          <Route path="store/wishlist" element={<Wishlist />} />
           <Route path="product/:id" element={<ProductDetails />} />
           <Route path="cart" element={<Cart />} />
           <Route path="history" element={<OrderHistory />} />
@@ -341,6 +346,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Toaster position="top-center" />
       <AppContent />
     </Router>

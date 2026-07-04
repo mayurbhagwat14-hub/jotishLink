@@ -31,6 +31,8 @@ const AdminLayout = () => {
   const [pendingCounts, setPendingCounts] = useState({ astrologers: 0, orders: 0, cancelRequests: 0, withdrawals: 0, lowStock: 0 });
   const searchRef = useRef(null);
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const handleLogout = async () => {
     try {
       const fcmToken = localStorage.getItem('jl_last_fcm_token');
@@ -368,7 +370,7 @@ const AdminLayout = () => {
             </div>
           )}
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutModal(true)}
             className={`flex items-center gap-3 px-3 py-2 w-full rounded-lg text-red-500 hover:bg-red-50 transition-all ${sidebarCollapsed ? 'justify-center' : ''}`}
             title={sidebarCollapsed ? 'Sign Out' : ''}
           >
@@ -484,6 +486,36 @@ const AdminLayout = () => {
                   <p className="text-sm text-gray-400 font-medium">No results found</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLogoutModal(false)} />
+          <div className="relative bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+            <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FiLogOut size={28} />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 text-center mb-2">Sign Out</h3>
+            <p className="text-gray-500 text-center font-medium mb-6">Are you sure you want to sign out of the admin panel?</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setShowLogoutModal(false);
+                  handleLogout();
+                }}
+                className="flex-1 px-4 py-3 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-colors shadow-sm"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
         </div>

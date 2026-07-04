@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { ArrowLeft, Package, Truck, Clock, CreditCard, X, AlertTriangle, MapPin, Check, FileText, ChevronRight, Map, Phone, CheckCircle2, Mail } from 'lucide-react';
 import { trackOrder, getOrderById, requestCancelOrder, getUserShiprocketOrderDetails } from '../../api/storeApis';
 import { toast } from 'react-hot-toast';
@@ -17,6 +18,7 @@ const formatDate = (isoString) => {
 const OrderDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { defaultGstPercent } = useSelector((state) => state.settings);
   const [order, setOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -343,7 +345,7 @@ const OrderDetails = () => {
               )}
               {order.gstAmount > 0 && (
                 <div className="flex justify-between text-[13px] font-medium text-gray-600">
-                  <span>GST (18%)</span>
+                  <span>GST ({order.gstPercent || defaultGstPercent || 18}%)</span>
                   <span className="font-bold text-gray-800">₹{Number(order.gstAmount).toFixed(2)}</span>
                 </div>
               )}

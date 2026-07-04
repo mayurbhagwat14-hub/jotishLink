@@ -44,6 +44,41 @@ const AdminDashboard = () => {
     }
   };
 
+  const getCardStyles = (color) => {
+    switch (color) {
+      case 'green': return { bg: 'bg-emerald-50/50', border: 'border-emerald-100', iconBg: 'bg-white', iconBorder: 'border-emerald-200', text: 'text-emerald-500' };
+      case 'purple': return { bg: 'bg-purple-50/50', border: 'border-purple-100', iconBg: 'bg-white', iconBorder: 'border-purple-200', text: 'text-purple-500' };
+      case 'yellow': return { bg: 'bg-amber-50/50', border: 'border-amber-100', iconBg: 'bg-white', iconBorder: 'border-amber-200', text: 'text-amber-500' };
+      case 'blue': return { bg: 'bg-blue-50/50', border: 'border-blue-100', iconBg: 'bg-white', iconBorder: 'border-blue-200', text: 'text-blue-500' };
+      case 'orange': return { bg: 'bg-orange-50/50', border: 'border-orange-100', iconBg: 'bg-white', iconBorder: 'border-orange-200', text: 'text-orange-500' };
+      case 'cyan': return { bg: 'bg-cyan-50/50', border: 'border-cyan-100', iconBg: 'bg-white', iconBorder: 'border-cyan-200', text: 'text-cyan-500' };
+      case 'pink': return { bg: 'bg-pink-50/50', border: 'border-pink-100', iconBg: 'bg-white', iconBorder: 'border-pink-200', text: 'text-pink-500' };
+      default: return { bg: 'bg-gray-50/50', border: 'border-gray-100', iconBg: 'bg-white', iconBorder: 'border-gray-200', text: 'text-gray-500' };
+    }
+  };
+
+  const overviewCards = [
+    { label: 'Total Revenue', value: `₹${dbData.metrics?.totalRevenue || 0}`, desc: 'Overall platform revenue', icon: <FaRupeeSign size={16} />, color: 'green', link: '/admin/finance' },
+    { label: 'Consultations', value: `₹${dbData.metrics?.chatRevenue || 0}`, desc: 'Chat & call revenue', icon: <FiMessageSquare size={16} />, color: 'purple', link: '/admin/finance' },
+    { label: 'Store Sales', value: `₹${dbData.metrics?.storeRevenue || 0}`, desc: 'Total e-commerce volume', icon: <FiPackage size={16} />, color: 'yellow', link: '/admin/orders' },
+    { label: 'Pooja Revenue', value: `₹${dbData.metrics?.poojaRevenue || 0}`, desc: 'Total pooja volume', icon: <GiFlowerPot size={16} />, color: 'cyan', link: '/admin/finance' },
+    
+    { label: 'Total Astrologers', value: dbData.metrics?.totalAstrologers || 0, desc: 'Approved astrologers', icon: <FiStar size={16} />, color: 'blue', link: '/admin/astrologers' },
+    { label: 'Astro Requests', value: dbData.metrics?.pendingApprovals || 0, desc: 'Awaiting approval', icon: <FiClock size={16} />, color: 'orange', link: '/admin/astrologers' },
+    { label: 'Online Astrologers', value: dbData.metrics?.onlineAstrologers || 0, desc: 'Currently online', icon: <FiActivity size={16} />, color: 'green', link: '/admin/astrologers' },
+    { label: 'Total Users', value: dbData.metrics?.registeredUsers || 0, desc: 'Registered users', icon: <FiUsers size={16} />, color: 'purple', link: '/admin/users' },
+
+    { label: 'Total Orders', value: dbData.metrics?.totalOrders || 0, desc: 'E-commerce orders', icon: <FiShoppingCart size={16} />, color: 'yellow', link: '/admin/orders' },
+    { label: 'Pending Orders', value: dbData.metrics?.pendingOrders || 0, desc: 'Orders awaiting processing', icon: <FiClock size={16} />, color: 'pink', link: '/admin/orders' },
+    { label: 'Completed Orders', value: dbData.metrics?.completedOrders || 0, desc: 'Successfully delivered', icon: <FiCheckCircle size={16} />, color: 'green', link: '/admin/orders' },
+    { label: 'Store Profit', value: `₹${dbData.metrics?.storeProfit || 0}`, desc: 'Net e-commerce profit', icon: <FiTrendingUp size={16} />, color: 'cyan', link: '/admin/orders' },
+
+    { label: 'Total Poojas', value: dbData.metrics?.totalPoojas || 0, desc: 'Total pooja bookings', icon: <GiFlowerPot size={16} />, color: 'purple', link: '/admin/finance' },
+    { label: 'Pending Poojas', value: dbData.metrics?.pendingPoojas || 0, desc: 'Awaiting confirmation', icon: <FiClock size={16} />, color: 'yellow', link: '/admin/finance' },
+    { label: 'Active Sessions', value: dbData.metrics?.liveSessionsCount || 0, desc: 'Ongoing chats & calls', icon: <FiPhoneCall size={16} />, color: 'blue', link: '/admin/sessions' },
+    { label: 'Recent Activity', value: dbData.recentActivity?.length || 0, desc: 'Latest transactions', icon: <FiActivity size={16} />, color: 'green', link: '/admin/finance' },
+  ];
+
   return (
     <div className="space-y-7">
 
@@ -58,81 +93,23 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* ═══ METRIC CARDS ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-
-        {/* Revenue */}
-        <Link to="/admin/finance" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-orange-200 hover:shadow-sm transition-all block cursor-pointer">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Total Revenue</p>
-            <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FaRupeeSign size={14} /></div>
-          </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.totalRevenue || 0}</h3>
-          <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +14.5% vs last month</span>
-        </Link>
-
-        {/* Users */}
-        <Link to="/admin/users" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-blue-200 hover:shadow-sm transition-all block cursor-pointer">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Registered Users</p>
-            <div className="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiUsers size={16} /></div>
-          </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.registeredUsers || '0'}</h3>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +850 today</span>
-            <span className="text-gray-300 group-hover:text-blue-500 transition-colors"><FiArrowRight size={14} /></span>
-          </div>
-        </Link>
-
-        {/* Astrologers */}
-        <Link to="/admin/astrologers" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-green-200 hover:shadow-sm transition-all block cursor-pointer">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Online Astrologers</p>
-            <div className="w-9 h-9 bg-green-50 text-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiActivity size={16} /></div>
-          </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.onlineAstrologers || '0'}</h3>
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-gray-400">12 in active sessions</span>
-            <span className="text-gray-300 group-hover:text-green-500 transition-colors"><FiArrowRight size={14} /></span>
-          </div>
-        </Link>
-
-        {/* Pending Orders */}
-        <Link to="/admin/orders" className="bg-white rounded-2xl p-5 border border-orange-100 group hover:border-orange-200 hover:shadow-sm transition-all block cursor-pointer">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Pending Orders</p>
-            <div className="w-9 h-9 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center relative group-hover:scale-110 transition-transform">
-              <FiShoppingCart size={16} />
-              {dbData.metrics?.pendingOrders > 0 && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />
-              )}
-            </div>
-          </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">{dbData.metrics?.pendingOrders || 0}</h3>
-          <span className="text-[11px] font-bold text-orange-500 flex items-center gap-0.5">Review now <FiArrowRight size={10} /></span>
-        </Link>
-
-        {/* Store Revenue */}
-        <Link to="/admin/orders" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-purple-200 hover:shadow-sm transition-all block cursor-pointer">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Store Revenue</p>
-            <div className="w-9 h-9 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiPackage size={16} /></div>
-          </div>
-          <h3 className="text-2xl font-black text-gray-900 mb-1">₹{dbData.metrics?.storeRevenue || 0}</h3>
-          <span className="text-[11px] font-bold text-green-500 flex items-center gap-0.5"><FiArrowUp size={10} /> +18% vs last month</span>
-        </Link>
-
-        {/* Store Profit */}
-        <Link to="/admin/orders" className="bg-white rounded-2xl p-5 border border-gray-100 group hover:border-teal-200 hover:shadow-sm transition-all block cursor-pointer">
-          <div className="flex justify-between items-start mb-3">
-            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Store Profit</p>
-            <div className="w-9 h-9 bg-teal-50 text-teal-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"><FiActivity size={16} /></div>
-          </div>
-          <h3 className={`text-2xl font-black mb-1 ${(dbData.metrics?.storeProfit || 0) < 0 ? 'text-red-500' : 'text-gray-900'}`}>
-            ₹{dbData.metrics?.storeProfit || 0}
-          </h3>
-          <span className="text-[11px] font-bold text-gray-400 flex items-center gap-0.5">Net Profit Margin</span>
-        </Link>
+      {/* ═══ OVERVIEW METRICS (4-Column Layout) ═══ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {overviewCards.map((card, idx) => {
+          const styles = getCardStyles(card.color);
+          return (
+            <Link key={idx} to={card.link} className={`rounded-2xl p-4 border ${styles.bg} ${styles.border} flex justify-between items-center hover:shadow-sm transition-all cursor-pointer group`}>
+              <div>
+                <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-1">{card.label}</p>
+                <h3 className="text-xl font-black text-gray-900 mb-0.5 group-hover:scale-105 origin-left transition-transform">{card.value}</h3>
+                <span className="text-[10px] text-gray-400 font-medium">{card.desc}</span>
+              </div>
+              <div className={`w-10 h-10 ${styles.iconBg} border ${styles.iconBorder} ${styles.text} rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>
+                {card.icon}
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {/* ═══ LIVE SESSIONS + RECENT ORDERS ═══ */}

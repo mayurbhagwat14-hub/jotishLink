@@ -19,6 +19,7 @@ const initialState = {
   tagline: 'Connect with the Stars',
   termsOfUse: '',
   privacyPolicy: '',
+  defaultGstPercent: null,
   loading: false,
 };
 
@@ -33,6 +34,7 @@ const settingsSlice = createSlice({
       if (data.tagline !== undefined) state.tagline = data.tagline;
       if (data.termsOfUse !== undefined) state.termsOfUse = data.termsOfUse;
       if (data.privacyPolicy !== undefined) state.privacyPolicy = data.privacyPolicy;
+      if (data.defaultGstPercent !== undefined) state.defaultGstPercent = data.defaultGstPercent;
     }
   },
   extraReducers: (builder) => {
@@ -48,6 +50,7 @@ const settingsSlice = createSlice({
         if (data.tagline) state.tagline = data.tagline;
         if (data.termsOfUse) state.termsOfUse = data.termsOfUse;
         if (data.privacyPolicy) state.privacyPolicy = data.privacyPolicy;
+        if (data.defaultGstPercent !== undefined) state.defaultGstPercent = data.defaultGstPercent;
       })
       .addCase(fetchPublicSettingsThunk.rejected, (state) => {
         state.loading = false;

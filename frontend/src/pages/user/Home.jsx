@@ -418,7 +418,7 @@ const Home = () => {
                 </div>
                 
                 <div className="flex items-center justify-between mt-2 w-full pt-1">
-                  <span className="text-[#fa6830] font-bold text-[14px]">₹{astro.pricing?.chat || astro.rate || 5}/min</span>
+                  <span className="text-[#fa6830] font-bold text-[14px]">₹{astro.pricing?.chat || astro.rate || 10}/min</span>
                   {isOffline ? (
                     <button disabled className="px-5 py-1.5 rounded-full bg-gray-100 text-gray-400 text-[12px] font-bold cursor-not-allowed">
                       Offline

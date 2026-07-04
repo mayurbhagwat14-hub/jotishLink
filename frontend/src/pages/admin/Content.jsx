@@ -22,6 +22,7 @@ const AdminContent = () => {
 
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
+  const [editingCouponId, setEditingCouponId] = useState(null);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 });
 
   const [broadcastData, setBroadcastData] = useState({ title: '', message: '', audience: 'All Users' });
@@ -116,7 +117,7 @@ const AdminContent = () => {
       return;
     }
     if (!broadcastData.message?.trim()) {
-      toast.error("fill message");
+      toast.error("Please fill in the message field");
       return;
     }
     try {
@@ -159,17 +160,36 @@ const AdminContent = () => {
     setNewCoupon(prev => ({ ...prev, [key]: num }));
   };
 
-  // --- Coupon Actions ---
   const handleCreateCoupon = async () => {
+    if (!newCoupon.code?.trim()) {
+      toast.error('Coupon code is required');
+      return;
+    }
+    if (!newCoupon.expiryDate) {
+      toast.error('Expiry date is required');
+      return;
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (newCoupon.expiryDate < today) {
+      toast.error('Expiry date cannot be in the past');
+      return;
+    }
     try {
       setIsCreatingCoupon(true);
-      await adminApis.createAdminCoupon(newCoupon);
+      if (editingCouponId) {
+        await adminApis.updateAdminCoupon(editingCouponId, newCoupon);
+        toast.success('Coupon updated successfully!');
+      } else {
+        await adminApis.createAdminCoupon(newCoupon);
+        toast.success('Coupon created successfully!');
+      }
       setShowCouponModal(false);
+      setEditingCouponId(null);
       setNewCoupon({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 });
       fetchCoupons();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to create coupon');
+      toast.error(editingCouponId ? 'Failed to update coupon' : 'Failed to create coupon');
     } finally {
       setIsCreatingCoupon(false);
     }
@@ -299,6 +319,19 @@ const AdminContent = () => {
                         }`}>
                           {c.isActive ? <FiToggleRight size={14} /> : <FiToggleLeft size={14} />}
                           {c.isActive ? 'Active' : 'Inactive'}
+                        </button>
+                        <button onClick={() => {
+                          setEditingCouponId(c._id);
+                          setNewCoupon({
+                            code: c.code,
+                            discountPercent: c.discountPercent,
+                            maxDiscount: c.maxDiscount,
+                            expiryDate: c.expiryDate ? new Date(c.expiryDate).toISOString().split('T')[0] : '',
+                            usageLimit: c.usageLimit
+                          });
+                          setShowCouponModal(true);
+                        }} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-blue-50 text-blue-500 hover:bg-blue-100">
+                          <FiEdit size={14} />
                         </button>
                         <button onClick={() => setDeleteConfirmCoupon(c)} className="inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg transition-colors bg-red-50 text-red-500 hover:bg-red-100">
                           <FiTrash2 size={14} />
@@ -489,8 +522,8 @@ const AdminContent = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900">Create New Coupon</h3>
-              <button onClick={() => setShowCouponModal(false)} className="text-gray-400 hover:text-gray-600"><FiX size={20}/></button>
+              <h3 className="font-bold text-gray-900">{editingCouponId ? 'Edit Coupon' : 'Create New Coupon'}</h3>
+              <button onClick={() => { setShowCouponModal(false); setEditingCouponId(null); setNewCoupon({ code: '', discountPercent: 0, maxDiscount: 0, expiryDate: '', usageLimit: 0 }); }} className="text-gray-400 hover:text-gray-600"><FiX size={20}/></button>
             </div>
             <div className="p-6 space-y-4">
               <div>
@@ -509,7 +542,7 @@ const AdminContent = () => {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Expiry Date</label>
-                <input type="date" value={newCoupon.expiryDate} onChange={e=>setNewCoupon({...newCoupon, expiryDate: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
+                <input type="date" value={newCoupon.expiryDate} min={new Date().toISOString().split('T')[0]} onChange={e=>setNewCoupon({...newCoupon, expiryDate: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Usage Limit</label>
@@ -517,7 +550,7 @@ const AdminContent = () => {
               </div>
               <button onClick={handleCreateCoupon} disabled={isCreatingCoupon} className={`w-full py-3 mt-2 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${isCreatingCoupon ? 'bg-orange-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}>
                 {isCreatingCoupon ? <FiLoader size={16} className="animate-spin" /> : null}
-                {isCreatingCoupon ? 'Creating...' : 'Create Coupon'}
+                {isCreatingCoupon ? (editingCouponId ? 'Updating...' : 'Creating...') : (editingCouponId ? 'Update Coupon' : 'Create Coupon')}
               </button>
             </div>
           </div>

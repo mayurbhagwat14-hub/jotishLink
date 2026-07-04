@@ -295,7 +295,15 @@ const AdminAstrologers = () => {
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            setOpenActionDropdown(openActionDropdown === ast._id ? null : ast._id);
+                            const isOpening = openActionDropdown !== ast._id;
+                            setOpenActionDropdown(isOpening ? ast._id : null);
+                            if (isOpening) {
+                              const td = e.currentTarget.closest('td');
+                              setTimeout(() => {
+                                const dropdown = td.querySelector('.action-dropdown-menu');
+                                if (dropdown) dropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                              }, 50);
+                            }
                           }}
                           className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                         >
@@ -305,7 +313,7 @@ const AdminAstrologers = () => {
                         {openActionDropdown === ast._id && (
                           <>
                             <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
-                            <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right">
+                            <div className="action-dropdown-menu absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right">
                               <button onClick={() => { viewProfile(ast._id); setOpenActionDropdown(null); }} className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50">
                                 <FiEye size={16} className="text-blue-500" /> View Profile
                               </button>

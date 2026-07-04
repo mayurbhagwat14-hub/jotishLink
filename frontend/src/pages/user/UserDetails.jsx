@@ -87,6 +87,20 @@ const UserDetails = () => {
     }
   }, [phone, navigate]);
 
+  // Intercept browser/hardware back button to prevent auto-login bypass
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!isSubmittedRef.current) {
+        // User pressed browser back without completing registration — clean up
+        sessionStorage.removeItem('pendingRegisterPhone');
+        dispatch(logout());
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [dispatch]);
+
   const isSubmittedRef = useRef(false);
 
   // Load from Draft API on mount
@@ -227,7 +241,10 @@ const UserDetails = () => {
     } else if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     } else {
-      navigate('/user/login');
+      // User is on step 0 (name entry) and wants to go back — abort registration
+      sessionStorage.removeItem('pendingRegisterPhone');
+      dispatch(logout());
+      navigate('/user/login', { replace: true });
     }
   };
 
@@ -409,6 +426,8 @@ const UserDetails = () => {
     <div className="w-full px-2 max-w-sm mx-auto">
             <input
               type="text"
+              name="userNameInput"
+              autoComplete="off"
               value={formData.name}
               onChange={(e) => {
                 setStepError('');

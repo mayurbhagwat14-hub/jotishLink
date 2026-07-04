@@ -91,7 +91,11 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     liveSessionsRaw,
     liveCallsRaw,
     recentOrdersRaw,
-    pendingApprovalsCount
+    pendingApprovalsCount,
+    completedOrders,
+    totalAstrologers,
+    totalPoojas,
+    pendingPoojas
   ] = await Promise.all([
     User.countDocuments({ role: 'user' }),
     Astrologer.countDocuments({ onlineStatus: { $in: ['online', 'busy'] } }),
@@ -101,7 +105,11 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
     ChatSession.find({ status: 'ongoing', isBotSession: { $ne: true } }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
     CallSession.find({ status: { $in: ['accepted', 'ongoing', 'ringing'] } }).populate('userId', 'name avatar').populate('astrologerId', 'name avatar').lean(),
     Order.find().populate('userId', 'name').sort({ createdAt: -1 }).limit(5).lean(),
-    Astrologer.countDocuments({ approvalStatus: 'pending' })
+    Astrologer.countDocuments({ approvalStatus: 'pending' }),
+    Order.countDocuments({ orderStatus: 'delivered' }),
+    Astrologer.countDocuments({ approvalStatus: 'approved' }),
+    PoojaBooking.countDocuments(),
+    PoojaBooking.countDocuments({ status: { $in: ['Pending', 'Accepted', 'In Progress'] } })
   ]);
 
   const revenueLogs = await RevenueLog.find().lean();
@@ -124,7 +132,17 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
   });
   const storeProfit = storeRevenue - storeCost;
 
-  const totalRevenue = chatRevenue + storeRevenue;
+  // Calculate Pooja Revenue
+  const poojas = await PoojaBooking.find().lean();
+  let poojaRevenue = 0;
+  poojas.forEach(pooja => {
+    // Considering released or completed pooja payments
+    if (pooja.paymentStatus === 'released' || pooja.status === 'Completed') {
+      poojaRevenue += (pooja.price || 0);
+    }
+  });
+
+  const totalRevenue = chatRevenue + storeRevenue + poojaRevenue;
 
   // Format liveSessions
   const formattedChats = liveSessionsRaw.map(s => {
@@ -192,10 +210,18 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
         totalRevenue: Math.round(totalRevenue),
         registeredUsers: totalUsers,
         onlineAstrologers: onlineAstrologers,
+        totalOrders: totalOrders,
         pendingOrders: pendingOrders,
+        completedOrders: completedOrders,
         storeRevenue: Math.round(storeRevenue),
         storeProfit: Math.round(storeProfit),
-        pendingApprovals: pendingApprovalsCount
+        chatRevenue: Math.round(chatRevenue),
+        poojaRevenue: Math.round(poojaRevenue),
+        pendingApprovals: pendingApprovalsCount,
+        totalAstrologers: totalAstrologers,
+        totalPoojas: totalPoojas,
+        pendingPoojas: pendingPoojas,
+        liveSessionsCount: liveSessionsRaw.length + liveCallsRaw.length
       },
       liveSessions,
       recentOrders,
@@ -207,9 +233,31 @@ export const getAdminDashboard = asyncHandler(async (req, res) => {
 
 // GET /api/admin/users
 export const getAdminUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({ role: 'user' })
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  
+  const filter = { role: 'user' };
+  if (req.query.search) {
+     const searchRegex = new RegExp(req.query.search, 'i');
+     filter.$or = [
+       { name: searchRegex },
+       { email: searchRegex },
+       { phone: searchRegex }
+     ];
+  }
+  if (req.query.status && req.query.status !== 'All') {
+     filter.isBlocked = req.query.status === 'Banned';
+  }
+
+  const totalUsers = await User.countDocuments(filter);
+  const totalPages = Math.ceil(totalUsers / limit);
+  const skip = (page - 1) * limit;
+
+  const users = await User.find(filter)
     .select('-password -otpHash -otpExpires')
     .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
     .lean();
 
   const transactions = await Transaction.aggregate([
@@ -237,7 +285,12 @@ export const getAdminUsers = asyncHandler(async (req, res) => {
     totalSpent: spentMap[u._id.toString()] || 0
   }));
 
-  return res.status(200).json(new ApiResponse(200, { users: usersWithStats }, 'Users fetched'));
+  return res.status(200).json(new ApiResponse(200, { 
+    users: usersWithStats,
+    totalUsers,
+    totalPages,
+    currentPage: page
+  }, 'Users fetched'));
 });
 
 // PUT /api/admin/users/:id/status

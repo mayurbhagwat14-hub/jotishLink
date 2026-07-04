@@ -6,7 +6,7 @@ export const adminDeleteAccount = () => axios.delete('/admin/profile');
 export const adminUpdateProfile = (data) => axios.put('/admin/profile', data);
 
 export const getAdminDashboard = () => axios.get('/admin/dashboard-stats');
-export const getAdminUsers = () => axios.get('/admin/users');
+export const getAdminUsers = (params) => axios.get('/admin/users', { params });
 export const updateAdminUserStatus = (id, status) => axios.put(`/admin/users/${id}/status`, { status });
 export const deleteAdminUser = (id) => axios.delete(`/admin/users/${id}`);
 export const getAdminAstrologers = () => axios.get('/admin/astrologers');

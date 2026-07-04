@@ -64,7 +64,7 @@ const HorizontalSkeleton = () => (
 /* ═══════════════════════════════════════════
    PRODUCT CARD COMPONENT
    ═══════════════════════════════════════════ */
-const ProductCard = ({ product, onAddToCart, onNavigate, variant = 'grid', isWishlisted, onToggleWishlist }) => {
+export const ProductCard = ({ product, onAddToCart, onNavigate, variant = 'grid', isWishlisted, onToggleWishlist }) => {
   const isOutOfStock = !product.inStock || product.stock <= 0;
   const discount = product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -433,7 +433,7 @@ const Store = () => {
   };
 
   return (
-    <div className="w-full bg-store-bg min-h-screen pb-24 font-sans relative">
+    <div className="min-h-screen bg-store-bg flex flex-col font-store pb-32">
       {/* ═══ TOP APP BAR ═══ */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-white sticky top-0 z-30 shadow-store-sm">
         <div className="flex items-center gap-3">
@@ -449,6 +449,17 @@ const Store = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/user/store/wishlist')}
+            className="w-9 h-9 bg-store-surface rounded-full flex items-center justify-center hover:bg-store-border transition-colors relative"
+          >
+            <FiHeart size={17} className="text-store-text" />
+            {wishlist.length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white badge-bounce">
+                {wishlist.length > 9 ? '9+' : wishlist.length}
+              </span>
+            )}
+          </button>
           <button
             onClick={() => navigate('/user/search')}
             className="w-9 h-9 bg-store-surface rounded-full flex items-center justify-center hover:bg-store-border transition-colors"

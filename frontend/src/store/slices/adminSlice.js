@@ -3,9 +3,9 @@ import * as adminApis from '../../api/adminApis';
 
 export const fetchAdminUsersThunk = createAsyncThunk(
   'admin/fetchUsers',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await adminApis.getAdminUsers();
+      const response = await adminApis.getAdminUsers(params);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -74,6 +74,9 @@ export const updateAdminAstrologerStatusThunk = createAsyncThunk(
 
 const initialState = {
   users: [],
+  totalUsers: 0,
+  totalPages: 1,
+  currentPage: 1,
   astrologers: [],
   loading: false,
   error: null,
@@ -103,9 +106,12 @@ const adminSlice = createSlice({
         state.loading = false;
         // ApiResponse: { data: { users: [...] } }
         const users = action.payload?.data?.users || action.payload?.users || action.payload;
-        if (Array.isArray(users) && users.length > 0) {
+        if (Array.isArray(users)) {
           state.users = users;
         }
+        state.totalUsers = action.payload?.data?.totalUsers || action.payload?.totalUsers || (Array.isArray(users) ? users.length : 0);
+        state.totalPages = action.payload?.data?.totalPages || action.payload?.totalPages || 1;
+        state.currentPage = action.payload?.data?.currentPage || action.payload?.currentPage || 1;
       })
       .addCase(fetchAdminUsersThunk.rejected, (state, action) => {
         state.loading = false;

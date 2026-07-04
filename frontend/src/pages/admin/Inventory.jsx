@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiSearch, FiAlertTriangle, FiBox, FiPackage, FiChevronDown, FiChevronLeft, FiChevronRight, FiRefreshCcw, FiPlus, FiMinus, FiX, FiTrendingDown, FiDatabase } from 'react-icons/fi';
 import { getAdminProducts, updateAdminProduct } from '../../api/adminApis';
+import toast from 'react-hot-toast';
 
 const AdminInventory = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,8 +60,10 @@ const AdminInventory = () => {
       
       setRestockModal(null);
       setRestockQty('');
+      toast.success('Product restocked successfully!');
     } catch (err) {
       console.error('Failed to restock product', err);
+      toast.error('Failed to restock product');
     }
   };
 

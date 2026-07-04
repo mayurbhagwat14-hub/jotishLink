@@ -98,7 +98,7 @@ const PoojaBookingForm = () => {
     <div className="min-h-screen bg-white flex flex-col font-sans pb-6">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-4 bg-white sticky top-0 z-10 border-b border-gray-50 shadow-sm">
-        <button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
+        <button onClick={() => navigate('/user/store', { state: { tab: 'Pandit Booking' } })} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
           <FiArrowLeft size={22} />
         </button>
         <h1 className="text-[17px] font-bold text-gray-800">Booking Details</h1>

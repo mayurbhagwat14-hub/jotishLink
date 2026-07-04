@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiArrowUpRight, FiArrowDownLeft, FiRefreshCcw, FiSearch, FiChevronDown, FiCalendar, FiDownload, FiX } from 'react-icons/fi';
+import { FiArrowUpRight, FiArrowDownLeft, FiRefreshCcw, FiSearch, FiChevronDown, FiCalendar, FiDownload, FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import { getAdminTransactions, getAstrologerPayouts, processAstrologerPayout, getAdminAstrologerById } from '../../api/adminApis';
 import toast from 'react-hot-toast';
@@ -19,6 +19,11 @@ const AdminFinance = () => {
   const [inflow, setInflow] = useState(0);
   const [outflow, setOutflow] = useState(0);
   const [activeTab, setActiveTab] = useState('transactions'); // 'transactions' or 'payouts'
+  
+  // Pagination
+  const [txnPage, setTxnPage] = useState(1);
+  const [payoutPage, setPayoutPage] = useState(1);
+  const itemsPerPage = 10;
   
   // Payout Modal State
   const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
@@ -109,8 +114,13 @@ const AdminFinance = () => {
 
       setTransactions(formatted);
       
-      const totalIn = formatted.filter(t => t.rawType === 'recharge').reduce((s, t) => s + t.amount, 0);
-      const totalOut = formatted.filter(t => t.rawType === 'refund' || t.rawType === 'deduction').reduce((s, t) => s + Math.abs(t.amount), 0);
+      const totalIn = formatted.filter(t => t.entityType === 'User' && t.rawType === 'recharge').reduce((s, t) => s + t.amount, 0);
+      
+      // User spending (deduction) is not an outflow from the platform. Actual outflows are User refunds and Astro payouts.
+      const totalOut = formatted.filter(t => 
+        (t.entityType === 'User' && t.rawType === 'refund') || 
+        (t.entityType === 'Astro' && (t.rawType === 'refund' || t.rawType === 'withdrawal' || t.rawType === 'payout'))
+      ).reduce((s, t) => s + Math.abs(t.amount), 0);
       
       setInflow(totalIn);
       setOutflow(totalOut);
@@ -222,9 +232,12 @@ const AdminFinance = () => {
       let totalOutflow = 0;
 
       filteredTransactions.forEach(t => {
-        if (t.isCredit) {
+        if (t.entityType === 'User' && t.rawType === 'recharge') {
           totalInflow += t.amount;
-        } else {
+        } else if (
+          (t.entityType === 'User' && t.rawType === 'refund') || 
+          (t.entityType === 'Astro' && (t.rawType === 'refund' || t.rawType === 'withdrawal' || t.rawType === 'payout'))
+        ) {
           totalOutflow += Math.abs(t.amount);
         }
       });
@@ -283,6 +296,34 @@ const AdminFinance = () => {
       toast.error('Failed to generate report');
     }
   };
+
+  const filteredTransactions = transactions
+    .filter(t => {
+      if (activeTab === 'user_transactions') return t.entityType === 'User';
+      if (activeTab === 'astro_transactions') return t.entityType === 'Astro';
+      return true;
+    })
+    .filter(t => typeFilter === 'All' || t.type.includes(typeFilter))
+    .filter(t => {
+      if (!startDateFilter && !endDateFilter) return true;
+      const txnDate = new Date(t.rawDate).toISOString().split('T')[0];
+      if (startDateFilter && txnDate < startDateFilter) return false;
+      if (endDateFilter && txnDate > endDateFilter) return false;
+      return true;
+    })
+    .filter(t => !searchFilter || t.id.toLowerCase().includes(searchFilter.toLowerCase()));
+
+  const totalTxnPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (txnPage - 1) * itemsPerPage,
+    txnPage * itemsPerPage
+  );
+
+  const totalPayoutPages = Math.ceil(payouts.length / itemsPerPage);
+  const paginatedPayouts = payouts.slice(
+    (payoutPage - 1) * itemsPerPage,
+    payoutPage * itemsPerPage
+  );
 
   return (
     <div className="space-y-6 pb-10">
@@ -432,22 +473,7 @@ const AdminFinance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {transactions
-                  .filter(t => {
-                    if (activeTab === 'user_transactions') return t.entityType === 'User';
-                    if (activeTab === 'astro_transactions') return t.entityType === 'Astro';
-                    return true;
-                  })
-                  .filter(t => typeFilter === 'All' || t.type.includes(typeFilter))
-                  .filter(t => {
-                    if (!startDateFilter && !endDateFilter) return true;
-                    const txnDate = new Date(t.rawDate).toISOString().split('T')[0];
-                    if (startDateFilter && txnDate < startDateFilter) return false;
-                    if (endDateFilter && txnDate > endDateFilter) return false;
-                    return true;
-                  })
-                  .filter(t => !searchFilter || t.id.toLowerCase().includes(searchFilter.toLowerCase()))
-                  .map((txn, i) => (
+                {paginatedTransactions.map((txn, i) => (
                   <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                     <td className="py-3.5 px-6 font-bold text-sm text-gray-800 font-mono">{txn.id}</td>
                     <td className="py-3.5 px-6">
@@ -479,6 +505,49 @@ const AdminFinance = () => {
               <div className="py-10 text-center text-gray-400 text-sm font-medium">No transactions found</div>
             )}
           </div>
+          
+          {/* Pagination Controls for Transactions */}
+          {(paginatedTransactions || []).length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-sm text-gray-400 font-medium">
+                Showing <span className="font-bold text-gray-700">{((txnPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-gray-700">{Math.min(txnPage * itemsPerPage, filteredTransactions.length)}</span> of <span className="font-bold text-gray-700">{filteredTransactions.length}</span>
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setTxnPage(p => Math.max(1, p - 1))}
+                  disabled={txnPage === 1}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
+                ><FiChevronLeft size={14} /></button>
+                {Array.from({ length: Math.min(totalTxnPages, 5) }, (_, i) => {
+                  let startPage = Math.max(1, txnPage - 2);
+                  let endPage = startPage + 4;
+                  if (endPage > totalTxnPages) {
+                    endPage = totalTxnPages;
+                    startPage = Math.max(1, endPage - 4);
+                  }
+                  return startPage + i;
+                }).map(page => (
+                  <button
+                    type="button"
+                    key={page}
+                    onClick={() => setTxnPage(page)}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
+                      txnPage === page
+                        ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >{page}</button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setTxnPage(p => Math.min(totalTxnPages, p + 1))}
+                  disabled={txnPage === totalTxnPages || totalTxnPages === 0}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
+                ><FiChevronRight size={14} /></button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -498,7 +567,7 @@ const AdminFinance = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {payouts.map((astro, i) => (
+                {paginatedPayouts.map((astro, i) => (
                   <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                     <td className="py-3.5 px-6">
                       <p className="text-sm font-bold text-gray-800">{astro.name}</p>
@@ -545,6 +614,49 @@ const AdminFinance = () => {
               <div className="py-10 text-center text-gray-400 text-sm font-medium">No astrologers found</div>
             )}
           </div>
+          
+          {/* Pagination Controls for Payouts */}
+          {(paginatedPayouts || []).length > 0 && (
+            <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-sm text-gray-400 font-medium">
+                Showing <span className="font-bold text-gray-700">{((payoutPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-gray-700">{Math.min(payoutPage * itemsPerPage, payouts.length)}</span> of <span className="font-bold text-gray-700">{payouts.length}</span>
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPayoutPage(p => Math.max(1, p - 1))}
+                  disabled={payoutPage === 1}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
+                ><FiChevronLeft size={14} /></button>
+                {Array.from({ length: Math.min(totalPayoutPages, 5) }, (_, i) => {
+                  let startPage = Math.max(1, payoutPage - 2);
+                  let endPage = startPage + 4;
+                  if (endPage > totalPayoutPages) {
+                    endPage = totalPayoutPages;
+                    startPage = Math.max(1, endPage - 4);
+                  }
+                  return startPage + i;
+                }).map(page => (
+                  <button
+                    type="button"
+                    key={page}
+                    onClick={() => setPayoutPage(page)}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
+                      payoutPage === page
+                        ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
+                        : 'text-gray-500 hover:bg-gray-100'
+                    }`}
+                  >{page}</button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPayoutPage(p => Math.min(totalPayoutPages, p + 1))}
+                  disabled={payoutPage === totalPayoutPages || totalPayoutPages === 0}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
+                ><FiChevronRight size={14} /></button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

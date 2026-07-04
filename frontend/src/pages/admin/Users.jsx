@@ -5,7 +5,7 @@ import { fetchAdminUsersThunk, updateAdminUserStatusThunk, deleteAdminUserThunk,
 
 const AdminUsers = () => {
   const dispatch = useDispatch();
-  const { users, loading, error } = useSelector((state) => state.admin);
+  const { users, totalPages: serverTotalPages, totalUsers, loading, error } = useSelector((state) => state.admin);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -19,33 +19,30 @@ const AdminUsers = () => {
   const [openActionDropdown, setOpenActionDropdown] = useState(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const itemsPerPage = 10;
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
 
   useEffect(() => {
-    dispatch(fetchAdminUsersThunk());
-  }, [dispatch]);
+    const timer = setTimeout(() => {
+      dispatch(fetchAdminUsersThunk({ page: currentPage, limit: itemsPerPage, search: searchQuery, status: statusFilter }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [dispatch, currentPage, searchQuery, statusFilter]);
 
   const showToast = (message) => {
     setSuccessToast(message);
     setTimeout(() => setSuccessToast(null), 3000);
   };
 
-  const filteredUsers = users.filter(u => {
-    const uStatus = u.status || (u.isBlocked ? 'Banned' : 'Active');
-    const matchesSearch = (u.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (u.phone || '').includes(searchQuery) || 
-                          (u.email || '').toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || uStatus === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = serverTotalPages || 1;
+  const paginatedUsers = users;
 
   const toggleSelectAll = () => {
-    if (selectedUsers.length === paginatedUsers.length) {
+    if (selectedUsers.length === (paginatedUsers || []).length && (paginatedUsers || []).length > 0) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(paginatedUsers.map(u => u.id));
+      setSelectedUsers((paginatedUsers || []).map(u => u.id));
     }
   };
 
@@ -158,7 +155,7 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {paginatedUsers.map((user) => {
+              {(paginatedUsers || []).map((user) => {
                 const uStatus = user.status || (user.isBlocked ? 'Banned' : 'Active');
                 const joinedDate = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A';
                 const lastActive = user.updatedAt ? new Date(user.updatedAt).toLocaleDateString() : 'N/A';
@@ -206,7 +203,17 @@ const AdminUsers = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenActionDropdown(openActionDropdown === user._id ? null : user._id);
+                        const isOpening = openActionDropdown !== user._id;
+                        setOpenActionDropdown(isOpening ? user._id : null);
+                        if (isOpening) {
+                          const td = e.currentTarget.closest('td');
+                          setTimeout(() => {
+                            const dropdown = td.querySelector('.action-dropdown-menu');
+                            if (dropdown) {
+                              dropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                          }, 50);
+                        }
                       }}
                       className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
@@ -216,7 +223,7 @@ const AdminUsers = () => {
                     {openActionDropdown === user._id && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
-                        <div className="absolute right-5 top-10 mt-1 w-44 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
+                        <div className="action-dropdown-menu absolute right-5 top-10 mt-1 w-44 bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
                           <button
                             onClick={(e) => { e.stopPropagation(); setDetailUser(user); setOpenActionDropdown(null); }}
                             className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
@@ -263,10 +270,10 @@ const AdminUsers = () => {
         </div>
 
         {/* Pagination */}
-        {filteredUsers.length > 0 && (
+        {(paginatedUsers || []).length > 0 && (
           <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-sm text-gray-400 font-medium">
-              Showing <span className="font-bold text-gray-700">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredUsers.length)}</span> of <span className="font-bold text-gray-700">{filteredUsers.length}</span>
+              Showing <span className="font-bold text-gray-700">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-gray-700">{Math.min(currentPage * itemsPerPage, totalUsers || (paginatedUsers || []).length)}</span> of <span className="font-bold text-gray-700">{totalUsers || (paginatedUsers || []).length}</span>
             </p>
             <div className="flex items-center gap-1">
               <button

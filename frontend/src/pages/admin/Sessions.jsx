@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle, FiTrash2, FiX, FiCheck } from 'react-icons/fi';
+import { FiMessageSquare, FiPhoneCall, FiVideo, FiClock, FiAlertCircle, FiTrash2, FiX, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { getSocket } from '../../socket/socketManager';
 import { getAdminSessions, getAdminCalls, deleteAdminSession, deleteAdminCall, bulkDeleteAdminSessions } from '../../api/adminApis';
 import { toast } from 'react-hot-toast';
@@ -17,6 +17,10 @@ const AdminSessions = () => {
   const [filterStatus, setFilterStatus] = useState('All');
   
   const [deletingId, setDeletingId] = useState(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Deletion States
   const [deleteConfirmSession, setDeleteConfirmSession] = useState(null);
@@ -153,6 +157,7 @@ const AdminSessions = () => {
 
       fetchSessions();
       setSelectedSessions([]);
+      toast.success('Session(s) deleted successfully');
     } catch (err) {
       console.error('Failed to delete sessions', err);
       toast.error('Failed to delete some sessions');
@@ -183,6 +188,12 @@ const AdminSessions = () => {
     .filter(s => filterAstro === '' || s.astrologer.toLowerCase().includes(filterAstro.toLowerCase()))
     .filter(s => filterType === 'All' || s.type === filterType)
     .filter(s => filterStatus === 'All' || s.status === filterStatus);
+
+  const totalPages = Math.ceil(filteredRecentSessions.length / itemsPerPage);
+  const paginatedSessions = filteredRecentSessions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="space-y-8">
@@ -221,7 +232,13 @@ const AdminSessions = () => {
           {loading ? (
             <div className="flex justify-center p-8"><LogoLoader /></div>
           ) : liveSessions.length === 0 ? (
-            <div className="p-8 text-center text-gray-400 text-sm font-medium">No live sessions currently</div>
+            <div className="p-12 flex flex-col items-center justify-center bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed m-6">
+              <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                <FiClock size={24} className="text-gray-300" />
+              </div>
+              <h3 className="text-gray-900 font-bold mb-1">No Live Sessions</h3>
+              <p className="text-gray-500 text-sm">There are currently no active chats or calls.</p>
+            </div>
           ) : liveSessions.map((s) => (
             <div key={s.id} className="px-6 py-5 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
               <div className="flex items-center gap-5">
@@ -338,9 +355,19 @@ const AdminSessions = () => {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr><td colSpan="6" className="py-8"><div className="flex justify-center"><LogoLoader /></div></td></tr>
-              ) : recentSessions.length === 0 ? (
-                <tr><td colSpan="6" className="py-8 text-center text-gray-400 text-sm font-medium">No recent sessions found</td></tr>
-              ) : filteredRecentSessions.map((s) => (
+              ) : filteredRecentSessions.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="py-16">
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                        <FiClock size={24} className="text-gray-300" />
+                      </div>
+                      <h3 className="text-gray-900 font-bold mb-1">No Sessions Found</h3>
+                      <p className="text-gray-500 text-sm">No recorded sessions match your criteria.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : paginatedSessions.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-3.5 px-6">
                     <input
@@ -384,6 +411,50 @@ const AdminSessions = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {(paginatedSessions || []).length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-sm text-gray-400 font-medium">
+              Showing <span className="font-bold text-gray-700">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="font-bold text-gray-700">{Math.min(currentPage * itemsPerPage, filteredRecentSessions.length)}</span> of <span className="font-bold text-gray-700">{filteredRecentSessions.length}</span>
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
+              ><FiChevronLeft size={14} /></button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                // Logic to show 5 pages centered around current page if possible
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = startPage + 4;
+                if (endPage > totalPages) {
+                  endPage = totalPages;
+                  startPage = Math.max(1, endPage - 4);
+                }
+                return startPage + i;
+              }).map(page => (
+                <button
+                  type="button"
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
+                    currentPage === page
+                      ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20'
+                      : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                >{page}</button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-30"
+              ><FiChevronRight size={14} /></button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ═══ DELETE CONFIRMATION MODAL ═══ */}

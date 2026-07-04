@@ -149,6 +149,7 @@ const AdminProducts = () => {
       height: product.height || ''
     });
     setOpenActionDropdown(null);
+    setShowNewCategoryInput(false);
     setShowAddModal(true);
   };
 
@@ -157,10 +158,12 @@ const AdminProducts = () => {
     try {
       setIsDeleting(true);
       await deleteAdminProduct(deleteConfirmProduct.id);
+      toast.success('Product deleted successfully!');
       setDeleteConfirmProduct(null);
       fetchProducts();
     } catch (err) {
       console.error('Failed to delete product', err);
+      toast.error('Failed to delete product');
     } finally {
       setIsDeleting(false);
     }
@@ -214,6 +217,7 @@ const AdminProducts = () => {
           onClick={() => {
             setEditingProductId(null);
             setFormData({ name: '', description: '', category: 'Bracelets', sku: '', price: '', originalPrice: '', discount: '', stock: '', image: '', featuredSection: 'none', weight: '', length: '', breadth: '', height: '' });
+            setShowNewCategoryInput(false);
             setShowAddModal(true);
           }}
           className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-sm shadow-orange-500/20 transition-all"
@@ -343,7 +347,15 @@ const AdminProducts = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenActionDropdown(openActionDropdown === product.id ? null : product.id);
+                        const isOpening = openActionDropdown !== product.id;
+                        setOpenActionDropdown(isOpening ? product.id : null);
+                        if (isOpening) {
+                          const td = e.currentTarget.closest('td');
+                          setTimeout(() => {
+                            const dropdown = td.querySelector('.action-dropdown-menu');
+                            if (dropdown) dropdown.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                          }, 50);
+                        }
                       }}
                       className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
@@ -353,7 +365,7 @@ const AdminProducts = () => {
                     {openActionDropdown === product.id && (
                       <>
                         <div className="fixed inset-0 z-40" onClick={() => setOpenActionDropdown(null)} />
-                        <div className="absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
+                        <div className="action-dropdown-menu absolute right-5 top-12 mt-1 w-48 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 z-50 overflow-hidden animate-slide-down origin-top-right text-left">
                           <button
                             onClick={() => openEditModal(product)}
                             className="w-full px-4 py-3 text-left text-sm font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
@@ -506,42 +518,47 @@ const AdminProducts = () => {
               <div className="grid grid-cols-5 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Selling Price</label>
-                  <input type="number" min="0" value={formData.price} onChange={e => handleNumberChange('price', e.target.value)} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.price} onChange={e => handleNumberChange('price', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="399" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Cost Price</label>
-                  <input type="number" min="0" value={formData.costPrice} onChange={e => handleNumberChange('costPrice', e.target.value)} placeholder="200" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.costPrice} onChange={e => handleNumberChange('costPrice', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="200" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">MRP (₹)</label>
-                  <input type="number" min="0" value={formData.originalPrice} onChange={e => handleNumberChange('originalPrice', e.target.value)} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.originalPrice} onChange={e => handleNumberChange('originalPrice', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="899" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Discount Tag</label>
-                  <input type="text" value={formData.discount} onChange={e => setFormData({...formData, discount: e.target.value})} placeholder="e.g. 50% OFF" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Discount Tag (%)</label>
+                  <input type="number" min="0" max="100" value={formData.discount} onChange={e => {
+                    const val = e.target.value.replace(/[^0-9]/g, '');
+                    if (val === '' || (Number(val) >= 0 && Number(val) <= 100)) {
+                      setFormData({...formData, discount: val});
+                    }
+                  }} onKeyDown={(e) => ['e', 'E', '+', '-', '.'].includes(e.key) && e.preventDefault()} placeholder="e.g. 50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Stock</label>
-                  <input type="number" min="0" value={formData.stock} onChange={e => handleNumberChange('stock', e.target.value)} placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.stock} onChange={e => handleNumberChange('stock', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="50" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Weight (kg)</label>
-                  <input type="number" min="0" step="0.01" value={formData.weight} onChange={e => handleNumberChange('weight', e.target.value)} placeholder="0.5" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" step="0.01" value={formData.weight} onChange={e => handleNumberChange('weight', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="0.5" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Length (cm)</label>
-                  <input type="number" min="0" value={formData.length} onChange={e => handleNumberChange('length', e.target.value)} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.length} onChange={e => handleNumberChange('length', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Breadth (cm)</label>
-                  <input type="number" min="0" value={formData.breadth} onChange={e => handleNumberChange('breadth', e.target.value)} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.breadth} onChange={e => handleNumberChange('breadth', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Height (cm)</label>
-                  <input type="number" min="0" value={formData.height} onChange={e => handleNumberChange('height', e.target.value)} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+                  <input type="number" min="0" value={formData.height} onChange={e => handleNumberChange('height', e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} placeholder="10" className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
                 </div>
               </div>
 
