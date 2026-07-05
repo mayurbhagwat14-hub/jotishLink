@@ -172,8 +172,7 @@ const AdminFinance = () => {
       setTransactions(formattedTransactions);
       
       const totalIn = formatted.filter(t => 
-        (t.entityType === 'User' && t.rawType === 'recharge') || 
-        (t.entityType === 'User' && t.rawType === 'deduction' && t.descLower?.includes('online order payment'))
+        (t.entityType === 'User' && t.rawType === 'recharge')
       ).reduce((s, t) => s + t.amount, 0);
       
       const totalOut = formatted.filter(t => 
@@ -291,8 +290,7 @@ const AdminFinance = () => {
       let totalOutflow = 0;
 
       filteredTransactions.forEach(t => {
-        if ((t.entityType === 'User' && t.rawType === 'recharge') || 
-            (t.entityType === 'User' && t.rawType === 'deduction' && t.descLower?.includes('online order payment'))) {
+        if ((t.entityType === 'User' && t.rawType === 'recharge')) {
           totalInflow += t.amount;
         } else if (t.entityType === 'Astro' && t.rawType === 'recharge') {
           astroEarnings += t.amount;
@@ -314,7 +312,7 @@ const AdminFinance = () => {
       doc.text(`Astro Earnings (Owed): Rs. ${astroEarnings.toLocaleString()}`, 20, 63);
       doc.text(`Total Outflow (Withdrawals/Refunds): Rs. ${totalOutflow.toLocaleString()}`, 20, 71);
       
-      const net = totalInflow - astroEarnings - totalOutflow;
+      const net = totalInflow - totalOutflow;
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
       if (net >= 0) {
@@ -443,99 +441,99 @@ const AdminFinance = () => {
       </div>
 
       {/* ═══ CLEAN DASHBOARD CARDS ═══ */}
-      <div className={`grid grid-cols-1 gap-6 ${(activeTab === 'transactions' || activeTab === 'admin') ? 'md:grid-cols-3' : 'md:grid-cols-3'}`}>
+      <div className={`grid grid-cols-1 gap-6 md:grid-cols-3`}>
         
         {activeTab === 'transactions' && (
           <>
-            {/* Inflow Card */}
-            <div className="bg-white rounded-2xl p-5 border border-emerald-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Inflow</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{globalInflow.toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">Platform gross revenue</p>
+            <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-6">
+              {/* Inflow Card */}
+              <div className="bg-white rounded-2xl p-5 border border-emerald-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Inflow</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{globalInflow.toLocaleString()}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">Platform gross revenue</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
+                  <FiArrowDownLeft size={18} />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-xl border border-emerald-200 bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
-                <FiArrowDownLeft size={18} />
+
+              {/* Astro Earnings Card */}
+              <div className="bg-white rounded-2xl p-5 border border-amber-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Astro Earnings</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{astroEarnings.toLocaleString()}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">Owed to Astrologers</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-amber-200 bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                  <FiArrowUpRight size={18} />
+                </div>
+              </div>
+
+              {/* Outflow Card */}
+              <div className="bg-white rounded-2xl p-5 border border-rose-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Outflow</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{globalOutflow.toLocaleString()}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">Platform gross expenses</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-rose-200 bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
+                  <FiArrowUpRight size={18} />
+                </div>
+              </div>
+
+              {/* Net Profit Card */}
+              <div className="bg-white rounded-2xl p-5 border border-indigo-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Net Platform Wallet Balance</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{netProfit.toLocaleString()}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">Total Deposits - Withdrawals/Payouts</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-indigo-200 bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+                  <FaRupeeSign size={16} />
+                </div>
               </div>
             </div>
 
-            {/* Astro Earnings Card */}
-            <div className="bg-white rounded-2xl p-5 border border-amber-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Astro Earnings</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{astroEarnings.toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">Owed to Astrologers</p>
+            {/* Revenue Breakdown Row */}
+            <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
+              <div className="bg-white rounded-2xl p-5 border border-cyan-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Session Profit</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{adminSessionEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">Admin share from sessions</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-cyan-200 bg-cyan-50 flex items-center justify-center text-cyan-500 shrink-0">
+                  <FiSmartphone size={18} />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-xl border border-amber-200 bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-                <FiArrowUpRight size={18} />
-              </div>
-            </div>
 
-            {/* Outflow Card */}
-            <div className="bg-white rounded-2xl p-5 border border-rose-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Outflow</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{globalOutflow.toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">Platform gross expenses</p>
+              <div className="bg-white rounded-2xl p-5 border border-purple-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Store Profit</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{storeEarnings.toLocaleString()}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">E-commerce Orders</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-purple-200 bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
+                  <FiBriefcase size={18} />
+                </div>
               </div>
-              <div className="w-10 h-10 rounded-xl border border-rose-200 bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
-                <FiArrowUpRight size={18} />
+
+              <div className="bg-white rounded-2xl p-5 border border-orange-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Pooja Profit</p>
+                  <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{poojaEarnings.toLocaleString()}</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">E-Pooja Bookings</p>
+                </div>
+                <div className="w-10 h-10 rounded-xl border border-orange-200 bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                  <FiDatabase size={18} />
+                </div>
               </div>
             </div>
           </>
         )}
 
-        {activeTab === 'admin' && (
-          <>
-            {/* Net Profit Card */}
-            <div className="bg-white rounded-2xl p-5 border border-indigo-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Net Platform Wallet Balance</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{(globalInflow - astroEarnings - globalOutflow).toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">Gross - Astro Share - Outflow</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl border border-indigo-200 bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
-                <FaRupeeSign size={16} />
-              </div>
-            </div>
-          
-          {/* Revenue Breakdown Row */}
-          <div className="col-span-1 md:col-span-4 grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
-            <div className="bg-white rounded-2xl p-5 border border-cyan-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Session Profit</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{adminSessionEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">Admin share from sessions</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl border border-cyan-200 bg-cyan-50 flex items-center justify-center text-cyan-500 shrink-0">
-                <FiSmartphone size={18} />
-              </div>
-            </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-purple-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Store Profit</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{storeEarnings.toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">E-commerce Orders</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl border border-purple-200 bg-purple-50 flex items-center justify-center text-purple-500 shrink-0">
-                <FiBriefcase size={18} />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 border border-orange-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-              <div>
-                <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Pooja Profit</p>
-                <h3 className="text-2xl font-black text-gray-900 leading-none mb-1">₹{poojaEarnings.toLocaleString()}</h3>
-                <p className="text-[10px] text-gray-400 font-medium">E-Pooja Bookings</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl border border-orange-200 bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
-                <FiDatabase size={18} />
-              </div>
-            </div>
-          </div>
-          </>
-        )}
 
         {activeTab === 'user_transactions' && (
           <>
@@ -636,7 +634,6 @@ const AdminFinance = () => {
             { id: 'transactions', label: 'All TXNs' },
             { id: 'user_transactions', label: 'Users' },
             { id: 'astro_transactions', label: 'Astrologers' },
-            { id: 'admin', label: 'Admin Profit' },
             { id: 'payouts', label: 'Payouts' }
           ].map((tab) => (
             <button
@@ -654,7 +651,7 @@ const AdminFinance = () => {
         </div>
 
         {/* Unified Filter Bar */}
-        {['transactions', 'user_transactions', 'astro_transactions', 'admin'].includes(activeTab) && (
+        {['transactions', 'user_transactions', 'astro_transactions'].includes(activeTab) && (
           <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
             <div className="relative w-full sm:w-64">
               <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
