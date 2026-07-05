@@ -589,6 +589,9 @@ export const processCancelRequest = asyncHandler(async (req, res) => {
   if (order.paymentMethod !== 'cod') {
     if (customRefundAmount !== undefined && customRefundAmount !== null) {
       refundAmount = Number(customRefundAmount);
+      if (refundAmount > order.totalAmount) {
+        throw new ApiError(400, `Refund amount cannot exceed the total order amount of ₹${order.totalAmount}`);
+      }
     } else {
       const finalRefundPercent = order.cancelRequest.refundPercent || 80;
       refundAmount = Math.round((order.totalAmount * finalRefundPercent) / 100);

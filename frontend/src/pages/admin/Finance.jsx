@@ -110,7 +110,9 @@ const AdminFinance = () => {
         } else if (entityType === 'User') {
           if (t.type === 'recharge') displayType = 'Wallet Deposit';
           else if (t.type === 'deduction') {
-            if (descLower.includes('video')) displayType = 'Video Call Payment';
+            if (descLower.includes('online order payment') || descLower.includes('store')) displayType = 'Store Order Payment';
+            else if (descLower.includes('pooja')) displayType = 'E-Pooja Payment';
+            else if (descLower.includes('video')) displayType = 'Video Call Payment';
             else if (descLower.includes('audio') || descLower.includes('voice')) displayType = 'Audio Call Payment';
             else if (descLower.includes('chat')) displayType = 'Chat Payment';
             else displayType = 'Session Payment';
@@ -130,7 +132,7 @@ const AdminFinance = () => {
           status: 'Success',
           date: new Date(t.createdAt).toLocaleString(),
           rawDate: t.createdAt,
-          isCredit: t.type === 'recharge' || (t.type === 'deduction' && descLower.includes('online order payment')),
+          isCredit: t.type === 'recharge' || t.type === 'refund',
           rawType: t.type,
           descLower: descLower
         };
@@ -175,7 +177,6 @@ const AdminFinance = () => {
       ).reduce((s, t) => s + t.amount, 0);
       
       const totalOut = formatted.filter(t => 
-        (t.entityType === 'User' && t.rawType === 'refund') || 
         (t.entityType === 'Astro' && (t.rawType === 'refund' || t.rawType === 'withdrawal' || t.rawType === 'payout'))
       ).reduce((s, t) => s + Math.abs(t.amount), 0);
       
@@ -296,7 +297,6 @@ const AdminFinance = () => {
         } else if (t.entityType === 'Astro' && t.rawType === 'recharge') {
           astroEarnings += t.amount;
         } else if (
-          (t.entityType === 'User' && t.rawType === 'refund') || 
           (t.entityType === 'Astro' && (t.rawType === 'refund' || t.rawType === 'withdrawal' || t.rawType === 'payout'))
         ) {
           totalOutflow += Math.abs(t.amount);
@@ -398,7 +398,6 @@ const AdminFinance = () => {
   // All TXNs
   const globalInflow = transactions.filter(t => t.entityType === 'User' && t.rawType === 'recharge').reduce((s, t) => s + t.amount, 0);
   const globalOutflow = transactions.filter(t => 
-    (t.entityType === 'User' && t.rawType === 'refund') || 
     (t.entityType === 'Astro' && (t.rawType === 'refund' || t.rawType === 'withdrawal' || t.rawType === 'payout'))
   ).reduce((s, t) => s + Math.abs(t.amount), 0);
   const netProfit = globalInflow - globalOutflow;

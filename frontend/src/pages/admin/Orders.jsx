@@ -899,6 +899,10 @@ const AdminOrders = () => {
                               if (!isCod) {
                                 const refundEl = document.getElementById(`refund-${order.id}`);
                                 customRefundAmount = parseInt(refundEl?.value) || 0;
+                                if (customRefundAmount > order.total) {
+                                  showToast(`Refund amount cannot exceed max allowed (₹${order.total})`);
+                                  return;
+                                }
                               }
                               try {
                                 await processCancelRequestApi(order.dbId, 'approved', customRefundAmount);
