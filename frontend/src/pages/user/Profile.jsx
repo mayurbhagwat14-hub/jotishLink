@@ -349,7 +349,7 @@ const Profile = () => {
       </div>
 
       {/* Submit Button & Delete Account */}
-      <div className="p-4 bg-white mt-auto border-t border-gray-50 space-y-3">
+      <div className="px-4 pt-4 pb-24 lg:pb-4 bg-white mt-auto border-t border-gray-50 space-y-3">
         <button onClick={handleSubmit} className="w-full py-4 flex items-center justify-center gap-2 bg-[#fa6830] text-white font-bold text-[16px] rounded-xl shadow-lg shadow-orange-200 hover:bg-[#e55923] active:scale-[0.98] transition-all">
           <FiSave /> Save Changes
         </button>
