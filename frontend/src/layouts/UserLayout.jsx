@@ -52,7 +52,7 @@ const UserLayout = () => {
   };
 
   useEffect(() => {
-    if (isSidebarOpen) {
+    if (isSidebarOpen || showSupportModal || showLogoutConfirm) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
@@ -60,7 +60,7 @@ const UserLayout = () => {
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, showSupportModal, showLogoutConfirm]);
 
   useEffect(() => {
     if (user) {

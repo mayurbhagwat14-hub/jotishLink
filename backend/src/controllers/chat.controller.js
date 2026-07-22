@@ -77,11 +77,21 @@ export const endChatSession = asyncHandler(async (req, res) => {
   const { sessionId } = req.params;
   const { durationSeconds } = req.body;
 
-  const session = await ChatSession.findById(sessionId);
-  if (!session) throw new ApiError(404, 'Session not found');
-  if (session.status !== 'ongoing') throw new ApiError(400, 'Session already ended');
-  if (session.userId.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, 'Not authorized');
+  // Use findOneAndUpdate to atomically acquire the session and prevent race conditions
+  const session = await ChatSession.findOneAndUpdate(
+    { _id: sessionId, status: 'ongoing', userId: req.user._id },
+    { status: 'processing' }, // Lock it temporarily to prevent duplicate billing
+    { new: true }
+  );
+
+  if (!session) {
+    const existingSession = await ChatSession.findById(sessionId);
+    if (!existingSession) throw new ApiError(404, 'Session not found');
+    if (existingSession.userId.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'Not authorized');
+    }
+    // If it's already completed or processing, we reject the request
+    throw new ApiError(400, 'Session already ended or is being processed');
   }
 
   const astrologer = await Astrologer.findById(session.astrologerId);

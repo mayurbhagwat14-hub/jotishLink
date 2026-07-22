@@ -135,6 +135,17 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
   const allNotifications = [...requestNotifications, ...notifications];
   const unreadCount = allNotifications.filter(n => !n.isRead).length;
 
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return 'Just now';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 60000);
+    if (diff < 1) return 'Just now';
+    if (diff < 60) return `${diff}m ago`;
+    if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
+    return `${Math.floor(diff/1440)}d ago`;
+  };
+
   const formatMessage = (msg) => {
     if (!msg) return '';
     // Formats any number with more than 2 decimal places to 2 decimal places
@@ -204,7 +215,7 @@ const NotificationDropdown = ({ iconSize = 22, iconClassName = "text-gray-400 ho
                           {notification.title}
                         </h4>
                         <span className="text-[9px] text-gray-400 font-medium whitespace-nowrap shrink-0 mt-0.5">
-                          {new Date(notification.createdAt).toLocaleDateString()}
+                          {getTimeAgo(notification.createdAt)}
                         </span>
                       </div>
                       <p className={`text-xs mt-1 line-clamp-2 ${notification.isRead ? 'text-gray-500' : 'text-gray-700 font-medium'}`}>
