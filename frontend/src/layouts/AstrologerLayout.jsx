@@ -21,18 +21,14 @@ const AstrologerLayout = () => {
   const { appName } = useSelector((state) => state.settings) || { appName: 'JyotishLink' };
   const location = useLocation();
   const navigate = useNavigate();
-  const [isOnline, setIsOnline] = useState(user?.onlineStatus === 'online' || user?.onlineStatus === 'busy');
+  const onlineStatus = user?.onlineStatus || 'offline';
+  const isBusy = onlineStatus === 'busy';
+  const isOnlineAvailable = onlineStatus === 'online';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const socketRef = useRef(null);
-
-  useEffect(() => {
-    if (user) {
-      setIsOnline(user.onlineStatus === 'online' || user.onlineStatus === 'busy');
-    }
-  }, [user]);
 
   useEffect(() => {
     const handleFocus = (e) => {
@@ -109,16 +105,20 @@ const AstrologerLayout = () => {
   };
 
   const toggleStatus = async () => {
-    if (statusLoading) return;
+    if (statusLoading || isBusy) {
+      if (isBusy) toast.error('Session chal rahi hai — pehle session khatam karein.');
+      return;
+    }
     setStatusLoading(true);
-    const newStatus = isOnline ? 'offline' : 'online';
+    const newStatus = isOnlineAvailable ? 'offline' : 'online';
     try {
       await updateAstrologerOnlineStatus(newStatus);
-      setIsOnline(!isOnline);
       if (user) {
         dispatch(updateAstrologer({ onlineStatus: newStatus }));
       }
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Failed to update status';
+      toast.error(msg);
       console.error('Failed to toggle status:', err);
     } finally {
       setStatusLoading(false);
@@ -167,14 +167,20 @@ const AstrologerLayout = () => {
         
         <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
           <div className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 px-2 sm:px-3 py-1 rounded-full border border-gray-100">
-            <span className={`text-[10px] sm:text-[12px] font-bold ${isOnline ? 'text-green-500' : 'text-gray-500'}`}>
-              {isOnline ? 'Online' : 'Offline'}
+            <span className={`text-[10px] sm:text-[12px] font-bold ${
+              isBusy ? 'text-amber-600' : isOnlineAvailable ? 'text-green-500' : 'text-gray-500'
+            }`}>
+              {isBusy ? 'Busy' : isOnlineAvailable ? 'Online' : 'Offline'}
             </span>
             <div 
               onClick={toggleStatus}
-              className={`w-8 h-4 sm:w-9 sm:h-5 rounded-full p-0.5 cursor-pointer transition-colors flex items-center ${statusLoading ? 'opacity-50' : ''} ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`}
+              className={`w-8 h-4 sm:w-9 sm:h-5 rounded-full p-0.5 transition-colors flex items-center ${
+                statusLoading || isBusy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+              } ${isOnlineAvailable ? 'bg-green-500' : isBusy ? 'bg-amber-500' : 'bg-gray-300'}`}
             >
-              <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 bg-white rounded-full shadow-sm transition-transform ${isOnline ? 'translate-x-3.5 sm:translate-x-4' : 'translate-x-0'}`}></div>
+              <div className={`w-3.5 h-3.5 sm:w-4 sm:h-4 bg-white rounded-full shadow-sm transition-transform ${
+                isOnlineAvailable ? 'translate-x-3.5 sm:translate-x-4' : 'translate-x-0'
+              }`}></div>
             </div>
           </div>
           

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FiVideo, FiSearch, FiX } from 'react-icons/fi';
+import { FiVideo, FiSearch, FiX, FiArrowLeft } from 'react-icons/fi';
 import { BiCategoryAlt, BiHeart, BiBookHeart } from 'react-icons/bi';
 import { MdOutlineHealthAndSafety, MdOutlineGavel } from 'react-icons/md';
 import { FaRupeeSign } from 'react-icons/fa';
@@ -101,9 +101,19 @@ const VideoCallList = () => {
   return (
     <div className="w-full bg-gray-50 min-h-screen font-sans pb-24">
       {/* Header */}
-      <div className="px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100 flex items-center justify-between">
-        <h1 className="text-gray-900 font-bold text-[18px]">Video Call with Astrologer</h1>
-        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-[#fa6830]">
+      <div className="px-4 py-3 bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate('/user/home')}
+            className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors shrink-0"
+            aria-label="Go back"
+          >
+            <FiArrowLeft size={22} />
+          </button>
+          <h1 className="text-gray-900 font-bold text-[18px] truncate">Video Call with Astrologer</h1>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-[#fa6830] shrink-0">
           <FiVideo size={16} />
         </div>
       </div>

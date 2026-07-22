@@ -2,7 +2,9 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getSocket } from '../socket/socketManager';
 import { updateUser } from '../store/slices/authSlice';
-import { fetchAdminDashboardThunk } from '../store/slices/dashboardSlice';
+import { fetchAdminDashboardThunk, fetchAstrologerDashboardThunk, updateFeaturedAstrologerStatus } from '../store/slices/dashboardSlice';
+import { updateAstrologer } from '../store/slices/astrologerAuthSlice';
+import { updateAstrologerStatus } from '../store/slices/userSlice';
 import {
   addIncomingRequest,
   removeIncomingRequestByUserId,
@@ -11,7 +13,6 @@ import {
   removeActiveSession,
   removeIncomingRequest
 } from '../store/slices/astrologerSlice';
-import { fetchAstrologerDashboardThunk } from '../store/slices/dashboardSlice';
 import toast from 'react-hot-toast';
 
 export const useGlobalSocket = () => {
@@ -135,8 +136,15 @@ export const useGlobalSocket = () => {
     };
 
     const handleAstroStatusChanged = ({ astrologerId, status }) => {
+      const id = astrologerId?.toString?.() || astrologerId;
+      dispatch(updateAstrologerStatus({ astrologerId: id, status }));
+      dispatch(updateFeaturedAstrologerStatus({ astrologerId: id, status }));
+
       if (!astrologerAuth.isAuthenticated) return;
-      if (astrologerId === astrologerAuth.user?._id && status === 'busy') {
+      if (String(astrologerAuth.user?._id) === String(id)) {
+        dispatch(updateAstrologer({ onlineStatus: status }));
+      }
+      if (status === 'busy') {
         dispatch(clearAllIncomingRequests());
       }
     };

@@ -82,7 +82,16 @@ const dashboardSlice = createSlice({
     clearAstrologerDashboard: (state) => {
       state.astrologerDashboard = {};
       state.astrologerAnalytics = {};
-    }
+    },
+    updateFeaturedAstrologerStatus: (state, action) => {
+      const { astrologerId, status } = action.payload;
+      const list = state.userHome?.featuredAstrologers;
+      if (!Array.isArray(list)) return;
+      const index = list.findIndex((a) => String(a._id) === String(astrologerId));
+      if (index !== -1) {
+        list[index].onlineStatus = status;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -153,5 +162,5 @@ const dashboardSlice = createSlice({
   }
 });
 
-export const { clearAdminDashboard, clearAstrologerDashboard } = dashboardSlice.actions;
+export const { clearAdminDashboard, clearAstrologerDashboard, updateFeaturedAstrologerStatus } = dashboardSlice.actions;
 export default dashboardSlice.reducer;

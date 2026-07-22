@@ -859,19 +859,24 @@ export const getAstrologerCalls = asyncHandler(async (req, res) => {
 // PUT /api/astrologer/status
 export const updateOnlineStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
-  if (!['online', 'offline', 'busy'].includes(status)) {
-    throw new ApiError(400, 'Invalid status');
+  if (!['online', 'offline'].includes(status)) {
+    throw new ApiError(400, 'Status must be online or offline. Busy is set automatically during sessions.');
   }
 
   const astrologer = await Astrologer.findById(req.user._id);
   if (!astrologer) throw new ApiError(404, 'Astrologer not found');
 
+  if (astrologer.onlineStatus === 'busy') {
+    throw new ApiError(400, 'You are in an active session. Finish the session before changing availability.');
+  }
+
   astrologer.onlineStatus = status;
   await astrologer.save();
 
   const io = req.app.get('io');
+  const astroId = astrologer._id.toString();
   if (io) {
-    io.emit('astro_status_changed', { astrologerId: astrologer._id, status });
+    io.emit('astro_status_changed', { astrologerId: astroId, status });
     io.to('admin_room').emit('dashboard_updated');
   }
 

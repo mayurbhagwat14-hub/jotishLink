@@ -26,7 +26,9 @@ const userSlice = createSlice({
   reducers: {
     updateAstrologerStatus: (state, action) => {
       const { astrologerId, status } = action.payload;
-      const index = state.astrologers.findIndex(a => a._id === astrologerId);
+      const index = state.astrologers.findIndex(
+        (a) => String(a._id) === String(astrologerId)
+      );
       if (index !== -1) {
         state.astrologers[index].onlineStatus = status;
       }

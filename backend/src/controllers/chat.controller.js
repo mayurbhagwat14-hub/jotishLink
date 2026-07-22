@@ -40,6 +40,10 @@ export const startChatSession = asyncHandler(async (req, res) => {
 
   // Mark astrologer as busy
   await Astrologer.findByIdAndUpdate(astrologerId, { onlineStatus: 'busy' });
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('astro_status_changed', { astrologerId: astrologerId.toString(), status: 'busy' });
+  }
 
   // Send Push Notification
   try {
@@ -133,7 +137,7 @@ export const endChatSession = asyncHandler(async (req, res) => {
   // Mark astrologer back as online instantly in frontend via socket
   const io = req.app.get('io');
   if (io && astrologer) {
-    io.emit('astro_status_changed', { astrologerId: astrologer._id, status: 'online' });
+    io.emit('astro_status_changed', { astrologerId: astrologer._id.toString(), status: 'online' });
   }
 
   session.status = 'completed';

@@ -132,8 +132,14 @@ io.on('connection', (socket) => {
 
   // ── Legacy Astrologer joins their notification room (Keeping for backward compatibility)
   socket.on('join_astrologer_room', ({ astrologerId }) => {
+    if (!astrologerId) return;
     socket.join(`astro_${astrologerId}`);
     socket.join(`room_astro_${astrologerId}`);
+    astroSocketMap.set(socket.id, astrologerId);
+    if (astroDisconnectTimers.has(astrologerId)) {
+      clearTimeout(astroDisconnectTimers.get(astrologerId));
+      astroDisconnectTimers.delete(astrologerId);
+    }
     console.log(`[Socket.IO] Astrologer ${astrologerId} joined their legacy notification room`);
   });
 
@@ -255,7 +261,7 @@ io.on('connection', (socket) => {
           return;
         }
 
-        io.emit('astro_status_changed', { astrologerId: reqData.astrologerId, status: 'busy' });
+        io.emit('astro_status_changed', { astrologerId: reqData.astrologerId.toString(), status: 'busy' });
 
         // Capture name for user-facing decline messages
         var acceptedAstrologerName = updated.name || 'Astrologer';
@@ -280,7 +286,7 @@ io.on('connection', (socket) => {
             { new: true }
           );
           if (reverted) {
-            io.emit('astro_status_changed', { astrologerId: astroIdForTimeout, status: 'online' });
+            io.emit('astro_status_changed', { astrologerId: astroIdForTimeout.toString(), status: 'online' });
             console.log(`[Socket.IO] Safety timeout: Reverted astrologer ${astroIdForTimeout} to online (room ${roomId} was never established)`);
           }
           // Also complete any stub chat session if it got created but not established
@@ -805,6 +811,29 @@ io.on('connection', (socket) => {
     }
     const freeChatDurationSeconds = (sysComm?.freeChatDuration || 1) * 60;
 
+    if (sessionId && !isFreeChat) {
+      try {
+        const ChatSession = (await import('./models/chatSession.model.js')).default;
+        const sessionForBusy = await ChatSession.findById(sessionId).select('astrologerId isBotSession').lean();
+        if (sessionForBusy?.astrologerId && !sessionForBusy.isBotSession) {
+          const Astrologer = (await import('./models/astrologer.model.js')).default;
+          const busyAstro = await Astrologer.findOneAndUpdate(
+            { _id: sessionForBusy.astrologerId, onlineStatus: 'online' },
+            { onlineStatus: 'busy' },
+            { new: true }
+          );
+          if (busyAstro) {
+            io.emit('astro_status_changed', {
+              astrologerId: sessionForBusy.astrologerId.toString(),
+              status: 'busy',
+            });
+          }
+        }
+      } catch (e) {
+        console.error('[Socket.IO] Failed to set astrologer busy on start_timer:', e.message);
+      }
+    }
+
     let seconds = 0;
     const intervalId = setInterval(async () => {
       seconds++;
@@ -1110,7 +1139,7 @@ io.on('connection', (socket) => {
             { new: true }
           );
           if (updatedAstro) {
-            io.emit('astro_status_changed', { astrologerId: checkSession.astrologerId, status: 'online' });
+            io.emit('astro_status_changed', { astrologerId: checkSession.astrologerId.toString(), status: 'online' });
           }
         }
       }
@@ -1276,7 +1305,7 @@ io.on('connection', (socket) => {
           { new: true }
         );
         if (updatedAstro) {
-          io.emit('astro_status_changed', { astrologerId: session.astrologerId, status: 'online' });
+          io.emit('astro_status_changed', { astrologerId: session.astrologerId.toString(), status: 'online' });
         }
       }
     } catch (err) {
@@ -1288,13 +1317,17 @@ io.on('connection', (socket) => {
 
   socket.on('end_call', handleEndCall);
 
-  // ── Astrologer status update
+  // ── Astrologer status update (manual online/offline from app)
   socket.on('update_status', async ({ astrologerId, status }) => {
     try {
+      if (!['online', 'offline'].includes(status)) return;
+      const astro = await Astrologer.findById(astrologerId);
+      if (!astro) return;
+      if (astro.onlineStatus === 'busy') return;
+
       await Astrologer.findOneAndUpdate({ _id: astrologerId }, { onlineStatus: status });
 
       if (status === 'online') {
-        // Self-healing: clear any stuck ongoing sessions in DB
         const { CallSession } = await import('./models/callSession.model.js');
         await CallSession.updateMany(
           { astrologerId, status: { $in: ['accepted', 'ongoing', 'ringing'] } },
@@ -1307,7 +1340,7 @@ io.on('connection', (socket) => {
         );
       }
 
-      io.emit('astro_status_changed', { astrologerId, status });
+      io.emit('astro_status_changed', { astrologerId: astrologerId.toString(), status });
     } catch (err) {
       console.error('[Socket.IO] Status update error:', err.message);
     }
@@ -1327,7 +1360,7 @@ io.on('connection', (socket) => {
           const astro = await Astrologer.findById(disconnectedAstroId);
           if (astro && astro.onlineStatus === 'online') {
             await Astrologer.findByIdAndUpdate(disconnectedAstroId, { onlineStatus: 'offline' });
-            io.emit('astro_status_changed', { astrologerId: disconnectedAstroId, status: 'offline' });
+            io.emit('astro_status_changed', { astrologerId: disconnectedAstroId.toString(), status: 'offline' });
             console.log(`[Socket.IO] Astrologer ${disconnectedAstroId} auto-offline due to disconnect`);
           }
         } catch (err) {
@@ -1373,7 +1406,7 @@ io.on('connection', (socket) => {
                 { _id: astroIdToReset, onlineStatus: 'busy' },
                 { onlineStatus: 'online' }
               );
-              io.emit('astro_status_changed', { astrologerId: astroIdToReset, status: 'online' });
+              io.emit('astro_status_changed', { astrologerId: astroIdToReset.toString(), status: 'online' });
             }
           } catch (err) {
             console.error('[Socket.IO] Error forcefully ending call on disconnect:', err.message);
