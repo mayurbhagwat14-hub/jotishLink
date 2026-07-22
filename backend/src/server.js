@@ -613,22 +613,11 @@ io.on('connection', (socket) => {
     }
 
     let settings = await SystemSettings.findOne();
-    const reservedUser = await User.findOneAndUpdate(
-      { _id: userId, freeChatUsed: { $ne: true } },
-      {
-        $set: {
-          freeChatUsed: true,
-          freeChatUsedAt: new Date(),
-          freeChatDuration: settings?.freeChatDuration || 1,
-        },
-      },
-      { new: true }
-    );
-    if (!reservedUser) {
+    const userForFree = await User.findById(userId).select('freeChatUsed').lean();
+    if (userForFree?.freeChatUsed) {
       socket.emit('free_chat_denied', { reason: 'already_used', roomId });
       return;
     }
-    io.to(roomId).emit('wallet_update', { freeChatUsed: true });
 
     activeTimers.set(roomId, { pending: true }); // Sync lock
 
@@ -698,21 +687,22 @@ io.on('connection', (socket) => {
         clearInterval(intervalId);
         activeTimers.delete(roomId);
 
-        // Mark user's free chat offer as used
         await User.findByIdAndUpdate(userId, {
           freeChatUsed: true,
           freeChatUsedAt: new Date(),
           freeChatDuration: settings?.freeChatDuration || 1
         });
 
-        // If handoff didn't happen (or balance was low), force end session
         io.to(roomId).emit('wallet_update', { freeChatUsed: true });
-        io.to(roomId).emit('wallet_low_balance');
-        io.to(roomId).emit('session_ended', {
-          reason: 'insufficient_balance',
-          durationSeconds: seconds,
+        handleEndSession({
+          roomId,
+          sessionId,
+          userId,
+          endedBy: 'system',
+          finalSeconds: seconds,
+          sessionType: 'chat',
+          endReason: 'free_chat_completed',
         });
-        handleEndSession({ roomId, sessionId, userId, endedBy: 'system', finalSeconds: seconds, sessionType: 'chat' });
       }
     }, 1000);
 
@@ -881,7 +871,7 @@ io.on('connection', (socket) => {
   });
 
   // ── End session manually
-  const handleEndSession = async ({ roomId, sessionId, userId, endedBy = 'user', finalSeconds, sessionType = 'chat' }) => {
+  const handleEndSession = async ({ roomId, sessionId, userId, endedBy = 'user', finalSeconds, sessionType = 'chat', endReason }) => {
     // Fast-path: Reset astrologer's status to online instantly so other users see it immediately
     try {
       let astroIdToReset = null;
@@ -965,7 +955,7 @@ io.on('connection', (socket) => {
     const remainingDelta = Number((currentCost - lastDeducted).toFixed(2));
 
     const endPayload = {
-      reason: `${endedBy}_ended`,
+      reason: endReason || `${endedBy}_ended`,
       durationSeconds: duration,
       amountDeducted: currentCost,
       sessionId: finalSessionId,

@@ -22,8 +22,6 @@ const UserChatRoom = () => {
   /** Frozen for this visit — do not flip when freeChatUsed updates mid-session */
   const startWithBot = !!location.state?.startWithBot;
 
-  const isFreeChatUsedOnDevice = (_userId, freeChatUsedFlag) => freeChatUsedFlag === true;
-
   const [isBotActive, setIsBotActive] = useState(startWithBot);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -56,6 +54,7 @@ const UserChatRoom = () => {
   const historyGuardPushedRef = useRef(false);
   const timerRef = useRef(0);
   const hasRatedRef = useRef(false);
+  const chatLiveRef = useRef(false);
 
   const markFreeChatConsumed = useCallback(() => {
     if (user?._id) {
@@ -82,6 +81,12 @@ const UserChatRoom = () => {
         setShowLowBalance(false);
         navigate('/user/wallet', { replace: true });
       }, 1500);
+    } else if (data.reason === 'free_chat_completed') {
+      setShowSummary(true);
+      setTimeout(() => {
+        setShowSummary(false);
+        navigate('/user/wallet', { replace: true });
+      }, 2500);
     } else {
       setShowSummary(true);
       setTimeout(() => {
@@ -116,8 +121,8 @@ const UserChatRoom = () => {
 
   useEffect(() => {
     if (!startWithBot || !user?._id) return;
-    if (sessionIdRef.current) return;
-    if (isFreeChatUsedOnDevice(user._id, user.freeChatUsed)) {
+    if (chatLiveRef.current || sessionIdRef.current) return;
+    if (user.freeChatUsed === true) {
       toast.error('Aapki free chat pehle hi use ho chuki hai. Recharge karke chat karein.');
       navigate('/user/home', { replace: true });
     }
@@ -131,11 +136,7 @@ const UserChatRoom = () => {
 
     // Wait for Redux to hydrate the user state
     if (!user || !user._id) return;
-    if (
-      startWithBot &&
-      isFreeChatUsedOnDevice(user._id, user.freeChatUsed) &&
-      !sessionIdRef.current
-    ) {
+    if (startWithBot && user.freeChatUsed === true && !chatLiveRef.current) {
       return;
     }
 
@@ -151,6 +152,14 @@ const UserChatRoom = () => {
 
     const onSessionCreated = (data) => {
       if (data.sessionStatus && data.sessionStatus !== 'ongoing') {
+        if (startWithBot && !viewOnly && user?._id) {
+          const newRoomId = `room_${user._id}_bot_${Date.now()}`;
+          navigate('/user/chat', {
+            replace: true,
+            state: { astrologer, roomId: newRoomId, startWithBot: true },
+          });
+          return;
+        }
         toast('Yeh chat pehle hi khatam ho chuki hai.');
         applySessionEnded({
           reason: 'already_ended',
@@ -160,6 +169,7 @@ const UserChatRoom = () => {
         return;
       }
 
+      chatLiveRef.current = true;
       setSessionId(data.sessionId);
       sessionIdRef.current = data.sessionId;
       if (data.messages?.length > 0) {
@@ -185,7 +195,7 @@ Please analyze my chart based on this information.`;
         });
       }
 
-      if (startWithBot && data.isNewSession) {
+      if (startWithBot && data.sessionStatus === 'ongoing') {
         socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: astrologer._id });
       } else if (!viewOnly && !startWithBot) {
         const rate = astrologer.pricing?.chat || astrologer.rate || 5;
@@ -240,8 +250,9 @@ Please analyze my chart based on this information.`;
 
     const onWalletUpdate = (data) => {
       if (data.newBalance !== undefined) dispatch(updateUser({ wallet: data.newBalance }));
-      if (data.freeChatUsed !== undefined) {
+      if (data.freeChatUsed === true) {
         dispatch(updateUser({ freeChatUsed: true }));
+        if (user?._id) localStorage.setItem(`freeChatUsed_${user._id}`, '1');
       }
     };
 
@@ -299,7 +310,7 @@ Please analyze my chart based on this information.`;
       socket.off('user_stopped_typing', onUserStoppedTyping);
       socket.off('message_error', onMessageError);
     };
-  }, [roomId, user?._id, startWithBot, astrologer._id, applySessionEnded, viewOnly, markFreeChatConsumed, navigate]);
+  }, [roomId, user?._id, startWithBot, astrologer._id, applySessionEnded, viewOnly, markFreeChatConsumed, navigate, astrologer, user?.freeChatUsed]);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
