@@ -106,7 +106,7 @@ const AstrologerLayout = () => {
 
   const toggleStatus = async () => {
     if (statusLoading || isBusy) {
-      if (isBusy) toast.error('Session chal rahi hai — pehle session khatam karein.');
+      if (isBusy) toast.error('Session is ongoing — please finish the session first.');
       return;
     }
     setStatusLoading(true);

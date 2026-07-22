@@ -204,7 +204,7 @@ const UserLayout = () => {
 
       {/* ═══ FREE CHAT BOTTOM BANNER ═══ */}
       {user?.freeChatUsed === false && localStorage.getItem('claimedFreeChat') !== 'true' && !isBannerDismissed && !hideBottomNav && !isBottomBannerHidden && (
-        <div className="fixed bottom-[56px] lg:bottom-0 left-0 right-0 z-40 bg-white border-t border-orange-100 shadow-[0_-4px_20px_rgba(255,106,26,0.1)] px-3 py-2 flex items-center gap-3 animate-slide-up rounded-t-xl sm:rounded-none">
+        <div className="fixed bottom-[72px] lg:bottom-0 left-0 right-0 z-40 bg-white border-t border-orange-100 shadow-[0_-4px_20px_rgba(255,106,26,0.1)] px-3 py-2 flex items-center gap-3 animate-slide-up rounded-t-xl sm:rounded-none">
           <button onClick={() => setIsBannerDismissed(true)} className="absolute top-2 right-2 p-0.5 text-gray-400 hover:text-gray-600">
             <X size={14} />
           </button>

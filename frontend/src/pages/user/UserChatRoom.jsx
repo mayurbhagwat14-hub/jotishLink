@@ -123,7 +123,7 @@ const UserChatRoom = () => {
     if (!startWithBot || !user?._id) return;
     if (chatLiveRef.current || sessionIdRef.current) return;
     if (user.freeChatUsed === true) {
-      toast.error('Aapki free chat pehle hi use ho chuki hai. Recharge karke chat karein.');
+      toast.error('Your free chat has already been used. Please recharge to chat.');
       navigate('/user/home', { replace: true });
     }
   }, [startWithBot, user?._id, user?.freeChatUsed, navigate]);
@@ -160,7 +160,7 @@ const UserChatRoom = () => {
           });
           return;
         }
-        toast('Yeh chat pehle hi khatam ho chuki hai.');
+        toast('This chat has already ended.');
         applySessionEnded({
           reason: 'already_ended',
           durationSeconds: 0,
@@ -260,8 +260,8 @@ Please analyze my chart based on this information.`;
       markFreeChatConsumed();
       toast.error(
         reason === 'already_used'
-          ? 'Free chat sirf ek baar milti hai. Recharge karke chat shuru karein.'
-          : 'Free chat ab available nahi hai.'
+          ? 'Free chat is only available once. Please recharge to start a chat.'
+          : 'Free chat is no longer available.'
       );
       navigate('/user/home', { replace: true });
     };
