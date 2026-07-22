@@ -19,13 +19,12 @@ const UserChatRoom = () => {
 
   const astrologer = location.state?.astrologer || {};
   const roomIdFromState = location.state?.roomId;
-  const wantsFreeBot = !!location.state?.startWithBot;
-  const freeChatAlreadyUsed =
-    user?.freeChatUsed === true ||
-    (user?._id && localStorage.getItem(`freeChatUsed_${user._id}`) === '1');
-  const isBotSession =
-    wantsFreeBot && !freeChatAlreadyUsed && !!(roomIdFromState || astrologer._id);
+  /** Frozen for this visit — do not flip when freeChatUsed updates mid-session */
+  const startWithBot = !!location.state?.startWithBot;
 
+  const isFreeChatUsedOnDevice = (_userId, freeChatUsedFlag) => freeChatUsedFlag === true;
+
+  const [isBotActive, setIsBotActive] = useState(startWithBot);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [timer, setTimer] = useState(0);
@@ -37,7 +36,6 @@ const UserChatRoom = () => {
   const [hasRated, setHasRated] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectingType, setConnectingType] = useState('');
-  const [isBotActive, setIsBotActive] = useState(isBotSession);
   const [showSummary, setShowSummary] = useState(false);
   const [endReason, setEndReason] = useState('');
   const [finalDuration, setFinalDuration] = useState(0);
@@ -74,7 +72,7 @@ const UserChatRoom = () => {
     setFinalDuration(data.durationSeconds ?? timerRef.current);
     setFinalAmount(data.amountDeducted || 0);
 
-    if (wantsFreeBot || isBotSession || isBotActive) {
+    if (startWithBot || isBotActive) {
       markFreeChatConsumed();
     }
 
@@ -95,12 +93,12 @@ const UserChatRoom = () => {
         }
       }, 2500);
     }
-  }, [navigate, astrologer._id, wantsFreeBot, isBotSession, isBotActive, markFreeChatConsumed]);
+  }, [navigate, astrologer._id, startWithBot, isBotActive, markFreeChatConsumed]);
 
   // Use roomId from WaitingScreen navigation state or generate a stable one
   const initialRoomId = useMemo(() => {
-    return roomIdFromState || (isBotSession && user?._id ? `bot_${user._id}_${Date.now()}` : null);
-  }, [roomIdFromState, isBotSession, user?._id]);
+    return roomIdFromState || (startWithBot && user?._id ? `bot_${user._id}_${Date.now()}` : null);
+  }, [roomIdFromState, startWithBot, user?._id]);
 
   const roomId = initialRoomId;
 
@@ -110,16 +108,20 @@ const UserChatRoom = () => {
 
   useEffect(() => {
     if (!user?._id) return;
-    if (localStorage.getItem(`freeChatUsed_${user._id}`) === '1' && user.freeChatUsed !== true) {
-      dispatch(updateUser({ freeChatUsed: true }));
+    // Sync from server profile only — do not block new users from stale localStorage alone
+    if (user.freeChatUsed === true) {
+      localStorage.setItem(`freeChatUsed_${user._id}`, '1');
     }
-  }, [user?._id, user?.freeChatUsed, dispatch]);
+  }, [user?._id, user?.freeChatUsed]);
 
   useEffect(() => {
-    if (!wantsFreeBot || !freeChatAlreadyUsed) return;
-    toast.error('Aapki free chat pehle hi use ho chuki hai. Recharge karke chat karein.');
-    navigate('/user/home', { replace: true });
-  }, [wantsFreeBot, freeChatAlreadyUsed, navigate]);
+    if (!startWithBot || !user?._id) return;
+    if (sessionIdRef.current) return;
+    if (isFreeChatUsedOnDevice(user._id, user.freeChatUsed)) {
+      toast.error('Aapki free chat pehle hi use ho chuki hai. Recharge karke chat karein.');
+      navigate('/user/home', { replace: true });
+    }
+  }, [startWithBot, user?._id, user?.freeChatUsed, navigate]);
 
   useEffect(() => {
     if (!roomId) {
@@ -129,7 +131,13 @@ const UserChatRoom = () => {
 
     // Wait for Redux to hydrate the user state
     if (!user || !user._id) return;
-    if (wantsFreeBot && freeChatAlreadyUsed) return;
+    if (
+      startWithBot &&
+      isFreeChatUsedOnDevice(user._id, user.freeChatUsed) &&
+      !sessionIdRef.current
+    ) {
+      return;
+    }
 
     const socket = getSocket();
 
@@ -137,7 +145,7 @@ const UserChatRoom = () => {
       roomId,
       userId: user._id,
       astrologerId: astrologer._id,
-      isBot: isBotSession,
+      isBot: startWithBot,
       sessionType: 'chat'
     });
 
@@ -177,9 +185,9 @@ Please analyze my chart based on this information.`;
         });
       }
 
-      if (isBotSession && data.isNewSession) {
+      if (startWithBot && data.isNewSession) {
         socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: astrologer._id });
-      } else if (!viewOnly && !isBotSession) {
+      } else if (!viewOnly && !startWithBot) {
         const rate = astrologer.pricing?.chat || astrologer.rate || 5;
         socket.emit('start_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate, type: 'chat' });
       }
@@ -232,7 +240,9 @@ Please analyze my chart based on this information.`;
 
     const onWalletUpdate = (data) => {
       if (data.newBalance !== undefined) dispatch(updateUser({ wallet: data.newBalance }));
-      if (data.freeChatUsed !== undefined) markFreeChatConsumed();
+      if (data.freeChatUsed !== undefined) {
+        dispatch(updateUser({ freeChatUsed: true }));
+      }
     };
 
     const onFreeChatDenied = ({ reason }) => {
@@ -252,7 +262,7 @@ Please analyze my chart based on this information.`;
         roomId,
         userId: user._id,
         astrologerId: astrologer._id,
-        isBot: isBotSession,
+        isBot: startWithBot,
         sessionType: 'chat',
       });
     };
@@ -289,7 +299,7 @@ Please analyze my chart based on this information.`;
       socket.off('user_stopped_typing', onUserStoppedTyping);
       socket.off('message_error', onMessageError);
     };
-  }, [roomId, user?._id, isBotSession, astrologer._id, applySessionEnded, viewOnly, wantsFreeBot, freeChatAlreadyUsed, markFreeChatConsumed, navigate]);
+  }, [roomId, user?._id, startWithBot, astrologer._id, applySessionEnded, viewOnly, markFreeChatConsumed, navigate]);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -505,7 +515,7 @@ Please analyze my chart based on this information.`;
       amountDeducted: 0,
     });
 
-    if (wantsFreeBot || isBotSession) {
+    if (startWithBot || isBotActive) {
       markFreeChatConsumed();
     }
 
@@ -864,7 +874,7 @@ Please analyze my chart based on this information.`;
               <div className="flex justify-between">
                 <span className="text-gray-600 font-medium">Amount Deducted</span>
                 <span className="font-bold text-[#fa6830]">
-                  {isBotSession ? '₹0 (Free)' : `₹${finalAmount > 0 ? finalAmount.toFixed(2) : (((finalDuration || timer) / 60) * (astrologer.pricing?.chat || astrologer.rate || 5)).toFixed(2)}`}
+                  {startWithBot ? '₹0 (Free)' : `₹${finalAmount > 0 ? finalAmount.toFixed(2) : (((finalDuration || timer) / 60) * (astrologer.pricing?.chat || astrologer.rate || 5)).toFixed(2)}`}
                 </span>
               </div>
             </div>

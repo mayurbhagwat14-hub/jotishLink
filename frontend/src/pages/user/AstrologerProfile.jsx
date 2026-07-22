@@ -78,10 +78,7 @@ const AstrologerProfile = () => {
     const walletBalance = user?.wallet || 0;
     const astroName = astrologer.name || astrologer.userId?.name || 'Astrologer';
 
-    const freeChatAlreadyUsed =
-      user?.freeChatUsed === true ||
-      (user?._id && localStorage.getItem(`freeChatUsed_${user._id}`) === '1');
-    const isFreeChatEligible = type === 'chat' && !freeChatAlreadyUsed;
+    const isFreeChatEligible = type === 'chat' && user?.freeChatUsed !== true;
 
     if (walletBalance < requiredAmount && !isFreeChatEligible) {
       setShortBalanceInfo({ required: requiredAmount, current: walletBalance, name: astroName });
