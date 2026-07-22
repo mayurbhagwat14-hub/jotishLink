@@ -5,7 +5,12 @@ import { FaRupeeSign } from 'react-icons/fa';
 import AdminFilterDropdown from '../../components/AdminFilterDropdown';
 import { getAdminOrders, updateAdminOrderStatus, processCancelRequest as processCancelRequestApi, pushOrderToShiprocket, generateOrderAWB, getShiprocketOrderDetails, downloadAdminOrderInvoice } from '../../api/adminApis';
 import { getSocket } from '../../socket/socketManager';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 const AdminOrders = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -106,6 +111,18 @@ const AdminOrders = () => {
 
     fetchOrders();
   }, []);
+
+  useEffect(() => {
+    if (orders.length > 0 && location.state?.openOrderId) {
+      const orderToOpen = orders.find(o => o.id === location.state.openOrderId);
+      if (orderToOpen) {
+        setSelectedOrder(orderToOpen);
+        // Clear the state so it doesn't reopen on refresh
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+    }
+  }, [orders, location.state, navigate, location.pathname]);
+
 
   const showToast = (message) => {
     setSuccessToast(message);

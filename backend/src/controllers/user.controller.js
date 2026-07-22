@@ -110,7 +110,7 @@ export const getHomepageData = asyncHandler(async (req, res) => {
       .limit(10)
       .lean(),
     Product.find().sort({ inStock: -1, createdAt: -1 }).limit(6).lean(),
-    Astrologer.find({ isVerified: true, onlineStatus: { $in: ['online', 'busy'] }, name: { $ne: 'Temp Astrologer' } })
+    Astrologer.find({ onlineStatus: { $in: ['online', 'busy'] }, name: { $ne: 'Temp Astrologer' } })
       .sort({ rating: -1 })
       .limit(10)
       .lean(),
@@ -182,7 +182,13 @@ export const getHomepageData = asyncHandler(async (req, res) => {
 // GET /api/astrologers
 export const getAstrologers = asyncHandler(async (req, res) => {
   const { search, skill, category, language, sort } = req.query;
-  let filter = { isVerified: true, name: { $ne: 'Temp Astrologer' } };
+  let filter = { 
+    name: { $ne: 'Temp Astrologer' },
+    $or: [
+      { isVerified: true },
+      { onlineStatus: { $in: ['online', 'busy'] } }
+    ]
+  };
 
   if (skill) filter.skills = { $in: [skill] };
   if (category) filter.categories = { $in: [category] };

@@ -141,7 +141,7 @@ const Cart = () => {
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-white sticky top-0 z-30 shadow-store-sm">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-store-surface flex items-center justify-center text-store-text hover:bg-store-border transition-colors active:scale-95">
+          <button onClick={() => navigate('/user/store')} className="w-10 h-10 rounded-xl bg-store-surface flex items-center justify-center text-store-text hover:bg-store-border transition-colors active:scale-95">
             <FiArrowLeft size={18} />
           </button>
           <div>

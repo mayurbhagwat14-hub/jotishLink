@@ -22,19 +22,30 @@ const Matchmaking = () => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const handleNameChange = (e, field) => {
+    // Remove numbers and special characters, allow only letters and spaces
+    let value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+    // Replace multiple spaces with a single space
+    value = value.replace(/\s{2,}/g, ' ');
+    // Capitalize the first letter of each word
+    value = value.replace(/\b\w/g, l => l.toUpperCase());
+    
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const res = await checkMatchmaking({
         boyDetails: { 
-          name: formData.boyName,
+          name: formData.boyName.trim(),
           dob: formData.boyDob,
           timeOfBirth: formData.boyTob,
           placeOfBirth: formData.boyPob
         },
         girlDetails: { 
-          name: formData.girlName,
+          name: formData.girlName.trim(),
           dob: formData.girlDob,
           timeOfBirth: formData.girlTob,
           placeOfBirth: formData.girlPob
@@ -109,7 +120,9 @@ const Matchmaking = () => {
                     <input 
                       required type="text" placeholder="Enter boy's name"
                       value={formData.boyName} 
-                      onChange={e => setFormData({...formData, boyName: e.target.value.replace(/[^a-zA-Z\s]/g, '').replace(/\b\w/g, l => l.toUpperCase())})}
+                      onChange={e => handleNameChange(e, 'boyName')}
+                      pattern="[A-Za-z\s]+"
+                      title="Name should only contain alphabets and spaces"
                       className="w-full border border-gray-200 focus:border-blue-500 bg-white rounded-2xl py-3 px-4 outline-none transition-all text-[14px] shadow-sm" 
                     />
                   </div>
@@ -153,7 +166,9 @@ const Matchmaking = () => {
                     <input 
                       required type="text" placeholder="Enter girl's name"
                       value={formData.girlName} 
-                      onChange={e => setFormData({...formData, girlName: e.target.value.replace(/[^a-zA-Z\s]/g, '').replace(/\b\w/g, l => l.toUpperCase())})}
+                      onChange={e => handleNameChange(e, 'girlName')}
+                      pattern="[A-Za-z\s]+"
+                      title="Name should only contain alphabets and spaces"
                       className="w-full border border-gray-200 focus:border-rose-500 bg-white rounded-2xl py-3 px-4 outline-none transition-all text-[14px] shadow-sm" 
                     />
                   </div>
@@ -242,3 +257,4 @@ const Matchmaking = () => {
 };
 
 export default Matchmaking;
+

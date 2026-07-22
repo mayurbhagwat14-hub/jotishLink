@@ -144,7 +144,7 @@ const Astrologers = () => {
       <div className="bg-white sticky top-0 z-50 shadow-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
+            <button onClick={() => navigate('/user/home')} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
               <FiArrowLeft size={22} />
             </button>
             <div 

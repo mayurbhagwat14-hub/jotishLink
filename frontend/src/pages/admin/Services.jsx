@@ -217,7 +217,7 @@ const AdminServices = () => {
 
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <Link to="/admin/orders" className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-[11px] font-bold whitespace-nowrap">
+                      <Link to="/admin/orders" state={{ openOrderId: order.id.replace('#', '') }} className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors text-[11px] font-bold whitespace-nowrap">
                         Manage Order
                       </Link>
                     </td>

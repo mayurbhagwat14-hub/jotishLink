@@ -127,16 +127,37 @@ const AdminProducts = () => {
   const handleSaveProduct = async () => {
     if (isSubmitting) return;
     try {
-      if (!formData.name || !formData.price || !formData.category) {
-        toast.error('Product Name, Price, and Category are required.');
+      if (!formData.name?.trim()) {
+        toast.error('Product Name is required.');
         return;
       }
-      if (!formData.weight || !formData.length || !formData.breadth || !formData.height) {
-        toast.error('Weight, Length, Breadth, and Height are required for shipping details.');
+      if (formData.name.trim().length < 2) {
+        toast.error('Product Name must be at least 2 characters.');
         return;
       }
-      if (Number(formData.price) >= Number(formData.originalPrice) && Number(formData.originalPrice) > 0) {
-        toast.error('Selling price must be less than MRP.');
+      if (formData.price === '' || Number(formData.price) < 0) {
+        toast.error('Valid Price is required and cannot be negative.');
+        return;
+      }
+      if (!formData.category?.trim()) {
+        toast.error('Category is required.');
+        return;
+      }
+      if (formData.weight === '' || Number(formData.weight) < 0.1 ||
+          formData.length === '' || Number(formData.length) < 0.1 ||
+          formData.breadth === '' || Number(formData.breadth) < 0.1 ||
+          formData.height === '' || Number(formData.height) < 0.1) {
+        toast.error('Weight, Length, Breadth, and Height are required and must be at least 0.1.');
+        return;
+      }
+      if (formData.originalPrice !== '' && Number(formData.originalPrice) > 0) {
+        if (Number(formData.price) >= Number(formData.originalPrice)) {
+          toast.error('Selling price must be less than MRP.');
+          return;
+        }
+      }
+      if (formData.stock !== '' && Number(formData.stock) < 0) {
+        toast.error('Stock cannot be negative.');
         return;
       }
       

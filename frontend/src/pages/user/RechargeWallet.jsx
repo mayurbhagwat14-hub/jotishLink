@@ -163,7 +163,7 @@ const RechargeWallet = () => {
       {/* HEADER */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
+          <button onClick={() => navigate('/user/history?tab=wallet')} className="p-1 -ml-1 text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
             <FiChevronLeft size={24} />
           </button>
           <h1 className="text-[17px] font-semibold text-gray-800">My Wallet</h1>

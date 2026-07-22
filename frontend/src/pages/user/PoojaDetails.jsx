@@ -50,7 +50,7 @@ const PoojaDetails = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
         <p className="text-gray-500 mb-4">Pooja not found</p>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-[#fa6830] text-white rounded-lg">Go Back</button>
+        <button onClick={() => navigate('/user/store')} className="px-4 py-2 bg-[#fa6830] text-white rounded-lg">Go Back</button>
       </div>
     );
   }
@@ -59,7 +59,7 @@ const PoojaDetails = () => {
     <div className="min-h-screen bg-gray-50 pb-10">
       {/* Top Navigation */}
       <div className="bg-white px-4 py-3 sticky top-0 z-30 shadow-sm border-b border-gray-100 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1.5 rounded-full hover:bg-gray-100 transition-colors">
+        <button onClick={() => navigate('/user/store')} className="p-1.5 rounded-full hover:bg-gray-100 transition-colors">
           <FiArrowLeft size={20} className="text-gray-800" />
         </button>
         <h1 className="text-lg font-bold text-gray-800">Pooja Details</h1>

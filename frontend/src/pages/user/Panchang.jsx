@@ -47,7 +47,7 @@ const Panchang = () => {
       <div className="flex items-center justify-between px-5 py-4 bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-gray-100">
         <div className="flex items-center">
           <button 
-            onClick={() => navigate(-1)} 
+            onClick={() => navigate('/user/home')} 
             className="text-gray-800 hover:bg-gray-100 p-2 rounded-full transition-colors mr-2.5"
           >
             <FiArrowLeft size={20} strokeWidth={2.5} />

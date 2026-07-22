@@ -277,7 +277,7 @@ const Checkout = () => {
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between px-4 py-3 bg-white sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
+          <button onClick={() => navigate('/user/cart')} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
             <FiArrowLeft size={20} />
           </button>
           <span className="text-gray-800 font-semibold text-[17px]">Checkout</span>

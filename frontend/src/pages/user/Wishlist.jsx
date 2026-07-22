@@ -63,7 +63,7 @@ const Wishlist = () => {
       {/* ═══ HEADER ═══ */}
       <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-store-border px-5 py-3 flex items-center gap-3 shadow-store-sm">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/user/store')}
           className="w-10 h-10 flex items-center justify-center text-store-text hover:bg-store-surface rounded-full transition-colors active:scale-95"
         >
           <FiArrowLeft size={20} />

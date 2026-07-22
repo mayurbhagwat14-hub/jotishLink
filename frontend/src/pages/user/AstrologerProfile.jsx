@@ -20,6 +20,8 @@ const AstrologerProfile = () => {
   
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [shortBalanceInfo, setShortBalanceInfo] = useState({ required: 0, current: 0, name: '' });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null); // 'chat', 'call', 'video'
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -33,18 +35,39 @@ const AstrologerProfile = () => {
       } catch (err) {
         setError('Failed to fetch astrologer details');
       } finally {
+        setError('');
         setLoading(false);
       }
     };
     fetchProfile();
   }, [id]);
 
-  const handleActionClick = (type) => {
+  const handleActionClick = async (type) => {
     if (!isAuthenticated || user?.name === 'Guest User') {
       navigate('/user/login', { state: { redirectTo: `/user/astrologer/${id}` } });
       return;
     }
     
+    // Fetch latest details to ensure pricing is up-to-date
+    try {
+      const astroRes = await userApis.getAstrologerById(id);
+      const latestAstro = astroRes.data?.data?.astrologer || astroRes.data?.astrologer;
+      if (latestAstro) {
+        setAstrologer(latestAstro);
+      }
+    } catch (err) {
+      console.error("Failed to fetch updated astrologer price:", err);
+    }
+
+    setSelectedService(type);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmConnect = () => {
+    setShowConfirmModal(false);
+    const type = selectedService;
+    if (!type || !astrologer) return;
+
     const rate = type === 'video' 
       ? (astrologer.pricing?.videoCall || (astrologer.rate ? astrologer.rate * 2 : 10)) 
       : type === 'call' 
@@ -75,7 +98,7 @@ const AstrologerProfile = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
         <p className="text-gray-500 mb-4">{error || 'Astrologer not found'}</p>
-        <button onClick={() => navigate(-1)} className="bg-[#fa6830] text-white px-6 py-2 rounded-xl font-bold">Go Back</button>
+        <button onClick={() => navigate('/user/astrologers')} className="bg-[#fa6830] text-white px-6 py-2 rounded-xl font-bold">Go Back</button>
       </div>
     );
   }
@@ -87,7 +110,7 @@ const AstrologerProfile = () => {
     <div className="bg-gray-50 min-h-screen pb-24 font-sans">
       {/* Header */}
       <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-100 flex items-center px-4 py-4">
-        <button onClick={() => navigate(-1)} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
+        <button onClick={() => navigate('/user/astrologers')} className="text-gray-800 p-1 -ml-1 rounded-full hover:bg-gray-100 transition-colors">
           <FiArrowLeft size={22} />
         </button>
         <h1 className="text-[17px] font-bold text-gray-800 ml-3">{astroName}</h1>
@@ -178,16 +201,36 @@ const AstrologerProfile = () => {
       </div>
 
       {/* Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40 pb-safe">
-        <div className="max-w-md mx-auto flex gap-2">
-          <button onClick={() => handleActionClick('chat')} className="flex-1 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-[#e55923] font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors text-[13px] sm:text-[14px]">
-            <FiMessageSquare /> Chat
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2.5rem)] max-w-[420px] bg-white/95 backdrop-blur-md border border-gray-100 p-3.5 rounded-[24px] shadow-[0_16px_36px_rgba(0,0,0,0.08)] z-40">
+        <div className="flex gap-2.5 justify-between items-stretch">
+          {/* Chat Button */}
+          <button 
+            onClick={() => handleActionClick('chat')} 
+            className="flex-1 bg-orange-50/50 hover:bg-orange-100/60 active:scale-[0.96] border border-orange-100 text-[#e55923] rounded-[18px] flex flex-col items-center justify-center py-2.5 transition-all group"
+          >
+            <FiMessageSquare className="text-lg group-hover:scale-110 transition-transform mb-0.5" />
+            <span className="font-extrabold text-[12.5px] tracking-tight">Chat</span>
+            <span className="text-[9px] opacity-75 font-semibold mt-0.5">₹{astrologer.pricing?.chat || astrologer.rate || 5}/min</span>
           </button>
-          <button onClick={() => handleActionClick('call')} className="flex-1 bg-[#fa6830] hover:bg-[#e55923] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/30 transition-colors text-[13px] sm:text-[14px]">
-            <FiPhoneCall /> Call
+
+          {/* Call Button */}
+          <button 
+            onClick={() => handleActionClick('call')} 
+            className="flex-1 bg-[#fa6830] hover:bg-[#e55923] active:scale-[0.96] text-white rounded-[18px] flex flex-col items-center justify-center py-2.5 transition-all shadow-sm group"
+          >
+            <FiPhoneCall className="text-lg group-hover:scale-110 transition-transform mb-0.5" />
+            <span className="font-extrabold text-[12.5px] tracking-tight">Call</span>
+            <span className="text-[9px] text-white/80 font-semibold mt-0.5">₹{astrologer.pricing?.audioCall || astrologer.rate || 5}/min</span>
           </button>
-          <button onClick={() => handleActionClick('video')} className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md shadow-red-500/30 transition-colors text-[13px] sm:text-[14px]">
-            <FiVideo /> Video
+
+          {/* Video Button */}
+          <button 
+            onClick={() => handleActionClick('video')} 
+            className="flex-1 bg-rose-500 hover:bg-rose-600 active:scale-[0.96] text-white rounded-[18px] flex flex-col items-center justify-center py-2.5 transition-all shadow-sm group"
+          >
+            <FiVideo className="text-lg group-hover:scale-110 transition-transform mb-0.5" />
+            <span className="font-extrabold text-[12.5px] tracking-tight">Video</span>
+            <span className="text-[9px] text-white/80 font-semibold mt-0.5">₹{astrologer.pricing?.videoCall || (astrologer.rate ? astrologer.rate * 2 : 10)}/min</span>
           </button>
         </div>
       </div>
@@ -199,6 +242,44 @@ const AstrologerProfile = () => {
         currentBalance={shortBalanceInfo.current}
         targetName={shortBalanceInfo.name}
       />
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center border border-gray-100">
+            <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-100">
+              <span className="text-3xl">
+                {selectedService === 'video' ? '📹' : selectedService === 'call' ? '📞' : '💬'}
+              </span>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Connect with {astroName}?</h3>
+            <p className="text-gray-500 text-[14px] font-medium mb-6 px-2">
+              Do you want to start a <span className="text-[#fa6830] font-bold">{selectedService === 'video' ? 'Video Call' : selectedService === 'call' ? 'Audio Call' : 'Chat'}</span> session?
+              <br />
+              <span className="block mt-2 font-semibold text-gray-700">
+                Rate: ₹{selectedService === 'video' ? (astrologer.pricing?.videoCall || (astrologer.rate ? astrologer.rate * 2 : 10)) : selectedService === 'call' ? (astrologer.pricing?.audioCall || astrologer.rate || 5) : (astrologer.pricing?.chat || astrologer.rate || 5)}/min
+              </span>
+              <span className="block text-gray-600 text-xs mt-1">
+                Your wallet balance: ₹{user?.wallet || 0}
+              </span>
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-3 text-gray-600 font-bold bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all active:scale-[0.98]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmConnect}
+                className="flex-1 py-3 text-white font-bold bg-[#fa6830] hover:bg-[#e55923] rounded-xl transition-all shadow-md shadow-orange-200 active:scale-[0.98]"
+              >
+                Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -104,7 +104,7 @@ const Notifications = () => {
       <div className="bg-white sticky top-0 z-20 shadow-sm border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-16">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors">
+            <button onClick={() => navigate('/user/home')} className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors">
               <ArrowLeft size={22} className="text-gray-700" />
             </button>
             <h1 className="text-[17px] font-bold text-gray-800">

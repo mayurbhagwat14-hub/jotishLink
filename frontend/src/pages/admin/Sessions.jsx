@@ -166,7 +166,7 @@ const AdminSessions = () => {
 
       fetchSessions();
       setSelectedSessions([]);
-      toast.success('Session(s) deleted successfully');
+      toast.success('session deleted');
     } catch (err) {
       console.error('Failed to delete sessions', err);
       toast.error('Failed to delete some sessions');

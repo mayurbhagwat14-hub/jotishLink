@@ -26,8 +26,41 @@ const Profile = () => {
     avatar: user?.avatar || '',
   }));
 
+  const [errors, setErrors] = useState({
+    name: '',
+    dob: '',
+    pincode: ''
+  });
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Timezone-safe helper to detect if a date is in the future relative to local system time
+  const isFutureDate = (dateStr) => {
+    if (!dateStr) return false;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return false;
+    
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return false;
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1; // 1-indexed
+    const currentDate = today.getDate();
+
+    if (year > currentYear) return true;
+    if (year === currentYear) {
+      if (month > currentMonth) return true;
+      if (month === currentMonth) {
+        if (day > currentDate) return true;
+      }
+    }
+    return false;
+  };
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
@@ -81,11 +114,45 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Name Validation & Formatting
     if (name === 'name') {
       const val = value.replace(/[^a-zA-Z\s.-]/g, '');
-      setFormData((prev) => ({ ...prev, [name]: val }));
+      if (val.length <= 50) {
+        setFormData((prev) => ({ ...prev, name: val }));
+        setErrors((prev) => ({ 
+          ...prev, 
+          name: val.trim() === '' ? 'Name is required' : '' 
+        }));
+      }
       return;
     }
+    
+    // DOB Validation (Prevent Future Dates immediately)
+    if (name === 'dob') {
+      if (value && isFutureDate(value)) {
+        toast.error("Future dates are not allowed for Date of Birth.");
+        setErrors((prev) => ({ ...prev, dob: 'Future dates are not allowed' }));
+        // Do not update the form value, reset the target visual input value
+        e.target.value = formData.dob || '';
+        return;
+      } else {
+        setErrors((prev) => ({ ...prev, dob: '' }));
+      }
+    }
+
+    // Pincode validation (numbers only, max 6)
+    if (name === 'pincode') {
+      const val = value.replace(/\D/g, '').slice(0, 6);
+      setFormData((prev) => ({ ...prev, pincode: val }));
+      setErrors((prev) => ({ 
+        ...prev, 
+        pincode: val && val.length !== 6 ? 'Pincode must be exactly 6 digits' : '' 
+      }));
+      return;
+    }
+
+    // Default handler
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -102,15 +169,29 @@ const Profile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1. Name Check
     if (!formData.name?.trim()) {
+      setErrors(prev => ({ ...prev, name: 'Name is required' }));
       return toast.error("Name cannot be empty");
     }
     if (formData.name?.trim().length > 50) {
+      setErrors(prev => ({ ...prev, name: 'Name cannot exceed 50 characters' }));
       return toast.error("Name cannot exceed 50 characters.");
     }
+    
+    // 2. DOB Check
+    if (formData.dob && isFutureDate(formData.dob)) {
+      setErrors(prev => ({ ...prev, dob: 'Date of Birth cannot be a future date' }));
+      return toast.error("Date of Birth cannot be a future date.");
+    }
+
+    // 3. Pincode Check
     if (formData.pincode && !/^\d{6}$/.test(formData.pincode)) {
+      setErrors(prev => ({ ...prev, pincode: 'Pincode must be exactly 6 digits' }));
       return toast.error("Pincode must be exactly 6 digits.");
     }
+
     try {
       await dispatch(updateProfileThunk(formData)).unwrap();
       toast.success("Profile updated successfully!");
@@ -126,7 +207,7 @@ const Profile = () => {
       {/* Header */}
       <div className="bg-white px-4 py-4 flex items-center justify-between border-b border-gray-50 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center">
-          <button onClick={() => navigate(-1)} className="mr-3 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
+          <button onClick={() => navigate('/user/home')} className="mr-3 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
             <FiArrowLeft size={20} className="text-gray-800" />
           </button>
           <h1 className="text-[17px] font-semibold text-gray-800">Profile</h1>
@@ -182,9 +263,10 @@ const Profile = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors"
+              className={`w-full bg-transparent border-b-2 py-2 text-gray-800 font-medium text-[15px] outline-none transition-colors ${errors.name ? 'border-red-400 focus:border-red-500' : 'border-orange-200 focus:border-[#fa6830]'}`}
               placeholder="Enter Name"
             />
+            {errors.name && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{errors.name}</p>}
           </div>
 
           {/* Gender */}
@@ -206,8 +288,12 @@ const Profile = () => {
           {/* Date of Birth */}
           <div>
             <label className="text-gray-500 text-[13px] font-semibold">Date of Birth</label>
-            <input type="date" name="dob" max={new Date().toISOString().split('T')[0]} value={formData.dob} onChange={handleChange}
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
+            <input type="date" name="dob" max={(() => {
+              const d = new Date();
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })()} value={formData.dob} onChange={handleChange}
+              className={`w-full bg-transparent border-b-2 py-2 text-gray-800 font-medium text-[15px] outline-none transition-colors ${errors.dob ? 'border-red-400 focus:border-red-500' : 'border-orange-200 focus:border-[#fa6830]'}`} />
+            {errors.dob && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{errors.dob}</p>}
           </div>
 
           {/* Time of Birth */}
@@ -256,7 +342,8 @@ const Profile = () => {
               const val = e.target.value.replace(/\D/g, '');
               handleChange({ target: { name: 'pincode', value: val } });
             }} placeholder="6-digit PIN"
-              className="w-full bg-transparent border-b-2 border-orange-200 py-2 text-gray-800 font-medium text-[15px] outline-none focus:border-[#fa6830] transition-colors" />
+              className={`w-full bg-transparent border-b-2 py-2 text-gray-800 font-medium text-[15px] outline-none transition-colors ${errors.pincode ? 'border-red-400 focus:border-red-500' : 'border-orange-200 focus:border-[#fa6830]'}`} />
+            {errors.pincode && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{errors.pincode}</p>}
           </div>
         </div>
       </div>

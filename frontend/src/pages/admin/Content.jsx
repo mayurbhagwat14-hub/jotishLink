@@ -178,7 +178,8 @@ const AdminContent = () => {
       toast.error('Expiry date is required');
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     if (newCoupon.expiryDate < today) {
       toast.error('Expiry date cannot be in the past');
       return;
@@ -553,7 +554,7 @@ const AdminContent = () => {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Expiry Date</label>
-                <input type="date" value={newCoupon.expiryDate} min={new Date().toISOString().split('T')[0]} onChange={e=>setNewCoupon({...newCoupon, expiryDate: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
+                <input type="date" value={newCoupon.expiryDate} min={`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`} onChange={e=>setNewCoupon({...newCoupon, expiryDate: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm focus:ring-2 focus:ring-orange-500/20"/>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Usage Limit</label>

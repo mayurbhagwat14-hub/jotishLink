@@ -31,7 +31,7 @@ const UserLayout = () => {
   }, [dispatch, isAuthenticated]);
 
   const isFullWidth = location.pathname.includes('/user/store') || location.pathname.includes('/user/chat') || location.pathname.includes('/user/details') || location.pathname.includes('/user/video-room');
-  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/recharge') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search') || location.pathname.includes('/user/pooja-booking') || location.pathname.includes('/user/order');
+  const hideBottomNav = location.pathname.includes('/user/details') || location.pathname.includes('/user/recharge') || location.pathname.includes('/user/free-chat-offer') || location.pathname.includes('/user/video-room') || location.pathname.includes('/user/payment') || location.pathname.includes('/user/cart') || location.pathname.includes('/user/checkout') || location.pathname.includes('/user/product') || location.pathname.includes('/user/search') || location.pathname.includes('/user/pooja-booking') || location.pathname.includes('/user/order') || location.pathname.includes('/user/astrologer/');
 
   const handleLogout = async () => {
     try {

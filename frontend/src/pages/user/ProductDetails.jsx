@@ -100,7 +100,7 @@ const ProductDetails = () => {
     return (
       <div className="min-h-screen bg-store-bg flex flex-col font-sans">
         <div className="flex items-center gap-3 px-5 py-4 bg-white">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-store-surface flex items-center justify-center text-store-text hover:bg-store-border transition-colors">
+          <button onClick={() => navigate('/user/store')} className="w-10 h-10 rounded-xl bg-store-surface flex items-center justify-center text-store-text hover:bg-store-border transition-colors">
             <FiArrowLeft size={18} />
           </button>
         </div>
@@ -147,7 +147,7 @@ const ProductDetails = () => {
       {/* ═══ TOP HEADER ═══ */}
       <div className="flex items-center justify-between px-5 py-3.5 bg-white sticky top-0 z-30 shadow-store-sm">
         <button 
-          onClick={() => navigate(-1)} 
+          onClick={() => navigate('/user/store')} 
           className="w-10 h-10 bg-store-surface text-store-text rounded-xl flex items-center justify-center transition-all active:scale-95 hover:bg-store-border"
         >
           <FiArrowLeft size={18} />

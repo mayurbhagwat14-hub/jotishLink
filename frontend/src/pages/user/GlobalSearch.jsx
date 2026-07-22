@@ -72,7 +72,7 @@ const GlobalSearch = () => {
       {/* ═══ TOP NAVBAR ═══ */}
       <div className="bg-white sticky top-0 z-30 shadow-sm">
         <div className="flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate(-1)} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
+          <button onClick={() => navigate('/user/home')} className="text-gray-800 hover:bg-gray-100 p-1.5 rounded-full transition-colors">
             <FiArrowLeft size={20} />
           </button>
           <form onSubmit={handleSearchSubmit} className="flex-1 relative">

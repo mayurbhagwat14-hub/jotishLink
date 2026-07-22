@@ -382,7 +382,12 @@ const Home = () => {
             </span>
           </div>
           <div className="flex gap-4 overflow-x-auto no-scrollbar pb-4 pt-1">
-            {userHome.featuredAstrologers.map((astro, i) => {
+            {[...userHome.featuredAstrologers]
+              .sort((a, b) => {
+                const priority = { online: 1, busy: 2, offline: 3 };
+                return (priority[a.onlineStatus] || 3) - (priority[b.onlineStatus] || 3);
+              })
+              .map((astro, i) => {
               const isOffline = astro.onlineStatus === 'offline';
               const isBusy = astro.onlineStatus === 'busy';
               
