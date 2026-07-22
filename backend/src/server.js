@@ -499,9 +499,14 @@ io.on('connection', (socket) => {
   });
 
   // ── Send a message
-  socket.on('send_message', async ({ roomId, sessionId, sender, text, type = 'text' }) => {
+  socket.on('send_message', async ({ roomId, sessionId, sender, text, type = 'text', replyTo }) => {
+    if (!sessionId || !/^[0-9a-fA-F]{24}$/.test(String(sessionId))) {
+      socket.emit('message_error', { error: 'Chat is still connecting. Please try again in a moment.' });
+      return;
+    }
     const time = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
     let message = { sender, type, text, time };
+    if (replyTo) message.replyTo = replyTo;
 
     try {
       if (type === 'image') {

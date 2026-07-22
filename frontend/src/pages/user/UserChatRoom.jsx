@@ -44,7 +44,6 @@ const UserChatRoom = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
-  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const messagesEndRef = useRef(null);
   const sessionIdRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -114,7 +113,17 @@ Please analyze my chart based on this information.`;
     };
 
     const onMessage = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => {
+        if (msg.sender === 'user' && prev.length > 0) {
+          const last = prev[prev.length - 1];
+          if (last.sender === 'user' && last.text === msg.text) {
+            const next = [...prev];
+            next[next.length - 1] = msg;
+            return next;
+          }
+        }
+        return [...prev, msg];
+      });
       setIsTyping(false);
       setIsUploading(false);
     };
@@ -154,7 +163,7 @@ Please analyze my chart based on this information.`;
     };
 
     const onSessionEnded = (data) => {
-      if (sessionEnded) return; // prevent double trigger
+      if (sessionEndedRef.current) return;
       setSessionEnded(true);
       setEndReason(data.reason);
       setFinalDuration(data.durationSeconds || timer);
@@ -339,15 +348,22 @@ Please analyze my chart based on this information.`;
     }, 1500);
   };
 
+  const activeSessionId = sessionIdRef.current || sessionId;
+
   const handleSend = () => {
     if ((!inputText.trim() && !previewImage) || showLowBalance || sessionEnded || viewOnly) return;
+    if (!activeSessionId) {
+      toast.error('Connecting to chat… please wait a moment.');
+      return;
+    }
     const socket = getSocket();
-    
+    const timeNow = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
     if (previewImage) {
       setIsUploading(true);
       socket.emit('send_message', { 
         roomId, 
-        sessionId: sessionIdRef.current || sessionId, 
+        sessionId: activeSessionId, 
         sender: 'user', 
         text: previewImage, 
         type: 'image',
@@ -357,12 +373,20 @@ Please analyze my chart based on this information.`;
     }
     
     if (inputText.trim()) {
+      const textToSend = inputText.trim();
+      const replyPayload = replyTo && !previewImage
+        ? { text: replyTo.text, sender: replyTo.sender, type: replyTo.type }
+        : null;
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'user', text: textToSend, time: timeNow, type: 'text', replyTo: replyPayload },
+      ]);
       socket.emit('send_message', { 
         roomId, 
-        sessionId: sessionIdRef.current || sessionId, 
+        sessionId: activeSessionId, 
         sender: 'user', 
-        text: inputText,
-        replyTo: replyTo && !previewImage ? { text: replyTo.text, sender: replyTo.sender, type: replyTo.type } : null 
+        text: textToSend,
+        replyTo: replyPayload,
       });
     }
 
@@ -377,17 +401,19 @@ Please analyze my chart based on this information.`;
       navigate(-1);
       return;
     }
-    setShowEndConfirm(true);
+    setShowLeaveConfirm(true);
   };
 
   const confirmEndChat = () => {
-    setShowEndConfirm(false);
+    setShowLeaveConfirm(false);
     const socket = getSocket();
     socket.emit('end_session', {
       roomId,
       sessionId: sessionIdRef.current || sessionId,
       userId: user?._id,
       endedBy: 'user',
+      finalSeconds: timer,
+      sessionType: 'chat',
     });
   };
 
@@ -632,14 +658,22 @@ Please analyze my chart based on this information.`;
               onChange={handleInputChange}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
               rows="1"
-              placeholder={sessionEnded || viewOnly ? 'Session ended' : showLowBalance ? 'Recharge to continue...' : 'Type your message...'}
-              disabled={showLowBalance || sessionEnded || viewOnly || isUploading}
+              placeholder={
+                sessionEnded || viewOnly
+                  ? 'Session ended'
+                  : showLowBalance
+                    ? 'Recharge to continue...'
+                    : !activeSessionId
+                      ? 'Connecting…'
+                      : 'Type your message...'
+              }
+              disabled={showLowBalance || sessionEnded || viewOnly || isUploading || !activeSessionId}
               className="w-full bg-transparent px-4 py-3 outline-none text-sm resize-none max-h-32 min-h-[44px] disabled:opacity-50"
             />
           </div>
           <button
             onClick={handleSend}
-            disabled={(!inputText.trim() && !previewImage) || showLowBalance || sessionEnded || viewOnly || isUploading}
+            disabled={(!inputText.trim() && !previewImage) || showLowBalance || sessionEnded || viewOnly || isUploading || !activeSessionId}
             className="w-11 h-11 bg-[#fa6830] text-white rounded-full flex items-center justify-center hover:bg-[#e55923] disabled:bg-gray-300 disabled:shadow-none transition-colors shadow-md shadow-orange-500/30 shrink-0"
           >
             <FiSend className="-ml-0.5 mt-0.5" size={18} />
@@ -768,13 +802,7 @@ Please analyze my chart based on this information.`;
                 Stay
               </button>
               <button
-                onClick={() => {
-                  setShowLeaveConfirm(false);
-                  // Reuse existing handleEndChat which emits 'end_session'.
-                  // The 'session_ended' event handler will then navigate away
-                  // via the summary/rating flow.
-                  handleEndChat();
-                }}
+                onClick={confirmEndChat}
                 className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 transition-colors shadow-sm"
               >
                 End & Leave
