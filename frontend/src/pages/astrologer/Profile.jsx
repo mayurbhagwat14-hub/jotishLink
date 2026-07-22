@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSave, FiPlus, FiX, FiCheck, FiCamera, FiImage } from 'react-icons/fi';
+import { FiSave, FiPlus, FiX, FiCheck, FiCamera, FiImage, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { fetchAstrologerProfileThunk, updateAstrologerProfileThunk } from '../../store/slices/astrologerSlice';
@@ -51,6 +51,8 @@ const Profile = () => {
   const [poojasOffered, setPoojasOffered] = useState([]);
   const [newPoojaName, setNewPoojaName] = useState('');
   const [newPoojaPrice, setNewPoojaPrice] = useState('');
+  const [showAccountNumber, setShowAccountNumber] = useState(false);
+  const [bankErrors, setBankErrors] = useState({});
 
   useEffect(() => {
     dispatch(fetchAstrologerProfileThunk());
@@ -178,6 +180,11 @@ const Profile = () => {
     
     if (formData.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.ifscCode)) {
       toast.error('Invalid IFSC Code format. Example: SBIN0123456');
+      return;
+    }
+    
+    if (formData.upiId && !/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(formData.upiId)) {
+      toast.error('Invalid UPI ID format. Example: name@bank');
       return;
     }
 
@@ -608,45 +615,94 @@ const Profile = () => {
                 <input 
                   type="text" 
                   value={formData.accountHolderName}
-                  onChange={(e) => setFormData({...formData, accountHolderName: e.target.value})}
-                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                  onChange={(e) => {
+                    const original = e.target.value;
+                    const val = original.replace(/[^a-zA-Z\s]/g, '');
+                    if (original !== val) setBankErrors(prev => ({ ...prev, accountHolderName: 'Only alphabets and spaces are allowed.' }));
+                    else setBankErrors(prev => ({ ...prev, accountHolderName: '' }));
+                    setFormData({...formData, accountHolderName: val});
+                  }}
+                  className={`w-full border-2 rounded-xl py-2 px-4 outline-none transition-all font-medium text-gray-800 ${bankErrors.accountHolderName ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-gray-100 focus:border-orange-400 bg-gray-50'}`}
                 />
+                {bankErrors.accountHolderName && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{bankErrors.accountHolderName}</p>}
               </div>
               <div>
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Bank Name</label>
                 <input 
                   type="text" 
                   value={formData.bankName}
-                  onChange={(e) => setFormData({...formData, bankName: e.target.value})}
-                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                  onChange={(e) => {
+                    const original = e.target.value;
+                    const val = original.replace(/[^a-zA-Z\s]/g, '');
+                    if (original !== val) setBankErrors(prev => ({ ...prev, bankName: 'Only alphabets and spaces are allowed.' }));
+                    else setBankErrors(prev => ({ ...prev, bankName: '' }));
+                    setFormData({...formData, bankName: val});
+                  }}
+                  className={`w-full border-2 rounded-xl py-2 px-4 outline-none transition-all font-medium text-gray-800 ${bankErrors.bankName ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-gray-100 focus:border-orange-400 bg-gray-50'}`}
                 />
+                {bankErrors.bankName && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{bankErrors.bankName}</p>}
               </div>
               <div>
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">Account Number</label>
-                <input 
-                  type="password" 
-                  value={formData.accountNumber}
-                  onChange={(e) => setFormData({...formData, accountNumber: e.target.value})}
-                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
-                />
+                <div className="relative">
+                  <input 
+                    type={showAccountNumber ? "text" : "password"} 
+                    value={formData.accountNumber}
+                    onChange={(e) => {
+                      const original = e.target.value;
+                      const val = original.replace(/\D/g, '');
+                      if (original !== val) setBankErrors(prev => ({ ...prev, accountNumber: 'Only numbers are allowed.' }));
+                      else setBankErrors(prev => ({ ...prev, accountNumber: '' }));
+                      setFormData({...formData, accountNumber: val});
+                    }}
+                    className={`w-full border-2 rounded-xl py-2 px-4 pr-10 outline-none transition-all font-medium text-gray-800 ${bankErrors.accountNumber ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-gray-100 focus:border-orange-400 bg-gray-50'}`}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowAccountNumber(!showAccountNumber)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors"
+                  >
+                    {showAccountNumber ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
+                {bankErrors.accountNumber && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{bankErrors.accountNumber}</p>}
               </div>
               <div>
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">IFSC Code</label>
                 <input 
                   type="text" 
                   value={formData.ifscCode}
-                  onChange={(e) => setFormData({...formData, ifscCode: e.target.value})}
-                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800 uppercase"
+                  onChange={(e) => {
+                    const original = e.target.value;
+                    const val = original.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 11);
+                    if (original.replace(/[^a-zA-Z0-9]/g, '') !== original) {
+                      setBankErrors(prev => ({ ...prev, ifscCode: 'Only alphanumeric characters allowed.' }));
+                    } else if (original.length > 11) {
+                      setBankErrors(prev => ({ ...prev, ifscCode: 'IFSC Code max 11 characters.' }));
+                    } else {
+                      setBankErrors(prev => ({ ...prev, ifscCode: '' }));
+                    }
+                    setFormData({...formData, ifscCode: val});
+                  }}
+                  className={`w-full border-2 rounded-xl py-2 px-4 outline-none transition-all font-medium text-gray-800 uppercase ${bankErrors.ifscCode ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-gray-100 focus:border-orange-400 bg-gray-50'}`}
                 />
+                {bankErrors.ifscCode && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{bankErrors.ifscCode}</p>}
               </div>
               <div>
                 <label className="block text-gray-500 text-xs font-bold mb-1 uppercase tracking-wider">UPI ID (Optional)</label>
                 <input 
                   type="text" 
                   value={formData.upiId}
-                  onChange={(e) => setFormData({...formData, upiId: e.target.value})}
-                  className="w-full border-2 border-gray-100 rounded-xl py-2 px-4 outline-none focus:border-orange-400 bg-gray-50 transition-all font-medium text-gray-800"
+                  onChange={(e) => {
+                    const original = e.target.value;
+                    const val = original.replace(/[^a-zA-Z0-9.\-_@]/g, '');
+                    if (original !== val) setBankErrors(prev => ({ ...prev, upiId: 'Invalid characters for UPI ID.' }));
+                    else setBankErrors(prev => ({ ...prev, upiId: '' }));
+                    setFormData({...formData, upiId: val});
+                  }}
+                  className={`w-full border-2 rounded-xl py-2 px-4 outline-none transition-all font-medium text-gray-800 ${bankErrors.upiId ? 'border-red-400 focus:border-red-500 bg-red-50' : 'border-gray-100 focus:border-orange-400 bg-gray-50'}`}
                 />
+                {bankErrors.upiId && <p className="text-red-500 text-[11px] font-bold mt-1 tracking-wide">{bankErrors.upiId}</p>}
               </div>
             </div>
           </div>
