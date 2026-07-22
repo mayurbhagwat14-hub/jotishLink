@@ -108,8 +108,10 @@ const Astrologers = () => {
     // 2. Check wallet balance
     const minBalance = settings?.minChatBalance || 10;
     
-    // Free Chat Offer eligibility
-    const isFreeChatEligible = type === 'chat' && user?.freeChatUsed === false;
+    const freeChatAlreadyUsed =
+      user?.freeChatUsed === true ||
+      (user?._id && localStorage.getItem(`freeChatUsed_${user._id}`) === '1');
+    const isFreeChatEligible = type === 'chat' && !freeChatAlreadyUsed;
     
     if ((user?.wallet || 0) < minBalance && !isFreeChatEligible) {
       setShortBalanceInfo({ required: minBalance, current: user?.wallet || 0, name: astro.name || astro.userId?.name || 'Astrologer' });

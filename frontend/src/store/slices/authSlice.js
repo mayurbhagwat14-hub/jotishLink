@@ -169,6 +169,9 @@ const authSlice = createSlice({
         const u = action.payload?.data?.user || action.payload?.user || action.payload;
         const settings = action.payload?.data?.settings || action.payload?.settings;
         state.user = { ...state.user, ...u };
+        if (u?.freeChatUsed && u?._id) {
+          localStorage.setItem(`freeChatUsed_${u._id}`, '1');
+        }
         if (settings) state.settings = settings;
       })
       .addCase(fetchProfileThunk.rejected, (state, action) => {

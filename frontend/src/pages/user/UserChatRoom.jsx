@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FiArrowLeft, FiPaperclip, FiSend, FiCamera, FiCornerUpLeft, FiX } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
 import { getSocket } from '../../socket/socketManager';
 import LowBalanceModal from '../../components/LowBalanceModal';
 import RateAstrologerModal from '../../components/RateAstrologerModal';
-import { updateUser } from '../../store/slices/authSlice';
+import { updateUser, fetchProfileThunk } from '../../store/slices/authSlice';
 import UserLayout from '../../layouts/UserLayout';
 import { compressImage } from '../../utils/imageCompressor';
 import api from '../../api/axios';
@@ -19,7 +19,12 @@ const UserChatRoom = () => {
 
   const astrologer = location.state?.astrologer || {};
   const roomIdFromState = location.state?.roomId;
-  const isBotSession = location.state?.startWithBot || (!roomIdFromState && (!astrologer._id));
+  const wantsFreeBot = !!location.state?.startWithBot;
+  const freeChatAlreadyUsed =
+    user?.freeChatUsed === true ||
+    (user?._id && localStorage.getItem(`freeChatUsed_${user._id}`) === '1');
+  const isBotSession =
+    wantsFreeBot && !freeChatAlreadyUsed && !!(roomIdFromState || astrologer._id);
 
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
@@ -51,6 +56,46 @@ const UserChatRoom = () => {
   const sessionEndedRef = useRef(false);
   const viewOnlyRef = useRef(viewOnly);
   const historyGuardPushedRef = useRef(false);
+  const timerRef = useRef(0);
+  const hasRatedRef = useRef(false);
+
+  const markFreeChatConsumed = useCallback(() => {
+    if (user?._id) {
+      localStorage.setItem(`freeChatUsed_${user._id}`, '1');
+    }
+    dispatch(updateUser({ freeChatUsed: true }));
+  }, [dispatch, user?._id]);
+
+  const applySessionEnded = useCallback((data) => {
+    if (sessionEndedRef.current) return;
+    sessionEndedRef.current = true;
+    setSessionEnded(true);
+    setEndReason(data.reason || 'user_ended');
+    setFinalDuration(data.durationSeconds ?? timerRef.current);
+    setFinalAmount(data.amountDeducted || 0);
+
+    if (wantsFreeBot || isBotSession || isBotActive) {
+      markFreeChatConsumed();
+    }
+
+    if (data.reason === 'insufficient_balance') {
+      setShowLowBalance(true);
+      setTimeout(() => {
+        setShowLowBalance(false);
+        navigate('/user/wallet', { replace: true });
+      }, 1500);
+    } else {
+      setShowSummary(true);
+      setTimeout(() => {
+        setShowSummary(false);
+        if (!hasRatedRef.current && astrologer._id) {
+          setShowRating(true);
+        } else {
+          navigate('/user/home', { replace: true });
+        }
+      }, 2500);
+    }
+  }, [navigate, astrologer._id, wantsFreeBot, isBotSession, isBotActive, markFreeChatConsumed]);
 
   // Use roomId from WaitingScreen navigation state or generate a stable one
   const initialRoomId = useMemo(() => {
@@ -60,6 +105,23 @@ const UserChatRoom = () => {
   const roomId = initialRoomId;
 
   useEffect(() => {
+    if (user?._id) dispatch(fetchProfileThunk());
+  }, [dispatch, user?._id]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    if (localStorage.getItem(`freeChatUsed_${user._id}`) === '1' && user.freeChatUsed !== true) {
+      dispatch(updateUser({ freeChatUsed: true }));
+    }
+  }, [user?._id, user?.freeChatUsed, dispatch]);
+
+  useEffect(() => {
+    if (!wantsFreeBot || !freeChatAlreadyUsed) return;
+    toast.error('Aapki free chat pehle hi use ho chuki hai. Recharge karke chat karein.');
+    navigate('/user/home', { replace: true });
+  }, [wantsFreeBot, freeChatAlreadyUsed, navigate]);
+
+  useEffect(() => {
     if (!roomId) {
       navigate('/user/astrologers');
       return;
@@ -67,6 +129,7 @@ const UserChatRoom = () => {
 
     // Wait for Redux to hydrate the user state
     if (!user || !user._id) return;
+    if (wantsFreeBot && freeChatAlreadyUsed) return;
 
     const socket = getSocket();
 
@@ -79,6 +142,16 @@ const UserChatRoom = () => {
     });
 
     const onSessionCreated = (data) => {
+      if (data.sessionStatus && data.sessionStatus !== 'ongoing') {
+        toast('Yeh chat pehle hi khatam ho chuki hai.');
+        applySessionEnded({
+          reason: 'already_ended',
+          durationSeconds: 0,
+          amountDeducted: 0,
+        });
+        return;
+      }
+
       setSessionId(data.sessionId);
       sessionIdRef.current = data.sessionId;
       if (data.messages?.length > 0) {
@@ -104,9 +177,9 @@ Please analyze my chart based on this information.`;
         });
       }
 
-      if (isBotSession) {
+      if (isBotSession && data.isNewSession) {
         socket.emit('start_bot_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerId: astrologer._id });
-      } else if (!viewOnly) {
+      } else if (!viewOnly && !isBotSession) {
         const rate = astrologer.pricing?.chat || astrologer.rate || 5;
         socket.emit('start_timer', { roomId, sessionId: data.sessionId, userId: user?._id, astrologerRate: rate, type: 'chat' });
       }
@@ -159,34 +232,29 @@ Please analyze my chart based on this information.`;
 
     const onWalletUpdate = (data) => {
       if (data.newBalance !== undefined) dispatch(updateUser({ wallet: data.newBalance }));
-      if (data.freeChatUsed !== undefined) dispatch(updateUser({ freeChatUsed: data.freeChatUsed }));
+      if (data.freeChatUsed !== undefined) markFreeChatConsumed();
     };
 
-    const onSessionEnded = (data) => {
-      if (sessionEndedRef.current) return;
-      setSessionEnded(true);
-      setEndReason(data.reason);
-      setFinalDuration(data.durationSeconds || timer);
-      setFinalAmount(data.amountDeducted || 0);
+    const onFreeChatDenied = ({ reason }) => {
+      markFreeChatConsumed();
+      toast.error(
+        reason === 'already_used'
+          ? 'Free chat sirf ek baar milti hai. Recharge karke chat shuru karein.'
+          : 'Free chat ab available nahi hai.'
+      );
+      navigate('/user/home', { replace: true });
+    };
 
-      if (data.reason === 'insufficient_balance') {
-        setShowLowBalance(true);
-        setTimeout(() => {
-          setShowLowBalance(false);
-          navigate('/user/wallet', { replace: true });
-        }, 3000);
-      } else {
-        // Show summary first, then rating
-        setShowSummary(true);
-        setTimeout(() => {
-          setShowSummary(false);
-          if (!hasRated && astrologer._id) {
-            setShowRating(true);
-          } else {
-            navigate('/user/home', { replace: true });
-          }
-        }, 3000);
-      }
+    const onSessionEnded = (data) => applySessionEnded(data);
+
+    const onReconnect = () => {
+      socket.emit('join_room', {
+        roomId,
+        userId: user._id,
+        astrologerId: astrologer._id,
+        isBot: isBotSession,
+        sessionType: 'chat',
+      });
     };
 
     socket.on('session_created', onSessionCreated);
@@ -198,11 +266,14 @@ Please analyze my chart based on this information.`;
     socket.on('wallet_update', onWalletUpdate);
     socket.on('user_joined', onMessage);
     socket.on('session_ended', onSessionEnded);
+    socket.on('free_chat_denied', onFreeChatDenied);
     socket.on('user_typing', onUserTyping);
     socket.on('user_stopped_typing', onUserStoppedTyping);
     socket.on('message_error', onMessageError);
+    socket.on('connect', onReconnect);
 
     return () => {
+      socket.off('connect', onReconnect);
       socket.off('session_created', onSessionCreated);
       socket.off('receive_message', onMessage);
       socket.off('timer_tick', onTimerTick);
@@ -211,13 +282,14 @@ Please analyze my chart based on this information.`;
       socket.off('session_accepted', onSessionAccepted);
       socket.off('wallet_update', onWalletUpdate);
       socket.off('session_ended', onSessionEnded);
+      socket.off('free_chat_denied', onFreeChatDenied);
       socket.off('wallet_low_balance');
       socket.off('user_joined', onMessage);
       socket.off('user_typing', onUserTyping);
       socket.off('user_stopped_typing', onUserStoppedTyping);
       socket.off('message_error', onMessageError);
     };
-  }, [roomId, user?._id]);
+  }, [roomId, user?._id, isBotSession, astrologer._id, applySessionEnded, viewOnly, wantsFreeBot, freeChatAlreadyUsed, markFreeChatConsumed, navigate]);
 
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -226,6 +298,14 @@ Please analyze my chart based on this information.`;
   useEffect(() => {
     sessionEndedRef.current = sessionEnded;
   }, [sessionEnded]);
+
+  useEffect(() => {
+    timerRef.current = timer;
+  }, [timer]);
+
+  useEffect(() => {
+    hasRatedRef.current = hasRated;
+  }, [hasRated]);
 
   useEffect(() => {
     viewOnlyRef.current = viewOnly;
@@ -404,17 +484,45 @@ Please analyze my chart based on this information.`;
     setShowLeaveConfirm(true);
   };
 
-  const confirmEndChat = () => {
+  const confirmEndChat = async () => {
     setShowLeaveConfirm(false);
+    const sid = sessionIdRef.current || sessionId;
+    if (!roomId) {
+      toast.error('Chat room not found.');
+      return;
+    }
+    if (!sid) {
+      toast.error('Chat is still connecting. Wait a moment and try again.');
+      return;
+    }
+
+    const duration = timerRef.current;
     const socket = getSocket();
+
+    applySessionEnded({
+      reason: 'user_ended',
+      durationSeconds: duration,
+      amountDeducted: 0,
+    });
+
+    if (wantsFreeBot || isBotSession) {
+      markFreeChatConsumed();
+    }
+
     socket.emit('end_session', {
       roomId,
-      sessionId: sessionIdRef.current || sessionId,
+      sessionId: sid,
       userId: user?._id,
       endedBy: 'user',
-      finalSeconds: timer,
+      finalSeconds: duration,
       sessionType: 'chat',
     });
+
+    try {
+      await api.post(`/chat/${sid}/end`, { durationSeconds: duration });
+    } catch (err) {
+      console.warn('[Chat] REST end fallback:', err?.response?.data?.message || err.message);
+    }
   };
 
   const handleRatingSubmit = async (ratingData) => {
@@ -504,7 +612,7 @@ Please analyze my chart based on this information.`;
         <div className="flex items-center gap-2">
           {/* Removed call buttons */}
           {!sessionEnded && !viewOnly && (
-            <button onClick={() => setShowLeaveConfirm(true)} className="text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">
+            <button onClick={handleEndChat} className="text-[12px] font-bold text-red-500 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50">
               End Chat
             </button>
           )}

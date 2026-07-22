@@ -88,16 +88,14 @@ export const endChatSession = asyncHandler(async (req, res) => {
   let totalAmount = 0;
   let transactionId = null;
 
-  if (session.isFreeChat) {
-    // Free Chat - No deduction
+  if (session.isFreeChat || session.isBotSession) {
+    // Free / bot chat — no deduction
     totalAmount = 0;
-    
-    // Mark the user as having used their free chat
+
     const user = await User.findById(session.userId);
     if (user && !user.freeChatUsed) {
       user.freeChatUsed = true;
       user.freeChatUsedAt = new Date();
-      // duration will just be left undefined or 0 here if it wasn't tracked properly by socket
       await user.save();
     }
   } else {

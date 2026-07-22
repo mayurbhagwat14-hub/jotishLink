@@ -417,6 +417,14 @@ io.on('connection', (socket) => {
       let session = await ChatSession.findOne({ roomId });
       let isNewSession = false;
 
+      if (isBot && userId) {
+        const userDoc = await User.findById(userId).select('freeChatUsed').lean();
+        if (userDoc?.freeChatUsed) {
+          socket.emit('free_chat_denied', { reason: 'already_used', roomId });
+          return;
+        }
+      }
+
       // If astrologerId is missing (e.g. from VideoRoom notification link), fallback to CallSession
       if ((!astrologerId || !astrologerId.match(/^[0-9a-fA-F]{24}$/)) && 
           (sessionType === 'audio_call' || sessionType === 'video_call')) {
@@ -446,6 +454,7 @@ io.on('connection', (socket) => {
           userId,
           astrologerId: astrologerId && astrologerId.match(/^[0-9a-fA-F]{24}$/) ? astrologerId : undefined,
           isBotSession: !!isBot,
+          isFreeChat: !!isBot,
           status: 'ongoing',
           type: sessionType || 'chat',
           messages: [welcomeMessage],
@@ -480,7 +489,8 @@ io.on('connection', (socket) => {
         messages: [...pastMessages, ...(session.messages || [])],
         roomId,
         isBotSession: !!isBot,
-        isNewSession
+        isNewSession,
+        sessionStatus: session.status,
       };
 
       socket.emit('session_created', emitData);
@@ -589,9 +599,39 @@ io.on('connection', (socket) => {
   // ── Start Bot Timer (Dynamic free chat duration)
   socket.on('start_bot_timer', async ({ roomId, sessionId, userId, astrologerId }) => {
     if (activeTimers.has(roomId)) return;
-    activeTimers.set(roomId, { pending: true }); // Sync lock
+
+    if (!sessionId || !userId) {
+      socket.emit('free_chat_denied', { reason: 'invalid_session', roomId });
+      return;
+    }
+
+    const ChatSessionModel = (await import('./models/chatSession.model.js')).default;
+    const sessionDoc = await ChatSessionModel.findById(sessionId).select('status isBotSession').lean();
+    if (!sessionDoc || sessionDoc.status !== 'ongoing' || !sessionDoc.isBotSession) {
+      socket.emit('free_chat_denied', { reason: 'session_not_active', roomId });
+      return;
+    }
 
     let settings = await SystemSettings.findOne();
+    const reservedUser = await User.findOneAndUpdate(
+      { _id: userId, freeChatUsed: { $ne: true } },
+      {
+        $set: {
+          freeChatUsed: true,
+          freeChatUsedAt: new Date(),
+          freeChatDuration: settings?.freeChatDuration || 1,
+        },
+      },
+      { new: true }
+    );
+    if (!reservedUser) {
+      socket.emit('free_chat_denied', { reason: 'already_used', roomId });
+      return;
+    }
+    io.to(roomId).emit('wallet_update', { freeChatUsed: true });
+
+    activeTimers.set(roomId, { pending: true }); // Sync lock
+
     let durationSeconds = (settings?.freeChatDuration || 1) * 60;
 
     // Determine the real astrologer's rate for the background check
@@ -932,7 +972,10 @@ io.on('connection', (socket) => {
       roomId,
     };
 
-    io.to(roomId).emit('session_ended', endPayload);
+    if (roomId) {
+      io.to(roomId).emit('session_ended', endPayload);
+    }
+    socket.emit('session_ended', endPayload);
 
     try {
       if (userId) {
