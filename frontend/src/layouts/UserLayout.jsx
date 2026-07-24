@@ -147,13 +147,13 @@ const UserLayout = () => {
             ))}
             
             <div className="pt-2 mt-2 border-t border-orange-100/50">
-              <Link to="/user/terms" onClick={() => setIsSidebarOpen(false)} className="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 hover:bg-orange-50 hover:text-[#e55923] rounded-lg transition-colors group">
+              <Link to="/user/terms" target="_blank" rel="noopener noreferrer" onClick={() => setIsSidebarOpen(false)} className="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 hover:bg-orange-50 hover:text-[#e55923] rounded-lg transition-colors group">
                 <div className="flex items-center gap-3 font-semibold text-[14px]">
                   <span className="text-lg">📄</span> Terms & Conditions
                 </div>
                 <ChevronRight size={14} className="text-gray-300 group-hover:text-orange-400 transition-colors" />
               </Link>
-              <Link to="/user/privacy" onClick={() => setIsSidebarOpen(false)} className="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 hover:bg-orange-50 hover:text-[#e55923] rounded-lg transition-colors group">
+              <Link to="/user/privacy" target="_blank" rel="noopener noreferrer" onClick={() => setIsSidebarOpen(false)} className="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 hover:bg-orange-50 hover:text-[#e55923] rounded-lg transition-colors group">
                 <div className="flex items-center gap-3 font-semibold text-[14px]">
                   <span className="text-lg">🔒</span> Privacy Policy
                 </div>

@@ -249,10 +249,10 @@ const AstrologerLayout = () => {
               <div className="mt-6 px-4 space-y-1">
                 <p className="px-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Account & Legal</p>
                 
-                <Link to="/user/terms" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
+                <Link to="/user/terms" target="_blank" rel="noopener noreferrer" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
                   <FiCheckCircle size={18} /> Terms & Conditions
                 </Link>
-                <Link to="/user/privacy" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
+                <Link to="/user/privacy" target="_blank" rel="noopener noreferrer" onClick={() => setIsDrawerOpen(false)} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-[#e55923] font-bold transition-colors">
                   <FiCheckCircle size={18} /> Privacy Policy
                 </Link>
                 
