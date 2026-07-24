@@ -8,10 +8,14 @@ import { FiMoon, FiPhone, FiCheckCircle } from 'react-icons/fi';
 
 const AstrologerLogin = () => {
   const [step, setStep] = useState(1);
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(() => sessionStorage.getItem('astrologerLoginPhone') || '');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    sessionStorage.setItem('astrologerLoginPhone', phone);
+  }, [phone]);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.astrologerAuth);
@@ -271,9 +275,9 @@ const AstrologerLogin = () => {
 
             <p className="text-[11px] text-gray-400 font-medium text-center leading-relaxed mt-4">
               By continuing, you agree to our{' '}
-              <Link to="/user/terms" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
+              <Link to="/user/terms" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
               and{' '}
-              <Link to="/user/privacy" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Privacy Policy</Link>
+              <Link to="/user/privacy" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Privacy Policy</Link>
             </p>
           </div>
         )}

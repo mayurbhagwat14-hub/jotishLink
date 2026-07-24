@@ -386,7 +386,20 @@ export const updateAstrologerProfile = asyncHandler(async (req, res) => {
   }
   
   if (isPandit !== undefined) astrologer.isPandit = isPandit === 'true' || isPandit === true;
-  if (poojasOffered !== undefined) astrologer.poojasOffered = typeof poojasOffered === 'string' ? JSON.parse(poojasOffered) : poojasOffered;
+  if (poojasOffered !== undefined) {
+    const parsedPoojas = typeof poojasOffered === 'string' ? JSON.parse(poojasOffered) : poojasOffered;
+    if (astrologer.isPandit && Array.isArray(parsedPoojas)) {
+      const SystemSettings = (await import('../models/systemSettings.model.js')).default;
+      const settings = await SystemSettings.findOne({}) || new SystemSettings();
+      const minPoojaPrice = settings.minimumPoojaPrice ?? 51;
+      for (const p of parsedPoojas) {
+        if (!p.price || Number(p.price) < minPoojaPrice) {
+          throw new ApiError(400, `Price for ${p.poojaName || 'Pooja'} must be at least ₹${minPoojaPrice}.`);
+        }
+      }
+    }
+    astrologer.poojasOffered = parsedPoojas;
+  }
   if (serviceLocations !== undefined) astrologer.serviceLocations = typeof serviceLocations === 'string' ? JSON.parse(serviceLocations) : serviceLocations;
   
   if (pricing !== undefined) {

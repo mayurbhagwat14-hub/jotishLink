@@ -254,7 +254,7 @@ const AdminSettings = () => {
 
             <div className="space-y-1.5">
               <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">Minimum Pooja Price (₹)</label>
-              <input type="number" min="51" value={generalSettings.minimumPoojaPrice ?? ''} onChange={e => handleGeneralNumberChange('minimumPoojaPrice', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
+              <input type="number" min="1" value={generalSettings.minimumPoojaPrice ?? ''} onChange={e => handleGeneralNumberChange('minimumPoojaPrice', e.target.value)} className="w-full px-4 py-3 rounded-xl bg-gray-50 border-0 text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20" />
             </div>
 
             <div className="space-y-1.5">

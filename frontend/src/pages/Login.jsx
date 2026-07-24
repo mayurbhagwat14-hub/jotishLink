@@ -154,9 +154,9 @@ const Login = () => {
             {/* Footer Text */}
             <p className="text-center text-gray-400 text-[12px] mt-6 max-w-[280px] leading-relaxed relative z-20">
               By signing up, you agree to our{' '}
-              <Link to="/user/terms" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Terms & Conditions</Link>{' '}
+              <Link to="/user/terms" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Terms & Conditions</Link>{' '}
               &{' '}
-              <Link to="/user/privacy" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Privacy Policy</Link>
+              <Link to="/user/privacy" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Privacy Policy</Link>
             </p>
           </form>
         </div>
@@ -259,9 +259,9 @@ const Login = () => {
         {/* Footer Text */}
         <p className="text-center text-gray-400 text-[12px] mt-6 max-w-[280px] leading-relaxed relative z-20">
           By signing up, you agree to our{' '}
-          <Link to="/user/terms" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Terms & Conditions</Link>{' '}
+          <Link to="/user/terms" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Terms & Conditions</Link>{' '}
           &{' '}
-          <Link to="/user/privacy" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Privacy Policy</Link>
+          <Link to="/user/privacy" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-orange-500 hover:text-orange-600 transition-colors relative z-20">Privacy Policy</Link>
         </p>
       </div>
     </div>
