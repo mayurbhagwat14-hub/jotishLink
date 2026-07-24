@@ -106,7 +106,6 @@ const REQUEST_TIMEOUT_MS = 60 * 1000; // 60s timeout matching WaitingScreen.jsx
 const DISCONNECT_GRACE_PERIOD_MS = 15_000; // 15 seconds
 const disconnectGraceTimers = new Map();
 const astroSocketMap = new Map();
-const astroDisconnectTimers = new Map();
 
 io.on('connection', (socket) => {
   console.log(`[Socket.IO] Client connected: ${socket.id}`);
@@ -120,10 +119,6 @@ io.on('connection', (socket) => {
       socket.join(`room_astro_${userId}`);
       console.log(`[Socket.IO] Astrologer ${userId} joined room_astro_${userId}`);
       astroSocketMap.set(socket.id, userId);
-      if (astroDisconnectTimers.has(userId)) {
-        clearTimeout(astroDisconnectTimers.get(userId));
-        astroDisconnectTimers.delete(userId);
-      }
     } else if (role === 'user') {
       socket.join(`room_user_${userId}`);
       console.log(`[Socket.IO] User ${userId} joined room_user_${userId}`);
@@ -136,10 +131,6 @@ io.on('connection', (socket) => {
     socket.join(`astro_${astrologerId}`);
     socket.join(`room_astro_${astrologerId}`);
     astroSocketMap.set(socket.id, astrologerId);
-    if (astroDisconnectTimers.has(astrologerId)) {
-      clearTimeout(astroDisconnectTimers.get(astrologerId));
-      astroDisconnectTimers.delete(astrologerId);
-    }
     console.log(`[Socket.IO] Astrologer ${astrologerId} joined their legacy notification room`);
   });
 
@@ -1349,26 +1340,9 @@ io.on('connection', (socket) => {
   socket.on('disconnect', async () => {
     console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
 
-    // Auto-offline logic for astrologers
     const disconnectedAstroId = astroSocketMap.get(socket.id);
     if (disconnectedAstroId) {
       astroSocketMap.delete(socket.id);
-      
-      const timer = setTimeout(async () => {
-        try {
-          const Astrologer = (await import('./models/astrologer.model.js')).default;
-          const astro = await Astrologer.findById(disconnectedAstroId);
-          if (astro && astro.onlineStatus === 'online') {
-            await Astrologer.findByIdAndUpdate(disconnectedAstroId, { onlineStatus: 'offline' });
-            io.emit('astro_status_changed', { astrologerId: disconnectedAstroId.toString(), status: 'offline' });
-            console.log(`[Socket.IO] Astrologer ${disconnectedAstroId} auto-offline due to disconnect`);
-          }
-        } catch (err) {
-          console.error('[Socket.IO] Auto-offline error:', err.message);
-        }
-      }, 20000); // 20 seconds grace period for page refresh
-      
-      astroDisconnectTimers.set(disconnectedAstroId, timer);
     }
 
     // Strict Disconnect Handling

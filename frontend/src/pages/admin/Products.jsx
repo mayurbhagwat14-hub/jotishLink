@@ -53,7 +53,8 @@ const AdminProducts = () => {
         featuredSection: p.featuredSection || 'none',
         discount: p.discount === '0%' ? '' : (p.discount || ''),
         stock: p.stock || 0,
-        status: p.isActive === false || p.stock === 0 ? (p.stock === 0 ? 'Out of Stock' : 'Draft') : 'Active',
+        isActive: p.isActive !== false,
+        status: p.isActive === false ? 'Draft' : (p.stock === 0 ? 'Out of Stock' : 'Active'),
         img: p.image || '/store_bracelet.png',
         rating: p.rating || 0,
         reviews: p.reviews?.length || 0,
@@ -234,6 +235,18 @@ const AdminProducts = () => {
     }
   };
 
+  const handleToggleActive = async (product) => {
+    try {
+      const newIsActive = !product.isActive;
+      await updateAdminProduct(product.id, { isActive: newIsActive });
+      toast.success(`Product marked as ${newIsActive ? 'Active' : 'Inactive'}!`);
+      fetchProducts();
+    } catch (err) {
+      console.error('Failed to toggle product status', err);
+      toast.error('Failed to update product status');
+    }
+  };
+
   const categories = ['All', 'Bracelets', 'Rudraksha', 'Gemstones', 'Lal Kitab'];
 
   const filteredProducts = products.filter(p => {
@@ -404,8 +417,12 @@ const AdminProducts = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <button className={`transition-colors ${product.status === 'Active' ? 'text-green-500' : 'text-gray-300'}`}>
-                      {product.status === 'Active' ? <FiToggleRight size={22} /> : <FiToggleLeft size={22} />}
+                    <button 
+                      onClick={() => handleToggleActive(product)}
+                      title={product.isActive ? 'Click to deactivate' : 'Click to activate'}
+                      className={`transition-colors hover:scale-110 active:scale-95 cursor-pointer ${product.isActive ? 'text-green-500' : 'text-gray-300'}`}
+                    >
+                      {product.isActive ? <FiToggleRight size={24} /> : <FiToggleLeft size={24} />}
                     </button>
                   </td>
                   <td className={`py-3 px-4 text-right relative ${openActionDropdown === product.id ? 'z-50' : ''}`}>

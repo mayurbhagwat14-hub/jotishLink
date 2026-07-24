@@ -14,6 +14,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { profile } = useSelector((state) => state.astrologer);
+  const { minimumPoojaPrice = 51 } = useSelector((state) => state.settings) || { minimumPoojaPrice: 51 };
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -156,8 +157,8 @@ const Profile = () => {
         return;
       }
       for (const p of poojasOffered) {
-        if (!p.price || Number(p.price) < 51) {
-          toast.error(`Price for ${p.poojaName} must be at least ₹51.`);
+        if (!p.price || Number(p.price) < minimumPoojaPrice) {
+          toast.error(`Price for ${p.poojaName} must be at least ₹${minimumPoojaPrice}.`);
           return;
         }
       }
