@@ -748,14 +748,7 @@ const AdminOrders = () => {
                               <p className="text-[10px] text-gray-400">Qty: {p.qty}</p>
                             </div>
                             <div className="text-right">
-                              {order.rawOrder?.items?.[i]?.discountApplied ? (
-                                <>
-                                  <span className="text-[10px] line-through text-gray-400 mr-1.5">₹{(p.price * p.qty).toLocaleString()}</span>
-                                  <span className="text-sm font-black text-green-600">₹{((p.price * p.qty) - order.rawOrder.items[i].discountApplied).toLocaleString()}</span>
-                                </>
-                              ) : (
-                                <span className="text-sm font-black text-gray-900">₹{(p.price * p.qty).toLocaleString()}</span>
-                              )}
+                              <span className="text-sm font-black text-gray-900">₹{(p.price * p.qty).toLocaleString()}</span>
                             </div>
                           </div>
                         ))}

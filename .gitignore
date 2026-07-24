@@ -3,8 +3,6 @@ node_modules/
 frontend/node_modules/
 
 # Local configuration and env files
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -23,10 +21,10 @@ dist/
 dist-ssr/
 
 # IDEs and Editors
-.vscode/
 .idea/
 .DS_Store
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
 serviceAccountKey.json
+config.bat

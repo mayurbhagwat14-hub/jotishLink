@@ -271,7 +271,7 @@ export const getProductById = asyncHandler(async (req, res) => {
 
 // GET /api/products
 export const getStoreProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find().sort({ inStock: -1, createdAt: -1 }).lean();
+  const products = await Product.find({ isActive: { $ne: false } }).sort({ inStock: -1, createdAt: -1 }).lean();
   
   // Calculate distinct categories with an image
   const categories = [];
