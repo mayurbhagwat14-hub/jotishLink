@@ -892,7 +892,7 @@ const ApplyAstrologer = () => {
                                   <span className="text-gray-400 text-xs font-bold">₹</span>
                                   <input 
                                     type="number" 
-                                    min="0"
+                                    min={minimumPoojaPrice}
                                     value={selectedPooja.price}
                                     onChange={(e) => updatePoojaPrice(pooja, e.target.value)}
                                     className="w-16 bg-white border border-orange-200 rounded-lg px-2 py-1 outline-none text-xs font-bold text-gray-800 focus:border-[#fa6830]"
@@ -1051,9 +1051,9 @@ const ApplyAstrologer = () => {
               
               <p className="text-[11px] text-gray-400 font-medium text-center leading-relaxed mb-4">
                 By submitting this application, you agree to our{' '}
-                <Link to="/user/terms" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
+                <Link to="/user/terms" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Terms & Conditions</Link>{' '}
                 and{' '}
-                <Link to="/user/privacy" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Privacy Policy</Link>
+                <Link to="/user/privacy" target="_blank" rel="noopener noreferrer" className="underline cursor-pointer text-[#fa6830] hover:underline transition-colors">Privacy Policy</Link>
               </p>
 
               <button 

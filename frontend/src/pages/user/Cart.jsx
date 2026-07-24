@@ -46,6 +46,25 @@ const Cart = () => {
     dispatch(fetchCartThunk());
   }, [dispatch]);
 
+  const reVerifyCoupon = async (codeToVerify) => {
+    if (!codeToVerify) return;
+    try {
+      const res = await verifyStoreCoupon(codeToVerify);
+      const data = res.data?.data || res.data;
+      setAppliedCoupon({
+        code: data.couponCode || codeToVerify.toUpperCase(),
+        discountAmount: data.pricing?.couponDiscount || 0,
+      });
+      dispatch({ type: 'cart/updatePricing', payload: data.pricing });
+    } catch (err) {
+      setAppliedCoupon(null);
+      setCouponCode('');
+      setCouponError('');
+      toast.error('Coupon removed: cart requirements no longer met', { icon: '⚠️', style: { borderRadius: '12px', fontWeight: 600 } });
+      dispatch(fetchCartThunk());
+    }
+  };
+
   const handleUpdateQuantity = async (productId, currentQty, delta, maxStock) => {
     const newQty = currentQty + delta;
     if (newQty < 0) return;
@@ -66,6 +85,9 @@ const Cart = () => {
     try {
       setUpdatingId(productId);
       await dispatch(updateCartThunk({ productId, quantity: newQty })).unwrap();
+      if (appliedCoupon) {
+        await reVerifyCoupon(appliedCoupon.code);
+      }
     } catch (err) {
       toast.error(err?.message || 'Failed to update quantity');
     } finally {
@@ -79,6 +101,9 @@ const Cart = () => {
     setTimeout(async () => {
       try {
         await dispatch(updateCartThunk({ productId, quantity: 0 })).unwrap();
+        if (appliedCoupon) {
+          await reVerifyCoupon(appliedCoupon.code);
+        }
       } catch (err) {
         toast.error(err?.message || 'Failed to remove item');
       } finally {
@@ -119,6 +144,8 @@ const Cart = () => {
     setAppliedCoupon(null);
     setCouponCode('');
     setCouponError('');
+    toast.success('Coupon removed', { icon: '🏷️', style: { borderRadius: '12px', fontWeight: 600 } });
+    dispatch(fetchCartThunk());
   };
 
   const items = cart?.items || [];
@@ -127,12 +154,14 @@ const Cart = () => {
   const subtotal = pricing?.subtotal || 0;
   const shipping = pricing?.shippingFee || 0;
   const gstAmount = pricing?.gstAmount || 0;
-  const discount = appliedCoupon?.discountAmount || 0;
+  const discount = appliedCoupon ? (appliedCoupon.discountAmount || 0) : 0;
   // Fallback to local sum if pricing is missing for some reason
   const fallbackSubtotal = items.reduce((sum, item) => sum + (item.productId?.price || 0) * item.quantity, 0);
   
   const displaySubtotal = pricing ? subtotal : fallbackSubtotal;
-  const displayTotal = pricing ? pricing.grandTotal : Math.max(0, fallbackSubtotal + shipping - discount);
+  const displayTotal = pricing
+    ? (appliedCoupon ? pricing.grandTotal : (subtotal + shipping + gstAmount))
+    : Math.max(0, fallbackSubtotal + shipping - discount);
 
   const hasOutOfStockItems = items.some(item => !item.productId?.inStock || item.productId?.stock < item.quantity);
 
